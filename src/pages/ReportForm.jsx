@@ -125,7 +125,7 @@ export default function ReportForm() {
           <span className="text-sm opacity-80">— New Report</span>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/pending")}>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/history")}>
             <History className="w-5 h-5" />
           </Button>
           <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/about")}>
@@ -221,12 +221,19 @@ export default function ReportForm() {
         {/* Photos */}
         <div className="space-y-2">
           <Label className="font-bold">Photos</Label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Button type="button" variant="outline" asChild>
-              <span><Upload className="w-4 h-4 mr-1" /> Add Photos</span>
+          <div>
+            <input
+              id="photo-upload"
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
+            <Button type="button" variant="outline" onClick={() => document.getElementById("photo-upload").click()}>
+              <Upload className="w-4 h-4 mr-1" /> Add Photos
             </Button>
-            <input type="file" multiple accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-          </label>
+          </div>
           <div className="flex flex-wrap gap-2 mt-2">
             {photos.map((url, idx) => (
               <div key={idx} className="relative">

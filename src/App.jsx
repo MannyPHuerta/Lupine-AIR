@@ -8,6 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
 import ReportForm from "./pages/ReportForm";
 import PendingReports from "./pages/PendingReports";
+import ReportHistory from "./pages/ReportHistory";
 import About from "./pages/About";
 
 const AuthenticatedApp = () => {
@@ -39,6 +40,7 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route path="/" element={<ReportForm />} />
       <Route path="/pending" element={<PendingReports />} />
+      <Route path="/history" element={<ReportHistory />} />
       <Route path="/about" element={<About />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
