@@ -6,6 +6,9 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
+import ReportForm from "./pages/ReportForm";
+import PendingReports from "./pages/PendingReports";
+import About from "./pages/About";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -34,6 +37,9 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
+      <Route path="/" element={<ReportForm />} />
+      <Route path="/pending" element={<PendingReports />} />
+      <Route path="/about" element={<About />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

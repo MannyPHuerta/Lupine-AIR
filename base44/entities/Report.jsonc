@@ -1,0 +1,105 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "itemName": {
+      "type": "string",
+      "description": "Name of the asset"
+    },
+    "itemType": {
+      "type": "string",
+      "enum": [
+        "Excavator",
+        "Loader",
+        "Trencher",
+        "Grader",
+        "Paving Equipment",
+        "Compactor",
+        "Crane",
+        "Forklift",
+        "Scissor Lift",
+        "Boom Lift",
+        "Dump Truck",
+        "Concrete Mixer",
+        "Skid Steer",
+        "Bulldozer",
+        "Backhoe",
+        "Telehandler",
+        "Generator",
+        "Compressor",
+        "Other"
+      ],
+      "description": "Type of asset"
+    },
+    "model": {
+      "type": "string",
+      "description": "Manufacturer and model"
+    },
+    "serialNumber": {
+      "type": "string",
+      "description": "Serial number or VIN"
+    },
+    "assetNumber": {
+      "type": "string",
+      "description": "Asset number"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "Sell",
+        "Repair",
+        "Discard"
+      ],
+      "description": "Recommended action"
+    },
+    "branch": {
+      "type": "string",
+      "enum": [
+        "Corpus Christi",
+        "Brownsville",
+        "Harlingen",
+        "Harlingen Warehouse",
+        "McAllen",
+        "Weslaco"
+      ],
+      "description": "Branch location"
+    },
+    "comments": {
+      "type": "string",
+      "description": "Asset description and condition"
+    },
+    "sendToEmails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of recipient emails"
+    },
+    "customEmail": {
+      "type": "string",
+      "description": "Custom recipient email"
+    },
+    "sentBy": {
+      "type": "string",
+      "description": "Sender email"
+    },
+    "photoPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Uploaded photo URLs"
+    },
+    "isSent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the report has been sent"
+    }
+  },
+  "required": [
+    "itemName",
+    "itemType",
+    "action",
+    "branch"
+  ]
+}
