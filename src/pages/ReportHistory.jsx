@@ -48,6 +48,7 @@ export default function ReportHistory() {
     formData.append("comments", report.comments || "");
     formData.append("sendTo", allEmails.join(","));
     formData.append("sentBy", report.sentBy || "");
+    formData.append("photoUrls", (report.photoPaths || []).join(","));
 
     const response = await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
       method: "POST",
@@ -170,7 +171,12 @@ export default function ReportHistory() {
                           <span className="font-medium">Photos:</span>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {report.photoPaths.map((url, i) => (
-                              <img key={i} src={url} className="w-16 h-16 object-cover rounded border" />
+                              <img
+                                key={i}
+                                src={url}
+                                className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => window.open(url, "_blank")}
+                              />
                             ))}
                           </div>
                         </div>

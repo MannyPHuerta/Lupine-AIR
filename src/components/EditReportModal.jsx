@@ -45,17 +45,22 @@ export default function EditReportModal({ report, onClose, onSave, onResend }) {
   const [showSender, setShowSender] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setUploadingPhotos(true);
     const uploaded = [];
     for (const file of files) {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       uploaded.push(file_url);
     }
     setPhotos(prev => [...prev, ...uploaded]);
+    setUploadingPhotos(false);
+    e.target.value = "";
   };
 
   const handleSave = async () => {
@@ -174,8 +179,9 @@ export default function EditReportModal({ report, onClose, onSave, onResend }) {
               <Label className="font-bold">Photos</Label>
               <div>
                 <input id="edit-photo-upload" type="file" multiple accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("edit-photo-upload").click()}>
-                  <Upload className="w-3 h-3 mr-1" /> Add Photos
+                <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("edit-photo-upload").click()} disabled={uploadingPhotos}>
+                  {uploadingPhotos ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Upload className="w-3 h-3 mr-1" />}
+                  {uploadingPhotos ? "Uploading..." : `Add Photos${photos.length > 0 ? ` (${photos.length})` : ""}`}
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2 mt-1">

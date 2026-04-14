@@ -32,6 +32,7 @@ export default function ReportForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [customEmail, setCustomEmail] = useState("");
   const [sentBy, setSentBy] = useState("");
@@ -46,12 +47,16 @@ export default function ReportForm() {
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setUploadingPhotos(true);
     const uploaded = [];
     for (const file of files) {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       uploaded.push(file_url);
     }
     setPhotos(prev => [...prev, ...uploaded]);
+    setUploadingPhotos(false);
+    e.target.value = "";
   };
 
   const handleSubmit = async (e) => {
@@ -231,8 +236,9 @@ export default function ReportForm() {
               className="hidden"
               onChange={handlePhotoUpload}
             />
-            <Button type="button" variant="outline" onClick={() => document.getElementById("photo-upload").click()}>
-              <Upload className="w-4 h-4 mr-1" /> Add Photos
+            <Button type="button" variant="outline" onClick={() => document.getElementById("photo-upload").click()} disabled={uploadingPhotos}>
+              {uploadingPhotos ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
+              {uploadingPhotos ? "Uploading..." : `Add Photos${photos.length > 0 ? ` (${photos.length})` : ""}`}
             </Button>
           </div>
           <div className="flex flex-wrap gap-2 mt-2">
