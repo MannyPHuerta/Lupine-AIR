@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,26 @@ const STAFF_EMAILS = [
   "margog@rentalworld.com", "rmelchor@rentalworld.com", "rwolf@rentalworld.com"
 ];
 
+const MARKETPLACE_UPLOADERS = [
+  "awolf@rentalworld.com", "bwolf@rentalworld.com", "brucewolf@rentalworld.com",
+  "dcarranza@rentalworld.com", "ealfaro@rentalworld.com", "ggomez@rentalworld.com",
+  "jgomez@rentalworld.com", "jjacobson@rentalworld.com", "margog@rentalworld.com",
+  "rmelchor@rentalworld.com", "rwolf@rentalworld.com"
+];
+
 export default function ReportForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canUploadToMarketplace, setCanUploadToMarketplace] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(user => {
+      if (user && MARKETPLACE_UPLOADERS.includes(user.email)) {
+        setCanUploadToMarketplace(true);
+      }
+    });
+  }, []);
   const [photos, setPhotos] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
@@ -129,6 +145,11 @@ export default function ReportForm() {
         <div className="flex items-center gap-2">
           <span className="text-xl font-bold">🐺 Asset Wolf</span>
           <span className="text-sm opacity-80">— New Report</span>
+          {canUploadToMarketplace && (
+            <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              🏷️ Marketplace
+            </span>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/history")}>
