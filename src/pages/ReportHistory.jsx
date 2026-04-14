@@ -12,6 +12,7 @@ const actionColor = {
   Sell: "bg-orange-100 text-orange-700",
   Repair: "bg-blue-100 text-blue-700",
   Discard: "bg-red-100 text-red-700",
+  "Need Quote for Customer": "bg-purple-100 text-purple-700",
 };
 
 export default function ReportHistory() {
@@ -132,7 +133,7 @@ export default function ReportHistory() {
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        {report.branch} • {report.created_date ? new Date(report.created_date).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : ""}
+                        {report.branch}{report.assetNumber ? ` • Asset #${report.assetNumber}` : ""} • {report.created_date ? new Date(report.created_date).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 ml-2 shrink-0">

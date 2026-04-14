@@ -11,7 +11,7 @@ import { X, Upload, Send, Loader2 } from "lucide-react";
 import RecipientsModal from "@/components/RecipientsModal";
 import SenderModal from "@/components/SenderModal";
 
-const ACTIONS = ["Sell", "Repair", "Discard"];
+const ACTIONS = ["Sell", "Repair", "Discard", "Need Quote for Customer"];
 const BRANCHES = ["Corpus Christi", "Brownsville", "Harlingen", "Harlingen Warehouse", "McAllen", "Weslaco"];
 const ITEM_TYPES = [
   "Excavator", "Loader", "Trencher", "Grader", "Paving Equipment", "Compactor", "Crane",

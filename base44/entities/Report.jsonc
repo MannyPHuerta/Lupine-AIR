@@ -48,7 +48,8 @@
       "enum": [
         "Sell",
         "Repair",
-        "Discard"
+        "Discard",
+        "Need Quote for Customer"
       ],
       "description": "Recommended action"
     },
