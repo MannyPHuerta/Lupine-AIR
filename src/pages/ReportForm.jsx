@@ -76,6 +76,7 @@ export default function ReportForm() {
       formData.append("comments", form.comments || "");
       formData.append("sendTo", allEmails.join(","));
       formData.append("sentBy", sentBy || "");
+      formData.append("photoUrls", photos.join(","));
 
       await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
         method: "POST",
