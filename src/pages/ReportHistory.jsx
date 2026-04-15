@@ -31,13 +31,17 @@ export default function ReportHistory() {
   const [editingReport, setEditingReport] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState("all"); // all | sent | pending
-  const [canPostToMarketplace, setCanPostToMarketplace] = useState(false);
+  const [canPostToMarketplace, setCanPostToMarketplace] = useState(null); // null = loading
 
   useEffect(() => {
     base44.auth.me().then(user => {
       if (user) {
         const emailLower = user.email.toLowerCase().trim();
-        setCanPostToMarketplace(MARKETPLACE_UPLOADERS.some(e => e.toLowerCase().trim() === emailLower));
+        const allowed = MARKETPLACE_UPLOADERS.some(e => e.toLowerCase().trim() === emailLower);
+        console.log("History auth check:", emailLower, "allowed:", allowed);
+        setCanPostToMarketplace(allowed);
+      } else {
+        setCanPostToMarketplace(false);
       }
     });
   }, []);
@@ -195,7 +199,7 @@ export default function ReportHistory() {
                       )}
                       {report.action === "Sell" && (
                         <div className="flex flex-wrap gap-2 pt-1">
-                          {canPostToMarketplace && (
+                          {canPostToMarketplace === true && (
                             <>
                               <Button
                                 size="sm"
