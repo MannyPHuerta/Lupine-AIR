@@ -13,6 +13,7 @@ import { History, Info, X, Loader2 } from "lucide-react";
 import RecipientsModal from "@/components/RecipientsModal";
 import SenderModal from "@/components/SenderModal";
 import PhotoUploader from "@/components/PhotoUploader";
+import OfflineBanner from "@/components/OfflineBanner";
 
 const ACTIONS = ["Sell", "Repair", "Discard", "Need Quote for Customer"];
 const BRANCHES = ["Corpus Christi", "Brownsville", "Harlingen", "Harlingen Warehouse", "McAllen", "Weslaco"];
@@ -133,6 +134,7 @@ export default function ReportForm() {
 
       </div>
 
+      <OfflineBanner />
       {/* Logged-in user banner */}
       {currentUserEmail && (
         <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
