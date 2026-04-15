@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ export default function ReportForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState("loading...");
 
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [customEmail, setCustomEmail] = useState("");
@@ -43,6 +44,12 @@ export default function ReportForm() {
     itemName: "", itemType: "", model: "", serialNumber: "",
     assetNumber: "", action: "", branch: "", comments: "", askingPrice: ""
   });
+
+  useEffect(() => {
+    base44.auth.me().then(user => {
+      setCurrentUserEmail(user ? user.email : "not logged in");
+    }).catch(() => setCurrentUserEmail("error loading user"));
+  }, []);
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -131,6 +138,11 @@ export default function ReportForm() {
           </div>
         </div>
 
+      </div>
+
+      {/* Logged-in user banner */}
+      <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
+        Logged in as: {currentUserEmail}
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-4 space-y-4">
