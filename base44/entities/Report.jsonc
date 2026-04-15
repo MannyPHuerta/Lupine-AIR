@@ -65,6 +65,10 @@
       ],
       "description": "Branch location"
     },
+    "askingPrice": {
+      "type": "number",
+      "description": "Asking price in USD"
+    },
     "comments": {
       "type": "string",
       "description": "Asset description and condition"

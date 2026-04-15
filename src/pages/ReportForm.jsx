@@ -65,7 +65,7 @@ export default function ReportForm() {
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [form, setForm] = useState({
     itemName: "", itemType: "", model: "", serialNumber: "",
-    assetNumber: "", action: "", branch: "", comments: ""
+    assetNumber: "", action: "", branch: "", comments: "", askingPrice: ""
   });
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
@@ -115,6 +115,7 @@ export default function ReportForm() {
 
       await base44.entities.Report.create({
         ...form,
+        askingPrice: form.askingPrice ? parseFloat(form.askingPrice) : null,
         sendToEmails: allEmails,
         customEmail,
         sentBy,
@@ -127,6 +128,7 @@ export default function ReportForm() {
     } catch (err) {
       await base44.entities.Report.create({
         ...form,
+        askingPrice: form.askingPrice ? parseFloat(form.askingPrice) : null,
         sendToEmails: allEmails,
         customEmail,
         sentBy,
@@ -216,6 +218,25 @@ export default function ReportForm() {
             <SelectContent>{ACTIONS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+
+        {/* Asking Price — only for Sell */}
+        {form.action === "Sell" && (
+          <div className="space-y-1">
+            <Label>Asking Price (USD)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <Input
+                type="number"
+                min="0"
+                step="100"
+                value={form.askingPrice}
+                onChange={e => handleChange("askingPrice", e.target.value)}
+                placeholder="e.g. 15000"
+                className="pl-7"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Branch */}
         <div className="space-y-1">
