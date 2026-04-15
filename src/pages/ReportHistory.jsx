@@ -111,11 +111,15 @@ export default function ReportHistory() {
           </Button>
           <span className="text-xl font-bold">Report History</span>
         </div>
-        <div className="text-right">
-          <span className="text-sm opacity-80">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
-          {currentUserEmail && <p className="text-xs opacity-60 truncate max-w-[160px]">{currentUserEmail}</p>}
-        </div>
+        <span className="text-sm opacity-80">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
       </div>
+
+      {/* Logged-in user banner */}
+      {currentUserEmail && (
+        <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
+          Logged in as: {currentUserEmail}
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="max-w-2xl mx-auto px-4 pt-4 flex gap-2">
