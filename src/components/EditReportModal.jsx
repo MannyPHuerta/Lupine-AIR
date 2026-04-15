@@ -20,10 +20,11 @@ const ITEM_TYPES = [
 ];
 const STAFF_EMAILS = [
   "manny@rentalworld.com", "awolf@rentalworld.com", "brucewolf@rentalworld.com",
-  "dcarranza@rentalworld.com", "dfulcher@rentalworld.com", "ealfaro@rentalworld.com",
-  "ggomez@rentalworld.com", "jcurran@rentalworld.com", "jgomez@rentalworld.com",
-  "jjacobson@rentalworld.com", "joep@rentalworld.com", "lisamiller@rentalworld.com",
-  "margog@rentalworld.com", "rmelchor@rentalworld.com", "rwolf@rentalworld.com"
+  "bwolf@rentalworld.com", "dcarranza@rentalworld.com", "dfulcher@rentalworld.com",
+  "ealfaro@rentalworld.com", "ggomez@rentalworld.com", "jcurran@rentalworld.com",
+  "jgomez@rentalworld.com", "jjacobson@rentalworld.com", "joep@rentalworld.com",
+  "lisamiller@rentalworld.com", "margog@rentalworld.com", "rmelchor@rentalworld.com",
+  "rwolf@rentalworld.com"
 ];
 
 export default function EditReportModal({ report, onClose, onSave, onResend }) {
