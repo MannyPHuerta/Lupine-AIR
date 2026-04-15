@@ -28,7 +28,7 @@ const STAFF_EMAILS = [
 ];
 
 const MARKETPLACE_UPLOADERS = [
-  "awolf@rentalworld.com", "bwolf@rentalworld.com", "brucewolf@rentalworld.com",
+  "manny@rentalworld.com", "awolf@rentalworld.com", "bwolf@rentalworld.com", "brucewolf@rentalworld.com",
   "dcarranza@rentalworld.com", "ealfaro@rentalworld.com", "ggomez@rentalworld.com",
   "jgomez@rentalworld.com", "jjacobson@rentalworld.com", "margog@rentalworld.com",
   "rmelchor@rentalworld.com", "rwolf@rentalworld.com"

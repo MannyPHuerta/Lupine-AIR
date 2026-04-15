@@ -8,7 +8,7 @@ import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const MARKETPLACE_UPLOADERS = [
-  "awolf@rentalworld.com", "bwolf@rentalworld.com", "brucewolf@rentalworld.com",
+  "manny@rentalworld.com", "awolf@rentalworld.com", "bwolf@rentalworld.com", "brucewolf@rentalworld.com",
   "dcarranza@rentalworld.com", "ealfaro@rentalworld.com", "ggomez@rentalworld.com",
   "jgomez@rentalworld.com", "jjacobson@rentalworld.com", "margog@rentalworld.com",
   "rmelchor@rentalworld.com", "rwolf@rentalworld.com"
