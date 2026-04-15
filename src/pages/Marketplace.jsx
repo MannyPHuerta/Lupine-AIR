@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { buildCraigslistURL, buildFacebookMarketplaceURL } from "@/lib/marketplaceUtils";
+import { BRANCH_DATA } from "@/lib/branchData";
 
 const MARKETPLACE_UPLOADERS = [
   "manny@rentalworld.com", "awolf@rentalworld.com", "bwolf@rentalworld.com", "brucewolf@rentalworld.com",
@@ -14,31 +16,9 @@ const MARKETPLACE_UPLOADERS = [
   "rmelchor@rentalworld.com", "rwolf@rentalworld.com"
 ];
 
-function buildListing(report) {
-  const lines = [];
-  lines.push(`🔧 FOR SALE: ${report.itemName}`);
-  if (report.itemType) lines.push(`Type: ${report.itemType}`);
-  if (report.model) lines.push(`Make/Model: ${report.model}`);
-  if (report.serialNumber) lines.push(`Serial #: ${report.serialNumber}`);
-  if (report.assetNumber) lines.push(`Asset #: ${report.assetNumber}`);
-  if (report.branch) lines.push(`Location: ${report.branch}`);
-  if (report.comments) lines.push(`\nCondition / Notes:\n${report.comments}`);
-  lines.push("\n📞 Contact us for pricing and availability.");
-  return lines.join("\n");
-}
-
 function ListingCard({ report }) {
-  const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const listing = buildListing(report);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(listing);
-    setCopied(true);
-    toast({ title: "Listing copied to clipboard!", className: "bg-green-600 text-white" });
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const branch = BRANCH_DATA[report.branch];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -51,32 +31,55 @@ function ListingCard({ report }) {
         </div>
       )}
 
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div>
             <h2 className="font-bold text-base">{report.itemName}</h2>
             <div className="flex flex-wrap gap-1 mt-1">
               {report.itemType && <Badge variant="secondary">{report.itemType}</Badge>}
               {report.branch && <Badge variant="outline">{report.branch}</Badge>}
+              {report.askingPrice && (
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  ${Number(report.askingPrice).toLocaleString()}
+                </Badge>
+              )}
             </div>
+            {branch && (
+              <p className="text-xs text-gray-500 mt-1">{branch.address} · {branch.phone}</p>
+            )}
           </div>
           <button onClick={() => setExpanded(v => !v)} className="text-gray-400 hover:text-gray-600 flex-shrink-0 mt-1">
             {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </button>
         </div>
 
-        {expanded && (
-          <pre className="text-sm bg-gray-50 rounded-lg p-3 whitespace-pre-wrap font-sans text-gray-700 border">
-            {listing}
-          </pre>
+        {expanded && report.comments && (
+          <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 border">{report.comments}</p>
         )}
 
-        <Button
-          onClick={handleCopy}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-        >
-          {copied ? <><Check className="w-4 h-4 mr-1" /> Copied!</> : <><Copy className="w-4 h-4 mr-1" /> Copy Listing</>}
-        </Button>
+        {/* List It buttons */}
+        <div className="flex gap-2">
+          <a
+            href={buildCraigslistURL(report)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1"
+          >
+            <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm">
+              <ExternalLink className="w-4 h-4 mr-1" /> Post to Craigslist
+            </Button>
+          </a>
+          <a
+            href={buildFacebookMarketplaceURL(report)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1"
+          >
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm">
+              <ExternalLink className="w-4 h-4 mr-1" /> Post to Facebook
+            </Button>
+          </a>
+        </div>
       </div>
     </div>
   );
