@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { History, Info, X, Plus, Loader2, Upload } from "lucide-react";
+import { History, Info, X, Loader2 } from "lucide-react";
 import RecipientsModal from "@/components/RecipientsModal";
 import SenderModal from "@/components/SenderModal";
+import PhotoUploader from "@/components/PhotoUploader";
 
 const ACTIONS = ["Sell", "Repair", "Discard", "Need Quote for Customer"];
 const BRANCHES = ["Corpus Christi", "Brownsville", "Harlingen", "Harlingen Warehouse", "McAllen", "Weslaco"];
@@ -57,7 +58,7 @@ export default function ReportForm() {
     });
   }, []);
   const [photos, setPhotos] = useState([]);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [customEmail, setCustomEmail] = useState("");
   const [sentBy, setSentBy] = useState("");
@@ -70,19 +71,6 @@ export default function ReportForm() {
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
-  const handlePhotoUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    setUploadingPhotos(true);
-    const uploaded = [];
-    for (const file of files) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      uploaded.push(file_url);
-    }
-    setPhotos(prev => [...prev, ...uploaded]);
-    setUploadingPhotos(false);
-    e.target.value = "";
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -285,30 +273,7 @@ export default function ReportForm() {
         {/* Photos */}
         <div className="space-y-2">
           <Label className="font-bold">Photos</Label>
-          <div>
-            <input
-              id="photo-upload"
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoUpload}
-            />
-            <Button type="button" variant="outline" onClick={() => document.getElementById("photo-upload").click()} disabled={uploadingPhotos}>
-              {uploadingPhotos ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
-              {uploadingPhotos ? "Uploading..." : `Add Photos${photos.length > 0 ? ` (${photos.length})` : ""}`}
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {photos.map((url, idx) => (
-              <div key={idx} className="relative">
-                <img src={url} className="w-20 h-20 object-cover rounded border" />
-                <button type="button" className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))}>
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <PhotoUploader photos={photos} onChange={setPhotos} />
         </div>
 
         {/* Submit */}
