@@ -52,20 +52,9 @@ export function buildDescription(report) {
 export function buildCraigslistURL(report) {
   const category = CATEGORY_MAP[report.itemType] || CATEGORY_MAP["Other"];
   const region = CL_SUBREGION[report.branch] || { site: "rgv", area: "" };
-  const description = buildDescription(report);
-  const title = report.askingPrice
-    ? `${report.itemName} - $${Number(report.askingPrice).toLocaleString()}`
-    : report.itemName;
-
-  const params = new URLSearchParams({
-    title,
-    postal: BRANCH_DATA[report.branch]?.zip || "",
-    price: report.askingPrice ? String(report.askingPrice) : "",
-    body: description,
-  });
-
   const areaPath = region.area ? `/${region.area}` : "";
-  return `https://${region.site}.craigslist.org${areaPath}/post?category=${category.cl}&${params.toString()}`;
+  // Craigslist doesn't support URL pre-fill; link directly to the new post form for the right region/category
+  return `https://${region.site}.craigslist.org${areaPath}/post?category=${category.cl}`;
 }
 
 export function buildFacebookMarketplaceURL(report) {
