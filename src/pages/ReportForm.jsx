@@ -35,7 +35,7 @@ export default function ReportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState([]);
   const { user } = useAuth();
-  const currentUserEmail = user?.email || "loading...";
+  const currentUserEmail = user?.email || "";
 
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [customEmail, setCustomEmail] = useState("");
@@ -137,9 +137,11 @@ export default function ReportForm() {
       </div>
 
       {/* Logged-in user banner */}
-      <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
-        Logged in as: {currentUserEmail}
-      </div>
+      {currentUserEmail && (
+        <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
+          Logged in as: {currentUserEmail}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-4 space-y-4">
         {/* Item Name */}
