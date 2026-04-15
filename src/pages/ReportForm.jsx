@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,8 @@ export default function ReportForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState([]);
-  const [currentUserEmail, setCurrentUserEmail] = useState("loading...");
+  const { user } = useAuth();
+  const currentUserEmail = user?.email || "loading...";
 
   const [selectedRecipients, setSelectedRecipients] = useState([]);
   const [customEmail, setCustomEmail] = useState("");
@@ -44,12 +46,6 @@ export default function ReportForm() {
     itemName: "", itemType: "", model: "", serialNumber: "",
     assetNumber: "", action: "", branch: "", comments: "", askingPrice: ""
   });
-
-  useEffect(() => {
-    base44.auth.me().then(user => {
-      setCurrentUserEmail(user ? user.email : "not logged in");
-    }).catch(() => setCurrentUserEmail("error loading user"));
-  }, []);
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
