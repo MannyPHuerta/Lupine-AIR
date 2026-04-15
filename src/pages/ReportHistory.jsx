@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import EditReportModal from "@/components/EditReportModal";
+import { buildCraigslistURL, buildFacebookMarketplaceURL } from "@/lib/marketplaceUtils";
+
+const MARKETPLACE_UPLOADERS = [
+  "manny@rentalworld.com", "mannyph2003@hotmail.com", "awolf@rentalworld.com", "bwolf@rentalworld.com", "brucewolf@rentalworld.com",
+  "dcarranza@rentalworld.com", "ealfaro@rentalworld.com", "ggomez@rentalworld.com",
+  "jgomez@rentalworld.com", "jjacobson@rentalworld.com", "margog@rentalworld.com",
+  "rmelchor@rentalworld.com", "rwolf@rentalworld.com"
+];
 
 const actionColor = {
   Sell: "bg-orange-100 text-orange-700",
@@ -23,6 +31,16 @@ export default function ReportHistory() {
   const [editingReport, setEditingReport] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState("all"); // all | sent | pending
+  const [canPostToMarketplace, setCanPostToMarketplace] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(user => {
+      if (user) {
+        const emailLower = user.email.toLowerCase().trim();
+        setCanPostToMarketplace(MARKETPLACE_UPLOADERS.some(e => e.toLowerCase().trim() === emailLower));
+      }
+    });
+  }, []);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["all-reports"],
@@ -176,17 +194,37 @@ export default function ReportHistory() {
                         </div>
                       )}
                       {report.action === "Sell" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={report.isPosted ? "border-gray-400 text-gray-600" : "border-orange-500 text-orange-600 hover:bg-orange-50"}
-                          onClick={async () => {
-                            await base44.entities.Report.update(report.id, { isPosted: !report.isPosted });
-                            queryClient.invalidateQueries({ queryKey: ["all-reports"] });
-                          }}
-                        >
-                          {report.isPosted ? "Unmark as Posted" : "✓ Mark as Posted"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {canPostToMarketplace && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="bg-purple-600 hover:bg-purple-700 text-white"
+                                onClick={() => window.open(buildCraigslistURL(report), "_blank")}
+                              >
+                                📋 Post to Craigslist
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => window.open(buildFacebookMarketplaceURL(report), "_blank")}
+                              >
+                                📘 Post to Facebook
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={report.isPosted ? "border-gray-400 text-gray-600" : "border-green-600 text-green-700 hover:bg-green-50"}
+                            onClick={async () => {
+                              await base44.entities.Report.update(report.id, { isPosted: !report.isPosted });
+                              queryClient.invalidateQueries({ queryKey: ["all-reports"] });
+                            }}
+                          >
+                            {report.isPosted ? "Unmark as Posted" : "✓ Mark as Posted"}
+                          </Button>
+                        </div>
                       )}
                       {report.photoPaths?.length > 0 && (
                         <div>
