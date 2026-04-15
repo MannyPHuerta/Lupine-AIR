@@ -1,26 +1,27 @@
 import { BRANCH_DATA } from "./branchData";
 
-// Maps item type to Craigslist category code and FB Marketplace category
+// Maps item type to Craigslist search category code and FB Marketplace category
+// CL codes are the search section codes (e.g. /search/hvo for heavy equipment)
 export const CATEGORY_MAP = {
-  "Excavator":         { cl: "hea", fb: "heavy_equipment" },
-  "Loader":            { cl: "hea", fb: "heavy_equipment" },
-  "Trencher":          { cl: "hea", fb: "heavy_equipment" },
-  "Grader":            { cl: "hea", fb: "heavy_equipment" },
-  "Bulldozer":         { cl: "hea", fb: "heavy_equipment" },
-  "Backhoe":           { cl: "hea", fb: "heavy_equipment" },
-  "Skid Steer":        { cl: "hea", fb: "heavy_equipment" },
-  "Compactor":         { cl: "hea", fb: "heavy_equipment" },
-  "Paving Equipment":  { cl: "hea", fb: "heavy_equipment" },
-  "Concrete Mixer":    { cl: "hea", fb: "heavy_equipment" },
-  "Crane":             { cl: "hea", fb: "heavy_equipment" },
-  "Forklift":          { cl: "hea", fb: "heavy_equipment" },
-  "Scissor Lift":      { cl: "hea", fb: "heavy_equipment" },
-  "Boom Lift":         { cl: "hea", fb: "heavy_equipment" },
-  "Telehandler":       { cl: "hea", fb: "heavy_equipment" },
-  "Dump Truck":        { cl: "tru", fb: "trucks" },
+  "Excavator":         { cl: "hvo", fb: "heavy_equipment" },
+  "Loader":            { cl: "hvo", fb: "heavy_equipment" },
+  "Trencher":          { cl: "hvo", fb: "heavy_equipment" },
+  "Grader":            { cl: "hvo", fb: "heavy_equipment" },
+  "Bulldozer":         { cl: "hvo", fb: "heavy_equipment" },
+  "Backhoe":           { cl: "hvo", fb: "heavy_equipment" },
+  "Skid Steer":        { cl: "hvo", fb: "heavy_equipment" },
+  "Compactor":         { cl: "hvo", fb: "heavy_equipment" },
+  "Paving Equipment":  { cl: "hvo", fb: "heavy_equipment" },
+  "Concrete Mixer":    { cl: "hvo", fb: "heavy_equipment" },
+  "Crane":             { cl: "hvo", fb: "heavy_equipment" },
+  "Forklift":          { cl: "hvo", fb: "heavy_equipment" },
+  "Scissor Lift":      { cl: "hvo", fb: "heavy_equipment" },
+  "Boom Lift":         { cl: "hvo", fb: "heavy_equipment" },
+  "Telehandler":       { cl: "hvo", fb: "heavy_equipment" },
+  "Dump Truck":        { cl: "tro", fb: "trucks" },
   "Generator":         { cl: "tls", fb: "tools" },
   "Compressor":        { cl: "tls", fb: "tools" },
-  "Other":             { cl: "hea", fb: "heavy_equipment" },
+  "Other":             { cl: "hvo", fb: "heavy_equipment" },
 };
 
 // Craigslist sites by branch
@@ -52,7 +53,8 @@ export function buildDescription(report) {
 export function buildCraigslistURL(report) {
   const category = CATEGORY_MAP[report.itemType] || CATEGORY_MAP["Other"];
   const site = CL_SITE[report.branch] || "mcallen";
-  return `https://${site}.craigslist.org/post?category=${category.cl}`;
+  // Links to the correct category search page — user clicks "post" from there
+  return `https://${site}.craigslist.org/search/${category.cl}`;
 }
 
 export function buildFacebookMarketplaceURL(report) {
