@@ -40,10 +40,15 @@ export default function ReportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [canUploadToMarketplace, setCanUploadToMarketplace] = useState(false);
 
+  const [debugEmail, setDebugEmail] = useState("");
+
   useEffect(() => {
     base44.auth.me().then(user => {
-      if (user && MARKETPLACE_UPLOADERS.includes(user.email)) {
-        setCanUploadToMarketplace(true);
+      if (user) {
+        setDebugEmail(user.email);
+        if (MARKETPLACE_UPLOADERS.includes(user.email)) {
+          setCanUploadToMarketplace(true);
+        }
       }
     });
   }, []);
@@ -145,6 +150,7 @@ export default function ReportForm() {
         <div className="flex items-center gap-2">
           <span className="text-xl font-bold">🐺 Asset Wolf</span>
           <span className="text-sm opacity-80">— New Report</span>
+          {debugEmail && <span className="text-xs opacity-60 ml-1">({debugEmail})</span>}
           {canUploadToMarketplace && (
             <span
               className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-orange-400"
