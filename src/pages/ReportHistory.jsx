@@ -117,7 +117,11 @@ export default function ReportHistory() {
             {filtered.map(report => {
               const isExpanded = expandedId === report.id;
               return (
-                <div key={report.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                <div key={report.id} className={`rounded-xl border shadow-sm overflow-hidden ${
+                  report.action === "Sell" && !report.isPosted ? "bg-orange-50 border-orange-200" :
+                  report.action === "Sell" && report.isPosted ? "bg-green-50 border-green-200" :
+                  "bg-white"
+                }`}>
                   {/* Header row */}
                   <div
                     className="flex items-center justify-between p-4 cursor-pointer"
@@ -132,6 +136,11 @@ export default function ReportHistory() {
                         <Badge className={`text-xs ${report.isSent ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                           {report.isSent ? "Sent" : "Pending"}
                         </Badge>
+                        {report.action === "Sell" && (
+                          <Badge className={`text-xs ${report.isPosted ? "bg-green-200 text-green-800" : "bg-orange-200 text-orange-800"}`}>
+                            {report.isPosted ? "✓ Posted" : "Not Posted"}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-gray-500 mt-0.5">
                         {report.branch}{report.assetNumber ? ` • Asset #${report.assetNumber}` : ""} • {report.created_date ? new Date(report.created_date).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : ""}
@@ -165,6 +174,19 @@ export default function ReportHistory() {
                             {report.customEmail && <Badge variant="secondary" className="text-xs">{report.customEmail}</Badge>}
                           </div>
                         </div>
+                      )}
+                      {report.action === "Sell" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={report.isPosted ? "border-gray-400 text-gray-600" : "border-orange-500 text-orange-600 hover:bg-orange-50"}
+                          onClick={async () => {
+                            await base44.entities.Report.update(report.id, { isPosted: !report.isPosted });
+                            queryClient.invalidateQueries({ queryKey: ["all-reports"] });
+                          }}
+                        >
+                          {report.isPosted ? "Unmark as Posted" : "✓ Mark as Posted"}
+                        </Button>
                       )}
                       {report.photoPaths?.length > 0 && (
                         <div>

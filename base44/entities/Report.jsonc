@@ -99,6 +99,11 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the report has been sent"
+    },
+    "isPosted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the item has been posted to marketplace"
     }
   },
   "required": [
