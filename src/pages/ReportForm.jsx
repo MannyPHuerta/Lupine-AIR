@@ -62,22 +62,18 @@ export default function ReportForm() {
     const allEmails = [...selectedRecipients, ...(customEmail ? [customEmail] : [])];
 
     try {
-      const formData = new FormData();
-      formData.append("itemName", form.itemName);
-      formData.append("itemType", form.itemType);
-      formData.append("model", form.model || "");
-      formData.append("serialNumber", form.serialNumber || "");
-      formData.append("assetNumber", form.assetNumber || "");
-      formData.append("action", form.action);
-      formData.append("branch", form.branch);
-      formData.append("comments", form.comments || "");
-      formData.append("sendTo", allEmails.join(","));
-      formData.append("sentBy", sentBy || "");
-      formData.append("photoUrls", photos.join(","));
-
-      await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
-        method: "POST",
-        body: formData,
+      await base44.functions.invoke("sendAssetReport", {
+        itemName: form.itemName,
+        itemType: form.itemType,
+        model: form.model || "",
+        serialNumber: form.serialNumber || "",
+        assetNumber: form.assetNumber || "",
+        action: form.action,
+        branch: form.branch,
+        comments: form.comments || "",
+        sendTo: allEmails.join(","),
+        sentBy: sentBy || "",
+        photoUrls: photos.join(","),
       });
 
       await base44.entities.Report.create({

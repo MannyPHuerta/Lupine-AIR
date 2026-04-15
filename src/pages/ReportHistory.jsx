@@ -93,24 +93,19 @@ export default function ReportHistory() {
 
   const sendReport = async (report) => {
     const allEmails = [...(report.sendToEmails || []), ...(report.customEmail ? [report.customEmail] : [])];
-    const formData = new FormData();
-    formData.append("itemName", report.itemName);
-    formData.append("itemType", report.itemType || "");
-    formData.append("model", report.model || "");
-    formData.append("serialNumber", report.serialNumber || "");
-    formData.append("assetNumber", report.assetNumber || "");
-    formData.append("action", report.action);
-    formData.append("branch", report.branch);
-    formData.append("comments", report.comments || "");
-    formData.append("sendTo", allEmails.join(","));
-    formData.append("sentBy", report.sentBy || "");
-    formData.append("photoUrls", (report.photoPaths || []).join(","));
-
-    const response = await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
-      method: "POST",
-      body: formData,
+    await base44.functions.invoke("sendAssetReport", {
+      itemName: report.itemName,
+      itemType: report.itemType || "",
+      model: report.model || "",
+      serialNumber: report.serialNumber || "",
+      assetNumber: report.assetNumber || "",
+      action: report.action,
+      branch: report.branch,
+      comments: report.comments || "",
+      sendTo: allEmails.join(","),
+      sentBy: report.sentBy || "",
+      photoUrls: (report.photoPaths || []).join(","),
     });
-    if (!response.ok) throw new Error("Send failed");
     await base44.entities.Report.update(report.id, { isSent: true });
   };
 
