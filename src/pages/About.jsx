@@ -30,6 +30,7 @@ export default function About() {
           <p className="text-lg font-semibold text-gray-900 mb-3">Special thanks to:</p>
           <ul className="space-y-2 text-gray-600">
             {[
+              "Base44.com – AI-powered app development platform (built this app!)",
               "Grok.com – for endless logic, patience, and code companionship",
               "GitHub.com – for version control and collaboration",
               "Render.com – for reliable hosting of the backend",
