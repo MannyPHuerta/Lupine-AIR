@@ -32,6 +32,7 @@ export default function ReportHistory() {
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState("all"); // all | sent | pending
   const [canPostToMarketplace, setCanPostToMarketplace] = useState(null); // null = loading
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
 
   useEffect(() => {
     base44.auth.me().then(user => {
@@ -40,6 +41,7 @@ export default function ReportHistory() {
         const allowed = MARKETPLACE_UPLOADERS.some(e => e.toLowerCase().trim() === emailLower);
         console.log("History auth check:", emailLower, "allowed:", allowed);
         setCanPostToMarketplace(allowed);
+        setCurrentUserEmail(user.email);
       } else {
         setCanPostToMarketplace(false);
       }
@@ -109,7 +111,10 @@ export default function ReportHistory() {
           </Button>
           <span className="text-xl font-bold">Report History</span>
         </div>
-        <span className="text-sm opacity-80">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
+        <div className="text-right">
+          <span className="text-sm opacity-80">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
+          {currentUserEmail && <p className="text-xs opacity-60 truncate max-w-[160px]">{currentUserEmail}</p>}
+        </div>
       </div>
 
       {/* Filter tabs */}
