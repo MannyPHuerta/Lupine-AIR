@@ -152,27 +152,31 @@ export default function ReportForm() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
-      <div className="bg-blue-700 text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-10">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xl font-bold whitespace-nowrap">🐺 Asset Wolf</span>
-          <span className="text-sm opacity-80 whitespace-nowrap hidden sm:inline">— New Report</span>
+      <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold">🐺 Asset Wolf</span>
+            <span className="text-sm opacity-80">— New Report</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/history")}>
+              <History className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/about")}>
+              <Info className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {canUploadToMarketplace && (
-            <span
-              className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer hover:bg-orange-400 whitespace-nowrap"
+        {canUploadToMarketplace && (
+          <div className="px-4 pb-2">
+            <button
+              className="w-full bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold py-1.5 rounded-full"
               onClick={() => navigate("/marketplace")}
             >
-              🏷️ Marketplace
-            </span>
-          )}
-          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/history")}>
-            <History className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/about")}>
-            <Info className="w-5 h-5" />
-          </Button>
-        </div>
+              🏷️ Marketplace Listings
+            </button>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-4 space-y-4">
