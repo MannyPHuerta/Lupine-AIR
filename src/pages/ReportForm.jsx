@@ -44,9 +44,13 @@ export default function ReportForm() {
 
   useEffect(() => {
     base44.auth.me().then(user => {
+      console.log("Logged in user:", user);
       if (user) {
         setDebugEmail(user.email);
-        if (MARKETPLACE_UPLOADERS.includes(user.email)) {
+        const emailLower = user.email.toLowerCase().trim();
+        const matchFound = MARKETPLACE_UPLOADERS.some(e => e.toLowerCase().trim() === emailLower);
+        console.log("Email:", emailLower, "Match found:", matchFound);
+        if (matchFound) {
           setCanUploadToMarketplace(true);
         }
       }
