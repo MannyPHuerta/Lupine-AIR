@@ -153,20 +153,19 @@ export default function ReportForm() {
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
       <div className="bg-blue-700 text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xl font-bold whitespace-nowrap">🐺 Asset Wolf</span>
+          <span className="text-sm opacity-80 whitespace-nowrap hidden sm:inline">— New Report</span>
+        </div>
         <div className="flex items-center gap-2">
-          <span className="text-xl font-bold">🐺 Asset Wolf</span>
-          <span className="text-sm opacity-80">— New Report</span>
-          {debugEmail && <span className="text-xs opacity-60 ml-1">({debugEmail})</span>}
           {canUploadToMarketplace && (
             <span
-              className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-orange-400"
+              className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer hover:bg-orange-400 whitespace-nowrap"
               onClick={() => navigate("/marketplace")}
             >
               🏷️ Marketplace
             </span>
           )}
-        </div>
-        <div className="flex gap-2">
           <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/history")}>
             <History className="w-5 h-5" />
           </Button>
