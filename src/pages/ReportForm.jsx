@@ -146,7 +146,10 @@ export default function ReportForm() {
           <span className="text-xl font-bold">🐺 Asset Wolf</span>
           <span className="text-sm opacity-80">— New Report</span>
           {canUploadToMarketplace && (
-            <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span
+              className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-orange-400"
+              onClick={() => navigate("/marketplace")}
+            >
               🏷️ Marketplace
             </span>
           )}

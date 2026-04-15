@@ -10,6 +10,7 @@ import ReportForm from "./pages/ReportForm";
 import PendingReports from "./pages/PendingReports";
 import ReportHistory from "./pages/ReportHistory";
 import About from "./pages/About";
+import Marketplace from "./pages/Marketplace";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -42,6 +43,7 @@ const AuthenticatedApp = () => {
       <Route path="/pending" element={<PendingReports />} />
       <Route path="/history" element={<ReportHistory />} />
       <Route path="/about" element={<About />} />
+      <Route path="/marketplace" element={<Marketplace />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
