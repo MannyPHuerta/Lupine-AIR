@@ -23,14 +23,14 @@ export const CATEGORY_MAP = {
   "Other":             { cl: "hea", fb: "heavy_equipment" },
 };
 
-// Craigslist subregion codes by city
-const CL_SUBREGION = {
-  "Corpus Christi": { site: "corpuschristi", area: "" },
-  "Brownsville":    { site: "rgv", area: "brn" },
-  "Harlingen":      { site: "rgv", area: "hrl" },
-  "Harlingen Warehouse": { site: "rgv", area: "hrl" },
-  "McAllen":        { site: "rgv", area: "mcl" },
-  "Weslaco":        { site: "rgv", area: "wsl" },
+// Craigslist sites by branch
+const CL_SITE = {
+  "Corpus Christi":      "corpuschristi",
+  "Brownsville":         "brownsville",
+  "Harlingen":           "brownsville",
+  "Harlingen Warehouse": "brownsville",
+  "McAllen":             "mcallen",
+  "Weslaco":             "mcallen",
 };
 
 export function buildDescription(report) {
@@ -51,10 +51,8 @@ export function buildDescription(report) {
 
 export function buildCraigslistURL(report) {
   const category = CATEGORY_MAP[report.itemType] || CATEGORY_MAP["Other"];
-  const region = CL_SUBREGION[report.branch] || { site: "rgv", area: "" };
-  const areaPath = region.area ? `/${region.area}` : "";
-  // Craigslist doesn't support URL pre-fill; link directly to the new post form for the right region/category
-  return `https://${region.site}.craigslist.org${areaPath}/post?category=${category.cl}`;
+  const site = CL_SITE[report.branch] || "mcallen";
+  return `https://${site}.craigslist.org/post?category=${category.cl}`;
 }
 
 export function buildFacebookMarketplaceURL(report) {
