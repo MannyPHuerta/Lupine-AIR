@@ -38,7 +38,7 @@ export default function ReportForm() {
   const { user } = useAuth();
   const currentUserEmail = user?.email || "";
 
-  const [selectedRecipients, setSelectedRecipients] = useState([]);
+  const [selectedRecipients, setSelectedRecipients] = useState(["bwolf@rentalworld.com"]);
   const [customEmail, setCustomEmail] = useState("");
   const [sentBy, setSentBy] = useState("");
   const [showRecipientsModal, setShowRecipientsModal] = useState(false);

@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import EditReportModal from "@/components/EditReportModal";
 import { buildCraigslistURL, buildFacebookMarketplaceURL } from "@/lib/marketplaceUtils";
 
@@ -31,8 +32,30 @@ export default function ReportHistory() {
   const [editingReport, setEditingReport] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState("all"); // all | sent | pending
+  const [search, setSearch] = useState("");
+  const [branchFilter, setBranchFilter] = useState("all");
+  const [actionFilter, setActionFilter] = useState("all");
   const [canPostToMarketplace, setCanPostToMarketplace] = useState(null); // null = loading
   const [currentUserEmail, setCurrentUserEmail] = useState("");
+
+  const BRANCHES = ["Corpus Christi", "Brownsville", "Harlingen", "Harlingen Warehouse", "McAllen", "Weslaco"];
+  const ACTIONS = ["Sell", "Repair", "Discard", "Need Quote for Customer"];
+
+  const exportCSV = () => {
+    const rows = filtered.map(r => [
+      r.itemName, r.itemType, r.model, r.serialNumber, r.assetNumber,
+      r.action, r.branch, r.askingPrice ?? "", r.comments,
+      r.sentBy, (r.sendToEmails || []).join("; "),
+      r.isSent ? "Sent" : "Pending",
+      r.created_date ? new Date(r.created_date).toLocaleString() : ""
+    ]);
+    const header = ["Item Name","Type","Model","Serial #","Asset #","Action","Branch","Asking Price","Comments","Sent By","Recipients","Status","Date"];
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "reports.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     base44.auth.me().then(user => {
@@ -54,8 +77,17 @@ export default function ReportHistory() {
   });
 
   const filtered = reports.filter(r => {
-    if (filter === "sent") return r.isSent;
-    if (filter === "pending") return !r.isSent;
+    if (filter === "sent" && !r.isSent) return false;
+    if (filter === "pending" && r.isSent) return false;
+    if (branchFilter !== "all" && r.branch !== branchFilter) return false;
+    if (actionFilter !== "all" && r.action !== actionFilter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (r.itemName || "").toLowerCase().includes(q) ||
+        (r.assetNumber || "").toLowerCase().includes(q) ||
+        (r.serialNumber || "").toLowerCase().includes(q) ||
+        (r.model || "").toLowerCase().includes(q);
+    }
     return true;
   });
 
@@ -111,7 +143,12 @@ export default function ReportHistory() {
           </Button>
           <span className="text-xl font-bold">Report History</span>
         </div>
-        <span className="text-sm opacity-80">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm opacity-80">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={exportCSV} title="Export CSV">
+            <Download className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Logged-in user banner */}
@@ -121,19 +158,43 @@ export default function ReportHistory() {
         </div>
       )}
 
-      {/* Filter tabs */}
-      <div className="max-w-2xl mx-auto px-4 pt-4 flex gap-2">
-        {["all", "sent", "pending"].map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
-              filter === f ? "bg-blue-600 text-white" : "bg-white border text-gray-600 hover:bg-gray-100"
-            }`}
+      {/* Search + Filters */}
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-2">
+        <Input
+          placeholder="Search by name, asset #, serial, model..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="bg-white"
+        />
+        <div className="flex flex-wrap gap-2">
+          {["all", "sent", "pending"].map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1 rounded-full text-sm font-medium capitalize transition-colors ${
+                filter === f ? "bg-blue-600 text-white" : "bg-white border text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+          <select
+            value={branchFilter}
+            onChange={e => setBranchFilter(e.target.value)}
+            className="px-3 py-1 rounded-full text-sm border bg-white text-gray-600"
           >
-            {f}
-          </button>
-        ))}
+            <option value="all">All Branches</option>
+            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <select
+            value={actionFilter}
+            onChange={e => setActionFilter(e.target.value)}
+            className="px-3 py-1 rounded-full text-sm border bg-white text-gray-600"
+          >
+            <option value="all">All Actions</option>
+            {ACTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="max-w-2xl mx-auto p-4">
