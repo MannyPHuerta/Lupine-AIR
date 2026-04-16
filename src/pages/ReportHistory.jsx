@@ -251,6 +251,9 @@ export default function ReportHistory() {
                       {report.model && <p><span className="font-medium">Model:</span> {report.model}</p>}
                       {report.serialNumber && <p><span className="font-medium">Serial:</span> {report.serialNumber}</p>}
                       {report.assetNumber && <p><span className="font-medium">Asset #:</span> {report.assetNumber}</p>}
+                      {report.action === "Sell" && report.askingPrice != null && (
+                        <p><span className="font-medium">Asking Price:</span> <span className="text-orange-700 font-semibold">${report.askingPrice.toLocaleString()}</span></p>
+                      )}
                       {report.comments && <p><span className="font-medium">Notes:</span> {report.comments}</p>}
                       {report.sentBy && <p><span className="font-medium">Sent by:</span> {report.sentBy}</p>}
                       {report.sendToEmails?.length > 0 && (

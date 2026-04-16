@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, RefreshCw, Send, ShoppingCart, Loader2 } from "lucide-react";
+import PrepareForSaleModal from "@/components/PrepareForSaleModal";
 
 export default function PendingReports() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function PendingReports() {
   const queryClient = useQueryClient();
   const [retrying, setRetrying] = useState(false);
   const [sendingId, setSendingId] = useState(null);
+  const [prepareReport, setPrepareReport] = useState(null);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["reports"],
@@ -71,8 +73,11 @@ export default function PendingReports() {
     setSendingId(null);
   };
 
-  const prepareForSale = (report) => {
-    toast({ title: `Prepare for Sale – FTP upload coming soon (${report.itemName})`, className: "bg-orange-500 text-white" });
+  const handlePrepareConfirm = async (updates) => {
+    await base44.entities.Report.update(prepareReport.id, updates);
+    queryClient.invalidateQueries({ queryKey: ["reports"] });
+    toast({ title: "Marked ready for sale!", className: "bg-green-600 text-white" });
+    setPrepareReport(null);
   };
 
   const actionColor = { Sell: "bg-orange-100 text-orange-700", Repair: "bg-blue-100 text-blue-700", Discard: "bg-red-100 text-red-700" };
@@ -113,10 +118,13 @@ export default function PendingReports() {
                     <Badge className={`mt-1 text-xs ${actionColor[report.action] || "bg-gray-100 text-gray-700"}`}>
                       {report.action}
                     </Badge>
+                    {report.action === "Sell" && report.askingPrice != null && (
+                      <p className="text-sm text-orange-700 font-semibold mt-0.5">${report.askingPrice.toLocaleString()}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {report.action?.toLowerCase() === "sell" && (
-                      <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white text-xs" onClick={() => prepareForSale(report)}>
+                      <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white text-xs" onClick={() => setPrepareReport(report)}>
                         <ShoppingCart className="w-3 h-3 mr-1" /> Prepare for Sale
                       </Button>
                     )}
@@ -130,6 +138,13 @@ export default function PendingReports() {
           </div>
         )}
       </div>
+      {prepareReport && (
+        <PrepareForSaleModal
+          report={prepareReport}
+          onClose={() => setPrepareReport(null)}
+          onConfirm={handlePrepareConfirm}
+        />
+      )}
     </div>
   );
 }
