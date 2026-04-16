@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7af3f555f_generated_image.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7af3f555f_generated_image.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
