@@ -20,32 +20,14 @@ const BRANCHES = [
   "01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"
 ];
 const ITEM_TYPES = [
-  // Aerial
-  "Scissor Lift", "Boom Lift", "Telehandler",
-  // Earth Moving
-  "Excavator", "Backhoe", "Bulldozer", "Skid Steer", "Loader", "Grader",
-  // Compaction
-  "Compactor", "Plate Compactor", "Trench Roller",
-  // Concrete
-  "Concrete Mixer", "Concrete Saw", "Concrete Grinder",
-  // Trenching
-  "Trencher",
-  // Power
-  "Generator", "Light Tower", "Air Compressor", "Pressure Washer", "Welder",
-  // Lawn & Landscape
-  "Zero Turn Mower", "Chipper/Shredder", "Stump Grinder",
-  // Material Handling
-  "Forklift", "Pallet Jack",
-  // Pumps
-  "Water Pump",
-  // Party / Event
-  "Tent", "Table", "Chair", "Inflatable", "Dance Floor", "Staging",
-  // Vehicles / Trucks
-  "Dump Truck", "Trailer",
-  // Tools
-  "Floor Sander", "Tile Stripper", "Sandblaster",
-  // Other
-  "Paving Equipment", "Other"
+  "Air Compressor", "Backhoe", "Boom Lift", "Bulldozer", "Chair",
+  "Chipper/Shredder", "Compactor", "Concrete Grinder", "Concrete Mixer",
+  "Concrete Saw", "Dance Floor", "Dump Truck", "Excavator", "Floor Sander",
+  "Forklift", "Generator", "Grader", "Inflatable", "Light Tower", "Loader",
+  "Other", "Pallet Jack", "Paving Equipment", "Plate Compactor",
+  "Pressure Washer", "Sandblaster", "Scissor Lift", "Skid Steer", "Staging",
+  "Stump Grinder", "Table", "Telehandler", "Tent", "Tile Stripper", "Trailer",
+  "Trench Roller", "Trencher", "Water Pump", "Welder", "Zero Turn Mower"
 ];
 const STAFF_EMAILS = [
   "manny@rentalworld.com", "awolf@rentalworld.com", "brucewolf@rentalworld.com",
