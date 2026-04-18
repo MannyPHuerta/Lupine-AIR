@@ -20,7 +20,7 @@ const MARKETPLACE_UPLOADERS = [
 const actionColor = {
   Sell: "bg-orange-100 text-orange-700",
   Repair: "bg-blue-100 text-blue-700",
-  Discard: "bg-red-100 text-red-700",
+  "Discard/Part out": "bg-red-100 text-red-700",
   "Need Quote for Customer": "bg-purple-100 text-purple-700",
 };
 
@@ -38,8 +38,8 @@ export default function ReportHistory() {
   const [canPostToMarketplace, setCanPostToMarketplace] = useState(null); // null = loading
   const [currentUserEmail, setCurrentUserEmail] = useState("");
 
-  const BRANCHES = ["Corpus Christi", "Brownsville", "Harlingen", "Harlingen Warehouse", "McAllen", "Weslaco"];
-  const ACTIONS = ["Sell", "Repair", "Discard", "Need Quote for Customer"];
+  const BRANCHES = ["01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"];
+  const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
 
   const exportCSV = () => {
     const rows = filtered.map(r => [

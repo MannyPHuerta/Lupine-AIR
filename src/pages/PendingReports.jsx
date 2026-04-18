@@ -80,7 +80,7 @@ export default function PendingReports() {
     setPrepareReport(null);
   };
 
-  const actionColor = { Sell: "bg-orange-100 text-orange-700", Repair: "bg-blue-100 text-blue-700", Discard: "bg-red-100 text-red-700" };
+  const actionColor = { Sell: "bg-orange-100 text-orange-700", Repair: "bg-blue-100 text-blue-700", "Discard/Part out": "bg-red-100 text-red-700" };
 
   return (
     <div className="min-h-screen bg-gray-50">

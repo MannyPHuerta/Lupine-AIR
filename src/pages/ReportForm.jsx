@@ -15,12 +15,37 @@ import SenderModal from "@/components/SenderModal";
 import PhotoUploader from "@/components/PhotoUploader";
 import OfflineBanner from "@/components/OfflineBanner";
 
-const ACTIONS = ["Sell", "Repair", "Discard", "Need Quote for Customer"];
-const BRANCHES = ["Corpus Christi", "Brownsville", "Harlingen", "Harlingen Warehouse", "McAllen", "Weslaco"];
+const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
+const BRANCHES = [
+  "01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"
+];
 const ITEM_TYPES = [
-  "Excavator", "Loader", "Trencher", "Grader", "Paving Equipment", "Compactor", "Crane",
-  "Forklift", "Scissor Lift", "Boom Lift", "Dump Truck", "Concrete Mixer", "Skid Steer",
-  "Bulldozer", "Backhoe", "Telehandler", "Generator", "Compressor", "Other"
+  // Aerial
+  "Scissor Lift", "Boom Lift", "Telehandler",
+  // Earth Moving
+  "Excavator", "Backhoe", "Bulldozer", "Skid Steer", "Loader", "Grader",
+  // Compaction
+  "Compactor", "Plate Compactor", "Trench Roller",
+  // Concrete
+  "Concrete Mixer", "Concrete Saw", "Concrete Grinder",
+  // Trenching
+  "Trencher",
+  // Power
+  "Generator", "Light Tower", "Air Compressor", "Pressure Washer", "Welder",
+  // Lawn & Landscape
+  "Zero Turn Mower", "Chipper/Shredder", "Stump Grinder",
+  // Material Handling
+  "Forklift", "Pallet Jack",
+  // Pumps
+  "Water Pump",
+  // Party / Event
+  "Tent", "Table", "Chair", "Inflatable", "Dance Floor", "Staging",
+  // Vehicles / Trucks
+  "Dump Truck", "Trailer",
+  // Tools
+  "Floor Sander", "Tile Stripper", "Sandblaster",
+  // Other
+  "Paving Equipment", "Other"
 ];
 const STAFF_EMAILS = [
   "manny@rentalworld.com", "awolf@rentalworld.com", "brucewolf@rentalworld.com",
@@ -117,19 +142,14 @@ export default function ReportForm() {
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
       <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold">🐺 Asset Wolf</span>
-            <span className="text-sm opacity-80">— New Report</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/history")}>
-              <History className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/about")}>
-              <Info className="w-5 h-5" />
-            </Button>
-          </div>
+        <div className="px-4 py-3 flex items-center justify-between relative">
+          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/history")}>
+            <History className="w-5 h-5" />
+          </Button>
+          <span className="text-xl font-bold absolute left-1/2 -translate-x-1/2">🐺 Asset Wolf</span>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/about")}>
+            <Info className="w-5 h-5" />
+          </Button>
         </div>
 
       </div>
@@ -145,13 +165,13 @@ export default function ReportForm() {
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-4 space-y-4">
         {/* Item Name */}
         <div className="space-y-1">
-          <Label>Item Name <span className="text-red-500">*</span></Label>
-          <Input value={form.itemName} onChange={e => handleChange("itemName", e.target.value)} placeholder="e.g. CAT 320 Excavator" />
+          <Label className="font-label">Item Name <span className="text-red-500">*</span></Label>
+          <Input className="font-body" value={form.itemName} onChange={e => handleChange("itemName", e.target.value)} placeholder="e.g. CAT 320 Excavator" />
         </div>
 
         {/* Item Type */}
         <div className="space-y-1">
-          <Label>Item Type <span className="text-red-500">*</span></Label>
+          <Label className="font-label">Item Type <span className="text-red-500">*</span></Label>
           <Select value={form.itemType} onValueChange={v => handleChange("itemType", v)}>
             <SelectTrigger><SelectValue placeholder="Select item type" /></SelectTrigger>
             <SelectContent>{ITEM_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -160,25 +180,26 @@ export default function ReportForm() {
 
         {/* Model */}
         <div className="space-y-1">
-          <Label>Manufacturer and Model</Label>
-          <Input value={form.model} onChange={e => handleChange("model", e.target.value)} placeholder="e.g. Caterpillar 320" />
+          <Label className="font-label">Manufacturer and Model</Label>
+          <Input className="font-body" value={form.model} onChange={e => handleChange("model", e.target.value)} placeholder="e.g. Caterpillar 320" />
         </div>
 
         {/* Serial Number */}
         <div className="space-y-1">
-          <Label>Serial Number / VIN</Label>
-          <Input value={form.serialNumber} onChange={e => handleChange("serialNumber", e.target.value)} />
+          <Label className="font-label">Serial Number / VIN</Label>
+          <Input className="font-body" value={form.serialNumber} onChange={e => handleChange("serialNumber", e.target.value)} />
         </div>
 
         {/* Asset Number */}
         <div className="space-y-1">
-          <Label>Asset Number</Label>
-          <Input value={form.assetNumber} onChange={e => handleChange("assetNumber", e.target.value)} />
+          <Label className="font-label">Asset Number</Label>
+          <Input className="font-body" value={form.assetNumber} onChange={e => handleChange("assetNumber", e.target.value)} />
+          <p className="text-xs text-gray-400 font-body italic">Example: 01-0030-0090-02-70</p>
         </div>
 
         {/* Action */}
         <div className="space-y-1">
-          <Label>Recommended Action <span className="text-red-500">*</span></Label>
+          <Label className="font-label">Recommended Action <span className="text-red-500">*</span></Label>
           <Select value={form.action} onValueChange={v => handleChange("action", v)}>
             <SelectTrigger><SelectValue placeholder="Select action" /></SelectTrigger>
             <SelectContent>{ACTIONS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
@@ -188,7 +209,7 @@ export default function ReportForm() {
         {/* Asking Price — only for Sell */}
         {form.action === "Sell" && (
           <div className="space-y-1">
-            <Label>Asking Price (USD)</Label>
+            <Label className="font-label">Asking Price (USD)</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
               <Input
@@ -206,7 +227,7 @@ export default function ReportForm() {
 
         {/* Branch */}
         <div className="space-y-1">
-          <Label>Branch Location <span className="text-red-500">*</span></Label>
+          <Label className="font-label">Branch Location <span className="text-red-500">*</span></Label>
           <Select value={form.branch} onValueChange={v => handleChange("branch", v)}>
             <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
             <SelectContent>{BRANCHES.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
@@ -215,8 +236,8 @@ export default function ReportForm() {
 
         {/* Comments */}
         <div className="space-y-1">
-          <Label>Asset Description / Condition</Label>
-          <Textarea value={form.comments} onChange={e => handleChange("comments", e.target.value)} rows={3} placeholder="Describe the asset condition..." />
+          <Label className="font-label">Asset Description / Condition</Label>
+          <Textarea className="font-body" value={form.comments} onChange={e => handleChange("comments", e.target.value)} rows={3} placeholder="Describe the asset condition..." />
         </div>
 
         {/* Recipients */}
