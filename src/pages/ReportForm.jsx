@@ -176,7 +176,7 @@ export default function ReportForm() {
         <div className="space-y-1">
           <Label className="font-label">Asset Number</Label>
           <Input className="font-body" value={form.assetNumber} onChange={e => handleChange("assetNumber", e.target.value)} />
-          <p className="text-xs text-gray-400 font-body italic">Example: 01-0030-0090-02-70</p>
+          <p className="text-xs text-gray-400 font-body italic">Example: 0030-0090-02-70</p>
         </div>
 
         {/* Action */}
