@@ -129,7 +129,7 @@ export default function ReportForm() {
             <History className="w-5 h-5" />
           </Button>
           <span className="text-xl font-bold absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7af3f555f_generated_image.png" className="w-8 h-8 rounded-full object-cover" alt="wolf" />
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/d9798b5fd_Wolficon.png" className="w-8 h-8 rounded-full object-cover" alt="wolf" />
             Asset Wolf
           </span>
           <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/about")}>
