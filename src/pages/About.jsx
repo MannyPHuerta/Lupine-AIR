@@ -16,7 +16,7 @@ export default function About() {
 
       <div className="max-w-xl mx-auto p-6 space-y-6">
         <div className="flex justify-center">
-          <div className="w-28 h-28 bg-blue-100 rounded-full flex items-center justify-center text-6xl">🐺</div>
+          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7af3f555f_generated_image.png" className="w-28 h-28 rounded-full object-cover shadow-md" alt="Asset Wolf" />
         </div>
 
         <div>
