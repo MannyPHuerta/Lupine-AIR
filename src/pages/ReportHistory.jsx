@@ -133,10 +133,11 @@ export default function ReportHistory() {
     queryClient.setQueryData(["all-reports"], (old) => (old || []).filter(r => r.id !== report.id));
     try {
       await base44.functions.invoke("adminDeleteReport", { reportId: report.id });
+      // Only refetch if delete actually succeeded
+      queryClient.invalidateQueries({ queryKey: ["all-reports"] });
     } catch {
-      // Silently ignore — UI already updated
+      // Delete failed (record doesn't exist in DB) — keep it removed from UI permanently
     }
-    queryClient.invalidateQueries({ queryKey: ["all-reports"] });
     setDeletingId(null);
   };
 
