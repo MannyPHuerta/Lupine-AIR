@@ -78,7 +78,7 @@ export default function ReportHistory() {
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["all-reports"],
-    queryFn: () => base44.entities.Report.list("-created_date", 100),
+    queryFn: () => base44.entities.Report.filter({ isHidden: false }, "-created_date", 100),
   });
 
   const filtered = reports.filter(r => {
