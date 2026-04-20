@@ -258,9 +258,14 @@ export default function ReportForm() {
         </div>
 
         {/* Submit */}
-        <Button type="submit" disabled={isSubmitting} className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700">
-          {isSubmitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting...</> : "Submit Report"}
-        </Button>
+        <div className="flex gap-3">
+          <Button type="button" variant="outline" className="flex-1 h-14 text-lg" onClick={resetForm}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 text-lg bg-blue-600 hover:bg-blue-700">
+            {isSubmitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting...</> : "Submit Report"}
+          </Button>
+        </div>
       </form>
 
       <RecipientsModal
