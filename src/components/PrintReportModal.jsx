@@ -29,7 +29,8 @@ export default function PrintReportModal({ report, onClose }) {
             .badge-quote { background: #f3e5f5; color: #6a1b9a; }
             .badge-sent { background: #e8f5e9; color: #2e7d32; }
             .badge-pending { background: #fffde7; color: #f57f17; }
-            @media print { button { display: none; } }
+            img { max-width: 120px; height: 120px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; display: inline-block; }
+            @media print { button { display: none; } img { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
           </style>
         </head>
         <body>${content}</body>
@@ -37,8 +38,29 @@ export default function PrintReportModal({ report, onClose }) {
     `);
     win.document.close();
     win.focus();
-    win.print();
-    win.close();
+    // Wait for all images to load before printing
+    const images = win.document.querySelectorAll("img");
+    if (images.length === 0) {
+      win.print();
+      win.close();
+    } else {
+      let loaded = 0;
+      const tryPrint = () => {
+        loaded++;
+        if (loaded >= images.length) {
+          win.print();
+          win.close();
+        }
+      };
+      images.forEach(img => {
+        if (img.complete) {
+          tryPrint();
+        } else {
+          img.onload = tryPrint;
+          img.onerror = tryPrint;
+        }
+      });
+    }
   };
 
   const actionBadgeClass = {
