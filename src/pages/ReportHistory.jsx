@@ -129,10 +129,12 @@ export default function ReportHistory() {
   const handleDelete = async (report) => {
     if (!window.confirm(`Delete "${report.itemName}"? This cannot be undone.`)) return;
     setDeletingId(report.id);
+    // Optimistically remove from cache immediately
+    queryClient.setQueryData(["all-reports"], (old) => (old || []).filter(r => r.id !== report.id));
     try {
       await base44.entities.Report.delete(report.id);
     } catch {
-      // Record may not exist (e.g. emulator artifact) — still remove from UI
+      // Record may not exist (e.g. emulator artifact) — UI already updated
     }
     queryClient.invalidateQueries({ queryKey: ["all-reports"] });
     setDeletingId(null);
