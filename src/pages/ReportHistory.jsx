@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download, Printer } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download, Printer, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import EditReportModal from "@/components/EditReportModal";
 import PrintReportModal from "@/components/PrintReportModal";
@@ -39,6 +39,8 @@ export default function ReportHistory() {
   const [actionFilter, setActionFilter] = useState("all");
   const [canPostToMarketplace, setCanPostToMarketplace] = useState(null); // null = loading
   const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const BRANCHES = ["01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"];
   const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
@@ -67,6 +69,7 @@ export default function ReportHistory() {
         console.log("History auth check:", emailLower, "allowed:", allowed);
         setCanPostToMarketplace(allowed);
         setCurrentUserEmail(user.email);
+        setIsAdmin(user.role === "admin");
       } else {
         setCanPostToMarketplace(false);
       }
@@ -121,6 +124,14 @@ export default function ReportHistory() {
       toast({ title: "Send failed – check connection", className: "bg-orange-500 text-white" });
     }
     setSendingId(null);
+  };
+
+  const handleDelete = async (report) => {
+    if (!window.confirm(`Delete "${report.itemName}"? This cannot be undone.`)) return;
+    setDeletingId(report.id);
+    await base44.entities.Report.delete(report.id);
+    queryClient.invalidateQueries({ queryKey: ["all-reports"] });
+    setDeletingId(null);
   };
 
   const handleSaveEdit = async (updatedReport) => {
@@ -239,6 +250,11 @@ export default function ReportHistory() {
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); setEditingReport(report); }}>
                         <Pencil className="w-4 h-4 text-gray-500" />
                       </Button>
+                      {isAdmin && (
+                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDelete(report); }} disabled={deletingId === report.id}>
+                          {deletingId === report.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
+                        </Button>
+                      )}
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); setPrintingReport(report); }}>
                         <Printer className="w-4 h-4 text-gray-500" />
                       </Button>
