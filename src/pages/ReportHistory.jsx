@@ -132,9 +132,9 @@ export default function ReportHistory() {
     // Optimistically remove from cache immediately
     queryClient.setQueryData(["all-reports"], (old) => (old || []).filter(r => r.id !== report.id));
     try {
-      await base44.entities.Report.delete(report.id);
+      await base44.functions.invoke("adminDeleteReport", { reportId: report.id });
     } catch {
-      // Record may not exist (e.g. emulator artifact) — UI already updated
+      // Silently ignore — UI already updated
     }
     queryClient.invalidateQueries({ queryKey: ["all-reports"] });
     setDeletingId(null);
