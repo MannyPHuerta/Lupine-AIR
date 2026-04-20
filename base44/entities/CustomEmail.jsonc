@@ -1,0 +1,22 @@
+{
+  "name": "CustomEmail",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "recipient",
+        "sender"
+      ],
+      "description": "Whether this is a recipient or sender email"
+    }
+  },
+  "required": [
+    "email",
+    "type"
+  ]
+}

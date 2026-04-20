@@ -5,9 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download, Printer } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import EditReportModal from "@/components/EditReportModal";
+import PrintReportModal from "@/components/PrintReportModal";
 import { buildCraigslistURL, buildFacebookMarketplaceURL } from "@/lib/marketplaceUtils";
 
 const MARKETPLACE_UPLOADERS = [
@@ -30,6 +31,7 @@ export default function ReportHistory() {
   const queryClient = useQueryClient();
   const [sendingId, setSendingId] = useState(null);
   const [editingReport, setEditingReport] = useState(null);
+  const [printingReport, setPrintingReport] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState("all"); // all | sent | pending
   const [search, setSearch] = useState("");
@@ -237,6 +239,9 @@ export default function ReportHistory() {
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); setEditingReport(report); }}>
                         <Pencil className="w-4 h-4 text-gray-500" />
                       </Button>
+                      <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); setPrintingReport(report); }}>
+                        <Printer className="w-4 h-4 text-gray-500" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleResend(report); }} disabled={sendingId === report.id}>
                         {sendingId === report.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-blue-600" />}
                       </Button>
@@ -328,6 +333,12 @@ export default function ReportHistory() {
           onClose={() => setEditingReport(null)}
           onSave={handleSaveEdit}
           onResend={handleResend}
+        />
+      )}
+      {printingReport && (
+        <PrintReportModal
+          report={printingReport}
+          onClose={() => setPrintingReport(null)}
         />
       )}
     </div>
