@@ -124,23 +124,11 @@ export default function ReportForm() {
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
       <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        {/* Title row */}
-        <div className="px-4 pt-2 flex items-center justify-center">
+        <div className="px-4 py-2 flex items-center justify-center">
           <span className="text-xl font-bold flex items-center gap-2">
             <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/d9798b5fd_Wolficon.png" className="w-8 h-8 rounded-full object-cover" alt="wolf" />
             Asset Wolf
           </span>
-        </div>
-        {/* Nav buttons row */}
-        <div className="px-2 pb-1 flex items-center justify-between">
-          <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/history")}>
-            <History className="w-5 h-5" />
-            <span className="text-sm font-medium">History</span>
-          </button>
-          <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/about")}>
-            <span className="text-sm font-medium">Info</span>
-            <Info className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
@@ -151,6 +139,18 @@ export default function ReportForm() {
           Logged in as: {currentUserEmail}
         </div>
       )}
+
+      {/* Nav buttons */}
+      <div className="max-w-2xl mx-auto px-4 pt-4 flex items-center justify-between">
+        <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/history")}>
+          <History className="w-5 h-5" />
+          <span className="text-sm">History</span>
+        </button>
+        <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/about")}>
+          <span className="text-sm">Info</span>
+          <Info className="w-5 h-5" />
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-4 space-y-4">
         {/* Item Name */}
