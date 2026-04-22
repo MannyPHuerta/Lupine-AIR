@@ -124,18 +124,22 @@ export default function ReportForm() {
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
       <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="px-2 py-2 flex items-center justify-between relative">
-          <button className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/history")}>
-            <History className="w-6 h-6" />
-            <span className="text-sm font-medium">History</span>
-          </button>
+        {/* Title row */}
+        <div className="px-4 pt-2 flex items-center justify-center">
           <span className="text-xl font-bold flex items-center gap-2">
             <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/d9798b5fd_Wolficon.png" className="w-8 h-8 rounded-full object-cover" alt="wolf" />
             Asset Wolf
           </span>
-          <button className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/about")}>
+        </div>
+        {/* Nav buttons row */}
+        <div className="px-2 pb-1 flex items-center justify-between">
+          <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/history")}>
+            <History className="w-5 h-5" />
+            <span className="text-sm font-medium">History</span>
+          </button>
+          <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/about")}>
             <span className="text-sm font-medium">Info</span>
-            <Info className="w-6 h-6" />
+            <Info className="w-5 h-5" />
           </button>
         </div>
       </div>
