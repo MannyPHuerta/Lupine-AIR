@@ -38,6 +38,9 @@ export default function ReportHistory() {
   const [branchFilter, setBranchFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest"); // newest | oldest
+  const [yearFilter, setYearFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [canPostToMarketplace, setCanPostToMarketplace] = useState(null); // null = loading
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -45,6 +48,11 @@ export default function ReportHistory() {
 
   const BRANCHES = ["01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"];
   const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
+
+  // Derive available years from loaded reports
+  const availableYears = [...new Set(
+    (reports || []).map(r => r.created_date ? new Date(r.created_date).getFullYear() : null).filter(Boolean)
+  )].sort((a, b) => b - a);
 
   const exportCSV = () => {
     const rows = filtered.map(r => [
@@ -91,6 +99,20 @@ export default function ReportHistory() {
       if (filter === "pending" && r.isSent) return false;
       if (branchFilter !== "all" && r.branch !== branchFilter) return false;
       if (actionFilter !== "all" && r.action !== actionFilter) return false;
+      if (yearFilter !== "all") {
+        const year = r.created_date ? new Date(r.created_date).getFullYear() : null;
+        if (year !== parseInt(yearFilter)) return false;
+      }
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
+        if (!r.created_date || new Date(r.created_date) < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+        if (!r.created_date || new Date(r.created_date) > to) return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         return (r.itemName || "").toLowerCase().includes(q) ||
@@ -231,6 +253,38 @@ export default function ReportHistory() {
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
           </select>
+          <select
+            value={yearFilter}
+            onChange={e => { setYearFilter(e.target.value); setDateFrom(""); setDateTo(""); }}
+            className="px-3 py-1 rounded-full text-sm border bg-white text-gray-600"
+          >
+            <option value="all">All Years</option>
+            {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-gray-500 font-medium">Date range:</span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => { setDateFrom(e.target.value); setYearFilter("all"); }}
+            className="px-2 py-1 rounded-lg text-sm border bg-white text-gray-600"
+          />
+          <span className="text-xs text-gray-400">to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => { setDateTo(e.target.value); setYearFilter("all"); }}
+            className="px-2 py-1 rounded-lg text-sm border bg-white text-gray-600"
+          />
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-600 hover:bg-gray-300"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
