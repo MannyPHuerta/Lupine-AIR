@@ -2,8 +2,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-
     const body = await req.json();
 
     const formData = new FormData();
@@ -30,13 +28,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Render returned ${response.status}: ${text}` }, { status: 502 });
     }
 
-    // Mark report as sent if reportId provided (bypasses RLS)
+    // Mark report as sent using service role (bypasses RLS)
     if (body.reportId) {
+      const base44 = createClientFromRequest(req);
       await base44.asServiceRole.entities.Report.update(body.reportId, { isSent: true });
     }
 
     return Response.json({ success: true });
   } catch (error) {
+    console.error("sendAssetReport error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
