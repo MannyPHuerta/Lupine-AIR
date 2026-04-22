@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const text = await response.text();
+      console.error("Render backend error:", response.status, text);
       return Response.json({ error: `Render returned ${response.status}: ${text}` }, { status: 502 });
     }
 
