@@ -106,7 +106,7 @@ export default function ReportForm() {
         photoPaths: photos,
         isSent: false,
       });
-      toast({ title: "Saved offline – will retry from Pending", className: "bg-orange-500 text-white" });
+      toast({ title: `Saved offline – ${err?.message || "check connection"}`, className: "bg-orange-500 text-white" });
     } finally {
       setIsSubmitting(false);
     }
