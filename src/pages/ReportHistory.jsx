@@ -51,13 +51,13 @@ export default function ReportHistory() {
 
   const exportCSV = () => {
     const rows = filtered.map(r => [
-      r.itemName, r.itemType, r.model, r.serialNumber, r.assetNumber,
+      r.assetNumber, r.itemName, r.itemType, r.model, r.serialNumber,
       r.action, r.branch, r.askingPrice ?? "", r.comments,
       r.sentBy, (r.sendToEmails || []).join("; "),
       r.isSent ? "Sent" : "Pending",
       r.created_date ? new Date(r.created_date).toLocaleString() : ""
     ]);
-    const header = ["Item Name","Type","Model","Serial #","Asset #","Action","Branch","Asking Price","Comments","Sent By","Recipients","Status","Date"];
+    const header = ["Asset #","Item Name","Type","Model","Serial #","Action","Branch","Asking Price","Comments","Sent By","Recipients","Status","Date"];
     const csv = [header, ...rows].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
