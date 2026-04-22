@@ -28,10 +28,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Render returned ${response.status}: ${text}` }, { status: 502 });
     }
 
-    // Mark report as sent using service role (bypasses RLS)
+    // Email sent successfully — now try to mark as sent in DB
     if (body.reportId) {
-      const base44 = createClientFromRequest(req);
-      await base44.asServiceRole.entities.Report.update(body.reportId, { isSent: true });
+      try {
+        const base44 = createClientFromRequest(req);
+        await base44.asServiceRole.entities.Report.update(body.reportId, { isSent: true });
+        console.log("Marked report as sent:", body.reportId);
+      } catch (dbErr) {
+        // Log but don't fail — email was already sent
+        console.error("DB update error (non-fatal):", dbErr.message);
+      }
     }
 
     return Response.json({ success: true });

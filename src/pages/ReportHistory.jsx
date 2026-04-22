@@ -121,7 +121,10 @@ export default function ReportHistory() {
     setSendingId(report.id);
     try {
       await sendReport(report);
-      queryClient.invalidateQueries({ queryKey: ["all-reports"] });
+      // Optimistically mark as sent in UI immediately
+      queryClient.setQueryData(["all-reports"], (old) =>
+        (old || []).map(r => r.id === report.id ? { ...r, isSent: true } : r)
+      );
       toast({ title: "Report sent successfully", className: "bg-green-600 text-white" });
     } catch {
       toast({ title: "Send failed – check connection", className: "bg-orange-500 text-white" });

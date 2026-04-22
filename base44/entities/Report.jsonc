@@ -133,13 +133,5 @@
     "itemType",
     "action",
     "branch"
-  ],
-  "rls": {
-    "update": {
-      "created_by": "me"
-    },
-    "delete": {
-      "created_by": "me"
-    }
-  }
+  ]
 }
