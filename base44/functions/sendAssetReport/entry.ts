@@ -34,6 +34,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Render returned ${response.status}: ${text}` }, { status: 502 });
     }
 
+    // Mark report as sent if reportId provided (bypasses RLS)
+    if (body.reportId) {
+      await base44.asServiceRole.entities.Report.update(body.reportId, { isSent: true });
+    }
+
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

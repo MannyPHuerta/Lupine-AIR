@@ -102,6 +102,7 @@ export default function ReportHistory() {
   const sendReport = async (report) => {
     const allEmails = [...(report.sendToEmails || []), ...(report.customEmail ? [report.customEmail] : [])];
     await base44.functions.invoke("sendAssetReport", {
+      reportId: report.id,
       itemName: report.itemName,
       itemType: report.itemType || "",
       model: report.model || "",
@@ -114,7 +115,6 @@ export default function ReportHistory() {
       sentBy: report.sentBy || "",
       photoUrls: (report.photoPaths || []).join(","),
     });
-    await base44.entities.Report.update(report.id, { isSent: true });
   };
 
   const handleResend = async (report) => {
