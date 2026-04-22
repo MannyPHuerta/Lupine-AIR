@@ -49,11 +49,6 @@ export default function ReportHistory() {
   const BRANCHES = ["01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"];
   const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
 
-  // Derive available years from loaded reports
-  const availableYears = [...new Set(
-    (reports || []).map(r => r.created_date ? new Date(r.created_date).getFullYear() : null).filter(Boolean)
-  )].sort((a, b) => b - a);
-
   const exportCSV = () => {
     const rows = filtered.map(r => [
       r.itemName, r.itemType, r.model, r.serialNumber, r.assetNumber,
@@ -92,6 +87,11 @@ export default function ReportHistory() {
       return all.filter(r => r.id !== "69e6a3a24ab7b520024541fe");
     },
   });
+
+  // Derive available years from loaded reports
+  const availableYears = [...new Set(
+    reports.map(r => r.created_date ? new Date(r.created_date).getFullYear() : null).filter(Boolean)
+  )].sort((a, b) => b - a);
 
   const filtered = reports
     .filter(r => {
