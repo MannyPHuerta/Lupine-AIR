@@ -263,7 +263,7 @@ export default function ReportHistory() {
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); setEditingReport(report); }}>
                         <Pencil className="w-4 h-4 text-gray-500" />
                       </Button>
-                      {isAdmin && (
+                      {(isAdmin || canPostToMarketplace || report.created_by === currentUserEmail) && (
                         <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDelete(report); }} disabled={deletingId === report.id}>
                           {deletingId === report.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
                         </Button>
