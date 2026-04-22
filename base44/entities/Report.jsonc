@@ -126,6 +126,25 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the item has been posted to marketplace"
+    },
+    "sentAt": {
+      "type": "string",
+      "description": "ISO timestamp of first send"
+    },
+    "lastSentAt": {
+      "type": "string",
+      "description": "ISO timestamp of most recent send (resend)"
+    },
+    "lastEditedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last edit"
+    },
+    "activityLog": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Log of timestamped activity events"
     }
   },
   "required": [

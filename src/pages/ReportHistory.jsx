@@ -37,6 +37,7 @@ export default function ReportHistory() {
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest"); // newest | oldest
   const [canPostToMarketplace, setCanPostToMarketplace] = useState(null); // null = loading
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -84,20 +85,26 @@ export default function ReportHistory() {
     },
   });
 
-  const filtered = reports.filter(r => {
-    if (filter === "sent" && !r.isSent) return false;
-    if (filter === "pending" && r.isSent) return false;
-    if (branchFilter !== "all" && r.branch !== branchFilter) return false;
-    if (actionFilter !== "all" && r.action !== actionFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (r.itemName || "").toLowerCase().includes(q) ||
-        (r.assetNumber || "").toLowerCase().includes(q) ||
-        (r.serialNumber || "").toLowerCase().includes(q) ||
-        (r.model || "").toLowerCase().includes(q);
-    }
-    return true;
-  });
+  const filtered = reports
+    .filter(r => {
+      if (filter === "sent" && !r.isSent) return false;
+      if (filter === "pending" && r.isSent) return false;
+      if (branchFilter !== "all" && r.branch !== branchFilter) return false;
+      if (actionFilter !== "all" && r.action !== actionFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (r.itemName || "").toLowerCase().includes(q) ||
+          (r.assetNumber || "").toLowerCase().includes(q) ||
+          (r.serialNumber || "").toLowerCase().includes(q) ||
+          (r.model || "").toLowerCase().includes(q);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const da = new Date(a.created_date || 0).getTime();
+      const db = new Date(b.created_date || 0).getTime();
+      return sortOrder === "newest" ? db - da : da - db;
+    });
 
   const sendReport = async (report) => {
     const allEmails = [...(report.sendToEmails || []), ...(report.customEmail ? [report.customEmail] : [])];
@@ -135,20 +142,21 @@ export default function ReportHistory() {
   const handleDelete = async (report) => {
     if (!window.confirm(`Delete "${report.itemName}"? This cannot be undone.`)) return;
     setDeletingId(report.id);
-    // Optimistically remove from cache immediately
     queryClient.setQueryData(["all-reports"], (old) => (old || []).filter(r => r.id !== report.id));
     try {
-      await base44.functions.invoke("adminDeleteReport", { reportId: report.id });
-      // Only refetch if delete actually succeeded
+      await base44.functions.invoke("adminDeleteReport", { reportId: report.id, deletedBy: currentUserEmail });
       queryClient.invalidateQueries({ queryKey: ["all-reports"] });
     } catch {
-      // Delete failed (record doesn't exist in DB) — keep it removed from UI permanently
+      // Already removed from UI
     }
     setDeletingId(null);
   };
 
   const handleSaveEdit = async (updatedReport) => {
-    await base44.entities.Report.update(updatedReport.id, updatedReport);
+    const now = new Date().toISOString();
+    const logEntry = `${now} | Edited by ${currentUserEmail || "unknown"}`;
+    const activityLog = [...(updatedReport.activityLog || []), logEntry];
+    await base44.entities.Report.update(updatedReport.id, { ...updatedReport, lastEditedAt: now, activityLog });
     queryClient.invalidateQueries({ queryKey: ["all-reports"] });
     setEditingReport(null);
     toast({ title: "Report updated", className: "bg-green-600 text-white" });
@@ -214,6 +222,14 @@ export default function ReportHistory() {
           >
             <option value="all">All Actions</option>
             {ACTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+          <select
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value)}
+            className="px-3 py-1 rounded-full text-sm border bg-white text-gray-600"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
           </select>
         </div>
       </div>
@@ -289,6 +305,9 @@ export default function ReportHistory() {
                         <p><span className="font-medium">Asking Price:</span> <span className="text-orange-700 font-semibold">${report.askingPrice.toLocaleString()}</span></p>
                       )}
                       {report.comments && <p><span className="font-medium">Notes:</span> {report.comments}</p>}
+                      {report.sentAt && <p><span className="font-medium">First Sent:</span> {new Date(report.sentAt).toLocaleString()}</p>}
+                      {report.lastSentAt && report.lastSentAt !== report.sentAt && <p><span className="font-medium">Last Resent:</span> {new Date(report.lastSentAt).toLocaleString()}</p>}
+                      {report.lastEditedAt && <p><span className="font-medium">Last Edited:</span> {new Date(report.lastEditedAt).toLocaleString()}</p>}
                       {report.sentBy && <p><span className="font-medium">Sent by:</span> {report.sentBy}</p>}
                       {report.sendToEmails?.length > 0 && (
                         <div>
@@ -345,6 +364,16 @@ export default function ReportHistory() {
                               />
                             ))}
                           </div>
+                        </div>
+                      )}
+                      {report.activityLog?.length > 0 && (
+                        <div>
+                          <span className="font-medium">Activity Log:</span>
+                          <ul className="mt-1 space-y-0.5">
+                            {report.activityLog.map((entry, i) => (
+                              <li key={i} className="text-xs text-gray-500 font-mono bg-gray-100 rounded px-2 py-0.5">{entry}</li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>

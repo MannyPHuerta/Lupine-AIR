@@ -9,10 +9,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    const { reportId } = await req.json();
+    const { reportId, deletedBy } = await req.json();
     if (!reportId) {
       return Response.json({ error: 'reportId is required' }, { status: 400 });
     }
+
+    // Log the deletion before deleting
+    const now = new Date().toISOString();
+    const logEntry = `${now} | Deleted by ${deletedBy || user.email || "admin"}`;
+    try {
+      const existing = await base44.asServiceRole.entities.Report.get(reportId);
+      if (existing) {
+        const activityLog = [...(existing.activityLog || []), logEntry];
+        console.log("Delete activity log:", activityLog);
+      }
+    } catch (_) {}
 
     await base44.asServiceRole.entities.Report.delete(reportId);
     return Response.json({ success: true });
