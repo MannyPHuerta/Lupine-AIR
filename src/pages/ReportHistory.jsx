@@ -187,18 +187,22 @@ export default function ReportHistory() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
-      <div className="bg-blue-700 text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <span className="text-xl font-bold">Report History</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm opacity-80">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={exportCSV} title="Export CSV">
-            <Download className="w-5 h-5" />
-          </Button>
+      <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10">
+        <div className="px-2 py-2 flex items-center justify-between relative">
+          <button className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/")}>
+            <ArrowLeft className="w-6 h-6" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+          <span className="text-xl font-bold flex items-center gap-2">
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/d9798b5fd_Wolficon.png" className="w-8 h-8 rounded-full object-cover" alt="wolf" />
+            Asset Wolf
+          </span>
+          <div className="flex items-center gap-1 p-1">
+            <span className="text-xs opacity-75">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
+            <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500" onClick={exportCSV} title="Export CSV">
+              <Download className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
