@@ -25,8 +25,10 @@ export default function LegacyDbMapper({ onMappingComplete }) {
 
     setLoading(true);
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
+      // Only analyze first 5MB to avoid memory issues
+      const chunkSize = 5 * 1024 * 1024;
+      const chunk = await file.slice(0, chunkSize).arrayBuffer();
+      const uint8Array = new Uint8Array(chunk);
       const binaryString = String.fromCharCode(...uint8Array);
       const base64Chunk = btoa(binaryString);
 
