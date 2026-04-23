@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download, Printer, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download, Printer, Trash2, BarChart2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import EditReportModal from "@/components/EditReportModal";
 import PrintReportModal from "@/components/PrintReportModal";
@@ -202,6 +202,11 @@ export default function ReportHistory() {
             <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500" onClick={exportCSV} title="Export CSV">
               <Download className="w-5 h-5" />
             </button>
+            {canPostToMarketplace && (
+              <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500" onClick={() => navigate("/analytics")} title="Analytics">
+                <BarChart2 className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
       </div>

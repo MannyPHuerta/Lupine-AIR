@@ -11,6 +11,7 @@ import PendingReports from "./pages/PendingReports";
 import ReportHistory from "./pages/ReportHistory";
 import About from "./pages/About";
 import Marketplace from "./pages/Marketplace";
+import Analytics from "./pages/Analytics";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
       <Route path="/history" element={<ReportHistory />} />
       <Route path="/about" element={<About />} />
       <Route path="/marketplace" element={<Marketplace />} />
+      <Route path="/analytics" element={<Analytics />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
