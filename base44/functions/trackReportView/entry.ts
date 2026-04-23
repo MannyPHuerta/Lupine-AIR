@@ -28,6 +28,13 @@ Deno.serve(async (req) => {
                 viewedBy: viewer,
                 activityLog,
             });
+
+            // Notify the submitter that their report was viewed
+            try {
+                await base44.asServiceRole.functions.invoke('notifyReportViewed', { reportId, viewerEmail: viewer });
+            } catch (_) {
+                // Non-fatal — don't fail the view tracking if notification fails
+            }
         }
 
         return Response.json({ success: true });
