@@ -15,6 +15,7 @@ import Marketplace from "./pages/Marketplace";
 import Analytics from "./pages/Analytics";
 import ReportView from "./pages/ReportView";
 import DbfConverter from "./pages/DbfConverter";
+import LegacyMapper from "./pages/LegacyMapper";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
       <Route path="/marketplace" element={<Marketplace />} />
       <Route path="/analytics" element={<Analytics />} />
       <Route path="/converter" element={<DbfConverter />} />
+      <Route path="/legacy-mapper" element={<LegacyMapper />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
