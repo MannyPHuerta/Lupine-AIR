@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Printer } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, FileDown } from "lucide-react";
+import { jsPDF } from "jspdf";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid } from "recharts";
 
 const ALLOWED_USERS = [
@@ -80,6 +81,66 @@ export default function Analytics() {
     );
   }
 
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+    const dateStr = new Date().toLocaleString();
+    let y = 20;
+
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Asset Wolf — Analytics Report", 105, y, { align: "center" });
+    y += 8;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120);
+    doc.text(`Generated: ${dateStr}`, 105, y, { align: "center" });
+    doc.setTextColor(0);
+    y += 10;
+
+    // Summary
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Summary", 15, y); y += 7;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const sentCount = reports.filter(r => r.isSent).length;
+    const actionCounts = reports.reduce((acc, r) => { acc[r.action] = (acc[r.action] || 0) + 1; return acc; }, {});
+    doc.text(`Total Reports: ${reports.length}`, 15, y); y += 6;
+    doc.text(`Sent: ${sentCount}   Pending: ${reports.length - sentCount}   For Sale: ${actionCounts["Sell"] || 0}`, 15, y); y += 10;
+
+    // By Branch
+    const branchCounts = reports.reduce((acc, r) => { if (r.branch) acc[r.branch] = (acc[r.branch] || 0) + 1; return acc; }, {});
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Reports by Branch", 15, y); y += 7;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    Object.entries(branchCounts).sort((a,b) => b[1]-a[1]).forEach(([branch, count]) => {
+      doc.text(`  ${branch}: ${count}`, 15, y); y += 6;
+    });
+    y += 4;
+
+    // By Action
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Reports by Action", 15, y); y += 7;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    Object.entries(actionCounts).forEach(([action, count]) => {
+      doc.text(`  ${action}: ${count}`, 15, y); y += 6;
+    });
+    y += 4;
+
+    // Top Submitters
+    const submitterCounts = reports.reduce((acc, r) => { if (r.sentBy) acc[r.sentBy] = (acc[r.sentBy] || 0) + 1; return acc; }, {});
+    const topSubmitters = Object.entries(submitterCounts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Top Submitters", 15, y); y += 7;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal");
+    topSubmitters.forEach(([name, count], i) => {
+      doc.text(`  ${i+1}. ${name}: ${count}`, 15, y); y += 6;
+    });
+
+    const fileDate = new Date().toISOString().slice(0, 10);
+    doc.save(`analytics_${fileDate}.pdf`);
+  };
+
   // --- Data computations ---
 
   // By Action
@@ -152,14 +213,24 @@ export default function Analytics() {
             <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7bc9512a2_wolf_silhouette.png" className="w-8 h-8 rounded-md object-cover" alt="wolf" />
             Analytics
           </span>
-          <button
-            className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1"
-            onClick={() => window.print()}
-            title="Print Analytics"
-          >
-            <Printer className="w-5 h-5" />
-            <span className="text-sm font-medium hidden sm:inline">Print</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1"
+              onClick={exportPDF}
+              title="Export PDF"
+            >
+              <FileDown className="w-5 h-5" />
+              <span className="text-sm font-medium hidden sm:inline">PDF</span>
+            </button>
+            <button
+              className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1"
+              onClick={() => window.print()}
+              title="Print Analytics"
+            >
+              <Printer className="w-5 h-5" />
+              <span className="text-sm font-medium hidden sm:inline">Print</span>
+            </button>
+          </div>
         </div>
       </div>
 

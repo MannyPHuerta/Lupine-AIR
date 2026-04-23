@@ -63,7 +63,10 @@ export default function ReportHistory() {
     const csv = [header, ...rows].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "reports.csv"; a.click();
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const branchSuffix = branchFilter !== "all" ? `_${branchFilter.replace(/\s+/g, "-")}` : "";
+    const filename = `reports_${dateStr}${branchSuffix}.csv`;
+    const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   };
 
