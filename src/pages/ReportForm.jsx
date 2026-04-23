@@ -154,6 +154,20 @@ export default function ReportForm() {
           <History className="w-5 h-5" />
           <span className="text-sm">History</span>
         </button>
+        <div className="group relative">
+          <button className="flex items-center gap-1 text-green-700 font-medium text-xs bg-green-50 border border-green-200 rounded-full px-3 py-1 hover:bg-green-100 transition-colors">
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+            Notifications On
+          </button>
+          <div className="absolute left-1/2 -translate-x-1/2 top-8 z-20 hidden group-hover:block w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs text-gray-700 space-y-2">
+            <p className="font-semibold text-gray-800 mb-1">Active Notifications</p>
+            <div className="space-y-1.5">
+              <div className="flex gap-2"><span>👁</span><span><b>Report Viewed</b> — submitter gets an email when a recipient opens their report</span></div>
+              <div className="flex gap-2"><span>🔔</span><span><b>New Sell Report</b> — management is alerted instantly when a Sell report is submitted</span></div>
+              <div className="flex gap-2"><span>📋</span><span><b>Weekly Digest</b> — summary email sent every Monday morning with inventory & pending reports</span></div>
+            </div>
+          </div>
+        </div>
         <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/about")}>
           <span className="text-sm">Info</span>
           <Info className="w-5 h-5" />
