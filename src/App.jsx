@@ -47,7 +47,6 @@ const AuthenticatedApp = () => {
       <Route path="/about" element={<About />} />
       <Route path="/marketplace" element={<Marketplace />} />
       <Route path="/analytics" element={<Analytics />} />
-      <Route path="/report/:id" element={<ReportView />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
@@ -60,7 +59,12 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <Routes>
+            {/* Public route - no auth required */}
+            <Route path="/report/:id" element={<ReportView />} />
+            {/* All other routes require authentication */}
+            <Route path="/*" element={<AuthenticatedApp />} />
+          </Routes>
         </Router>
         <Toaster />
       </QueryClientProvider>
