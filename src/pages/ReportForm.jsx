@@ -13,7 +13,8 @@ import { History, Info, X, Loader2 } from "lucide-react";
 import RecipientsModal from "@/components/RecipientsModal";
 import SenderModal from "@/components/SenderModal";
 import PhotoUploader from "@/components/PhotoUploader";
-import OfflineBanner from "@/components/OfflineBanner";
+import OfflineBanner from "@/components/OfflineBanner.jsx";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
 const BRANCHES = [
@@ -44,6 +45,7 @@ export default function ReportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState([]);
   const { user } = useAuth();
+  const { queue, syncing, lastSyncResult, enqueue } = useOfflineQueue();
   const currentUserEmail = user?.email || "";
 
   const [selectedRecipients, setSelectedRecipients] = useState(["bwolf@rentalworld.com"]);
@@ -69,39 +71,50 @@ export default function ReportForm() {
     setIsSubmitting(true);
     const allEmails = [...selectedRecipients, ...(customEmail ? [customEmail] : [])];
 
+    const reportData = {
+      ...form,
+      askingPrice: form.askingPrice ? parseFloat(form.askingPrice) : null,
+      sendToEmails: allEmails,
+      customEmail,
+      sentBy,
+      photoPaths: photos,
+      isSent: false,
+    };
+
+    const emailData = {
+      itemName: form.itemName,
+      itemType: form.itemType,
+      model: form.model || "",
+      serialNumber: form.serialNumber || "",
+      assetNumber: form.assetNumber || "",
+      action: form.action,
+      branch: form.branch,
+      comments: form.comments || "",
+      sendTo: allEmails.join(","),
+      sentBy: sentBy || "",
+      photoUrls: photos.join(","),
+    };
+
+    // If offline, queue for later
+    if (!navigator.onLine) {
+      enqueue({ reportData, emailData });
+      toast({ title: "Saved offline — will sync when connected", className: "bg-yellow-500 text-white" });
+      resetForm();
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const created = await base44.entities.Report.create({
-        ...form,
-        askingPrice: form.askingPrice ? parseFloat(form.askingPrice) : null,
-        sendToEmails: allEmails,
-        customEmail,
-        sentBy,
-        photoPaths: photos,
-        isSent: false,
-      });
-
+      const created = await base44.entities.Report.create({ ...reportData, isSent: false });
       const reportLink = `${window.location.origin}/report/${created.id}`;
-
-      await base44.functions.invoke("sendAssetReport", {
-        reportId: created.id,
-        itemName: form.itemName,
-        itemType: form.itemType,
-        model: form.model || "",
-        serialNumber: form.serialNumber || "",
-        assetNumber: form.assetNumber || "",
-        action: form.action,
-        branch: form.branch,
-        comments: form.comments || "",
-        sendTo: allEmails.join(","),
-        sentBy: sentBy || "",
-        photoUrls: photos.join(","),
-        reportLink,
-      });
-
+      await base44.functions.invoke("sendAssetReport", { ...emailData, reportId: created.id, reportLink });
       toast({ title: "Report sent successfully!", className: "bg-green-600 text-white" });
       resetForm();
     } catch (err) {
-      toast({ title: `Saved offline – ${err?.message || "check connection"}`, className: "bg-orange-500 text-white" });
+      // Network failed mid-submit — queue it
+      enqueue({ reportData, emailData });
+      toast({ title: "Connection lost — report saved, will sync automatically", className: "bg-yellow-500 text-white" });
+      resetForm();
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +140,7 @@ export default function ReportForm() {
         </div>
       </div>
 
-      <OfflineBanner />
+      <OfflineBanner queueCount={queue.length} syncing={syncing} lastSyncResult={lastSyncResult} />
       {/* Logged-in user banner */}
       {currentUserEmail && (
         <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
