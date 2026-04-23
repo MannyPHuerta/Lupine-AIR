@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { BUILD_INFO } from "@/config/version";
 
 export default function About() {
   const navigate = useNavigate();
@@ -22,6 +23,11 @@ export default function About() {
         <div>
           <p className="text-xl font-bold text-gray-900">© 2026 Asset Wolf</p>
           <p className="text-base text-gray-600 mt-1">Asset Wolf is property of Rental World LLC.</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Build {BUILD_INFO.buildNumber} • {BUILD_INFO.checkpoint}
+            <br />
+            <span className="text-xs text-gray-400">{BUILD_INFO.buildDate}</span>
+          </p>
         </div>
 
         <p className="text-base text-gray-600 italic">Developed for Rental World by Manny Huerta</p>
