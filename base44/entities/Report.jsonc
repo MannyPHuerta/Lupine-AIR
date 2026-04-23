@@ -127,6 +127,11 @@
       "default": false,
       "description": "Whether the item has been posted to marketplace"
     },
+    "isDeleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Soft-delete flag \u2014 hidden from history unless admin restores"
+    },
     "sentAt": {
       "type": "string",
       "description": "ISO timestamp of first send"

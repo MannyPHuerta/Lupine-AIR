@@ -14,18 +14,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'reportId is required' }, { status: 400 });
     }
 
-    // Log the deletion before deleting
     const now = new Date().toISOString();
-    const logEntry = `${now} | Deleted by ${deletedBy || user.email || "admin"}`;
-    try {
-      const existing = await base44.asServiceRole.entities.Report.get(reportId);
-      if (existing) {
-        const activityLog = [...(existing.activityLog || []), logEntry];
-        console.log("Delete activity log:", activityLog);
-      }
-    } catch (_) {}
+    const logEntry = `${now} | Hidden (soft-deleted) by ${deletedBy || user.email || "admin"}`;
 
-    await base44.asServiceRole.entities.Report.delete(reportId);
+    const existing = await base44.asServiceRole.entities.Report.get(reportId);
+    const activityLog = [...(existing?.activityLog || []), logEntry];
+
+    await base44.asServiceRole.entities.Report.update(reportId, {
+      isDeleted: true,
+      activityLog,
+    });
+
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

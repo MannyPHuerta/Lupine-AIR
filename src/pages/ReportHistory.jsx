@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download, Printer, Trash2, BarChart2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Pencil, ChevronDown, ChevronUp, Download, Printer, Trash2, BarChart2, RotateCcw, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import EditReportModal from "@/components/EditReportModal";
 import PrintReportModal from "@/components/PrintReportModal";
@@ -45,6 +45,8 @@ export default function ReportHistory() {
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [showHidden, setShowHidden] = useState(false);
+  const [restoringId, setRestoringId] = useState(null);
 
   const BRANCHES = ["01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"];
   const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
@@ -86,6 +88,7 @@ export default function ReportHistory() {
       const all = await base44.entities.Report.list("-created_date", 100);
       return all.filter(r => r.id !== "69e6a3a24ab7b520024541fe");
     },
+
   });
 
   // Derive available years from loaded reports
@@ -93,8 +96,25 @@ export default function ReportHistory() {
     reports.map(r => r.created_date ? new Date(r.created_date).getFullYear() : null).filter(Boolean)
   )].sort((a, b) => b - a);
 
+  const handleRestore = async (report) => {
+    setRestoringId(report.id);
+    const now = new Date().toISOString();
+    const logEntry = `${now} | Restored by ${currentUserEmail || "admin"}`;
+    const activityLog = [...(report.activityLog || []), logEntry];
+    await base44.entities.Report.update(report.id, { isDeleted: false, activityLog });
+    queryClient.invalidateQueries({ queryKey: ["all-reports"] });
+    toast({ title: "Report restored", className: "bg-green-600 text-white" });
+    setRestoringId(null);
+  };
+
   const filtered = reports
     .filter(r => {
+      // Hidden filter
+      if (showHidden) {
+        if (!r.isDeleted) return false;
+      } else {
+        if (r.isDeleted) return false;
+      }
       if (filter === "sent" && !r.isSent) return false;
       if (filter === "pending" && r.isSent) return false;
       if (branchFilter !== "all" && r.branch !== branchFilter) return false;
@@ -204,6 +224,16 @@ export default function ReportHistory() {
             <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500" onClick={exportCSV} title="Export CSV">
               <Download className="w-5 h-5" />
             </button>
+            {isAdmin && (
+              <button
+                className={`p-2 rounded-lg active:bg-blue-500 flex items-center gap-1 text-xs font-medium ${showHidden ? "bg-red-500 text-white hover:bg-red-600" : "text-white hover:bg-blue-600"}`}
+                onClick={() => setShowHidden(v => !v)}
+                title={showHidden ? "Hide deleted reports" : "Show deleted reports"}
+              >
+                <EyeOff className="w-4 h-4" />
+                <span className="hidden sm:inline">{showHidden ? "Hidden" : "Deleted"}</span>
+              </button>
+            )}
             {canPostToMarketplace && (
               <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500" onClick={() => navigate("/analytics")} title="Analytics">
                 <BarChart2 className="w-5 h-5" />
@@ -349,10 +379,16 @@ export default function ReportHistory() {
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); setEditingReport(report); }}>
                         <Pencil className="w-4 h-4 text-gray-500" />
                       </Button>
-                      {(isAdmin || canPostToMarketplace || report.created_by === currentUserEmail) && (
-                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDelete(report); }} disabled={deletingId === report.id}>
-                          {deletingId === report.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
+                      {showHidden && isAdmin ? (
+                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleRestore(report); }} disabled={restoringId === report.id} title="Restore report">
+                          {restoringId === report.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4 text-green-600" />}
                         </Button>
+                      ) : (
+                        (isAdmin || canPostToMarketplace || report.created_by === currentUserEmail) && (
+                          <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); handleDelete(report); }} disabled={deletingId === report.id}>
+                            {deletingId === report.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-400" />}
+                          </Button>
+                        )
                       )}
                       <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); setPrintingReport(report); }}>
                         <Printer className="w-4 h-4 text-gray-500" />
