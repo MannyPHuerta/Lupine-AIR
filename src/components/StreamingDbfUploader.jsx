@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks
 
 export default function StreamingDbfUploader({ onComplete }) {
   const inputRef = useRef(null);
@@ -37,9 +37,12 @@ export default function StreamingDbfUploader({ onComplete }) {
         const arrayBuffer = await chunkBlob.arrayBuffer();
 
         // Convert to base64 for transmission
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const binaryString = String.fromCharCode(...uint8Array);
-        const base64Chunk = btoa(binaryString);
+         const uint8Array = new Uint8Array(arrayBuffer);
+         let binaryString = '';
+         for (let j = 0; j < uint8Array.length; j++) {
+           binaryString += String.fromCharCode(uint8Array[j]);
+         }
+         const base64Chunk = btoa(binaryString);
 
         const response = await base44.functions.invoke('streamParseDbf', {
           chunk: base64Chunk,
@@ -180,7 +183,7 @@ export default function StreamingDbfUploader({ onComplete }) {
           />
           <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
           <p className="font-semibold text-gray-900 mb-1">Select DBF File</p>
-          <p className="text-sm text-gray-500 mb-3">Streams large files in 5MB chunks</p>
+          <p className="text-sm text-gray-500 mb-3">Streams large files in 50MB chunks</p>
           <Button variant="outline" size="sm" disabled={loading}>
             Choose File
           </Button>
