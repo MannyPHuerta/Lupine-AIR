@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Printer } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid } from "recharts";
 
 const ALLOWED_USERS = [
@@ -22,9 +22,26 @@ const ACTION_COLORS = {
 
 const CHART_COLORS = ["#3b82f6", "#f97316", "#10b981", "#a855f7", "#ef4444", "#f59e0b", "#06b6d4"];
 
+// Print styles injected once
+const printStyle = `
+@media print {
+  body * { visibility: hidden; }
+  #analytics-print-area, #analytics-print-area * { visibility: visible; }
+  #analytics-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+  .no-print { display: none !important; }
+}
+`;
+
 export default function Analytics() {
   const navigate = useNavigate();
   const [authorized, setAuthorized] = useState(null);
+
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = printStyle;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
 
   useEffect(() => {
@@ -125,7 +142,7 @@ export default function Analytics() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
-      <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <div className="no-print bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="px-2 py-2 flex items-center justify-between">
           <button className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/history")}>
             <ArrowLeft className="w-6 h-6" />
@@ -135,17 +152,28 @@ export default function Analytics() {
             <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/d9798b5fd_Wolficon.png" className="w-8 h-8 rounded-full object-cover" alt="wolf" />
             Analytics
           </span>
-          <div className="w-20" />
+          <button
+            className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1"
+            onClick={() => window.print()}
+            title="Print Analytics"
+          >
+            <Printer className="w-5 h-5" />
+            <span className="text-sm font-medium hidden sm:inline">Print</span>
+          </button>
         </div>
       </div>
 
       {currentUserEmail && (
-        <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
+        <div className="no-print bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
           Logged in as: {currentUserEmail}
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <div id="analytics-print-area" className="max-w-4xl mx-auto p-4 space-y-6">
+        <div className="hidden print:block text-center mb-4">
+          <h1 className="text-2xl font-bold">Asset Wolf — Analytics Report</h1>
+          <p className="text-sm text-gray-500">Generated: {new Date().toLocaleString()}</p>
+        </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
