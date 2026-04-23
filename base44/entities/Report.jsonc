@@ -139,6 +139,14 @@
       "type": "string",
       "description": "ISO timestamp of last edit"
     },
+    "viewedAt": {
+      "type": "string",
+      "description": "ISO timestamp when a recipient first viewed the report"
+    },
+    "viewedBy": {
+      "type": "string",
+      "description": "Email or identifier of who viewed the report"
+    },
     "activityLog": {
       "type": "array",
       "items": {

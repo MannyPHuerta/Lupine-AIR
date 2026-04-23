@@ -70,7 +70,20 @@ export default function ReportForm() {
     const allEmails = [...selectedRecipients, ...(customEmail ? [customEmail] : [])];
 
     try {
+      const created = await base44.entities.Report.create({
+        ...form,
+        askingPrice: form.askingPrice ? parseFloat(form.askingPrice) : null,
+        sendToEmails: allEmails,
+        customEmail,
+        sentBy,
+        photoPaths: photos,
+        isSent: false,
+      });
+
+      const reportLink = `${window.location.origin}/report/${created.id}`;
+
       await base44.functions.invoke("sendAssetReport", {
+        reportId: created.id,
         itemName: form.itemName,
         itemType: form.itemType,
         model: form.model || "",
@@ -82,30 +95,12 @@ export default function ReportForm() {
         sendTo: allEmails.join(","),
         sentBy: sentBy || "",
         photoUrls: photos.join(","),
-      });
-
-      await base44.entities.Report.create({
-        ...form,
-        askingPrice: form.askingPrice ? parseFloat(form.askingPrice) : null,
-        sendToEmails: allEmails,
-        customEmail,
-        sentBy,
-        photoPaths: photos,
-        isSent: true,
+        reportLink,
       });
 
       toast({ title: "Report sent successfully!", className: "bg-green-600 text-white" });
       resetForm();
     } catch (err) {
-      await base44.entities.Report.create({
-        ...form,
-        askingPrice: form.askingPrice ? parseFloat(form.askingPrice) : null,
-        sendToEmails: allEmails,
-        customEmail,
-        sentBy,
-        photoPaths: photos,
-        isSent: false,
-      });
       toast({ title: `Saved offline – ${err?.message || "check connection"}`, className: "bg-orange-500 text-white" });
     } finally {
       setIsSubmitting(false);

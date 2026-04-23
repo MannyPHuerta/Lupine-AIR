@@ -17,6 +17,9 @@ Deno.serve(async (req) => {
     formData.append("sentBy", body.sentBy || "");
     formData.append("photoUrls", body.photoUrls || "");
 
+    // Include the report view link if provided
+    if (body.reportLink) formData.append("reportLink", body.reportLink);
+
     const response = await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
       method: "POST",
       body: formData,

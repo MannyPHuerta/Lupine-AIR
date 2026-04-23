@@ -130,6 +130,7 @@ export default function ReportHistory() {
 
   const sendReport = async (report) => {
     const allEmails = [...(report.sendToEmails || []), ...(report.customEmail ? [report.customEmail] : [])];
+    const reportLink = `${window.location.origin}/report/${report.id}`;
     await base44.functions.invoke("sendAssetReport", {
       reportId: report.id,
       itemName: report.itemName,
@@ -143,6 +144,7 @@ export default function ReportHistory() {
       sendTo: allEmails.join(","),
       sentBy: report.sentBy || "",
       photoUrls: (report.photoPaths || []).join(","),
+      reportLink,
     });
   };
 
@@ -333,6 +335,11 @@ export default function ReportHistory() {
                             {report.isPosted ? "✓ Posted" : "Not Posted"}
                           </Badge>
                         )}
+                        {report.viewedAt && (
+                          <Badge className="text-xs bg-teal-100 text-teal-700">
+                            👁 Viewed {new Date(report.viewedAt).toLocaleDateString()}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-gray-500 mt-0.5">
                         {report.branch}{report.assetNumber ? ` • Asset #${report.assetNumber}` : ""} • {report.created_date ? new Date(report.created_date).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : ""}
@@ -428,6 +435,9 @@ export default function ReportHistory() {
                             ))}
                           </div>
                         </div>
+                      )}
+                      {report.viewedAt && (
+                        <p><span className="font-medium">Viewed By:</span> {report.viewedBy} on {new Date(report.viewedAt).toLocaleString()}</p>
                       )}
                       {report.activityLog?.length > 0 && (
                         <div>

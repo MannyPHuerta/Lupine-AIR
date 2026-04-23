@@ -12,6 +12,7 @@ import ReportHistory from "./pages/ReportHistory";
 import About from "./pages/About";
 import Marketplace from "./pages/Marketplace";
 import Analytics from "./pages/Analytics";
+import ReportView from "./pages/ReportView";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,6 +47,7 @@ const AuthenticatedApp = () => {
       <Route path="/about" element={<About />} />
       <Route path="/marketplace" element={<Marketplace />} />
       <Route path="/analytics" element={<Analytics />} />
+      <Route path="/report/:id" element={<ReportView />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
