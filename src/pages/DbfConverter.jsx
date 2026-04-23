@@ -1,38 +1,15 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
-import DbfUploader from '@/components/DbfUploader';
-import DbfFieldMapper from '@/components/DbfFieldMapper';
+import StreamingDbfUploader from '@/components/StreamingDbfUploader';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
-  const [uploading, setUploading] = useState(false);
-  const [parsing, setParsing] = useState(false);
-  const [parseResult, setParseResult] = useState(null);
-  const [error, setError] = useState(null);
+  const [importComplete, setImportComplete] = useState(null);
 
-  const handleFileSelect = async (file) => {
-    setUploading(true);
-    setError(null);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
-      setParsing(true);
-      const result = await base44.functions.invoke('parseDbf', { fileUrl: file_url });
-      
-      if (result.success) {
-        setParseResult(result);
-      } else {
-        setError(result.error || 'Failed to parse DBF');
-      }
-    } catch (err) {
-      setError(err.message || 'Upload or parse failed');
-    } finally {
-      setUploading(false);
-      setParsing(false);
-    }
+  const handleImportComplete = (result) => {
+    setImportComplete(result);
   };
 
   return (
@@ -52,85 +29,65 @@ export default function DbfConverter() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4 space-y-6">
-        {/* Upload Section */}
-        {!parseResult && (
-          <div className="bg-white rounded-xl border shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Import CPro Database</h2>
-            {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 text-red-700 text-sm">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <div>{error}</div>
-              </div>
-            )}
-            <DbfUploader 
-              onSelect={handleFileSelect} 
-              loading={uploading || parsing}
-            />
-            {(uploading || parsing) && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {uploading ? 'Uploading...' : 'Parsing DBF...'}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Streaming Uploader */}
+        <StreamingDbfUploader onComplete={handleImportComplete} />
 
         {/* Results Section */}
-        {parseResult && (
-          <>
-            <div className="bg-white rounded-xl border shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Schema Detected</h2>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setParseResult(null);
-                    setError(null);
-                  }}
-                >
-                  Import Another
-                </Button>
+        {importComplete && (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Import Summary</h2>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="text-2xl font-bold text-green-700">{importComplete.totalRecords}</div>
+                <div className="text-sm text-gray-600">Records Imported</div>
               </div>
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-700">{parseResult.recordCount}</div>
-                  <div className="text-xs text-gray-600">Records</div>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-700">{parseResult.fieldCount}</div>
-                  <div className="text-xs text-gray-600">Fields</div>
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Field Name</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Type</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Size</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parseResult.fields.map((field, i) => (
-                      <tr key={i} className="border-b hover:bg-gray-50">
-                        <td className="px-3 py-2 font-mono text-xs text-gray-900">{field.name}</td>
-                        <td className="px-3 py-2 text-gray-600">{field.type}</td>
-                        <td className="px-3 py-2 text-gray-600">{field.size}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-2xl font-bold text-blue-700">{importComplete.fields?.length || 0}</div>
+                <div className="text-sm text-gray-600">Fields Detected</div>
               </div>
             </div>
 
-            {/* Field Mapper */}
-            <DbfFieldMapper 
-              fields={parseResult.fields}
-              sampleRecords={parseResult.sampleRecords}
-            />
-          </>
+            {importComplete.fields && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Field Summary</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Field Name</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Type</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Size</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importComplete.fields.map((field, i) => (
+                        <tr key={i} className="border-b hover:bg-gray-50">
+                          <td className="px-3 py-2 font-mono text-xs text-gray-900">{field.name}</td>
+                          <td className="px-3 py-2 text-gray-600">{field.type}</td>
+                          <td className="px-3 py-2 text-gray-600">{field.size}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setImportComplete(null)}
+              >
+                Import Another File
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => navigate('/')}
+              >
+                Back to Home
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>

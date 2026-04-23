@@ -1,0 +1,70 @@
+{
+  "name": "CproContact",
+  "type": "object",
+  "properties": {
+    "fullName": {
+      "type": "string",
+      "description": "Contact full name from CPro"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "address": {
+      "type": "string",
+      "description": "Street address"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "type": "string",
+      "description": "State"
+    },
+    "zipCode": {
+      "type": "string",
+      "description": "Zip code"
+    },
+    "companyName": {
+      "type": "string",
+      "description": "Company name if applicable"
+    },
+    "accountNumber": {
+      "type": "string",
+      "description": "CPro account number"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or raw field data"
+    },
+    "migrationSource": {
+      "type": "string",
+      "enum": [
+        "dbf_cpro"
+      ],
+      "description": "Source system for this contact"
+    },
+    "migrationSessionId": {
+      "type": "string",
+      "description": "Session ID for batch import tracking"
+    },
+    "rawData": {
+      "type": "object",
+      "description": "All raw DBF fields stored as object"
+    },
+    "mappedToEquipment": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this contact has been mapped to Equipment records"
+    }
+  },
+  "required": [
+    "migrationSource",
+    "migrationSessionId"
+  ]
+}
