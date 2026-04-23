@@ -25,15 +25,21 @@ export default function LegacyDbMapper({ onMappingComplete }) {
 
     setLoading(true);
     try {
-      // Only analyze first 5MB to avoid memory issues
       const chunkSize = 5 * 1024 * 1024;
-      const chunk = await file.slice(0, chunkSize).arrayBuffer();
-      const uint8Array = new Uint8Array(chunk);
-      const binaryString = String.fromCharCode(...uint8Array);
-      const base64Chunk = btoa(binaryString);
+      const chunks = [];
+      
+      // Stream file in 5MB chunks
+      for (let offset = 0; offset < file.size; offset += chunkSize) {
+        const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+        const uint8Array = new Uint8Array(chunk);
+        const binaryString = String.fromCharCode(...uint8Array);
+        chunks.push(btoa(binaryString));
+      }
 
+      // Send all chunks to backend for analysis
       const response = await base44.functions.invoke('analyzeDbfFields', {
-        base64Data: base64Chunk,
+        chunks,
+        totalSize: file.size,
       });
 
       if (!response.data.success) {
@@ -42,7 +48,7 @@ export default function LegacyDbMapper({ onMappingComplete }) {
 
       setDetectedFields(response.data.fields || []);
       setSamples(response.data.samples || []);
-      setBase64Data(base64Chunk);
+      setBase64Data(chunks);
       setMapping({});
       toast({
         title: `Detected ${response.data.fields?.length || 0} fields`,
@@ -95,7 +101,7 @@ export default function LegacyDbMapper({ onMappingComplete }) {
     try {
       const sessionId = `session_${Date.now()}`;
       const response = await base44.functions.invoke('transformLegacyData', {
-        base64Data,
+        chunks: Array.isArray(base64Data) ? base64Data : [base64Data],
         mapping,
         sessionId,
       });

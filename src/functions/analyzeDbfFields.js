@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // deno-lint-ignore no-undef
-Deno.serve(async (req) => {
+const serve = Deno.serve;
+serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -9,16 +10,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { base64Data } = await req.json();
-    if (!base64Data) {
-      return Response.json({ error: 'base64Data required' }, { status: 400 });
+    const { chunks, totalSize } = await req.json();
+    if (!chunks || !Array.isArray(chunks)) {
+      return Response.json({ error: 'chunks array required' }, { status: 400 });
     }
 
-    // Decode base64 to binary
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    // Reconstruct full binary from chunks
+    const totalBytes = chunks.reduce((sum, chunk) => {
+      const binaryString = atob(chunk);
+      return sum + binaryString.length;
+    }, 0);
+    
+    const bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      const binaryString = atob(chunk);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[offset + i] = binaryString.charCodeAt(i);
+      }
+      offset += binaryString.length;
     }
 
     // Analyze binary structure
