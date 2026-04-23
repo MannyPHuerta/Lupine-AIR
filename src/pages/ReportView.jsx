@@ -75,7 +75,7 @@ export default function ReportView() {
       <div className="bg-blue-700 text-white shadow-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="px-4 py-3 flex items-center justify-center gap-2">
           <img
-            src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/d9798b5fd_Wolficon.png"
+            src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7bc9512a2_wolf_silhouette.png"
             className="w-8 h-8 rounded-full object-cover"
             alt="wolf"
           />
