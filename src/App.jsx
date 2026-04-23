@@ -15,7 +15,7 @@ import Analytics from "./pages/Analytics";
 import ReportView from "./pages/ReportView";
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -31,9 +31,22 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
       navigateToLogin();
       return null;
+    } else {
+      // Unknown/network error — show a retry screen instead of crashing
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-gray-50 p-6 text-center">
+          <p className="text-lg font-semibold text-gray-700">Unable to load app</p>
+          <p className="text-sm text-gray-500">{authError.message || "Please check your connection and try again."}</p>
+          <button
+            className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+            onClick={() => checkAppState()}
+          >
+            Retry
+          </button>
+        </div>
+      );
     }
   }
 
