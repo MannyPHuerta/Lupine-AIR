@@ -14,6 +14,7 @@ import About from "./pages/About";
 import Marketplace from "./pages/Marketplace";
 import Analytics from "./pages/Analytics";
 import ReportView from "./pages/ReportView";
+import DbfConverter from "./pages/DbfConverter";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
       <Route path="/about" element={<About />} />
       <Route path="/marketplace" element={<Marketplace />} />
       <Route path="/analytics" element={<Analytics />} />
+      <Route path="/converter" element={<DbfConverter />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
