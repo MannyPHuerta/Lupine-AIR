@@ -16,6 +16,8 @@ export default function LegacyDbMapper({ onMappingComplete }) {
   const [samples, setSamples] = useState([]);
   const [mapping, setMapping] = useState({});
   const [expandedLegacy, setExpandedLegacy] = useState(new Set());
+  const [base64Data, setBase64Data] = useState(null);
+  const [importing, setImporting] = useState(false);
   const { toast } = useToast();
 
   const handleFileSelect = async (file) => {
@@ -38,6 +40,7 @@ export default function LegacyDbMapper({ onMappingComplete }) {
 
       setDetectedFields(response.data.fields || []);
       setSamples(response.data.samples || []);
+      setBase64Data(base64Chunk);
       setMapping({});
       toast({
         title: `Detected ${response.data.fields?.length || 0} fields`,
@@ -77,7 +80,7 @@ export default function LegacyDbMapper({ onMappingComplete }) {
     }));
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (Object.keys(mapping).length === 0) {
       toast({
         title: 'Map at least one field',
@@ -86,11 +89,45 @@ export default function LegacyDbMapper({ onMappingComplete }) {
       return;
     }
 
-    if (onMappingComplete) {
-      onMappingComplete({
-        detectedFields,
+    setImporting(true);
+    try {
+      const sessionId = `session_${Date.now()}`;
+      const response = await base44.functions.invoke('transformLegacyData', {
+        base64Data,
         mapping,
+        sessionId,
       });
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Transform failed');
+      }
+
+      toast({
+        title: `✓ Imported ${response.data.insertedCount} records`,
+        className: 'bg-green-600 text-white',
+      });
+
+      if (onMappingComplete) {
+        onMappingComplete({
+          detectedFields,
+          mapping,
+          sessionId,
+          result: response.data,
+        });
+      }
+
+      // Reset UI
+      setDetectedFields([]);
+      setSamples([]);
+      setMapping({});
+      setBase64Data(null);
+    } catch (err) {
+      toast({
+        title: 'Import failed: ' + err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -203,9 +240,16 @@ export default function LegacyDbMapper({ onMappingComplete }) {
             <Button
               onClick={handleConfirm}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
-              disabled={Object.keys(mapping).length === 0}
+              disabled={Object.keys(mapping).length === 0 || importing}
             >
-              Confirm Mapping
+              {importing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                'Confirm & Import'
+              )}
             </Button>
           </div>
         </div>
