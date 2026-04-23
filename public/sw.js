@@ -1,35 +1,31 @@
-const CACHE_NAME = 'asset-wolf-v5';
-const urlsToCache = ['/', '/index.html'];
+const CACHE_NAME = "asset-wolf-v4";
 
-self.addEventListener('install', event => {
+self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(["/", "/index.html"]);
+    })
   );
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
     ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', event => {
-  // JS/CSS: network first, fallback to cache
-  if (event.request.url.match(/\.(js|css)$/)) {
-    event.respondWith(
-      fetch(event.request).then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return response;
-      }).catch(() => caches.match(event.request))
-    );
-    return;
-  }
-  // Everything else: cache first, fallback to network
+self.addEventListener("fetch", (event) => {
+  // Always go network-first, fall back to cache
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
