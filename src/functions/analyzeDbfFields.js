@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-/* deno-lint-ignore no-undef */
-Deno.serve(async (req) => {
+// deno-lint-ignore no-undef
+const serve = Deno.serve;
+serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -39,39 +40,18 @@ Deno.serve(async (req) => {
 
 function detectFieldBoundaries(bytes) {
   const fields = [];
-  let currentFieldStart = 0;
-  let nullSequence = 0;
-  const nullThreshold = 4; // 4+ consecutive nulls = field boundary
-
-  for (let i = 0; i < bytes.length; i++) {
-    if (bytes[i] === 0) {
-      nullSequence++;
-      if (nullSequence === nullThreshold && currentFieldStart < i - nullThreshold) {
-        // Field boundary detected
-        fields.push({
-          startOffset: currentFieldStart,
-          endOffset: i - nullThreshold,
-          size: i - nullThreshold - currentFieldStart,
-          content: extractText(bytes, currentFieldStart, i - nullThreshold),
-        });
-        currentFieldStart = i;
-        nullSequence = 0;
-      }
-    } else {
-      nullSequence = 0;
-    }
-  }
-
-  // Remaining data
-  if (currentFieldStart < bytes.length) {
+  const chunkSize = 256; // Split into 256-byte chunks for simplicity
+  
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const end = Math.min(i + chunkSize, bytes.length);
     fields.push({
-      startOffset: currentFieldStart,
-      endOffset: bytes.length,
-      size: bytes.length - currentFieldStart,
-      content: extractText(bytes, currentFieldStart, bytes.length),
+      startOffset: i,
+      endOffset: end,
+      size: end - i,
+      content: extractText(bytes, i, end),
     });
   }
-
+  
   return fields;
 }
 
