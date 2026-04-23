@@ -4,6 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
 import ReportForm from "./pages/ReportForm";
@@ -15,7 +16,7 @@ import Analytics from "./pages/Analytics";
 import ReportView from "./pages/ReportView";
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -31,7 +32,16 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     }
-    // For auth_required or unknown errors on a public app, just render normally
+    if (authError.type === 'auth_required') {
+      base44.auth.redirectToLogin(window.location.href);
+      return null;
+    }
+  }
+
+  // If no token at all, redirect to login
+  if (!isLoadingAuth && !isAuthenticated) {
+    base44.auth.redirectToLogin(window.location.href);
+    return null;
   }
 
   // Render the main app
