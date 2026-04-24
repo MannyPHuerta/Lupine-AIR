@@ -16,16 +16,27 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { event } = await req.json();
-    const { entity_name, entity_id, type } = event;
+    const body = await req.json();
+    console.log('sendNotifications received:', JSON.stringify(body, null, 2));
 
-    if (!entity_id || !entity_name || entity_name !== 'Report') {
-      return Response.json({ error: 'Invalid automation payload' }, { status: 400 });
+    // Handle automation event payload
+    let entity_id, event_type;
+    if (body.event) {
+      entity_id = body.event.entity_id;
+      event_type = body.event.type;
+    } else if (body.reportId) {
+      // Legacy payload format
+      entity_id = body.reportId;
+      event_type = 'manual';
+    }
+
+    if (!entity_id) {
+      return Response.json({ error: 'No report ID found' }, { status: 400 });
     }
 
     const report = await base44.asServiceRole.entities.Report.get(entity_id);
     if (!report) {
-      return Response.json({ error: 'Report not found' }, { status: 404 });
+      return Response.json({ error: `Report ${entity_id} not found` }, { status: 404 });
     }
 
     const staffPhones = await base44.asServiceRole.entities.StaffPhone.list();
@@ -34,16 +45,17 @@ Deno.serve(async (req) => {
       phoneMap[sp.email] = sp.phone;
     });
 
-    const reportLink = `${Deno.env.get('APP_URL') || 'https://assetwolf.rentalworld.com'}/report/${entity_id}`;
+    const reportLink = `https://assetwolf.rentalworld.com/report/${entity_id}`;
     let messages = [];
 
-    if (type === 'create' && report.action === 'Need Quote for Customer') {
+    if (event_type === 'create' && report.action === 'Need Quote for Customer') {
       // New quote request → notify staff
       const staffEmails = ['awolf@rentalworld.com', 'ealfaro@rentalworld.com', 'dfulcher@rentalworld.com', 'brucewolf@rentalworld.com', 'bwolf@rentalworld.com'];
       const subject = `New Quote Request: ${report.itemName}`;
       const emailBody = `A new quote request has been submitted:\n\nItem: ${report.itemName}\nType: ${report.itemType}\nModel: ${report.model}\n\nView report: ${reportLink}`;
 
       for (const email of staffEmails) {
+        console.log(`Sending email to ${email}`);
         await base44.integrations.Core.SendEmail({
           to: email,
           subject,
@@ -53,6 +65,7 @@ Deno.serve(async (req) => {
 
         const phone = phoneMap[email];
         if (phone) {
+          console.log(`Queueing SMS to ${phone}`);
           messages.push(
             twilioClient.messages.create({
               from: TWILIO_PHONE,
@@ -62,12 +75,13 @@ Deno.serve(async (req) => {
           );
         }
       }
-    } else if (type === 'update' && report.askingPrice) {
+    } else if ((event_type === 'update' || event_type === 'manual') && report.askingPrice) {
       // Price entered → notify original sender (if known)
       if (report.sentBy) {
         const subject = `Quote Ready: ${report.itemName}`;
         const emailBody = `The asking price for ${report.itemName} is: $${report.askingPrice}\n\nView report: ${reportLink}`;
 
+        console.log(`Sending email to ${report.sentBy}`);
         await base44.integrations.Core.SendEmail({
           to: report.sentBy,
           subject,
@@ -77,6 +91,7 @@ Deno.serve(async (req) => {
 
         const phone = phoneMap[report.sentBy];
         if (phone) {
+          console.log(`Queueing SMS to ${phone}`);
           messages.push(
             twilioClient.messages.create({
               from: TWILIO_PHONE,
@@ -84,12 +99,15 @@ Deno.serve(async (req) => {
               body: `Quote ready for ${report.itemName}: $${report.askingPrice}. View: ${reportLink}`
             })
           );
+        } else {
+          console.log(`No phone on file for ${report.sentBy}`);
         }
       }
     }
 
     await Promise.all(messages);
-    return Response.json({ success: true, type, smsCount: messages.length });
+    console.log(`Success: sent ${messages.length} SMS`);
+    return Response.json({ success: true, type: event_type, smsCount: messages.length });
   } catch (error) {
     console.error('sendNotifications error:', error);
     return Response.json({ error: error.message }, { status: 500 });
