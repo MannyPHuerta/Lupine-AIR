@@ -14,9 +14,14 @@ import SenderModal from "@/components/SenderModal";
 const ACTIONS = ["Sell", "Repair", "Discard/Part out", "Need Quote for Customer"];
 const BRANCHES = ["01 McAllen", "02 Weslaco", "03 Harlingen", "05 Brownsville", "06 Corpus", "98 Shop", "99 Warehouse"];
 const ITEM_TYPES = [
-  "Excavator", "Loader", "Trencher", "Grader", "Paving Equipment", "Compactor", "Crane",
-  "Forklift", "Scissor Lift", "Boom Lift", "Dump Truck", "Concrete Mixer", "Skid Steer",
-  "Bulldozer", "Backhoe", "Telehandler", "Generator", "Compressor", "Other"
+  "Air Compressor", "Backhoe", "Boom Lift", "Bulldozer", "Chair",
+  "Chipper/Shredder", "Compactor", "Concrete Grinder", "Concrete Mixer",
+  "Concrete Saw", "Dance Floor", "Dump Truck", "Excavator", "Floor Sander",
+  "Forklift", "Generator", "Grader", "Inflatable", "Light Tower", "Loader",
+  "Other", "Pallet Jack", "Paving Equipment", "Plate Compactor",
+  "Pressure Washer", "Sandblaster", "Scissor Lift", "Skid Steer", "Staging",
+  "Stump Grinder", "Table", "Telehandler", "Tent", "Tile Stripper", "Trailer",
+  "Trench Roller", "Trencher", "Water Pump", "Welder", "Zero Turn Mower"
 ];
 const STAFF_EMAILS = [
   "manny@rentalworld.com", "awolf@rentalworld.com", "brucewolf@rentalworld.com",
