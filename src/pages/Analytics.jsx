@@ -59,7 +59,10 @@ export default function Analytics() {
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["analytics-reports"],
-    queryFn: () => base44.entities.Report.list("-created_date", 500),
+    queryFn: async () => {
+      const allReports = await base44.entities.Report.list("-created_date", 500);
+      return allReports.filter(r => !r.isDeleted);
+    },
     enabled: authorized === true,
   });
 
