@@ -44,13 +44,23 @@ export default function StreamingDbfUploader({ onComplete }) {
          }
          const base64Chunk = btoa(binaryString);
 
-        const response = await base44.functions.invoke('streamParseDbf', {
-          chunk: base64Chunk,
-          chunkIndex: i,
-          totalChunks,
-          sessionId: sessionIdRef.current,
-          fields,
-        });
+        // Retry up to 3 times on failure (e.g. rate limit)
+        let response;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            response = await base44.functions.invoke('streamParseDbf', {
+              chunk: base64Chunk,
+              chunkIndex: i,
+              totalChunks,
+              sessionId: sessionIdRef.current,
+              fields,
+            });
+            if (response.data.success) break;
+          } catch {
+            if (attempt === 2) throw new Error(`Chunk ${i} failed after 3 attempts`);
+          }
+          await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
+        }
 
         if (!response.data.success) {
           throw new Error(`Chunk ${i} failed: ${response.data.error}`);
@@ -68,8 +78,8 @@ export default function StreamingDbfUploader({ onComplete }) {
           totalInserted,
         });
 
-        // Small delay to avoid overwhelming backend
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Delay between chunks to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
 
       setFinished(true);
