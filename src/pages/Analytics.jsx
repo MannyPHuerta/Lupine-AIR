@@ -64,6 +64,8 @@ export default function Analytics() {
       return allReports.filter(r => !r.isDeleted);
     },
     enabled: authorized === true,
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   if (authorized === null || isLoading) {
