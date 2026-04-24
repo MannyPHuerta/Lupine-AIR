@@ -1,8 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Pattern-based CPro extractor
-// Each customer block contains: CITY, ST % ZIP PHONE
-// We scan the chunk for that pattern and extract fields relative to it.
+// Anchor: ", ST % ZIPCODE PHONE" pattern in each customer block
+// Structure before anchor: ... [acct#] [name] [name2] [name3] [address] [CITY, ST %]
 
 function isPrintable(b) { return b >= 0x20 && b <= 0x7E; }
 
@@ -14,55 +14,37 @@ function bytesToString(bytes, start, end) {
   return s.replace(/\x00+/g, ' ').trim();
 }
 
-// Find all occurrences of an ASCII pattern in bytes
-function findAll(bytes, pattern) {
-  const hits = [];
-  const p = pattern.split('').map(c => c.charCodeAt(0));
-  outer: for (let i = 0; i <= bytes.length - p.length; i++) {
-    for (let j = 0; j < p.length; j++) {
-      if (bytes[i + j] !== p[j]) continue outer;
-    }
-    hits.push(i);
-  }
-  return hits;
-}
+// Extract consecutive printable text runs backwards from a position.
+// Returns array of {text, start, end} runs separated by non-printable gaps.
+function extractRunsBackward(bytes, from, maxBytesToScan) {
+  const runs = [];
+  let pos = from - 1;
+  const limit = Math.max(0, from - maxBytesToScan);
 
-// Extract a clean printable run backwards from pos (to find name/address before the city line)
-function extractRunBackward(bytes, from, maxLen) {
-  // Walk back through printable bytes to find a good text run
-  let end = from;
-  // Skip non-printable bytes immediately before
-  while (end > 0 && !isPrintable(bytes[end - 1])) end--;
-  let start = end;
-  let runLen = 0;
-  while (start > 0 && runLen < maxLen) {
-    const b = bytes[start - 1];
-    if (isPrintable(b)) {
-      start--;
-      runLen++;
-    } else {
-      break;
+  while (pos >= limit) {
+    // Skip non-printable gap
+    while (pos >= limit && !isPrintable(bytes[pos])) pos--;
+    if (pos < limit) break;
+
+    // Collect printable run
+    let runEnd = pos + 1;
+    while (pos >= limit && isPrintable(bytes[pos])) pos--;
+    let runStart = pos + 1;
+
+    const text = bytesToString(bytes, runStart, runEnd);
+    if (text.length >= 2) {
+      runs.unshift({ text, start: runStart, end: runEnd });
     }
   }
-  return bytesToString(bytes, start, end);
+  return runs;
 }
 
-// Given position of "CITY, ST %" pattern, extract a clean name going backwards
-// Structure before city line: ... [account#] [name variants] [address] [CITY, ST %]
-// We look for a text run 20-80 bytes before the city marker
-function extractFieldBefore(bytes, cityPos, skipBack, fieldLen) {
-  const end = cityPos - skipBack;
-  const start = Math.max(0, end - fieldLen);
-  return bytesToString(bytes, start, end);
-}
+function parseCityBlock(bytes, cityStart) {
+  // Read up to 60 bytes from cityStart to parse "CITY, ST % ZIP PHONE"
+  const block = bytesToString(bytes, cityStart, cityStart + 60);
 
-function parseCityBlock(bytes, cityPos) {
-  // From cityPos, read forward to get "CITY, ST % ZIP PHONE"
-  // The % is a separator, after it comes: ZIP (5 digits) + space + phone
-  const block = bytesToString(bytes, cityPos, cityPos + 50);
-
-  // Match: CITY, ST % ZIP PHONE  or  CITY, ST ZIP PHONE
-  const m = block.match(/^([A-Z][^,]+),\s+([A-Z]{2})\s+%?\s*(\d{5}(?:-\d{4})?)\s+([\d\(\)\-\.\s]{7,20})/);
+  // Pattern: CITY, ST % ZIP PHONE  (% is a separator byte in CPro)
+  const m = block.match(/^([A-Z][A-Z\s\.]+),\s+([A-Z]{2})\s+%?\s*(\d{5}(?:-\d{4})?)\s+([\d\(\)\-\.\s]{7,20})/);
   if (m) {
     return {
       city: m[1].trim(),
@@ -71,12 +53,11 @@ function parseCityBlock(bytes, cityPos) {
       phone: m[4].replace(/[^\d\-\(\)]/g, '').trim(),
     };
   }
-  // Fallback: try without phone
-  const m2 = block.match(/^([A-Z][^,]+),\s+([A-Z]{2})\s+%?\s*(\d{5})/);
+  // Fallback: no phone in this block
+  const m2 = block.match(/^([A-Z][A-Z\s\.]+),\s+([A-Z]{2})\s+%?\s*(\d{5})/);
   if (m2) {
-    // Try to find phone further along
     const rest = block.slice(m2[0].length);
-    const pm = rest.match(/\d[\d\-\(\)\s]{6,}/);
+    const pm = rest.match(/\d[\d\-\(\)]{6,}/);
     return {
       city: m2[1].trim(),
       state: m2[2].trim(),
@@ -87,31 +68,46 @@ function parseCityBlock(bytes, cityPos) {
   return null;
 }
 
+// Clean a name: remove leading/trailing punctuation artifacts
+function cleanName(s) {
+  return s
+    .replace(/^[\s'#+\*\|!\.\,\+]+/, '')  // leading junk
+    .replace(/[\s!#\*\|]+$/, '')           // trailing junk
+    .trim();
+}
+
+// Clean an address: remove leading punctuation artifacts
+function cleanAddress(s) {
+  return s
+    .replace(/^[\s'#+\*\|\.\,]+/, '')
+    .trim();
+}
+
+// A string looks like a person/company name
 function looksLikeName(s) {
   if (!s || s.length < 3) return false;
   const alpha = (s.match(/[A-Za-z]/g) || []).length;
   if (alpha < 3) return false;
-  const bad = (s.match(/[^A-Za-z\s\-',\.\/]/g) || []).length;
-  if (bad / s.length > 0.3) return false;
   // Must start with a letter
-  if (!/^[A-Za-z]/.test(s.trim())) return false;
+  if (!/^[A-Za-z]/.test(s)) return false;
+  // Reject if too many non-alpha-space chars (garbage)
+  const bad = (s.match(/[^A-Za-z\s\-',\.\/\&]/g) || []).length;
+  if (bad / s.length > 0.25) return false;
   return true;
 }
 
-function cleanName(s) {
-  // Remove leading punctuation chars like ', #, +
-  return s.replace(/^[\s'#+\*\|]+/, '').trim();
+// A string looks like a street address
+function looksLikeAddress(s) {
+  // Must contain a digit (street number) and some alpha
+  return /\d/.test(s) && /[A-Za-z]{3}/.test(s) && s.length >= 5;
 }
 
-function extractAccountNumber(bytes, cityPos) {
-  // Account numbers look like 8-digit zero-padded strings e.g. "00028291"
-  // They appear ~140-280 bytes before the city line
-  const searchStart = Math.max(0, cityPos - 300);
-  const searchEnd = cityPos - 100;
+function extractAccountNumber(bytes, searchEnd) {
+  // Look for 8-digit zero-padded account numbers in the ~300 bytes before city
+  const searchStart = Math.max(0, searchEnd - 350);
   const block = bytesToString(bytes, searchStart, searchEnd);
-  const m = block.match(/0{2,}\d{4,8}/g);
-  if (m && m.length > 0) return m[m.length - 1]; // take the last/closest one
-  return '';
+  const matches = block.match(/0{2,}\d{4,8}/g);
+  return matches ? matches[matches.length - 1] : '';
 }
 
 Deno.serve(async (req) => {
@@ -130,38 +126,19 @@ Deno.serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i) & 0xff;
     }
 
-    // Find all "CITY, ST %" anchor patterns in this chunk
-    // We look for ", TX %" as the most common pattern (and ", TX " followed by 5 digits)
-    // More broadly: look for ", [A-Z][A-Z] %" or ", [A-Z][A-Z] \d\d\d\d\d"
-    const statePatterns = [
-      ', TX %', ', TX\x00%', 
-    ];
-
+    // Find all ", ST %" anchors: comma + space + 2 uppercase letters + space + %
     const cityPositions = new Set();
 
-    for (const pat of statePatterns) {
-      for (const pos of findAll(bytes, pat)) {
-        // Walk back to find start of city name (up to 40 bytes)
-        let cityStart = pos;
-        while (cityStart > 0 && isPrintable(bytes[cityStart - 1]) && (pos - cityStart) < 40) {
-          cityStart--;
-        }
-        cityPositions.add(cityStart);
-      }
-    }
-
-    // Also scan for other state patterns: ", [A-Z][A-Z] %" 
-    // by looking for comma + space + 2 uppercase + space + %
     for (let i = 0; i < bytes.length - 6; i++) {
       if (
-        bytes[i] === 0x2C && // ','
-        bytes[i+1] === 0x20 && // ' '
-        bytes[i+2] >= 0x41 && bytes[i+2] <= 0x5A && // uppercase
-        bytes[i+3] >= 0x41 && bytes[i+3] <= 0x5A && // uppercase
-        bytes[i+4] === 0x20 && // ' '
-        bytes[i+5] === 0x25   // '%'
+        bytes[i] === 0x2C &&           // ','
+        bytes[i+1] === 0x20 &&         // ' '
+        bytes[i+2] >= 0x41 && bytes[i+2] <= 0x5A && // A-Z
+        bytes[i+3] >= 0x41 && bytes[i+3] <= 0x5A && // A-Z
+        bytes[i+4] === 0x20 &&         // ' '
+        (bytes[i+5] === 0x25 || (bytes[i+5] >= 0x30 && bytes[i+5] <= 0x39)) // '%' or digit
       ) {
-        // Walk back to find city start
+        // Walk back to find city name start (up to 40 bytes)
         let cityStart = i;
         while (cityStart > 0 && isPrintable(bytes[cityStart - 1]) && (i - cityStart) < 40) {
           cityStart--;
@@ -179,34 +156,60 @@ Deno.serve(async (req) => {
 
       const parsed = parseCityBlock(bytes, cityStart);
       if (!parsed) continue;
+      // Only accept valid US states (2 uppercase letters, sanity check)
+      if (!/^[A-Z]{2}$/.test(parsed.state)) continue;
 
-      // Extract address: text run immediately before city (10-30 bytes back)
-      // There are usually non-printable bytes separating fields
-      let addrEnd = cityStart;
-      while (addrEnd > 0 && !isPrintable(bytes[addrEnd - 1])) addrEnd--;
-      let addrStart = addrEnd;
-      while (addrStart > 0 && isPrintable(bytes[addrStart - 1]) && (addrEnd - addrStart) < 35) {
-        addrStart--;
+      // Extract runs backward from cityStart to find address and name
+      const runs = extractRunsBackward(bytes, cityStart, 200);
+
+      // The run immediately before city = address
+      // The run before that = name (one of possibly 3 name copies)
+      // Strategy: find the last run that looks like an address,
+      // then take the run before it as the name.
+
+      let address = '';
+      let fullName = '';
+
+      // Work backwards through runs
+      // runs are in order [oldest ... newest] (newest = closest to cityStart)
+      let addressIdx = -1;
+      for (let ri = runs.length - 1; ri >= 0; ri--) {
+        if (looksLikeAddress(runs[ri].text)) {
+          addressIdx = ri;
+          break;
+        }
       }
-      const rawAddress = bytesToString(bytes, addrStart, addrEnd);
 
-      // Extract name: text run before address (skip non-printable gap)
-      let nameEnd = addrStart;
-      while (nameEnd > 0 && !isPrintable(bytes[nameEnd - 1])) nameEnd--;
-      let nameStart = nameEnd;
-      while (nameStart > 0 && isPrintable(bytes[nameStart - 1]) && (nameEnd - nameStart) < 35) {
-        nameStart--;
+      if (addressIdx >= 0) {
+        address = cleanAddress(runs[addressIdx].text);
+        // Name is one of the runs before the address
+        // There are 3 name copies; take the cleanest one (prefer no leading punct)
+        for (let ri = addressIdx - 1; ri >= Math.max(0, addressIdx - 4); ri--) {
+          const candidate = cleanName(runs[ri].text);
+          if (looksLikeName(candidate) && candidate.length <= 40) {
+            fullName = candidate;
+            // Prefer the version without prefix punctuation in the raw text
+            if (!/^[\s'#+]/.test(runs[ri].text)) break;
+          }
+        }
+      } else {
+        // No address found — try to at least get a name
+        if (runs.length >= 1) {
+          const candidate = cleanName(runs[runs.length - 1].text);
+          if (looksLikeName(candidate)) fullName = candidate;
+        }
       }
-      const rawName = cleanName(bytesToString(bytes, nameStart, nameEnd));
 
-      if (!looksLikeName(rawName)) continue;
+      if (!looksLikeName(fullName)) continue;
+      // Reject names that look like they contain address data
+      if (looksLikeAddress(fullName) && /^\d/.test(fullName)) continue;
 
       const accountNumber = extractAccountNumber(bytes, cityStart);
 
       contacts.push({
-        fullName: rawName,
+        fullName,
         phone: parsed.phone,
-        address: rawAddress,
+        address,
         city: parsed.city,
         state: parsed.state,
         zipCode: parsed.zipCode,
