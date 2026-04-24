@@ -62,6 +62,7 @@ function extractRecord(buffer, fields, startOffset, recordLength) {
   return record;
 }
 
+// deno-lint-ignore no-undef
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);

@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
 function detectFieldBoundaries(bytes) {
   const fields = [];
-  const chunkSize = 256; // Split into 256-byte chunks for simplicity
+  const chunkSize = 256;
   
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const end = Math.min(i + chunkSize, bytes.length);

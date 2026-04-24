@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     // Transform each field into a record
     for (const field of fields) {
       const content = extractText(bytes, field.startOffset, field.endOffset).trim();
-      if (!content) continue; // Skip empty fields
+      if (!content) continue;
 
       const record = {};
       for (const [legacyOffset, awField] of Object.entries(mapping)) {
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       success: true,
       totalRecords: records.length,
       insertedCount: inserted.length,
-      records: inserted.slice(0, 5), // Return sample of first 5
+      records: inserted.slice(0, 5),
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
