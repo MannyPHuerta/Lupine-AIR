@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       phoneMap[sp.email] = sp.phone;
     });
 
-    const reportLink = `https://assetwolf.rentalworld.com/report/${entity_id}`;
+    const reportLink = `https://track-wolf-now.base44.app/report/${entity_id}`;
     let messages = [];
 
     if (event_type === 'create' && report.action === 'Need Quote for Customer') {
