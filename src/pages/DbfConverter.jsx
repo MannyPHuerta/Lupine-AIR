@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import StreamingDbfUploader from '@/components/StreamingDbfUploader';
 import TpsContactExtractor from '@/components/TpsContactExtractor';
 import RecordProber from '@/components/RecordProber';
+import CproRecordExtractor from '@/components/CproRecordExtractor';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
@@ -59,6 +60,12 @@ export default function DbfConverter() {
           >
             Record Prober
           </button>
+          <button
+            onClick={() => setActiveTab('extract')}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'extract' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            CPro Extractor
+          </button>
         </div>
 
         {activeTab === 'tps' ? (
@@ -69,11 +76,17 @@ export default function DbfConverter() {
           </div>
         ) : activeTab === 'dbf' ? (
           <StreamingDbfUploader onComplete={handleImportComplete} />
-        ) : (
+        ) : activeTab === 'probe' ? (
           <div className="bg-white rounded-xl border shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">Record Layout Prober</h2>
             <p className="text-sm text-gray-500 mb-4">Upload the binary FILE, search for a known name, and see the exact byte offsets of every field in that record.</p>
             <RecordProber />
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">CPro Record Extractor</h2>
+            <p className="text-sm text-gray-500 mb-4">Extracts contacts using the mapped 552-byte record layout (name, phone, address, city/state/zip, account#).</p>
+            <CproRecordExtractor />
           </div>
         )}
 
