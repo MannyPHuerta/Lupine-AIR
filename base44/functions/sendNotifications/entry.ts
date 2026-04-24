@@ -57,22 +57,22 @@ Deno.serve(async (req) => {
     if (event_type === 'create' && report.action === 'Need Quote for Customer') {
       // New quote request → send via Render
       console.log(`Sending quote request notification to ${allRecipients.join(', ')}`);
+      const formData = new FormData();
+      formData.append("itemName", report.itemName || "");
+      formData.append("itemType", report.itemType || "");
+      formData.append("model", report.model || "");
+      formData.append("serialNumber", report.serialNumber || "");
+      formData.append("action", report.action || "");
+      formData.append("branch", report.branch || "");
+      formData.append("comments", report.comments || "");
+      formData.append("sendTo", allRecipients.join(","));
+      formData.append("sentBy", report.sentBy || "Asset Wolf");
+      formData.append("photoUrls", (report.photoPaths || []).join(","));
+      formData.append("reportLink", reportLink);
+
       await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          itemName: report.itemName,
-          itemType: report.itemType,
-          model: report.model,
-          serialNumber: report.serialNumber,
-          action: report.action,
-          branch: report.branch,
-          comments: report.comments,
-          sendTo: allRecipients.join(","),
-          sentBy: report.sentBy || "Asset Wolf",
-          photoUrls: (report.photoPaths || []).join(","),
-          reportLink
-        })
+        body: formData
       });
 
       // Send SMS to staff with phone on file
@@ -92,23 +92,23 @@ Deno.serve(async (req) => {
     } else if ((event_type === 'update' || event_type === 'manual') && report.askingPrice) {
       // Price entered → send via Render
       console.log(`Sending quote ready notification to ${allRecipients.join(', ')}`);
+      const formData = new FormData();
+      formData.append("itemName", report.itemName || "");
+      formData.append("itemType", report.itemType || "");
+      formData.append("model", report.model || "");
+      formData.append("serialNumber", report.serialNumber || "");
+      formData.append("action", report.action || "");
+      formData.append("branch", report.branch || "");
+      formData.append("comments", report.comments || "");
+      formData.append("askingPrice", report.askingPrice || "");
+      formData.append("sendTo", allRecipients.join(","));
+      formData.append("sentBy", report.sentBy || "Asset Wolf");
+      formData.append("photoUrls", (report.photoPaths || []).join(","));
+      formData.append("reportLink", reportLink);
+
       await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          itemName: report.itemName,
-          itemType: report.itemType,
-          model: report.model,
-          serialNumber: report.serialNumber,
-          action: report.action,
-          branch: report.branch,
-          comments: report.comments,
-          askingPrice: report.askingPrice,
-          sendTo: allRecipients.join(","),
-          sentBy: report.sentBy || "Asset Wolf",
-          photoUrls: (report.photoPaths || []).join(","),
-          reportLink
-        })
+        body: formData
       });
 
       // Send SMS to staff with phone on file
