@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Search, Trash2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, CheckCircle2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -33,6 +33,32 @@ export default function ContactReview() {
     toast({ title: 'Contact removed' });
     refetch();
     setDeletingId(null);
+  };
+
+  const handleExportCsv = () => {
+    const headers = ['Full Name', 'Phone', 'Email', 'Address', 'City', 'State', 'Zip Code', 'Company', 'Account Number', 'Notes'];
+    const rows = contacts.map(c => [
+      c.fullName || '',
+      c.phone || '',
+      c.email || '',
+      c.address || '',
+      c.city || '',
+      c.state || '',
+      c.zipCode || '',
+      c.companyName || '',
+      c.accountNumber || '',
+      c.notes || '',
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cpro_contacts_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `✓ Exported ${contacts.length} contacts as CSV` });
   };
 
   const handleDeleteAll = async () => {
@@ -85,6 +111,10 @@ export default function ContactReview() {
 
         {/* Search + actions */}
         <div className="flex gap-2">
+          <Button className="bg-green-600 hover:bg-green-700 gap-1" onClick={handleExportCsv} disabled={contacts.length === 0}>
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <Input
