@@ -55,23 +55,28 @@ Deno.serve(async (req) => {
     }
 
     if (event_type === 'create' && report.action === 'Need Quote for Customer') {
-      // New quote request → notify recipients
-      const subject = `New Quote Request: ${report.itemName}`;
-      const emailBody = `A new quote request has been submitted:\n\nItem: ${report.itemName}\nType: ${report.itemType}\nModel: ${report.model}\n\nView report: ${reportLink}`;
+      // New quote request → send via Render
+      console.log(`Sending quote request notification to ${allRecipients.join(', ')}`);
+      await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemName: report.itemName,
+          itemType: report.itemType,
+          model: report.model,
+          serialNumber: report.serialNumber,
+          action: report.action,
+          branch: report.branch,
+          comments: report.comments,
+          sendTo: allRecipients.join(","),
+          sentBy: report.sentBy || "Asset Wolf",
+          photoUrls: (report.photoPaths || []).join(","),
+          reportLink
+        })
+      });
 
+      // Send SMS to staff with phone on file
       for (const email of allRecipients) {
-        try {
-          console.log(`Sending email to ${email}`);
-          await base44.integrations.Core.SendEmail({
-            to: email,
-            subject,
-            body: emailBody,
-            from_name: 'Asset Wolf'
-          });
-        } catch (emailErr) {
-          console.log(`Failed to send email to ${email}: ${emailErr.message}`);
-        }
-
         const phone = phoneMap[email];
         if (phone) {
           console.log(`Queueing SMS to ${phone}`);
@@ -85,23 +90,29 @@ Deno.serve(async (req) => {
         }
       }
     } else if ((event_type === 'update' || event_type === 'manual') && report.askingPrice) {
-      // Price entered → notify all recipients
-      const subject = `Quote Ready: ${report.itemName}`;
-      const emailBody = `The asking price for ${report.itemName} is: $${report.askingPrice}\n\nView report: ${reportLink}`;
+      // Price entered → send via Render
+      console.log(`Sending quote ready notification to ${allRecipients.join(', ')}`);
+      await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemName: report.itemName,
+          itemType: report.itemType,
+          model: report.model,
+          serialNumber: report.serialNumber,
+          action: report.action,
+          branch: report.branch,
+          comments: report.comments,
+          askingPrice: report.askingPrice,
+          sendTo: allRecipients.join(","),
+          sentBy: report.sentBy || "Asset Wolf",
+          photoUrls: (report.photoPaths || []).join(","),
+          reportLink
+        })
+      });
 
+      // Send SMS to staff with phone on file
       for (const email of allRecipients) {
-        try {
-          console.log(`Sending email to ${email}`);
-          await base44.integrations.Core.SendEmail({
-            to: email,
-            subject,
-            body: emailBody,
-            from_name: 'Asset Wolf'
-          });
-        } catch (emailErr) {
-          console.log(`Failed to send email to ${email}: ${emailErr.message}`);
-        }
-
         const phone = phoneMap[email];
         if (phone) {
           console.log(`Queueing SMS to ${phone}`);
