@@ -1,39 +1,34 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// CPro binary file record layout (552 bytes per record, 532-byte header)
+// CPro binary file record layout (552 bytes per record, 532-byte file header)
 const RECORD_SIZE = 552;
-const HEADER_OFFSET = 532;
+const FILE_HEADER = 532;
 
-// Field offsets within each record
-const FIELDS = {
-  phone:     { offset: 9,   length: 19 },  // first phone slot (7-digit, may have garbage prefix)
-  accountNo: { offset: 294, length: 9  },
-  fullName:  { offset: 306, length: 30 },
-  address:   { offset: 362, length: 27 },
-  cityStateZip: { offset: 389, length: 44 },
-};
+// Field offsets within each 552-byte record (confirmed via Record Prober)
+const F_ACCOUNT  = { off: 294, len: 9  };
+const F_NAME     = { off: 306, len: 30 };
+const F_ADDRESS  = { off: 362, len: 27 };
+const F_CITYZIP  = { off: 389, len: 44 };
+const F_PHONE    = { off: 9,   len: 19 };
 
-function isPrintable(b) {
-  return b >= 0x20 && b <= 0x7E;
-}
+function isPrintable(b) { return b >= 0x20 && b <= 0x7E; }
 
-function extractText(bytes, offset, length) {
-  const end = Math.min(offset + length, bytes.length);
+function extractText(bytes, baseOffset, off, len) {
+  const start = baseOffset + off;
+  const end = Math.min(start + len, bytes.length);
   let s = '';
-  for (let i = offset; i < end; i++) {
-    s += isPrintable(bytes[i]) ? String.fromCharCode(bytes[i]) : ' ';
+  for (let i = start; i < end; i++) {
+    s += isPrintable(bytes[i]) ? String.fromCharCode(bytes[i]) : '\x00';
   }
-  return s.trim();
+  // Replace null clusters with spaces, then trim
+  return s.replace(/\x00+/g, ' ').trim();
 }
 
-// Clean phone: strip leading garbage chars, keep digits and dashes
 function cleanPhone(raw) {
-  // Find first digit
-  const match = raw.match(/\d[\d\-]{6,}/);
-  return match ? match[0].trim() : '';
+  const m = raw.match(/\d[\d\-]{6,}/);
+  return m ? m[0].trim() : '';
 }
 
-// Split "BROWNSVILLE, TX 78526 504-2662" into parts
 function parseCityStateZip(raw) {
   // Pattern: CITY, ST ZIP[ PHONE]
   const m = raw.match(/^([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)\s*([\d\-]+)?/);
@@ -45,21 +40,29 @@ function parseCityStateZip(raw) {
       phoneInField: m[4] ? m[4].trim() : '',
     };
   }
-  return { city: raw, state: '', zipCode: '', phoneInField: '' };
+  return { city: '', state: '', zipCode: '', phoneInField: '' };
+}
+
+// A "real" contact record has a name that looks like a person or company
+// (at least 3 alpha chars, not all digits, not mostly garbage)
+function looksLikeName(s) {
+  if (!s || s.length < 3) return false;
+  const alphaCount = (s.match(/[A-Za-z]/g) || []).length;
+  if (alphaCount < 3) return false;
+  // Reject if more than 40% non-alpha-space chars (garbage/binary bleed)
+  const nonAlphaSpace = (s.match(/[^A-Za-z\s\-',\.]/g) || []).length;
+  if (nonAlphaSpace / s.length > 0.4) return false;
+  return true;
 }
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { chunk, chunkIndex, totalChunks, sessionId } = await req.json();
-    if (!chunk) {
-      return Response.json({ error: 'chunk required' }, { status: 400 });
-    }
+    if (!chunk) return Response.json({ error: 'chunk required' }, { status: 400 });
 
     // Decode base64
     const binaryString = atob(chunk);
@@ -68,84 +71,66 @@ Deno.serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i) & 0xff;
     }
 
-    // For chunk 0, skip the header; subsequent chunks start at 0 but we need to
-    // account for the fact that the first chunk already consumed the header.
-    // We track a "file offset" to know where this chunk starts in the file.
-    // chunkIndex * CHUNK_SIZE gives the file byte position of this chunk's start.
-    // The caller passes chunkIndex so we can compute the file offset.
     const CHUNK_SIZE = 2 * 1024 * 1024;
+
+    // fileOffset = byte position in the original file where this chunk starts
     const fileOffset = chunkIndex * CHUNK_SIZE;
 
-    // Determine where in this chunk the first record starts
-    let startInChunk;
-    if (fileOffset === 0) {
-      // First chunk: skip the 532-byte header
-      startInChunk = HEADER_OFFSET;
+    // Find the first record boundary in this chunk.
+    // Record N starts at: FILE_HEADER + N * RECORD_SIZE
+    // We need the smallest N such that FILE_HEADER + N*RECORD_SIZE >= fileOffset
+    // i.e. the first record that starts AT OR AFTER the beginning of this chunk.
+    let firstRecordFilePos;
+    if (fileOffset <= FILE_HEADER) {
+      // We're still in or at the header
+      firstRecordFilePos = FILE_HEADER;
     } else {
-      // Subsequent chunks: find the offset into the record grid
-      const bytesAfterHeader = fileOffset - HEADER_OFFSET;
-      const remainder = bytesAfterHeader % RECORD_SIZE;
-      startInChunk = remainder === 0 ? 0 : RECORD_SIZE - remainder;
+      const recordsBeforeChunk = Math.ceil((fileOffset - FILE_HEADER) / RECORD_SIZE);
+      firstRecordFilePos = FILE_HEADER + recordsBeforeChunk * RECORD_SIZE;
     }
 
+    // Offset of that record within this chunk's byte array
+    let pos = firstRecordFilePos - fileOffset;
+
     const contacts = [];
-    let pos = startInChunk;
 
     while (pos + RECORD_SIZE <= bytes.length) {
-      const rawName = extractText(bytes, pos + FIELDS.fullName.offset, FIELDS.fullName.length);
-      // Skip empty or non-name records
-      if (!rawName || rawName.length < 2) {
-        pos += RECORD_SIZE;
-        continue;
+      const rawName    = extractText(bytes, pos, F_NAME.off,    F_NAME.len);
+      const rawAccount = extractText(bytes, pos, F_ACCOUNT.off, F_ACCOUNT.len);
+      const rawAddress = extractText(bytes, pos, F_ADDRESS.off, F_ADDRESS.len);
+      const rawCityZip = extractText(bytes, pos, F_CITYZIP.off, F_CITYZIP.len);
+      const rawPhone   = extractText(bytes, pos, F_PHONE.off,   F_PHONE.len);
+
+      if (looksLikeName(rawName)) {
+        const phone = cleanPhone(rawPhone);
+        const accountNumber = rawAccount.replace(/\D/g, '').trim();
+        const { city, state, zipCode, phoneInField } = parseCityStateZip(rawCityZip);
+        const finalPhone = phone || phoneInField;
+
+        contacts.push({
+          fullName: rawName,
+          phone: finalPhone,
+          address: rawAddress,
+          city,
+          state,
+          zipCode,
+          accountNumber,
+          migrationSource: 'dbf_cpro',
+          migrationSessionId: sessionId,
+          notes: rawCityZip,
+        });
       }
-      // Skip if name looks like an account index (all digits)
-      if (/^\d+$/.test(rawName.replace(/\s/g, ''))) {
-        pos += RECORD_SIZE;
-        continue;
-      }
-
-      const rawPhone = extractText(bytes, pos + FIELDS.phone.offset, FIELDS.phone.length);
-      const rawAccount = extractText(bytes, pos + FIELDS.accountNo.offset, FIELDS.accountNo.length);
-      const rawAddress = extractText(bytes, pos + FIELDS.address.offset, FIELDS.address.length);
-      const rawCityStateZip = extractText(bytes, pos + FIELDS.cityStateZip.offset, FIELDS.cityStateZip.length);
-
-      const phone = cleanPhone(rawPhone);
-      const accountNumber = rawAccount.replace(/\D/g, '').trim();
-      const { city, state, zipCode, phoneInField } = parseCityStateZip(rawCityStateZip);
-
-      // Use phone from city field if primary phone slot is empty
-      const finalPhone = phone || phoneInField;
-
-      contacts.push({
-        fullName: rawName,
-        phone: finalPhone,
-        address: rawAddress,
-        city,
-        state,
-        zipCode,
-        accountNumber,
-        migrationSource: 'dbf_cpro',
-        migrationSessionId: sessionId,
-        notes: `raw: ${rawCityStateZip}`,
-      });
 
       pos += RECORD_SIZE;
     }
 
-    // Bulk insert
     let insertedCount = 0;
     if (contacts.length > 0) {
       await base44.asServiceRole.entities.CproContact.bulkCreate(contacts);
       insertedCount = contacts.length;
     }
 
-    return Response.json({
-      success: true,
-      chunkIndex,
-      recordsFound: contacts.length,
-      insertedCount,
-      bytesProcessed: bytes.length,
-    });
+    return Response.json({ success: true, chunkIndex, recordsFound: contacts.length, insertedCount });
 
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
