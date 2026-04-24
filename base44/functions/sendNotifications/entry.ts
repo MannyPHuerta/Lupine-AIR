@@ -48,20 +48,29 @@ Deno.serve(async (req) => {
     const reportLink = `https://track-wolf-now.base44.app/report/${entity_id}`;
     let messages = [];
 
+    // Send to all recipients in sendToEmails and customEmail (user-selected)
+    const allRecipients = [...(report.sendToEmails || [])];
+    if (report.customEmail && !allRecipients.includes(report.customEmail)) {
+      allRecipients.push(report.customEmail);
+    }
+
     if (event_type === 'create' && report.action === 'Need Quote for Customer') {
-      // New quote request → notify staff
-      const staffEmails = ['awolf@rentalworld.com', 'ealfaro@rentalworld.com', 'dfulcher@rentalworld.com', 'brucewolf@rentalworld.com', 'bwolf@rentalworld.com'];
+      // New quote request → notify recipients
       const subject = `New Quote Request: ${report.itemName}`;
       const emailBody = `A new quote request has been submitted:\n\nItem: ${report.itemName}\nType: ${report.itemType}\nModel: ${report.model}\n\nView report: ${reportLink}`;
 
-      for (const email of staffEmails) {
-        console.log(`Sending email to ${email}`);
-        await base44.integrations.Core.SendEmail({
-          to: email,
-          subject,
-          body: emailBody,
-          from_name: 'Asset Wolf'
-        });
+      for (const email of allRecipients) {
+        try {
+          console.log(`Sending email to ${email}`);
+          await base44.integrations.Core.SendEmail({
+            to: email,
+            subject,
+            body: emailBody,
+            from_name: 'Asset Wolf'
+          });
+        } catch (emailErr) {
+          console.log(`Failed to send email to ${email}: ${emailErr.message}`);
+        }
 
         const phone = phoneMap[email];
         if (phone) {
@@ -76,20 +85,24 @@ Deno.serve(async (req) => {
         }
       }
     } else if ((event_type === 'update' || event_type === 'manual') && report.askingPrice) {
-      // Price entered → notify original sender (if known)
-      if (report.sentBy) {
-        const subject = `Quote Ready: ${report.itemName}`;
-        const emailBody = `The asking price for ${report.itemName} is: $${report.askingPrice}\n\nView report: ${reportLink}`;
+      // Price entered → notify all recipients
+      const subject = `Quote Ready: ${report.itemName}`;
+      const emailBody = `The asking price for ${report.itemName} is: $${report.askingPrice}\n\nView report: ${reportLink}`;
 
-        console.log(`Sending email to ${report.sentBy}`);
-        await base44.integrations.Core.SendEmail({
-          to: report.sentBy,
-          subject,
-          body: emailBody,
-          from_name: 'Asset Wolf'
-        });
+      for (const email of allRecipients) {
+        try {
+          console.log(`Sending email to ${email}`);
+          await base44.integrations.Core.SendEmail({
+            to: email,
+            subject,
+            body: emailBody,
+            from_name: 'Asset Wolf'
+          });
+        } catch (emailErr) {
+          console.log(`Failed to send email to ${email}: ${emailErr.message}`);
+        }
 
-        const phone = phoneMap[report.sentBy];
+        const phone = phoneMap[email];
         if (phone) {
           console.log(`Queueing SMS to ${phone}`);
           messages.push(
@@ -99,8 +112,6 @@ Deno.serve(async (req) => {
               body: `Quote ready for ${report.itemName}: $${report.askingPrice}. View: ${reportLink}`
             })
           );
-        } else {
-          console.log(`No phone on file for ${report.sentBy}`);
         }
       }
     }
