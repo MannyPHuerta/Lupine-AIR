@@ -6,14 +6,12 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Delete in batches of 100 until none left
     let totalDeleted = 0;
     while (true) {
       const batch = await base44.asServiceRole.entities.CproContact.list(undefined, 100);
       if (!batch || batch.length === 0) break;
-      for (const c of batch) {
-        await base44.asServiceRole.entities.CproContact.delete(c.id);
-      }
+      // Delete all in parallel
+      await Promise.all(batch.map(c => base44.asServiceRole.entities.CproContact.delete(c.id)));
       totalDeleted += batch.length;
     }
 
