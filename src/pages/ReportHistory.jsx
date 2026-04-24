@@ -89,7 +89,7 @@ export default function ReportHistory() {
     queryKey: ["all-reports"],
     queryFn: async () => {
       const all = await base44.entities.Report.list("-created_date", 100);
-      return all.filter(r => r.id !== "69e6a3a24ab7b520024541fe");
+      return all.filter(r => !r.isDeleted && r.id !== "69e6a3a24ab7b520024541fe");
     },
 
   });
