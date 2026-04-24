@@ -16,99 +16,82 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { reportId, notificationType, recipients } = await req.json();
+    const { event } = await req.json();
+    const { entity_name, entity_id, type } = event;
 
-    if (!reportId || !notificationType || !recipients) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!entity_id || !entity_name || entity_name !== 'Report') {
+      return Response.json({ error: 'Invalid automation payload' }, { status: 400 });
     }
 
-    const report = await base44.entities.Report.get(reportId);
+    const report = await base44.asServiceRole.entities.Report.get(entity_id);
     if (!report) {
       return Response.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    // Get staff phone numbers
-    const staffPhones = await base44.entities.StaffPhone.list();
+    const staffPhones = await base44.asServiceRole.entities.StaffPhone.list();
     const phoneMap = {};
     staffPhones.forEach(sp => {
       phoneMap[sp.email] = sp.phone;
     });
 
+    const reportLink = `${Deno.env.get('APP_URL') || 'https://assetwolf.rentalworld.com'}/report/${entity_id}`;
     let messages = [];
 
-    if (notificationType === 'quote_request') {
-      // Sender created quote request → notify Staff
+    if (type === 'create' && report.action === 'Need Quote for Customer') {
+      // New quote request → notify staff
+      const staffEmails = ['awolf@rentalworld.com', 'ealfaro@rentalworld.com', 'dfulcher@rentalworld.com', 'brucewolf@rentalworld.com', 'bwolf@rentalworld.com'];
       const subject = `New Quote Request: ${report.itemName}`;
-      const body = `A new quote request has been submitted:\n\nItem: ${report.itemName}\nType: ${report.itemType}\nModel: ${report.model}\n\nPlease log in to provide pricing.`;
+      const emailBody = `A new quote request has been submitted:\n\nItem: ${report.itemName}\nType: ${report.itemType}\nModel: ${report.model}\n\nView report: ${reportLink}`;
 
-      for (const email of recipients) {
-        // Email
+      for (const email of staffEmails) {
         await base44.integrations.Core.SendEmail({
           to: email,
           subject,
-          body,
+          body: emailBody,
           from_name: 'Asset Wolf'
         });
 
-        // SMS
         const phone = phoneMap[email];
         if (phone) {
           messages.push(
             twilioClient.messages.create({
               from: TWILIO_PHONE,
               to: phone,
-              body: `New quote request: ${report.itemName}. Log in to provide pricing.`
+              body: `New quote request: ${report.itemName}. View: ${reportLink}`
             })
           );
         }
       }
-    } else if (notificationType === 'price_entered') {
-      // Staff entered price → notify Sender
-      const subject = `Quote Ready: ${report.itemName}`;
-      const body = `The asking price for ${report.itemName} is: $${report.askingPrice}`;
+    } else if (type === 'update' && report.askingPrice) {
+      // Price entered → notify original sender (if known)
+      if (report.sentBy) {
+        const subject = `Quote Ready: ${report.itemName}`;
+        const emailBody = `The asking price for ${report.itemName} is: $${report.askingPrice}\n\nView report: ${reportLink}`;
 
-      for (const email of recipients) {
-        // Email
         await base44.integrations.Core.SendEmail({
-          to: email,
+          to: report.sentBy,
           subject,
-          body,
+          body: emailBody,
           from_name: 'Asset Wolf'
         });
 
-        // SMS
-        const phone = phoneMap[email];
+        const phone = phoneMap[report.sentBy];
         if (phone) {
           messages.push(
             twilioClient.messages.create({
               from: TWILIO_PHONE,
               to: phone,
-              body: `Quote ready for ${report.itemName}: $${report.askingPrice}`
+              body: `Quote ready for ${report.itemName}: $${report.askingPrice}. View: ${reportLink}`
             })
           );
         }
-      }
-    } else if (notificationType === 'customer_share') {
-      // Sender shares with Customer → notify Customer
-      const subject = `Equipment Quote: ${report.itemName}`;
-      const body = `Asking price: $${report.askingPrice}\n\n${report.comments || ''}`;
-
-      for (const email of recipients) {
-        // Email only (customer doesn't have phone on file yet)
-        await base44.integrations.Core.SendEmail({
-          to: email,
-          subject,
-          body,
-          from_name: 'Asset Wolf'
-        });
       }
     }
 
-    // Send all SMS messages in parallel
     await Promise.all(messages);
-
-    return Response.json({ success: true, notificationType, recipientCount: recipients.length });
+    return Response.json({ success: true, type, smsCount: messages.length });
   } catch (error) {
+    console.error('sendNotifications error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
