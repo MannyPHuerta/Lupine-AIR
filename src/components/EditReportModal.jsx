@@ -42,6 +42,7 @@ export default function EditReportModal({ report, onClose, onSave, onResend }) {
     action: report.action || "",
     branch: report.branch || "",
     comments: report.comments || "",
+    askingPrice: report.askingPrice || "",
   });
   const [recipients, setRecipients] = useState(report.sendToEmails || []);
   const [customEmail, setCustomEmail] = useState(report.customEmail || "");
@@ -148,6 +149,24 @@ export default function EditReportModal({ report, onClose, onSave, onResend }) {
               <Label>Asset Description / Condition</Label>
               <Textarea value={form.comments} onChange={e => handleChange("comments", e.target.value)} rows={3} />
             </div>
+
+            {form.action === "Sell" && (
+              <div className="space-y-1">
+                <Label>Asking Price (USD)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={form.askingPrice}
+                    onChange={e => handleChange("askingPrice", e.target.value)}
+                    placeholder="e.g. 15000"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Recipients */}
             <div className="space-y-1">
