@@ -75,6 +75,7 @@ export default function EditReportModal({ report, onClose, onSave, onResend }) {
     await onSave({
       ...report,
       ...form,
+      askingPrice: form.askingPrice ? Number(form.askingPrice) : null,
       sendToEmails: recipients,
       customEmail,
       sentBy,
@@ -85,7 +86,7 @@ export default function EditReportModal({ report, onClose, onSave, onResend }) {
 
   const handleSaveAndSend = async () => {
     setSending(true);
-    const updated = { ...report, ...form, sendToEmails: recipients, customEmail, sentBy, photoPaths: photos };
+    const updated = { ...report, ...form, askingPrice: form.askingPrice ? Number(form.askingPrice) : null, sendToEmails: recipients, customEmail, sentBy, photoPaths: photos };
     await onSave(updated);
     await onResend(updated);
     setSending(false);
