@@ -63,9 +63,7 @@ export default function ContactReview() {
 
   const handleDeleteAll = async () => {
     if (!confirm(`Delete all ${contacts.length} contacts? This cannot be undone.`)) return;
-    for (const c of contacts) {
-      await base44.entities.CproContact.delete(c.id);
-    }
+    await base44.functions.invoke('deleteAllCproContacts', {});
     toast({ title: 'All contacts deleted', variant: 'destructive' });
     refetch();
   };
