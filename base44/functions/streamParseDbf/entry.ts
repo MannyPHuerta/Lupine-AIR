@@ -79,20 +79,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'chunk required' }, { status: 400 });
     }
 
-    // Decode chunk from base64
+    // Decode chunk from base64 efficiently
     const binaryString = atob(chunk);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    const buffer = new Uint8Array(binaryString.length);
+    // Use bulk charCodeAt via split for speed
+    for (let i = 0, len = binaryString.length; i < len; i++) {
+      buffer[i] = binaryString.charCodeAt(i) & 0xff;
     }
-    const buffer = bytes.buffer;
+    const arrayBuffer = buffer.buffer;
 
     // Parse fields from first chunk only
     let parsedFields = fields;
     let recordStartOffset = headerLength;
 
     if (chunkIndex === 0 && !fields) {
-      const headerBuffer = buffer.slice(0, Math.min(buffer.byteLength, 2048));
+      const headerBuffer = arrayBuffer.slice(0, Math.min(arrayBuffer.byteLength, 2048));
       const parsed = parseDbfHeader(headerBuffer);
       parsedFields = parsed.fields;
       recordStartOffset = parsed.headerLength;
@@ -102,15 +103,12 @@ Deno.serve(async (req) => {
     const records = [];
     let currentOffset = recordStartOffset;
 
-    const view = new DataView(buffer);
-    const recordLength = parsedFields.length > 0 ? 
+    const recordLength = parsedFields && parsedFields.length > 0 ? 
       1 + parsedFields.reduce((sum, f) => sum + f.size, 0) : 0;
 
-    while (currentOffset + recordLength <= buffer.byteLength) {
-      const record = extractRecord(buffer, parsedFields, currentOffset, recordLength);
-      if (record) {
-        records.push(record);
-      }
+    while (recordLength > 0 && currentOffset + recordLength <= arrayBuffer.byteLength) {
+      const record = extractRecord(arrayBuffer, parsedFields, currentOffset, recordLength);
+      if (record) records.push(record);
       currentOffset += recordLength;
     }
 

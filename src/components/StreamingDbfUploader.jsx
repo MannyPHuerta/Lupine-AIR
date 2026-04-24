@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
-const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks
+const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks to stay within CPU limits
 
 export default function StreamingDbfUploader({ onComplete }) {
   const inputRef = useRef(null);
