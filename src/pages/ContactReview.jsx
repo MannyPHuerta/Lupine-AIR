@@ -1,0 +1,137 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { ArrowLeft, Search, Trash2, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+
+export default function ContactReview() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [search, setSearch] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+
+  const { data: contacts = [], isLoading, refetch } = useQuery({
+    queryKey: ['cproContacts'],
+    queryFn: () => base44.entities.CproContact.list('-created_date', 500),
+  });
+
+  const filtered = contacts.filter(c => {
+    const q = search.toLowerCase();
+    return (
+      c.fullName?.toLowerCase().includes(q) ||
+      c.phone?.toLowerCase().includes(q) ||
+      c.notes?.toLowerCase().includes(q)
+    );
+  });
+
+  const handleDelete = async (id) => {
+    setDeletingId(id);
+    await base44.entities.CproContact.delete(id);
+    toast({ title: 'Contact removed' });
+    refetch();
+    setDeletingId(null);
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm(`Delete all ${contacts.length} contacts? This cannot be undone.`)) return;
+    for (const c of contacts) {
+      await base44.entities.CproContact.delete(c.id);
+    }
+    toast({ title: 'All contacts deleted', variant: 'destructive' });
+    refetch();
+  };
+
+  // Stats
+  const withName = contacts.filter(c => c.fullName?.trim()).length;
+  const withPhone = contacts.filter(c => c.phone?.trim()).length;
+  const withBoth = contacts.filter(c => c.fullName?.trim() && c.phone?.trim()).length;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="px-2 py-2 flex items-center gap-3">
+          <button
+            className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1"
+            onClick={() => navigate('/converter')}
+          >
+            <ArrowLeft className="w-6 h-6" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+          <span className="text-xl font-bold">Extracted Contacts</span>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto p-4 space-y-4">
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white border rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-blue-700">{contacts.length}</div>
+            <div className="text-xs text-gray-500">Total</div>
+          </div>
+          <div className="bg-white border rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-green-700">{withBoth}</div>
+            <div className="text-xs text-gray-500">Name + Phone</div>
+          </div>
+          <div className="bg-white border rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-orange-600">{contacts.length - withBoth}</div>
+            <div className="text-xs text-gray-500">Incomplete</div>
+          </div>
+        </div>
+
+        {/* Search + actions */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <Input
+              className="pl-9"
+              placeholder="Search name or phone..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={handleDeleteAll}>
+            Delete All
+          </Button>
+        </div>
+
+        {/* Contact list */}
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-400">Loading...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">No contacts found</div>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map(c => (
+              <div key={c.id} className="bg-white border rounded-lg px-4 py-3 flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {c.fullName && c.phone ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border-2 border-orange-300 flex-shrink-0" />
+                    )}
+                    <p className="font-semibold text-gray-900 truncate">{c.fullName || <span className="text-gray-400 italic">No name</span>}</p>
+                  </div>
+                  {c.phone && <p className="text-sm text-blue-700 ml-6">{c.phone}</p>}
+                  {c.notes && <p className="text-xs text-gray-400 ml-6 truncate">{c.notes}</p>}
+                </div>
+                <button
+                  onClick={() => handleDelete(c.id)}
+                  disabled={deletingId === c.id}
+                  className="text-gray-300 hover:text-red-500 transition-colors p-1 flex-shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

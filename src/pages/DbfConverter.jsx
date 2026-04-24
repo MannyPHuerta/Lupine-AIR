@@ -27,6 +27,12 @@ export default function DbfConverter() {
             <span className="text-sm font-medium">Back</span>
           </button>
           <span className="text-xl font-bold">Legacy Data Converter</span>
+          <button
+            className="ml-auto text-white text-sm underline pr-2"
+            onClick={() => navigate('/contact-review')}
+          >
+            Review Contacts →
+          </button>
         </div>
       </div>
 
