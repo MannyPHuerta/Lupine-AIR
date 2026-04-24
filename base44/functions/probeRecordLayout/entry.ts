@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { chunk, searchTerm, recordSize } = await req.json();
+    const { chunk, searchTerm, recordSize, alignmentOffset } = await req.json();
     if (!chunk || !searchTerm) {
       return Response.json({ error: 'chunk and searchTerm required' }, { status: 400 });
     }
@@ -85,9 +85,10 @@ Deno.serve(async (req) => {
 
     // For each hit, determine record boundary and extract fields
     const rSize = recordSize || 552;
+    const aOffset = alignmentOffset || 0;
     const records = found.map(hitOffset => {
-      // Snap to nearest record boundary before the hit
-      const recordStart = Math.floor(hitOffset / rSize) * rSize;
+      // Snap to nearest record boundary before the hit, with alignment offset
+      const recordStart = Math.floor((hitOffset - aOffset) / rSize) * rSize + aOffset;
       const dump = hexDump(bytes, recordStart, rSize);
       const fields = extractFieldsFromRange(bytes, recordStart, rSize);
       return {

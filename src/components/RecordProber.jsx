@@ -11,6 +11,7 @@ export default function RecordProber() {
   const [file, setFile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('COUNTRY INN MCALLEN');
   const [recordSize, setRecordSize] = useState(552);
+  const [alignmentOffset, setAlignmentOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -48,6 +49,7 @@ export default function RecordProber() {
         chunk: base64Chunk,
         searchTerm: searchTerm.trim(),
         recordSize: Number(recordSize),
+        alignmentOffset: Number(alignmentOffset),
       });
 
       const data = response.data;
@@ -97,6 +99,15 @@ export default function RecordProber() {
             type="number"
             value={recordSize}
             onChange={e => setRecordSize(e.target.value)}
+          />
+        </div>
+        <div className="w-28">
+          <label className="text-xs text-gray-500 mb-1 block">Alignment offset</label>
+          <Input
+            type="number"
+            value={alignmentOffset}
+            onChange={e => setAlignmentOffset(e.target.value)}
+            placeholder="0"
           />
         </div>
       </div>
