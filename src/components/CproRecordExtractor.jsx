@@ -126,7 +126,7 @@ export default function CproRecordExtractor() {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Parsing records at fixed offsets...
+          Scanning for contact patterns...
         </div>
       </div>
     );
@@ -145,17 +145,14 @@ export default function CproRecordExtractor() {
         ) : (
           <>
             <p className="font-semibold text-gray-900 mb-1">Select CPro binary FILE</p>
-            <p className="text-sm text-gray-500">Extracts contacts using mapped field offsets (552-byte records)</p>
+            <p className="text-sm text-gray-500">Scans entire FILE for contact patterns across all chunks</p>
           </>
         )}
       </div>
 
       {file && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 font-mono space-y-0.5">
-          <p>Header: 532 bytes | Record size: 552 bytes</p>
-          <p>Name: +306 (30B) | Account#: +294 (9B)</p>
-          <p>Address: +362 (27B) | City/State/Zip: +389 (44B)</p>
-          <p>Phone: +9 (19B)</p>
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+          <p>{(file.size / 1024 / 1024).toFixed(1)} MB → {Math.ceil(file.size / (2 * 1024 * 1024))} chunks × 2MB</p>
         </div>
       )}
 

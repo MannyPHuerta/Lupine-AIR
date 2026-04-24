@@ -15,7 +15,7 @@ export default function ContactReview() {
 
   const { data: contacts = [], isLoading, refetch } = useQuery({
     queryKey: ['cproContacts'],
-    queryFn: () => base44.entities.CproContact.list('-created_date', 500),
+    queryFn: () => base44.entities.CproContact.list('-created_date', 10000),
   });
 
   const filtered = contacts.filter(c => {
