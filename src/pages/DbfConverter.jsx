@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StreamingDbfUploader from '@/components/StreamingDbfUploader';
 import TpsContactExtractor from '@/components/TpsContactExtractor';
+import RecordProber from '@/components/RecordProber';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
@@ -52,6 +53,12 @@ export default function DbfConverter() {
           >
             DBF Importer
           </button>
+          <button
+            onClick={() => setActiveTab('probe')}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'probe' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            Record Prober
+          </button>
         </div>
 
         {activeTab === 'tps' ? (
@@ -60,8 +67,14 @@ export default function DbfConverter() {
             <p className="text-sm text-gray-500 mb-4">Scans the binary FILE for ALL-CAPS names and phone number patterns and saves them as contacts.</p>
             <TpsContactExtractor onComplete={handleImportComplete} />
           </div>
-        ) : (
+        ) : activeTab === 'dbf' ? (
           <StreamingDbfUploader onComplete={handleImportComplete} />
+        ) : (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Record Layout Prober</h2>
+            <p className="text-sm text-gray-500 mb-4">Upload the binary FILE, search for a known name, and see the exact byte offsets of every field in that record.</p>
+            <RecordProber />
+          </div>
         )}
 
         {/* Results Section */}
