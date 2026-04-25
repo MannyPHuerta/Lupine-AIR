@@ -240,7 +240,7 @@ export default function ReportHistory() {
             <Download className="w-4 h-4" />
             <span className="text-sm">Export</span>
           </button>
-          {isAdmin && (
+          {(isAdmin || canPostToMarketplace) && (
             <button
               className={`flex items-center gap-1 font-medium text-sm hover:underline ${showHidden ? "text-red-600" : "text-blue-700"}`}
               onClick={() => setShowHidden(v => !v)}
