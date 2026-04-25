@@ -44,8 +44,10 @@ Deno.serve(async (req) => {
     staffPhones.forEach(sp => {
       phoneMap[sp.email] = sp.phone;
     });
+    console.log('StaffPhone map:', JSON.stringify(phoneMap));
 
     const reportLink = `https://track-wolf-now.base44.app/report/${entity_id}`;
+    console.log('Report link:', reportLink);
     let messages = [];
 
     // Send to all recipients in sendToEmails and customEmail (user-selected)
