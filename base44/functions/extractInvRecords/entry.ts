@@ -1,60 +1,41 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const RECORD_SIZE = 1356;
+const RECORD_SIZE = 544;
 
-// Field map derived from probing the inv file
-// Format: { name, offset, length }
-const FIELD_MAP = [
-  { name: 'description1',   offset:  53, length: 20 },
-  { name: 'description2',   offset: 136, length: 20 },
-  { name: 'description3',   offset: 219, length: 20 },
-  { name: 'field4',         offset: 254, length:  9 },
-  { name: 'code1',          offset: 293, length:  3 },
-  { name: 'description4',   offset: 310, length: 20 },
-  { name: 'notes1',         offset: 355, length: 17 },
-  { name: 'field5',         offset: 386, length: 17 },
-  { name: 'code2',          offset: 433, length:  3 },
-  { name: 'field6',         offset: 450, length: 20 },
-  { name: 'field7',         offset: 495, length: 13 },
-];
+// Each record is 544 bytes:
+// Bytes 0–443: Equipment CSV line
+// Byte 444: Newline separator
+// Bytes 445–543: Numeric CSV line
 
-function isPrintable(b) {
-  return b >= 0x20 && b <= 0x7E;
-}
-
-function readField(bytes, recStart, offset, maxLen) {
-  const start = recStart + offset;
-  const end = Math.min(start + maxLen, bytes.length);
-  let val = '';
-  for (let i = start; i < end; i++) {
-    if (!isPrintable(bytes[i])) break;
-    val += String.fromCharCode(bytes[i]);
-  }
-  return val.trim();
-}
-
-// Also scan for ALL printable runs in a record (for raw dump)
-function extractAllFields(bytes, recStart, recSize) {
+// Parse CSV line by splitting on comma and removing quotes
+function parseCSVLine(line) {
   const fields = [];
   let current = '';
-  let fieldStart = -1;
-  const end = Math.min(recStart + recSize, bytes.length);
-  for (let i = recStart; i < end; i++) {
-    const b = bytes[i];
-    if (isPrintable(b)) {
-      if (current.length === 0) fieldStart = i - recStart;
-      current += String.fromCharCode(b);
-    } else {
-      if (current.trim().length >= 3) {
-        fields.push({ offset: fieldStart, length: current.length, value: current.trim() });
-      }
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      fields.push(current.trim());
       current = '';
+    } else {
+      current += ch;
     }
   }
-  if (current.trim().length >= 3) {
-    fields.push({ offset: fieldStart, length: current.length, value: current.trim() });
-  }
+  if (current.trim().length > 0) fields.push(current.trim());
   return fields;
+}
+
+// Extract bytes as string, trimming nulls
+function extractString(bytes, start, len) {
+  let str = '';
+  for (let i = start; i < start + len && i < bytes.length; i++) {
+    const b = bytes[i];
+    if (b === 0) break;
+    if (b >= 0x20 && b <= 0x7E) str += String.fromCharCode(b);
+  }
+  return str;
 }
 
 Deno.serve(async (req) => {
@@ -94,21 +75,29 @@ Deno.serve(async (req) => {
     let i = chunkRecordStart;
 
     while (i + RECORD_SIZE <= bytes.length && records.length < limit) {
-      // Check if record looks valid — must have at least one printable run of 3+ chars
-      const sample = readField(bytes, i, 53, 20);
-      if (sample.length > 0 || readField(bytes, i, 136, 20).length > 0 || readField(bytes, i, 219, 20).length > 0) {
+      // Extract equipment CSV (bytes 0–443) and numeric CSV (bytes 445–543)
+      const equipmentLine = extractString(bytes, i, 444).trim();
+      const numericLine = extractString(bytes, i + 445, 99).trim();
+
+      if (equipmentLine.length > 0) {
+        const equipFields = parseCSVLine(equipmentLine);
+        const numFields = parseCSVLine(numericLine);
+
         const rec = {
           recordIndex: Math.floor((globalOffset + i - hdr) / RECORD_SIZE),
           byteOffset: globalOffset + i,
+          rawFields: equipFields,
+          rawNumeric: numFields,
         };
-        for (const f of FIELD_MAP) {
-          rec[f.name] = readField(bytes, i, f.offset, f.length);
-        }
-        // Composite description for convenience
-        rec.fullDescription = [rec.description1, rec.description2, rec.description3, rec.description4]
-          .filter(Boolean).join(' | ');
-        // Raw field scan
-        rec.rawFields = extractAllFields(bytes, i, RECORD_SIZE);
+
+        // Map CSV fields to known attributes (adjust based on actual column order)
+        rec.description1 = equipFields[2] || '';
+        rec.description2 = equipFields[3] || '';
+        rec.serialNumber = equipFields[6] || '';
+        rec.assignedTo = equipFields[8] ? [equipFields[8]] : [];
+        rec.location = equipFields[9] || '';
+        rec.disposition = equipFields[10] || '';
+
         records.push(rec);
       }
       i += RECORD_SIZE;
