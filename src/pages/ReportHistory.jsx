@@ -88,10 +88,8 @@ export default function ReportHistory() {
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["all-reports"],
     queryFn: async () => {
-      const all = await base44.entities.Report.list("-created_date", 100);
-      return all.filter(r => !r.isDeleted && r.id !== "69e6a3a24ab7b520024541fe");
+      return await base44.entities.Report.list("-created_date", 500);
     },
-
   });
 
   // Derive available years from loaded reports
@@ -112,6 +110,8 @@ export default function ReportHistory() {
 
   const filtered = reports
     .filter(r => {
+      // Always exclude the hardcoded bad record
+      if (r.id === "69e6a3a24ab7b520024541fe") return false;
       // Hidden filter
       if (showHidden) {
         if (!r.isDeleted) return false;
