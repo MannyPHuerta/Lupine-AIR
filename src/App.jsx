@@ -39,14 +39,14 @@ const AuthenticatedApp = () => {
       return <UserNotRegisteredError />;
     }
     if (authError.type === 'auth_required') {
-      base44.auth.redirectToLogin(window.location.href);
+      base44.auth.redirectToLogin();
       return null;
     }
   }
 
   // If no token at all, redirect to login
   if (!isLoadingAuth && !isAuthenticated) {
-    base44.auth.redirectToLogin(window.location.href);
+    base44.auth.redirectToLogin();
     return null;
   }
 
