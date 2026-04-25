@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { History, Info, X, Loader2 } from "lucide-react";
+import { History, Info, X, Loader2, Phone } from "lucide-react";
 import RecipientsModal from "@/components/RecipientsModal";
 import SenderModal from "@/components/SenderModal";
 import PhotoUploader from "@/components/PhotoUploader";
@@ -174,10 +174,16 @@ export default function ReportForm() {
             </div>
           )}
         </div>
-        <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/about")}>
-          <span className="text-sm">Info</span>
-          <Info className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/staff-phones")}>
+            <Phone className="w-4 h-4" />
+            <span className="text-sm">SMS</span>
+          </button>
+          <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/about")}>
+            <span className="text-sm">Info</span>
+            <Info className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-4 space-y-4">
