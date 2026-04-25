@@ -23,8 +23,6 @@ export default function InvImporter({ onComplete }) {
 
     try {
       // Upload CSV file
-      const csvFormData = new FormData();
-      csvFormData.append('file', file);
       const uploadRes = await base44.integrations.Core.UploadFile({ file });
       const csvFileUrl = uploadRes.file_url;
       
