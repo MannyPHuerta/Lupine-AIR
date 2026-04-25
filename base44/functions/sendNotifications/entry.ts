@@ -92,19 +92,21 @@ Deno.serve(async (req) => {
 
     for (const sp of staffPhones) {
       if (sp.phone) {
-        console.log(`Queueing SMS to ${sp.phone} (${sp.email})`);
-        messages.push(
-          twilioClient.messages.create({
+        try {
+          const msg = await twilioClient.messages.create({
             from: TWILIO_PHONE,
             to: sp.phone,
             body: smsBody
-          })
-        );
+          });
+          console.log(`SMS OK to ${sp.phone} (${sp.email}): sid=${msg.sid} status=${msg.status}`);
+          messages.push(msg);
+        } catch (smsErr) {
+          console.error(`SMS FAILED to ${sp.phone} (${sp.email}): ${smsErr.message} code=${smsErr.code}`);
+        }
       }
     }
 
-    await Promise.all(messages);
-    console.log(`Success: sent ${messages.length} SMS`);
+    console.log(`Done: sent ${messages.length} SMS`);
     return Response.json({ success: true, type: event_type, smsCount: messages.length });
   } catch (error) {
     console.error('sendNotifications error:', error);
