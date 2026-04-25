@@ -1,0 +1,69 @@
+{
+  "name": "InventoryItem",
+  "type": "object",
+  "properties": {
+    "recordIndex": {
+      "type": "integer",
+      "description": "Original record index from inv file"
+    },
+    "byteOffset": {
+      "type": "integer",
+      "description": "Byte offset in the inv file"
+    },
+    "description1": {
+      "type": "string",
+      "description": "Primary equipment description"
+    },
+    "description2": {
+      "type": "string",
+      "description": "Secondary equipment description"
+    },
+    "serialNumber": {
+      "type": "string",
+      "description": "Equipment serial number or model"
+    },
+    "assignedTo": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Names of people assigned/responsible for this item"
+    },
+    "location": {
+      "type": "string",
+      "description": "Current location or branch"
+    },
+    "disposition": {
+      "type": "string",
+      "description": "Status, condition, or intended action"
+    },
+    "branchCode": {
+      "type": "string",
+      "description": "Branch identifier code (e.g., p9k, l9k, y9k)"
+    },
+    "rawFields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "All extracted text fields from the record"
+    },
+    "migrationSource": {
+      "type": "string",
+      "enum": [
+        "inv_file"
+      ],
+      "description": "Source system for this inventory item"
+    },
+    "migrationSessionId": {
+      "type": "string",
+      "description": "Session ID for batch import tracking"
+    }
+  },
+  "required": [
+    "recordIndex",
+    "byteOffset",
+    "migrationSource",
+    "migrationSessionId"
+  ]
+}
