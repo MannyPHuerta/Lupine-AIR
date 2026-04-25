@@ -2,9 +2,9 @@ import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Download, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Download, Loader2 } from 'lucide-react';
 
-const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
+const CHUNK_SIZE = 4 * 1024 * 1024;
 
 export default function InvExtractor() {
   const inputRef = useRef(null);
@@ -15,7 +15,6 @@ export default function InvExtractor() {
   const [progress, setProgress] = useState('');
   const [records, setRecords] = useState([]);
   const [error, setError] = useState(null);
-  const [expandedIdx, setExpandedIdx] = useState(null);
 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
@@ -57,7 +56,6 @@ export default function InvExtractor() {
       }
     }
 
-    // Deduplicate by byteOffset
     const seen = new Set();
     const deduped = allRecords.filter(r => {
       if (seen.has(r.byteOffset)) return false;
@@ -71,9 +69,7 @@ export default function InvExtractor() {
   };
 
   const exportCSV = () => {
-    // Find max number of raw fields across all records
     const maxFields = Math.max(...records.map(r => r.rawFields?.length || 0), 0);
-    const fieldHeaders = Array.from({ length: maxFields }, (_, i) => `Field${i + 1}_offset\tField${i + 1}_value`).join('\t');
     const headers = ['RecordIndex', 'ByteOffset', ...Array.from({ length: maxFields }, (_, i) => `F${i + 1}_offset`), ...Array.from({ length: maxFields }, (_, i) => `F${i + 1}_value`)];
     const rows = records.map(r => {
       const offsets = Array.from({ length: maxFields }, (_, i) => r.rawFields?.[i]?.offset ?? '');
@@ -94,7 +90,6 @@ export default function InvExtractor() {
 
   return (
     <div className="space-y-4">
-      {/* File picker */}
       <div
         className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
         onClick={() => inputRef.current?.click()}
@@ -104,11 +99,10 @@ export default function InvExtractor() {
         {file ? (
           <p className="text-sm font-medium text-gray-900">{file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)</p>
         ) : (
-          <p className="text-sm text-gray-500">Upload the <code className="bg-gray-100 px-1 rounded">inv</code> file</p>
+          <p className="text-sm text-gray-500">Upload the inv file</p>
         )}
       </div>
 
-      {/* Options */}
       <div className="flex gap-3 items-end flex-wrap">
         <div className="w-40">
           <label className="text-xs text-gray-500 mb-1 block">Header size (bytes)</label>
@@ -118,7 +112,6 @@ export default function InvExtractor() {
             onChange={e => setHeaderSize(e.target.value)}
             placeholder="0"
           />
-          <p className="text-xs text-gray-400 mt-0.5">984 = calculated from first known hit</p>
         </div>
         <div className="w-48">
           <label className="text-xs text-gray-500 mb-1 block">Start byte offset</label>
@@ -128,7 +121,6 @@ export default function InvExtractor() {
             onChange={e => setStartOffset(e.target.value)}
             placeholder="0"
           />
-          <p className="text-xs text-gray-400 mt-0.5">Skip to this byte in file (e.g., 2270928 for inventory)</p>
         </div>
         <Button
           className="bg-blue-600 hover:bg-blue-700 gap-2"
@@ -153,42 +145,11 @@ export default function InvExtractor() {
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
       )}
 
-      {/* Results table */}
       {records.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-            {records.length} records — click to expand raw fields
+            {records.length} records extracted
           </p>
-          <div className="divide-y border rounded-lg overflow-hidden max-h-[60vh] overflow-y-auto">
-            {records.map((rec, idx) => (
-              <div key={rec.byteOffset} className="bg-white">
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
-                  onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
-                >
-                  <span className="text-xs text-gray-400 w-12 flex-shrink-0 font-mono">#{rec.recordIndex}</span>
-                  <span className="text-sm font-medium text-gray-900 flex-1 truncate">
-                    {rec.rawFields.slice(0, 3).map(f => f.value).join(' · ') || '(empty)'}
-                  </span>
-                  {expandedIdx === idx ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
-                </button>
-                {expandedIdx === idx && (
-                  <div className="px-4 pb-3 bg-gray-50 border-t">
-                    <p className="text-xs text-gray-400 mb-2 font-mono">Byte offset: {rec.byteOffset}</p>
-                    <div className="space-y-1">
-                      {rec.rawFields.length > 0 ? rec.rawFields.map((f, fi) => (
-                        <div key={fi} className="flex gap-3 text-xs font-mono">
-                          <span className="w-14 text-gray-400 flex-shrink-0">+{f.offset}</span>
-                          <span className="w-10 text-gray-400 flex-shrink-0">[{f.length}]</span>
-                          <span className="text-gray-900">{f.value}</span>
-                        </div>
-                      )) : <p className="text-xs text-gray-400 italic">No printable text found in this record</p>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>
