@@ -11,10 +11,6 @@ const TWILIO_PHONE = Deno.env.get('TWILIO_PHONE_NUMBER');
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const body = await req.json();
     console.log('sendNotifications received:', JSON.stringify(body, null, 2));

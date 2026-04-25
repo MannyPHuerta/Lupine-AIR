@@ -17,6 +17,7 @@ import ReportView from "./pages/ReportView";
 import DbfConverter from "./pages/DbfConverter";
 import LegacyMapper from "./pages/LegacyMapper";
 import ContactReview from "./pages/ContactReview";
+import StaffPhoneManager from "./pages/StaffPhoneManager";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
       <Route path="/converter" element={<DbfConverter />} />
       <Route path="/legacy-mapper" element={<LegacyMapper />} />
       <Route path="/contact-review" element={<ContactReview />} />
+      <Route path="/staff-phones" element={<StaffPhoneManager />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
