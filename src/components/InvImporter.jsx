@@ -22,14 +22,12 @@ export default function InvImporter({ onComplete }) {
     setProgress('Uploading CSV...');
 
     try {
-      // Upload CSV file
       const uploadRes = await base44.integrations.Core.UploadFile({ file });
       const csvFileUrl = uploadRes.file_url;
       
       setProgress('Importing records...');
       const sessionId = `inv_import_${Date.now()}`;
       
-      // Call import function
       const importRes = await base44.functions.invoke('importInvRecords', {
         csvFileUrl,
         sessionId
