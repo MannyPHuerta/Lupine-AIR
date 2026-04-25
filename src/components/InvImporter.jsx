@@ -49,6 +49,38 @@ export default function InvImporter({ onComplete }) {
     setLoading(false);
   };
 
+  const exportItems = async () => {
+    setLoading(true);
+    try {
+      const items = await base44.entities.InventoryItem.list('', 10000);
+      const headers = ['RecordIndex', 'ByteOffset', 'Description1', 'Description2', 'SerialNumber', 'AssignedTo', 'Location', 'Disposition', 'BranchCode'];
+      const rows = items.map(item => [
+        item.recordIndex || '',
+        item.byteOffset || '',
+        item.description1 || '',
+        item.description2 || '',
+        item.serialNumber || '',
+        (item.assignedTo || []).join('; '),
+        item.location || '',
+        item.disposition || '',
+        item.branchCode || ''
+      ]);
+      const csv = [headers, ...rows]
+        .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inv_items_export_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="space-y-4">
       <div
@@ -64,14 +96,25 @@ export default function InvImporter({ onComplete }) {
         )}
       </div>
 
-      <Button
-        className="bg-green-600 hover:bg-green-700 w-full gap-2"
-        onClick={importCSV}
-        disabled={!file || loading}
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-        {loading ? 'Importing...' : 'Import Records'}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          className="bg-green-600 hover:bg-green-700 flex-1 gap-2"
+          onClick={importCSV}
+          disabled={!file || loading}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {loading ? 'Importing...' : 'Import Records'}
+        </Button>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={exportItems}
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 rotate-180" />}
+          Export
+        </Button>
+      </div>
 
       {progress && <p className="text-sm text-gray-600 font-medium">{progress}</p>}
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
