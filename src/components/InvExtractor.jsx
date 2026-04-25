@@ -146,10 +146,13 @@ export default function InvExtractor() {
       )}
 
       {records.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-            {records.length} records extracted
+            {records.length} records extracted — ready to export
           </p>
+          <Button variant="outline" className="gap-2 w-full" onClick={exportCSV}>
+            <Download className="w-4 h-4" /> Export as CSV
+          </Button>
         </div>
       )}
     </div>
