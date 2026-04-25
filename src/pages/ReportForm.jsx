@@ -106,13 +106,10 @@ export default function ReportForm() {
     }
 
     try {
-      const created = await base44.entities.Report.create({ ...reportData, isSent: false });
-      const reportLink = `${window.location.origin}/report/${created.id}`;
-      await base44.functions.invoke("sendAssetReport", { ...emailData, reportId: created.id, reportLink });
-      toast({ title: "Report sent successfully!", className: "bg-green-600 text-white" });
+      await base44.entities.Report.create({ ...reportData, isSent: false });
+      toast({ title: "Report submitted successfully!", className: "bg-green-600 text-white" });
       resetForm();
     } catch (err) {
-      // Network failed mid-submit — queue it
       enqueue({ reportData, emailData });
       toast({ title: "Connection lost — report saved, will sync automatically", className: "bg-yellow-500 text-white" });
       resetForm();

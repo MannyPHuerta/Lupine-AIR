@@ -52,76 +52,54 @@ Deno.serve(async (req) => {
       allRecipients.push(report.customEmail);
     }
 
-    if (event_type === 'create' && report.action === 'Need Quote for Customer') {
-      // New quote request → send via Render
-      console.log(`Sending quote request notification to ${allRecipients.join(', ')}`);
-      const formData = new FormData();
-      formData.append("itemName", report.itemName || "");
-      formData.append("itemType", report.itemType || "");
-      formData.append("model", report.model || "");
-      formData.append("serialNumber", report.serialNumber || "");
-      formData.append("action", report.action || "");
-      formData.append("branch", report.branch || "");
-      formData.append("comments", report.comments || "");
-      formData.append("sendTo", allRecipients.join(","));
-      formData.append("sentBy", report.sentBy || "Asset Wolf");
-      formData.append("photoUrls", (report.photoPaths || []).join(","));
-      formData.append("reportLink", reportLink);
+    const formData = new FormData();
+    formData.append("itemName", report.itemName || "");
+    formData.append("itemType", report.itemType || "");
+    formData.append("model", report.model || "");
+    formData.append("serialNumber", report.serialNumber || "");
+    formData.append("assetNumber", report.assetNumber || "");
+    formData.append("action", report.action || "");
+    formData.append("branch", report.branch || "");
+    formData.append("comments", report.comments || "");
+    formData.append("askingPrice", report.askingPrice ? String(report.askingPrice) : "");
+    formData.append("sendTo", allRecipients.join(","));
+    formData.append("sentBy", report.sentBy || "Asset Wolf");
+    formData.append("photoUrls", (report.photoPaths || []).join(","));
+    formData.append("reportLink", reportLink);
 
-      await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
-        method: "POST",
-        body: formData
-      });
+    console.log(`Sending email to ${allRecipients.join(', ')}`);
+    await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
+      method: "POST",
+      body: formData
+    });
 
-      // Send SMS to staff with phone on file
-      for (const email of allRecipients) {
-        const phone = phoneMap[email];
-        if (phone) {
-          console.log(`Queueing SMS to ${phone}`);
-          messages.push(
-            twilioClient.messages.create({
-              from: TWILIO_PHONE,
-              to: phone,
-              body: `New quote request: ${report.itemName}. View: ${reportLink}`
-            })
-          );
-        }
-      }
-    } else if ((event_type === 'update' || event_type === 'manual') && report.askingPrice) {
-      // Price entered → send via Render
-      console.log(`Sending quote ready notification to ${allRecipients.join(', ')}`);
-      const formData = new FormData();
-      formData.append("itemName", report.itemName || "");
-      formData.append("itemType", report.itemType || "");
-      formData.append("model", report.model || "");
-      formData.append("serialNumber", report.serialNumber || "");
-      formData.append("action", report.action || "");
-      formData.append("branch", report.branch || "");
-      formData.append("comments", report.comments || "");
-      formData.append("askingPrice", report.askingPrice || "");
-      formData.append("sendTo", allRecipients.join(","));
-      formData.append("sentBy", report.sentBy || "Asset Wolf");
-      formData.append("photoUrls", (report.photoPaths || []).join(","));
-      formData.append("reportLink", reportLink);
+    // Mark report as sent
+    const now = new Date().toISOString();
+    const isFirstSend = !report.isSent;
+    const logEntry = `${now} | ${isFirstSend ? "Sent" : "Resent"} to ${allRecipients.join(", ")}`;
+    const updates = {
+      isSent: true,
+      lastSentAt: now,
+      activityLog: [...(report.activityLog || []), logEntry],
+    };
+    if (isFirstSend) updates.sentAt = now;
+    await base44.asServiceRole.entities.Report.update(entity_id, updates);
 
-      await fetch("https://asset-wolf-backend.onrender.com/send-asset-report", {
-        method: "POST",
-        body: formData
-      });
+    // SMS: send to ALL staff phones (not just recipients)
+    const smsBody = event_type === 'update' && report.askingPrice
+      ? `Quote ready for ${report.itemName}: $${report.askingPrice}. View: ${reportLink}`
+      : `New ${report.action} report: ${report.itemName} at ${report.branch}. View: ${reportLink}`;
 
-      // Send SMS to staff with phone on file
-      for (const email of allRecipients) {
-        const phone = phoneMap[email];
-        if (phone) {
-          console.log(`Queueing SMS to ${phone}`);
-          messages.push(
-            twilioClient.messages.create({
-              from: TWILIO_PHONE,
-              to: phone,
-              body: `Quote ready for ${report.itemName}: $${report.askingPrice}. View: ${reportLink}`
-            })
-          );
-        }
+    for (const sp of staffPhones) {
+      if (sp.phone) {
+        console.log(`Queueing SMS to ${sp.phone} (${sp.email})`);
+        messages.push(
+          twilioClient.messages.create({
+            from: TWILIO_PHONE,
+            to: sp.phone,
+            body: smsBody
+          })
+        );
       }
     }
 
