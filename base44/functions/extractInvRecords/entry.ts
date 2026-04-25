@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { chunk, chunkByteOffset, headerSize, maxRecords } = await req.json();
+    const { chunk, chunkByteOffset, headerSize, startOffset, maxRecords } = await req.json();
     if (!chunk) return Response.json({ error: 'chunk required' }, { status: 400 });
 
     const binaryString = atob(chunk);
@@ -75,12 +75,19 @@ Deno.serve(async (req) => {
     const hdr = headerSize || 0;
     const limit = maxRecords || 5000;
     const globalOffset = chunkByteOffset || 0;
+    const skipTo = startOffset || 0;
 
     // Determine the start of records within this chunk
-    // If this is the first chunk, skip the header
     let chunkRecordStart = 0;
-    if (globalOffset === 0) {
+    if (globalOffset === 0 && skipTo === 0) {
+      // No skip offset — use header from file beginning
       chunkRecordStart = hdr;
+    } else if (skipTo > 0 && globalOffset <= skipTo && skipTo < globalOffset + bytes.length) {
+      // We're in the chunk that contains the skip offset
+      chunkRecordStart = skipTo - globalOffset;
+    } else if (skipTo > 0 && globalOffset > skipTo) {
+      // We're past the skip offset — start at 0 and extract normally
+      chunkRecordStart = 0;
     }
 
     const records = [];

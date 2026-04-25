@@ -10,6 +10,7 @@ export default function InvExtractor() {
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [headerSize, setHeaderSize] = useState(984);
+  const [startOffset, setStartOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [records, setRecords] = useState([]);
@@ -47,6 +48,7 @@ export default function InvExtractor() {
         chunk: base64Chunk,
         chunkByteOffset: start,
         headerSize: Number(headerSize),
+        startOffset: Number(startOffset),
         maxRecords: 10000,
       });
 
@@ -107,7 +109,7 @@ export default function InvExtractor() {
       </div>
 
       {/* Options */}
-      <div className="flex gap-3 items-end">
+      <div className="flex gap-3 items-end flex-wrap">
         <div className="w-40">
           <label className="text-xs text-gray-500 mb-1 block">Header size (bytes)</label>
           <Input
@@ -117,6 +119,16 @@ export default function InvExtractor() {
             placeholder="0"
           />
           <p className="text-xs text-gray-400 mt-0.5">984 = calculated from first known hit</p>
+        </div>
+        <div className="w-48">
+          <label className="text-xs text-gray-500 mb-1 block">Start byte offset</label>
+          <Input
+            type="number"
+            value={startOffset}
+            onChange={e => setStartOffset(e.target.value)}
+            placeholder="0"
+          />
+          <p className="text-xs text-gray-400 mt-0.5">Skip to this byte in file (e.g., 2270928 for inventory)</p>
         </div>
         <Button
           className="bg-blue-600 hover:bg-blue-700 gap-2"
