@@ -213,7 +213,7 @@ export default function ReportHistory() {
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
       <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="px-2 py-2 flex items-center justify-between relative">
+        <div className="px-2 py-2 flex items-center justify-between">
           <button className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/")}>
             <ArrowLeft className="w-6 h-6" />
             <span className="text-sm font-medium">Back</span>
@@ -222,31 +222,34 @@ export default function ReportHistory() {
             <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7bc9512a2_wolf_silhouette.png" className="w-8 h-8 rounded-md object-cover" alt="wolf" />
             Asset Wolf
           </span>
-          <div className="flex items-center gap-1 p-1">
-            <span className="text-xs opacity-75">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
-            <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500" onClick={exportCSV} title="Export CSV">
-              <Download className="w-5 h-5" />
-            </button>
-            {isAdmin && (
-              <button
-                className={`p-2 rounded-lg active:bg-blue-500 flex items-center gap-1 text-xs font-medium ${showHidden ? "bg-red-500 text-white hover:bg-red-600" : "text-white hover:bg-blue-600"}`}
-                onClick={() => setShowHidden(v => !v)}
-                title={showHidden ? "Hide deleted reports" : "Show deleted reports"}
-              >
-                <EyeOff className="w-4 h-4" />
-                <span className="hidden sm:inline">{showHidden ? "Hidden" : "Deleted"}</span>
-              </button>
-            )}
-            {canPostToMarketplace && (
-              <button className="text-white p-2 rounded-lg hover:bg-blue-600 active:bg-blue-500" onClick={() => navigate("/analytics")} title="Analytics">
-                <BarChart2 className="w-5 h-5" />
-              </button>
-            )}
-          </div>
+          <div className="w-20" />
         </div>
       </div>
 
-      {/* Logged-in user banner */}
+      {/* Sub-bar: actions + logged-in user */}
+      <div className="bg-white border-b shadow-sm px-4 py-2 flex items-center justify-between gap-2">
+        <span className="text-xs text-gray-500">{filtered.length} report{filtered.length !== 1 ? "s" : ""}</span>
+        <div className="flex items-center gap-1">
+          <button className="p-2 rounded-lg text-gray-600 hover:bg-gray-100" onClick={exportCSV} title="Export CSV">
+            <Download className="w-5 h-5" />
+          </button>
+          {isAdmin && (
+            <button
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-1 text-xs font-medium border ${showHidden ? "bg-red-50 border-red-300 text-red-600 hover:bg-red-100" : "border-gray-300 text-gray-600 hover:bg-gray-100"}`}
+              onClick={() => setShowHidden(v => !v)}
+              title={showHidden ? "Hide deleted reports" : "Show deleted reports"}
+            >
+              <EyeOff className="w-4 h-4" />
+              <span>{showHidden ? "Hidden" : "Deleted"}</span>
+            </button>
+          )}
+          {canPostToMarketplace && (
+            <button className="p-2 rounded-lg text-gray-600 hover:bg-gray-100" onClick={() => navigate("/analytics")} title="Analytics">
+              <BarChart2 className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      </div>
       {currentUserEmail && (
         <div className="bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
           Logged in as: {currentUserEmail}
