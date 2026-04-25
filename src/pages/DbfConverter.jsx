@@ -7,6 +7,7 @@ import TpsContactExtractor from '@/components/TpsContactExtractor';
 import RecordProber from '@/components/RecordProber';
 import CproRecordExtractor from '@/components/CproRecordExtractor';
 import InvExtractor from '@/components/InvExtractor';
+import InvImporter from '@/components/InvImporter';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
@@ -73,6 +74,12 @@ export default function DbfConverter() {
           >
             inv Extractor
           </button>
+          <button
+            onClick={() => setActiveTab('inv-import')}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv-import' ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            inv Importer
+          </button>
         </div>
 
         {activeTab === 'tps' ? (
@@ -95,11 +102,17 @@ export default function DbfConverter() {
             <p className="text-sm text-gray-500 mb-4">Extracts contacts using the mapped 552-byte record layout (name, phone, address, city/state/zip, account#).</p>
             <CproRecordExtractor />
           </div>
-        ) : (
+        ) : activeTab === 'inv' ? (
           <div className="bg-white rounded-xl border shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">Inventory (inv) Extractor</h2>
             <p className="text-sm text-gray-500 mb-4">Reads all 1356-byte records from the <code className="bg-gray-100 px-1 rounded">inv</code> file and extracts equipment descriptions, codes, and notes. Export as CSV to review.</p>
             <InvExtractor />
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Inventory (inv) Importer</h2>
+            <p className="text-sm text-gray-500 mb-4">Upload the exported <code className="bg-gray-100 px-1 rounded">inv_records.csv</code> to import equipment records into the database with smart field detection.</p>
+            <InvImporter onComplete={handleImportComplete} />
           </div>
         )}
 
