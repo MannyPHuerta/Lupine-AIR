@@ -9,7 +9,7 @@ const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
 export default function InvExtractor() {
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
-  const [headerSize, setHeaderSize] = useState(0);
+  const [headerSize, setHeaderSize] = useState(984);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [records, setRecords] = useState([]);
@@ -69,13 +69,15 @@ export default function InvExtractor() {
   };
 
   const exportCSV = () => {
-    const headers = ['#', 'ByteOffset', 'Description1', 'Description2', 'Description3', 'Description4', 'Field4', 'Code1', 'Code2', 'Notes1', 'Field5', 'Field6', 'Field7', 'FullDescription'];
-    const rows = records.map(r => [
-      r.recordIndex, r.byteOffset,
-      r.description1, r.description2, r.description3, r.description4,
-      r.field4, r.code1, r.code2, r.notes1, r.field5, r.field6, r.field7,
-      r.fullDescription,
-    ]);
+    // Find max number of raw fields across all records
+    const maxFields = Math.max(...records.map(r => r.rawFields?.length || 0), 0);
+    const fieldHeaders = Array.from({ length: maxFields }, (_, i) => `Field${i + 1}_offset\tField${i + 1}_value`).join('\t');
+    const headers = ['RecordIndex', 'ByteOffset', ...Array.from({ length: maxFields }, (_, i) => `F${i + 1}_offset`), ...Array.from({ length: maxFields }, (_, i) => `F${i + 1}_value`)];
+    const rows = records.map(r => {
+      const offsets = Array.from({ length: maxFields }, (_, i) => r.rawFields?.[i]?.offset ?? '');
+      const values = Array.from({ length: maxFields }, (_, i) => r.rawFields?.[i]?.value ?? '');
+      return [r.recordIndex, r.byteOffset, ...offsets, ...values];
+    });
     const csv = [headers, ...rows]
       .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
       .join('\n');
@@ -114,7 +116,7 @@ export default function InvExtractor() {
             onChange={e => setHeaderSize(e.target.value)}
             placeholder="0"
           />
-          <p className="text-xs text-gray-400 mt-0.5">Try 0 first, then 512 if records look wrong</p>
+          <p className="text-xs text-gray-400 mt-0.5">984 = calculated from first known hit</p>
         </div>
         <Button
           className="bg-blue-600 hover:bg-blue-700 gap-2"
@@ -153,21 +155,22 @@ export default function InvExtractor() {
                   onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
                 >
                   <span className="text-xs text-gray-400 w-12 flex-shrink-0 font-mono">#{rec.recordIndex}</span>
-                  <span className="text-sm font-medium text-gray-900 flex-1 truncate">{rec.fullDescription || '(empty)'}</span>
-                  {rec.notes1 && <span className="text-xs text-gray-500 truncate max-w-32">{rec.notes1}</span>}
+                  <span className="text-sm font-medium text-gray-900 flex-1 truncate">
+                    {rec.rawFields.slice(0, 3).map(f => f.value).join(' · ') || '(empty)'}
+                  </span>
                   {expandedIdx === idx ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
                 </button>
                 {expandedIdx === idx && (
                   <div className="px-4 pb-3 bg-gray-50 border-t">
                     <p className="text-xs text-gray-400 mb-2 font-mono">Byte offset: {rec.byteOffset}</p>
                     <div className="space-y-1">
-                      {rec.rawFields.map((f, fi) => (
+                      {rec.rawFields.length > 0 ? rec.rawFields.map((f, fi) => (
                         <div key={fi} className="flex gap-3 text-xs font-mono">
                           <span className="w-14 text-gray-400 flex-shrink-0">+{f.offset}</span>
                           <span className="w-10 text-gray-400 flex-shrink-0">[{f.length}]</span>
                           <span className="text-gray-900">{f.value}</span>
                         </div>
-                      ))}
+                      )) : <p className="text-xs text-gray-400 italic">No printable text found in this record</p>}
                     </div>
                   </div>
                 )}
