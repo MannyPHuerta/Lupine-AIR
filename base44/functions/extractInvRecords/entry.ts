@@ -1,11 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const RECORD_SIZE = 544;
+const RECORD_SIZE = 552;
 
-// Each record is 544 bytes:
-// Bytes 0–443: Equipment CSV line
-// Byte 444: Newline separator
-// Bytes 445–543: Numeric CSV line
+// Each record is 552 bytes:
+// Bytes 0–442: Equipment CSV line (variable length, null-terminated)
+// Byte 443: Newline separator
+// Bytes 444–551: Numeric CSV line (variable length, null-terminated)
 
 // Parse CSV line by splitting on comma and removing quotes
 function parseCSVLine(line) {
@@ -75,9 +75,9 @@ Deno.serve(async (req) => {
     let i = chunkRecordStart;
 
     while (i + RECORD_SIZE <= bytes.length && records.length < limit) {
-      // Extract equipment CSV (bytes 0–443) and numeric CSV (bytes 445–543)
-      const equipmentLine = extractString(bytes, i, 444).trim();
-      const numericLine = extractString(bytes, i + 445, 99).trim();
+      // Extract equipment CSV (bytes 0–442) and numeric CSV (bytes 444–551)
+      const equipmentLine = extractString(bytes, i, 443).trim();
+      const numericLine = extractString(bytes, i + 444, 108).trim();
 
       if (equipmentLine.length > 0) {
         const equipFields = parseCSVLine(equipmentLine);
