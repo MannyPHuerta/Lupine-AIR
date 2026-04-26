@@ -57,6 +57,35 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
     }
   };
 
+  const handleAddAnother = async (e) => {
+    e.preventDefault();
+    if (!form.customerName || !form.customerEmail) return;
+
+    setLoading(true);
+    try {
+      await base44.entities.Rental.create({
+        equipmentId: equipment.id,
+        startDate,
+        endDate,
+        customerName: form.customerName,
+        customerEmail: form.customerEmail,
+        customerPhone: form.customerPhone,
+        totalDays: days,
+        baseAmount: Math.round(baseAmount * 100) / 100,
+        taxRate,
+        taxAmount: Math.round(taxAmount * 100) / 100,
+        deposit,
+        status: 'pending',
+        notes: form.notes
+      });
+      onSuccess();
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
@@ -163,12 +192,21 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
               Cancel
             </Button>
             <Button
+              type="button"
+              disabled={loading || !form.customerName}
+              onClick={handleAddAnother}
+              className="flex-1 bg-indigo-500 hover:bg-indigo-600 gap-2"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : '+'}
+              {loading ? 'Adding...' : 'Add Another'}
+            </Button>
+            <Button
               type="submit"
               disabled={loading || !form.customerName}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : '✓'}
-              {loading ? 'Creating...' : 'Create Rental'}
+              {loading ? 'Creating...' : 'Done'}
             </Button>
           </div>
         </form>
