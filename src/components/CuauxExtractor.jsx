@@ -101,14 +101,37 @@ export default function CuauxExtractor() {
 
     // Known truncated word endings (too short to be a real name after the keyword)
     const isTruncatedWord = (name) => {
-      // Ends in an abruptly short word after a comma+space (e.g. "AIR COMPR", "DRILL, HAMM")
       const lastWord = name.split(/[\s,]+/).pop();
-      if (lastWord && lastWord.length <= 4 && /^[A-Z]+$/.test(lastWord)) {
-        // OK if it's a known abbreviation or a standard short word
-        const OK_SHORT = new Set(['GAS', 'ELEC', 'AIR', 'EXT', 'KIT', 'TOW', 'MAX', 'SDS', 'MIG', 'LDR', 'AMP', 'NEW', 'OLD', 'DIA', 'ABR', 'SAW', 'MG', 'RD', 'SQ', 'BIT', 'HOT', 'HON', 'TWO', 'GUN', 'BAG', 'LID', 'CAP', 'TAG', 'ROD', 'SET', 'WET']);
+      if (lastWord && lastWord.length <= 5 && /^[A-Z]+$/.test(lastWord)) {
+        const OK_SHORT = new Set([
+          'GAS', 'ELEC', 'AIR', 'EXT', 'KIT', 'TOW', 'MAX', 'SDS', 'MIG', 'LDR',
+          'AMP', 'NEW', 'OLD', 'DIA', 'ABR', 'SAW', 'MG', 'RD', 'SQ', 'BIT',
+          'HOT', 'HON', 'TWO', 'GUN', 'BAG', 'LID', 'CAP', 'TAG', 'ROD', 'SET',
+          'WET', 'HONDA', 'ELEC', 'DIESEL', 'BLACK', 'WHITE', 'STEEL', 'WHEEL',
+          'TRACK', 'FRAME', 'GRADE', 'BLADE', 'LARGE', 'SMALL', 'TOWER', 'DRIVE',
+        ]);
         if (!OK_SHORT.has(lastWord)) return true;
       }
       return false;
+    };
+
+    // Detect entries that are clearly truncated mid-word (end abruptly without a natural boundary)
+    const isMidWordTruncated = (name) => {
+      // Patterns like "AIR COMPRE", "LIFT, MATER", "SAW, RESCU", "DRILL, HAMME", "LIFT, TOWA)"
+      // These end in a partial word (not punctuation or known abbreviation)
+      const truncPatterns = [
+        /COMPRE$/, /COMPRESSO$/, /COMPR$/, /MATER$/, /RESCU$/, /HAMME$/, /HAMQ$/,
+        /CHAIM$/, /CHIAVA$/, /CHIAVAR$/, /COMPOSI$/, /STEERI$/, /TOWAQ$/, /TOWAB$/,
+        /TOWA\)$/, /TOWAQ$/, /PROPE$/, /PROP$/, /PRO$(?!P)/, /SHTG-AU$/, /SHTG-AUT$/,
+        /TOWABLE 42'-S$/, /TON\)-20-2$/, /DIESE$/, /CENT-HON$/,
+        /DIAPHRA$/, /CENTRI$/, /,\s+0[A-Z]/, /LOCATO$/, /EXTEN$/, /MORQ$/, /MORT$/,
+      ];
+      return truncPatterns.some(p => p.test(name));
+    };
+
+    // Non-equipment service/repair entries that slipped through
+    const isServiceEntry = (name) => {
+      return /^(REFUEL|REPAIR|SERVICE),?\s/.test(name);
     };
 
     return rawNames.filter(name => {
@@ -135,6 +158,12 @@ export default function CuauxExtractor() {
 
       // Reject clearly truncated words
       if (isTruncatedWord(name)) return false;
+
+      // Reject mid-word truncations
+      if (isMidWordTruncated(name)) return false;
+
+      // Reject service/repair entries
+      if (isServiceEntry(name)) return false;
 
       // Reject entries starting with a number followed by a category word (e.g. "TABLE, 0TABLE/CHAIR")
       if (/^[A-Z]+,\s+0[A-Z]/.test(name)) return false;
