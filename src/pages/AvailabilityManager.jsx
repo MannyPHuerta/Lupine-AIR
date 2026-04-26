@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2, Settings, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import RentalForm from '@/components/RentalForm';
+import RentalCart from '@/components/RentalCart';
+import CheckoutForm from '@/components/CheckoutForm';
 
 export default function AvailabilityManager() {
   const navigate = useNavigate();
@@ -15,11 +16,12 @@ export default function AvailabilityManager() {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [conflicts, setConflicts] = useState([]);
   const [migrating, setMigrating] = useState(false);
-  const [showRentalForm, setShowRentalForm] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [searchStr, setSearchStr] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [searchHighlight, setSearchHighlight] = useState(0);
-  const [lastCustomer, setLastCustomer] = useState(null);
   const searchItemsRef = useRef([]);
 
   const fetchData = async () => {
@@ -153,6 +155,37 @@ export default function AvailabilityManager() {
 
   const isConflictFree = conflicts.length === 0;
 
+  const addToCart = () => {
+    if (!selectedEquipmentId || !dateRange.start || !dateRange.end) return;
+
+    const eq = equipment.find(e => e.id === selectedEquipmentId);
+    const days = new Date(dateRange.end) - new Date(dateRange.start);
+    const daysCount = Math.floor(days / (1000 * 60 * 60 * 24)) + 1;
+
+    let rate = eq.dailyRate;
+    if (daysCount >= 30) rate = eq.monthlyRate / 30;
+    else if (daysCount >= 7) rate = eq.weeklyRate / 7;
+
+    const baseAmount = rate * daysCount;
+
+    setCartItems(prev => [...prev, {
+      equipmentId: selectedEquipmentId,
+      name: eq.name,
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+      totalDays: daysCount,
+      baseAmount: Math.round(baseAmount * 100) / 100,
+      taxRate: 0.0825,
+      taxable: eq.taxable,
+      deposit: eq.depositRequired || 0
+    }]);
+
+    // Reset for next item
+    setSelectedEquipmentId(null);
+    setDateRange({ start: '', end: '' });
+    setConflicts([]);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -189,7 +222,9 @@ export default function AvailabilityManager() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left side - item selection */}
+        <div className="lg:col-span-2 space-y-6">
         {/* Migration Banner */}
         {equipment.length === 0 && (
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
@@ -287,10 +322,10 @@ export default function AvailabilityManager() {
 
             {isConflictFree && dateRange.start && dateRange.end && (
               <Button
-                onClick={() => setShowRentalForm(true)}
+                onClick={addToCart}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
               >
-                <Plus className="w-4 h-4" /> Create Rental
+                <Plus className="w-4 h-4" /> Add to Cart
               </Button>
             )}
           </div>
@@ -339,30 +374,34 @@ export default function AvailabilityManager() {
           </div>
         </div>
 
-        {showRentalForm && selectedEquipmentId && (
-          <RentalForm
-            equipment={equipment.find(e => e.id === selectedEquipmentId)}
-            startDate={dateRange.start}
-            endDate={dateRange.end}
-            initialCustomer={lastCustomer}
-            onClose={() => setShowRentalForm(false)}
-            onSuccess={(customerData) => {
-              setLastCustomer(customerData);
-              setSelectedEquipmentId(null);
-              setDateRange({ start: '', end: '' });
-              fetchData();
-            }}
-            onAddAnother={(customerData) => {
-              setLastCustomer(customerData);
-              setSelectedEquipmentId(null);
-              fetchData();
-            }}
-          />
-        )}
+        </div>
 
-        {/* Quick Search Modal */}
-        {showSearch && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
+        {/* Right side - cart */}
+        <div className="lg:col-span-1 sticky top-20 h-fit">
+          <RentalCart
+            items={cartItems}
+            onRemove={(idx) => setCartItems(prev => prev.filter((_, i) => i !== idx))}
+            onCheckout={() => setShowCheckout(true)}
+            loading={checkoutLoading}
+          />
+        </div>
+      </div>
+
+      {showCheckout && (
+        <CheckoutForm
+          items={cartItems}
+          onClose={() => setShowCheckout(false)}
+          onSuccess={(customerData) => {
+            setShowCheckout(false);
+            setCartItems([]);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Quick Search Modal */}
+      {showSearch && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
               <div className="p-4 border-b flex items-center gap-2">
                 <Search className="w-5 h-5 text-indigo-600" />
@@ -409,9 +448,10 @@ export default function AvailabilityManager() {
                 Type to narrow • Enter to select • Esc to close • Backspace to delete
               </div>
             </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+            </div>
+            )}
+            </div>
+            );
+            }
+
+            export default AvailabilityManager;
