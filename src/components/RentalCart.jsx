@@ -13,6 +13,19 @@ export default function RentalCart({ items, onRemove, onCheckout, loading }) {
     );
   }
 
+  // Group items by equipment + dates
+  const groupedItems = items.reduce((acc, item, idx) => {
+    const key = `${item.equipmentId}-${item.startDate}-${item.endDate}`;
+    if (!acc[key]) {
+      acc[key] = { item, indices: [], quantity: 0 };
+    }
+    acc[key].indices.push(idx);
+    acc[key].quantity += 1;
+    return acc;
+  }, {});
+
+  const groupedArray = Object.values(groupedItems);
+
   const totals = items.reduce((acc, item) => {
     const baseAmount = item.baseAmount || 0;
     const taxAmount = item.taxable ? baseAmount * (item.taxRate || 0.0825) : 0;
@@ -30,25 +43,26 @@ export default function RentalCart({ items, onRemove, onCheckout, loading }) {
       {/* Header */}
       <div className="px-6 py-4 border-b">
         <h2 className="font-bold text-lg text-gray-900">Rental Cart</h2>
-        <p className="text-xs text-gray-500 mt-1">{items.length} item(s)</p>
+        <p className="text-xs text-gray-500 mt-1">{items.length} item(s) • {groupedArray.length} line(s)</p>
       </div>
 
       {/* Items List */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-        {items.map((item, idx) => {
+        {groupedArray.map(({ item, indices, quantity }) => {
           const itemTax = item.taxable ? item.baseAmount * (item.taxRate || 0.0825) : 0;
           const itemTotal = item.baseAmount + itemTax + (item.deposit || 0);
+          const lineTotal = itemTotal * quantity;
           return (
-            <div key={idx} className="border rounded-lg p-3 space-y-2">
+            <div key={indices[0]} className="border rounded-lg p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 text-sm">{item.name}</div>
+                  <div className="font-semibold text-gray-900 text-sm">{item.name} <span className="text-indigo-600">×{quantity}</span></div>
                   <div className="text-xs text-gray-500">
                     {item.startDate} → {item.endDate} ({item.totalDays} days)
                   </div>
                 </div>
                 <button
-                  onClick={() => onRemove(idx)}
+                  onClick={() => onRemove(indices[0])}
                   className="text-gray-400 hover:text-red-600 p-1"
                   title="Remove item"
                 >
@@ -58,23 +72,23 @@ export default function RentalCart({ items, onRemove, onCheckout, loading }) {
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between text-gray-600">
                   <span>Rental:</span>
-                  <span className="font-medium">${item.baseAmount.toFixed(2)}</span>
+                  <span className="font-medium">${(item.baseAmount * quantity).toFixed(2)}</span>
                 </div>
                 {item.taxable && (
                   <div className="flex justify-between text-gray-600">
                     <span>Tax:</span>
-                    <span className="font-medium">${itemTax.toFixed(2)}</span>
+                    <span className="font-medium">${(itemTax * quantity).toFixed(2)}</span>
                   </div>
                 )}
                 {item.deposit > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>Deposit:</span>
-                    <span className="font-medium">${item.deposit.toFixed(2)}</span>
+                    <span>Deposits:</span>
+                    <span className="font-medium">${((item.deposit || 0) * quantity).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="border-t pt-1 flex justify-between font-bold text-gray-900">
-                  <span>Subtotal:</span>
-                  <span>${itemTotal.toFixed(2)}</span>
+                  <span>Line Total:</span>
+                  <span>${lineTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
