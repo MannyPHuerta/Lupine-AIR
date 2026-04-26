@@ -56,8 +56,54 @@ export default function CuauxExtractor() {
     setLoading(false);
   };
 
+  // Post-process: remove junk entries from the final list
+  const cleanFinalList = (rawNames) => {
+    const REJECT_STARTS = [
+      'X', // truncated prefix entries like XCHAIR, XLOADER, XHAIR
+    ];
+    const REJECT_PREFIXES = [
+      'EWER ', 'PPER ', 'FFICE ', 'WCOMPT', 'NAT CREEK', 'MID WAY WELD', 'DBA HAT',
+      'TEX AIR ', 'BORDER AIR ', 'ALTAIR', 'PLEDGER', 'BERCLAIR',
+    ];
+    const REJECT_CONTAINS = [
+      'STOLE', 'GOOD CUSTOMER', 'TRACKING ACCT', 'STORE CREDIT', 'GIVING CUSTOMER',
+      'BOUGHT', 'SEEMS SHAKY', 'ON 185 CAUSING', 'INVOLVED IN BACKHOE',
+      'CUSTOMER BUSTED', 'CUSTOMER DAMAGED', 'DID SAME THING',
+      'FOR DEPOSIT', 'REF LIGHT TOWER CONTRACT', 'TRACKING ACCT',
+      'QONEED', 'HE DID USE', 'ALL LIGHT TOWERS 50',
+      'COMPTROLLER', 'CONTROLLER', 'ACCOUNTANT', 'THEY BUY OUR',
+      'DEPOSIT TO HOLD', 'SERVICE, GENERATOR', 'BOUGHT 8-ROLLER',
+    ];
+    // Reject entries that are clearly truncated (no closing paren when opened, or end mid-word)
+    const hasUnclosedParen = (s) => {
+      const opens = (s.match(/\(/g) || []).length;
+      const closes = (s.match(/\)/g) || []).length;
+      return opens > closes;
+    };
+
+    return rawNames.filter(name => {
+      // Single-letter prefix junk (XCHAIR etc.)
+      if (/^X[A-Z]/.test(name) && name.length > 2 && !'XCAVATOR'.includes(name.slice(0, 5))) return false;
+
+      // Reject by known junk prefixes
+      if (REJECT_PREFIXES.some(p => name.startsWith(p))) return false;
+
+      // Reject by contained phrases
+      if (REJECT_CONTAINS.some(p => name.includes(p))) return false;
+
+      // Reject truncated (unclosed parens only for short entries)
+      if (hasUnclosedParen(name) && name.length < 30) return false;
+
+      // Reject obviously truncated — ends in a space then a single char other than valid abbreviations
+      if (/\s[A-Z]$/.test(name) && !/(HP|HP|CF|KW|KV|LB|FT|IN)$/.test(name)) return false;
+
+      return true;
+    });
+  };
+
   const exportCSV = () => {
-    const csv = ['EquipmentName', ...names]
+    const cleanedNames = cleanFinalList(names);
+    const csv = ['EquipmentName', ...cleanedNames]
       .map(v => `"${String(v).replace(/"/g, '""')}"`)
       .join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -99,7 +145,7 @@ export default function CuauxExtractor() {
         </Button>
         {names.length > 0 && (
           <Button variant="outline" className="gap-2" onClick={exportCSV}>
-            <Download className="w-4 h-4" /> Export CSV ({names.length} names)
+            <Download className="w-4 h-4" /> Export CSV ({cleanFinalList(names).length} names)
           </Button>
         )}
       </div>
@@ -107,18 +153,21 @@ export default function CuauxExtractor() {
       {progress && <p className="text-sm text-gray-600 font-medium">{progress}</p>}
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
 
-      {names.length > 0 && (
-        <div className="rounded-lg border overflow-hidden">
-          <div className="bg-gray-50 border-b px-3 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-            Preview — first 100 of {names.length} names
+      {names.length > 0 && (() => {
+        const cleaned = cleanFinalList(names);
+        return (
+          <div className="rounded-lg border overflow-hidden">
+            <div className="bg-gray-50 border-b px-3 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Preview — first 100 of {cleaned.length} names
+            </div>
+            <div className="divide-y max-h-96 overflow-y-auto">
+              {cleaned.slice(0, 100).map((name, i) => (
+                <div key={i} className="px-3 py-1.5 text-sm font-mono text-gray-800">{name}</div>
+              ))}
+            </div>
           </div>
-          <div className="divide-y max-h-96 overflow-y-auto">
-            {names.slice(0, 100).map((name, i) => (
-              <div key={i} className="px-3 py-1.5 text-sm font-mono text-gray-800">{name}</div>
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
