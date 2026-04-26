@@ -233,6 +233,13 @@ export default function AvailabilityManager() {
             >
               <Settings className="w-5 h-5" />
             </button>
+            <button
+              onClick={() => navigate('/dependencies-editor')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Manage dependencies"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>

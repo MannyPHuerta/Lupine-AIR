@@ -24,6 +24,7 @@ import LupinePlan from "./pages/LupinePlan";
 import CatalogReview from "./pages/CatalogReview";
 import AvailabilityManager from "./pages/AvailabilityManager";
 import PricingEditor from "./pages/PricingEditor";
+import DependenciesEditor from "./pages/DependenciesEditor";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -74,6 +75,7 @@ const AuthenticatedApp = () => {
       <Route path="/catalog-review" element={<CatalogReview />} />
       <Route path="/availability" element={<AvailabilityManager />} />
       <Route path="/pricing-editor" element={<PricingEditor />} />
+      <Route path="/dependencies-editor" element={<DependenciesEditor />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
