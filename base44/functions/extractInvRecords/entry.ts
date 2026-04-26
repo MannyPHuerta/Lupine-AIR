@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const RECORD_SIZE = 1356;
+const RECORD_SIZE = 552;
 
 // Each record is 552 bytes:
 // Bytes 0–442: Equipment CSV line (variable length, null-terminated)
@@ -27,15 +27,18 @@ function parseCSVLine(line) {
   return fields;
 }
 
-// Extract bytes as string, trimming nulls
+// Extract bytes as string, replacing nulls/non-printable with space, then trim
 function extractString(bytes, start, len) {
   let str = '';
   for (let i = start; i < start + len && i < bytes.length; i++) {
     const b = bytes[i];
-    if (b === 0) break;
-    if (b >= 0x20 && b <= 0x7E) str += String.fromCharCode(b);
+    if (b >= 0x20 && b <= 0x7E) {
+      str += String.fromCharCode(b);
+    } else {
+      str += ' ';
+    }
   }
-  return str;
+  return str.trim();
 }
 
 Deno.serve(async (req) => {
