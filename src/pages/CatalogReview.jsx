@@ -6,6 +6,7 @@ import CatalogStats from '@/components/catalog/CatalogStats';
 import CatalogFilters from '@/components/catalog/CatalogFilters';
 import CatalogTable from '@/components/catalog/CatalogTable';
 import CatalogEditModal from '@/components/catalog/CatalogEditModal';
+import CatalogCategorizer from '@/components/catalog/CatalogCategorizer';
 
 const PAGE_SIZE = 100;
 
@@ -147,6 +148,15 @@ export default function CatalogReview() {
           </div>
         ) : (
           <>
+            {selected.size > 0 && (
+              <div className="bg-white rounded-xl border shadow-sm p-4">
+                <CatalogCategorizer
+                  items={items.filter(i => selected.has(i.id))}
+                  onCategorized={() => { setSelected(new Set()); fetchItems(); }}
+                />
+              </div>
+            )}
+
             <CatalogTable
               items={items}
               selected={selected}
