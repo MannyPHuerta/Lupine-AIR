@@ -7,6 +7,7 @@ import CatalogFilters from '@/components/catalog/CatalogFilters';
 import CatalogTable from '@/components/catalog/CatalogTable';
 import CatalogEditModal from '@/components/catalog/CatalogEditModal';
 import CatalogCategorizer from '@/components/catalog/CatalogCategorizer';
+import CatalogBulkImport from '@/components/catalog/CatalogBulkImport';
 
 const PAGE_SIZE = 100;
 
@@ -125,6 +126,10 @@ export default function CatalogReview() {
               <Loader2 className="w-4 h-4 animate-spin" /> Saving…
             </div>
           )}
+          <div className="ml-auto flex gap-2 items-center">
+            <span className="text-indigo-200 text-xs font-medium">{total} records</span>
+            <CatalogBulkImport onComplete={fetchItems} />
+          </div>
         </div>
       </div>
 
