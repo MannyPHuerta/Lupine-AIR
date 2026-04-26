@@ -9,23 +9,35 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all items that need review
-    const items = await base44.asServiceRole.entities.InventoryItem.list('-created_date', 10000);
-    const needsApproval = items.filter(item => !item.reviewStatus && (item.description1 || item.description2 || item.serialNumber));
-
-    // Update all in bulk via service role
+    // Get items without reviewStatus (needs review) in batches
     let approved = 0;
-    for (let i = 0; i < needsApproval.length; i += 50) {
-      const batch = needsApproval.slice(i, i + 50);
-      await Promise.all(
-        batch.map(item => 
-          base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' })
-        )
+    let offset = 0;
+    const batchSize = 100;
+    
+    while (true) {
+      const items = await base44.asServiceRole.entities.InventoryItem.filter(
+        { reviewStatus: { $exists: false } },
+        '-created_date',
+        batchSize,
+        offset
       );
-      approved += batch.length;
+      
+      if (items.length === 0) break;
+      
+      // Filter for items with actual content
+      const validItems = items.filter(item => item.description1 || item.description2 || item.serialNumber);
+      
+      // Update sequentially with delay to avoid rate limits
+      for (const item of validItems) {
+        await base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' });
+        await new Promise(r => setTimeout(r, 10));
+      }
+      
+      approved += validItems.length;
+      offset += batchSize;
     }
 
-    return Response.json({ approved, total: needsApproval.length });
+    return Response.json({ approved });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
