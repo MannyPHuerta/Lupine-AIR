@@ -10,6 +10,7 @@ import InvExtractor from '@/components/InvExtractor';
 import InvImporter from '@/components/InvImporter';
 import InvOffsetExtractor from '@/components/InvOffsetExtractor';
 import CuauxExtractor from '@/components/CuauxExtractor';
+import CatalogBulkLoader from '@/components/CatalogBulkLoader';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
@@ -45,54 +46,60 @@ export default function DbfConverter() {
       <div className="max-w-4xl mx-auto p-4 space-y-6">
 
         {/* Tab selector */}
-        <div className="flex gap-2 bg-white border rounded-lg p-1 shadow-sm">
+        <div className="flex gap-2 bg-white border rounded-lg p-1 shadow-sm flex-wrap">
           <button
             onClick={() => setActiveTab('tps')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'tps' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'tps' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            CPro / TPS Extractor
+            CPro / TPS
           </button>
           <button
             onClick={() => setActiveTab('dbf')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'dbf' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'dbf' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             DBF Importer
           </button>
           <button
             onClick={() => setActiveTab('probe')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'probe' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'probe' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            Record Prober
+            Prober
           </button>
           <button
             onClick={() => setActiveTab('extract')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'extract' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'extract' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            CPro Extractor
+            CPro
           </button>
           <button
             onClick={() => setActiveTab('inv')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv' ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv' ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            inv Extractor
+            inv Extract
           </button>
           <button
             onClick={() => setActiveTab('inv-import')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv-import' ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv-import' ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            inv Importer
+            inv Import
           </button>
           <button
             onClick={() => setActiveTab('inv-offset')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv-offset' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv-offset' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            inv by Offset
+            inv Offset
           </button>
           <button
             onClick={() => setActiveTab('cuaux')}
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'cuaux' ? 'bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'cuaux' ? 'bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            cuaux Catalog
+            cuaux
+          </button>
+          <button
+            onClick={() => setActiveTab('bulk-import')}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'bulk-import' ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            Bulk Load
           </button>
         </div>
 
@@ -134,6 +141,12 @@ export default function DbfConverter() {
             <p className="text-sm text-gray-500 mb-4">Uses the byte offsets already in the database to extract the exact content of each record — no fixed record size guessing.</p>
             <InvOffsetExtractor />
           </div>
+        ) : activeTab === 'bulk-import' ? (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Bulk Load Catalog</h2>
+            <p className="text-sm text-gray-500 mb-4">Upload the cleaned CSV file to populate the entire equipment catalog (1,117+ items).</p>
+            <CatalogBulkLoader onComplete={handleImportComplete} />
+          </div>
         ) : (
           <div className="bg-white rounded-xl border shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">cuaux Equipment Catalog Extractor</h2>
@@ -148,7 +161,7 @@ export default function DbfConverter() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Import Summary</h2>
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="text-2xl font-bold text-green-700">{importComplete.totalRecords}</div>
+                <div className="text-2xl font-bold text-green-700">{importComplete.totalRecords || importComplete.imported || 0}</div>
                 <div className="text-sm text-gray-600">Records Imported</div>
               </div>
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
