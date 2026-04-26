@@ -76,7 +76,7 @@ export default function CuauxExtractor() {
       'ALL LIGHT TOWERS 50', 'COMPTROLLER', 'CONTROLLER',
       'ACCOUNTANT', 'THEY BUY OUR', 'DEPOSIT TO HOLD',
       'BOUGHT 8-ROLLER', 'WITH ADJUSTMENT ON',
-      'SANTA SUITE', 'M+ROLAND',
+      'M+ROLAND',
     ];
     const REJECT_EXACT = new Set([
       'WALK BEHIND', 'ROLLER', 'SAWZALL', 'SDS MAX', 'SDS MAX)', 'SDS PLUS',
