@@ -70,6 +70,8 @@ export default function CuauxExtractor() {
     ];
     const REJECT_CONTAINS = [
       'STOLE', 'GOOD CUSTOMER', 'TRACKING ACCT', 'STORE CREDIT', 'GIVING CUSTOMER',
+      'INFLATABLE1V/', 'INFLATABLEEYK', 'INFLATABLENU', 'INFLATABLENW',
+      'INFLATABLEQS', 'INFLATABLEVS', 'INFLATABLEWS',
       'BOUGHT', 'SEEMS SHAKY', 'ON 185 CAUSING', 'INVOLVED IN BACKHOE',
       'CUSTOMER BUSTED', 'CUSTOMER DAMAGED', 'DID SAME THING',
       'FOR DEPOSIT', 'REF LIGHT TOWER', 'QONEED', 'HE DID USE',
@@ -80,6 +82,7 @@ export default function CuauxExtractor() {
     ];
     const REJECT_EXACT = new Set([
       'WALK BEHIND', 'ROLLER', 'SAWZALL', 'SDS MAX', 'SDS MAX)', 'SDS PLUS',
+      'BLADE, DIA', 'BLADE, FINISH', 'BLADE, ABR', 'BLADE, COMBINATION',
       'SDS MAX (SELF SHARPENING)', 'SDS MAX 11316', 'FLOOR SANDER',
       'SCAFFOLDING', 'SCREED', 'TAMPER', 'TRENCHER', 'LOADER', 'BACKHOE',
       'GENERATOR', "GENERATOR'", 'EXCAVATOR',
@@ -117,14 +120,13 @@ export default function CuauxExtractor() {
 
     // Detect entries that are clearly truncated mid-word (end abruptly without a natural boundary)
     const isMidWordTruncated = (name) => {
-      // Patterns like "AIR COMPRE", "LIFT, MATER", "SAW, RESCU", "DRILL, HAMME", "LIFT, TOWA)"
-      // These end in a partial word (not punctuation or known abbreviation)
       const truncPatterns = [
         /COMPRE$/, /COMPRESSO$/, /COMPR$/, /MATER$/, /RESCU$/, /HAMME$/, /HAMQ$/,
         /CHAIM$/, /CHIAVA$/, /CHIAVAR$/, /COMPOSI$/, /STEERI$/, /TOWAQ$/, /TOWAB$/,
-        /TOWA\)$/, /TOWAQ$/, /PROPE$/, /PROP$/, /PRO$(?!P)/, /SHTG-AU$/, /SHTG-AUT$/,
-        /TOWABLE 42'-S$/, /TON\)-20-2$/, /DIESE$/, /CENT-HON$/,
-        /DIAPHRA$/, /CENTRI$/, /,\s+0[A-Z]/, /LOCATO$/, /EXTEN$/, /MORQ$/, /MORT$/,
+        /TOWA\)$/, /PROPE$/, /SHTG-AU$/, /SHTG-AUT$/, /TOWABLE 42'-S$/,
+        /TON\)-20-2$/, /DIESE$/, /CENT-HON$/, /DIAPHRA$/, /CENTRI$/, /,\s+0[A-Z]/,
+        /LOCATO$/, /EXTEN$/, /MORQ$/, /MORT$/, /RESA$/, /W\/O$/, /GAS LARGE W\/O$/,
+        /SHREDER$/, / W\/0UT$/, /CONC\.$/, /BORING 0KIT$/,
       ];
       return truncPatterns.some(p => p.test(name));
     };
