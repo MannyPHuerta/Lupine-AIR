@@ -33,6 +33,10 @@ export default function AvailabilityManager() {
     fetchData();
   }, []);
 
+  const searchResults = searchStr
+    ? equipment.filter(eq => eq.name.toUpperCase().startsWith(searchStr))
+    : [];
+
   // Quick search by accumulated letters
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -64,10 +68,6 @@ export default function AvailabilityManager() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [showSearch, showRentalForm, searchResults]);
-
-  const searchResults = searchStr
-    ? equipment.filter(eq => eq.name.toUpperCase().startsWith(searchStr))
-    : [];
 
   const handleMigrate = async () => {
     setMigrating(true);
