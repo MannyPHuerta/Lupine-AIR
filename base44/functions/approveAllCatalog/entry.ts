@@ -9,31 +9,28 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get items without reviewStatus (needs review) in batches
+    // Get all items and filter client-side
     let approved = 0;
     let offset = 0;
     const batchSize = 100;
     
     while (true) {
-      const items = await base44.asServiceRole.entities.InventoryItem.filter(
-        { reviewStatus: { $exists: false } },
-        '-created_date',
-        batchSize,
-        offset
-      );
+      const items = await base44.asServiceRole.entities.InventoryItem.list('-created_date', batchSize, offset);
       
       if (items.length === 0) break;
       
-      // Filter for items with actual content
-      const validItems = items.filter(item => item.description1 || item.description2 || item.serialNumber);
+      // Filter for items needing review (no reviewStatus AND has content)
+      const needsApproval = items.filter(item => 
+        !item.reviewStatus && (item.description1 || item.description2 || item.serialNumber)
+      );
       
-      // Update sequentially with delay to avoid rate limits
-      for (const item of validItems) {
+      // Update sequentially with delay
+      for (const item of needsApproval) {
         await base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' });
         await new Promise(r => setTimeout(r, 10));
       }
       
-      approved += validItems.length;
+      approved += needsApproval.length;
       offset += batchSize;
     }
 
