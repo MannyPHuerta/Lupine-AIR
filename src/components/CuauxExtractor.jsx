@@ -58,32 +58,72 @@ export default function CuauxExtractor() {
 
   // Post-process: remove junk entries from the final list
   const cleanFinalList = (rawNames) => {
-    const REJECT_STARTS = [
-      'X', // truncated prefix entries like XCHAIR, XLOADER, XHAIR
-    ];
     const REJECT_PREFIXES = [
-      'EWER ', 'PPER ', 'FFICE ', 'WCOMPT', 'NAT CREEK', 'MID WAY WELD', 'DBA HAT',
+      // Truncated-word prefixes (mid-word fragments from binary)
+      'EWER ', 'PPER ', 'FFICE ', 'WCOMPT', 'LDR, SKIDSTEERI',
+      'NAT CREEK', 'MID WAY WELD', 'DBA HAT',
       'TEX AIR ', 'BORDER AIR ', 'ALTAIR', 'PLEDGER', 'BERCLAIR',
+      // Single-letter or 2-letter fragments at start
+      'R AUGER', 'R, SKID', 'N MOWER',
+      'M+', 'HAIR, WOOD', 'AIR, WOOD', 'AIR, FOLD',
+      'OF TRENCHER', 'FOR LOADER',
     ];
     const REJECT_CONTAINS = [
       'STOLE', 'GOOD CUSTOMER', 'TRACKING ACCT', 'STORE CREDIT', 'GIVING CUSTOMER',
       'BOUGHT', 'SEEMS SHAKY', 'ON 185 CAUSING', 'INVOLVED IN BACKHOE',
       'CUSTOMER BUSTED', 'CUSTOMER DAMAGED', 'DID SAME THING',
-      'FOR DEPOSIT', 'REF LIGHT TOWER CONTRACT', 'TRACKING ACCT',
-      'QONEED', 'HE DID USE', 'ALL LIGHT TOWERS 50',
-      'COMPTROLLER', 'CONTROLLER', 'ACCOUNTANT', 'THEY BUY OUR',
-      'DEPOSIT TO HOLD', 'SERVICE, GENERATOR', 'BOUGHT 8-ROLLER',
+      'FOR DEPOSIT', 'REF LIGHT TOWER', 'QONEED', 'HE DID USE',
+      'ALL LIGHT TOWERS 50', 'COMPTROLLER', 'CONTROLLER',
+      'ACCOUNTANT', 'THEY BUY OUR', 'DEPOSIT TO HOLD',
+      'BOUGHT 8-ROLLER', 'WITH ADJUSTMENT ON',
+      'SANTA SUITE', 'M+ROLAND',
+      'JITTERBUG ROLLER', 'HURRICANE ALLEY', 'ROLLER BOWLER',
+      'ROLLER RACER', 'CHUGGY CHOO', 'SUMO WRESTLING',
+      'QB BLITZ', 'PK SHOOTOUT', 'BATTER UP', 'FULL COURT PRESS',
     ];
-    // Reject entries that are clearly truncated (no closing paren when opened, or end mid-word)
+    const REJECT_EXACT = new Set([
+      'WHEELCHAIR, 16" ADULT', 'WHEELCHAIR, 16"-20" WIDE', 'WHEELCHAIR, ADULT 16" WIDE',
+      'WHEELCHAIR, BLACK JAGUAR', 'WHEELCHAIR, DESK', 'WHEELCHAIR, DESK ARM',
+      'WHEELCHAIR, DESK ARM 18" WIDE', 'WHEELCHAIR, HEAVY DUTY 20"',
+      'WHEELCHAIR, HEAVY DUTY 20" WIDE',
+      'WALK BEHIND', 'ROLLER', 'SAWZALL', 'SDS MAX', 'SDS MAX)', 'SDS PLUS',
+      'SDS MAX (SELF SHARPENING)', 'SDS MAX 11316', 'FLOOR SANDER',
+      'SCAFFOLDING', 'SCREED', 'TAMPER', 'TRENCHER', 'LOADER', 'BACKHOE',
+      'GENERATOR', "GENERATOR'", 'EXCAVATOR', 'HIGH CHAIR, FOLDING',
+      'PLATE COMPACTOR', 'SANDBLASTER', 'DEHUMIDIFIER', 'COMPRESSOR (DIESEL)',
+      'HOT PRESSURE WASHER', 'PRESSURE WASHER', 'PRESSURE WASHER 2500PSI',
+      'HOSE FOR 8HP COMPRESSOR', 'OZONE GENERATOR',
+      'TRENCHER RENTAL ONLY', 'TRENCHER.', 'WALK BEHIND TRENCHER',
+    ]);
+    // Truncated-word patterns: entries that end abruptly mid-word or with trailing junk codes
+    const TRUNCATED_ENDINGS = /(\s[A-Z]{1,4}'[A-Z0-9]{1,3}|Q'[A-Z0-9]+)$/; // e.g. Q'QO, Q'7XP, Q'XT, Q'AS
+    const TRUNCATED_SUFFIX = /\s[A-Z]{1}$/; // ends with space + single capital (not an abbreviation)
+    const VALID_ABBREV_ENDS = /\s(HP|CF|KW|KVA|KV|LB|FT|IN|OZ|TON|DIA|GAS|ELEC|HD|RD|MG|SDS)$/;
+
     const hasUnclosedParen = (s) => {
       const opens = (s.match(/\(/g) || []).length;
       const closes = (s.match(/\)/g) || []).length;
       return opens > closes;
     };
 
+    // Known truncated word endings (too short to be a real name after the keyword)
+    const isTruncatedWord = (name) => {
+      // Ends in an abruptly short word after a comma+space (e.g. "AIR COMPR", "DRILL, HAMM")
+      const lastWord = name.split(/[\s,]+/).pop();
+      if (lastWord && lastWord.length <= 4 && /^[A-Z]+$/.test(lastWord)) {
+        // OK if it's a known abbreviation or a standard short word
+        const OK_SHORT = new Set(['GAS', 'ELEC', 'AIR', 'EXT', 'KIT', 'TOW', 'MAX', 'SDS', 'MIG', 'LDR', 'AMP', 'NEW', 'OLD', 'DIA', 'ABR', 'SAW', 'MG', 'RD', 'SQ', 'BIT', 'HOT', 'HON', 'TWO', 'GUN', 'BAG', 'LID', 'CAP', 'TAG', 'ROD', 'SET', 'WET']);
+        if (!OK_SHORT.has(lastWord)) return true;
+      }
+      return false;
+    };
+
     return rawNames.filter(name => {
-      // Single-letter prefix junk (XCHAIR etc.)
-      if (/^X[A-Z]/.test(name) && name.length > 2 && !'XCAVATOR'.includes(name.slice(0, 5))) return false;
+      // Exact reject set
+      if (REJECT_EXACT.has(name)) return false;
+
+      // X-prefix truncated fragments (XCHAIR, XHAIR, XLOADER etc.)
+      if (/^X[A-Z]/.test(name) && !name.startsWith('XCAVATOR')) return false;
 
       // Reject by known junk prefixes
       if (REJECT_PREFIXES.some(p => name.startsWith(p))) return false;
@@ -91,11 +131,23 @@ export default function CuauxExtractor() {
       // Reject by contained phrases
       if (REJECT_CONTAINS.some(p => name.includes(p))) return false;
 
-      // Reject truncated (unclosed parens only for short entries)
-      if (hasUnclosedParen(name) && name.length < 30) return false;
+      // Reject internal code suffixes like Q'QO, Q'XT
+      if (TRUNCATED_ENDINGS.test(name)) return false;
 
-      // Reject obviously truncated — ends in a space then a single char other than valid abbreviations
-      if (/\s[A-Z]$/.test(name) && !/(HP|HP|CF|KW|KV|LB|FT|IN)$/.test(name)) return false;
+      // Reject unclosed parens on short entries
+      if (hasUnclosedParen(name) && name.length < 35) return false;
+
+      // Reject entries ending in single capital that isn't a known abbreviation
+      if (TRUNCATED_SUFFIX.test(name) && !VALID_ABBREV_ENDS.test(name)) return false;
+
+      // Reject clearly truncated words
+      if (isTruncatedWord(name)) return false;
+
+      // Reject entries starting with a number followed by a category word (e.g. "TABLE, 0TABLE/CHAIR")
+      if (/^[A-Z]+,\s+0[A-Z]/.test(name)) return false;
+
+      // Reject stray apostrophe at end
+      if (name.endsWith("'")) return false;
 
       return true;
     });
