@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Plus, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -13,19 +13,34 @@ export default function AvailabilityManager() {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(null);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [conflicts, setConflicts] = useState([]);
+  const [migrating, setMigrating] = useState(false);
+
+  const fetchData = async () => {
+    const [eq, rent] = await Promise.all([
+      base44.entities.Equipment.list('-created_date', 500),
+      base44.entities.Rental.list('-created_date', 1000)
+    ]);
+    setEquipment(eq);
+    setRentals(rent);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const [eq, rent] = await Promise.all([
-        base44.entities.Equipment.list('-created_date', 500),
-        base44.entities.Rental.list('-created_date', 1000)
-      ]);
-      setEquipment(eq);
-      setRentals(rent);
-      setLoading(false);
-    };
     fetchData();
   }, []);
+
+  const handleMigrate = async () => {
+    setMigrating(true);
+    try {
+      const result = await base44.functions.invoke('migrateItemsToEquipment', {});
+      await fetchData();
+      alert(`✓ Created ${result.created} equipment items`);
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setMigrating(false);
+    }
+  };
 
   const checkConflicts = (equipId, startDate, endDate) => {
     const start = new Date(startDate);
@@ -87,6 +102,21 @@ export default function AvailabilityManager() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {/* Migration Banner */}
+        {equipment.length === 0 && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
+            <p className="text-sm text-indigo-900">No equipment yet. Migrate approved catalog items to get started.</p>
+            <Button
+              onClick={handleMigrate}
+              disabled={migrating}
+              className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+            >
+              {migrating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {migrating ? 'Migrating...' : 'Migrate Catalog'}
+            </Button>
+          </div>
+        )}
+
         {/* Quick Check Availability */}
         <div className="bg-white rounded-xl border shadow-sm p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
