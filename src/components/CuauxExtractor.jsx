@@ -83,6 +83,7 @@ export default function CuauxExtractor() {
     const REJECT_EXACT = new Set([
       'WALK BEHIND', 'ROLLER', 'SAWZALL', 'SDS MAX', 'SDS MAX)', 'SDS PLUS',
       'BLADE, DIA', 'BLADE, FINISH', 'BLADE, ABR', 'BLADE, COMBINATION',
+      'LIFT, SELF-PRO', 'LIFT, SELF-PROP',
       'SDS MAX (SELF SHARPENING)', 'SDS MAX 11316', 'FLOOR SANDER',
       'SCAFFOLDING', 'SCREED', 'TAMPER', 'TRENCHER', 'LOADER', 'BACKHOE',
       'GENERATOR', "GENERATOR'", 'EXCAVATOR',
@@ -170,8 +171,8 @@ export default function CuauxExtractor() {
       // Reject entries starting with a number followed by a category word (e.g. "TABLE, 0TABLE/CHAIR")
       if (/^[A-Z]+,\s+0[A-Z]/.test(name)) return false;
 
-      // Reject stray apostrophe at end
-      if (name.endsWith("'")) return false;
+      // Reject stray apostrophe or semicolon at end
+      if (name.endsWith("'") || name.endsWith(';')) return false;
 
       return true;
     });
