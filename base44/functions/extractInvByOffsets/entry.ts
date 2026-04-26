@@ -1,27 +1,32 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Extract printable ASCII text from a byte range, treating non-printable as delimiters
-function extractText(bytes, start, len) {
-  let result = '';
+// Extract runs of printable ASCII text (min length 4) from a byte range
+function extractFields(bytes, start, len) {
+  const MIN_RUN = 4;
+  const fields = [];
+  let run = '';
+
   for (let i = start; i < start + len && i < bytes.length; i++) {
     const b = bytes[i];
     if (b >= 0x20 && b <= 0x7E) {
-      result += String.fromCharCode(b);
-    } else if (b === 0x0D || b === 0x0A || b === 0x00) {
-      // treat CR/LF/null as field separator
-      result += '\x01'; // use a placeholder separator
+      run += String.fromCharCode(b);
+    } else {
+      // Non-printable byte ends the current run
+      if (run.length >= MIN_RUN) {
+        // Split the run on commas, keep non-empty trimmed segments >= MIN_RUN
+        const parts = run.split(',').map(s => s.trim()).filter(s => s.length >= MIN_RUN);
+        fields.push(...parts);
+      }
+      run = '';
     }
   }
-  return result;
-}
+  // Flush final run
+  if (run.length >= MIN_RUN) {
+    const parts = run.split(',').map(s => s.trim()).filter(s => s.length >= MIN_RUN);
+    fields.push(...parts);
+  }
 
-// Parse comma-separated fields from text, ignoring empty segments
-function parseFields(text) {
-  // Split on commas or our placeholder separator, filter garbage
-  const parts = text.split(/[,\x01]+/);
-  return parts
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+  return fields;
 }
 
 Deno.serve(async (req) => {
@@ -66,8 +71,7 @@ Deno.serve(async (req) => {
 
       if (localLen <= 0) continue;
 
-      const text = extractText(bytes, localStart, localLen);
-      const rawFields = parseFields(text);
+      const rawFields = extractFields(bytes, localStart, localLen);
 
       if (rawFields.length === 0) continue;
 
