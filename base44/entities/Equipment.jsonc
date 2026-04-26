@@ -53,6 +53,36 @@
     "notes": {
       "type": "string",
       "description": "Condition, special handling, restrictions"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "equipmentId": {
+            "type": "string",
+            "description": "ID of the dependent equipment"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the dependent equipment (denormalized for quick lookup)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this item is recommended (e.g., 'Pads for this buffer')"
+          },
+          "minQuantity": {
+            "type": "integer",
+            "default": 1,
+            "description": "Minimum recommended quantity"
+          }
+        },
+        "required": [
+          "equipmentId",
+          "name"
+        ]
+      },
+      "description": "Items that should be suggested when this equipment is ordered"
     }
   },
   "required": [

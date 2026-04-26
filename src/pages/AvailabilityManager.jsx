@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import RentalCart from '@/components/RentalCart';
 import CheckoutForm from '@/components/CheckoutForm';
+import EquipmentRecommendations from '@/components/EquipmentRecommendations';
 
 export default function AvailabilityManager() {
   const navigate = useNavigate();
@@ -156,10 +157,10 @@ export default function AvailabilityManager() {
 
   const isConflictFree = conflicts.length === 0;
 
-  const addToCart = () => {
-    if (!selectedEquipmentId || !dateRange.start || !dateRange.end || quantity < 1) return;
+  const addItemToCart = (equipmentId, qty = 1) => {
+    if (!equipmentId || !dateRange.start || !dateRange.end || qty < 1) return;
 
-    const eq = equipment.find(e => e.id === selectedEquipmentId);
+    const eq = equipment.find(e => e.id === equipmentId);
     const days = new Date(dateRange.end) - new Date(dateRange.start);
     const daysCount = Math.floor(days / (1000 * 60 * 60 * 24)) + 1;
 
@@ -169,10 +170,10 @@ export default function AvailabilityManager() {
 
     const baseAmount = rate * daysCount;
 
-    // Add quantity times
-    for (let i = 0; i < quantity; i++) {
+    // Add qty times
+    for (let i = 0; i < qty; i++) {
       setCartItems(prev => [...prev, {
-        equipmentId: selectedEquipmentId,
+        equipmentId: equipmentId,
         name: eq.name,
         startDate: dateRange.start,
         endDate: dateRange.end,
@@ -183,12 +184,21 @@ export default function AvailabilityManager() {
         deposit: eq.depositRequired || 0
       }]);
     }
+  };
 
+  const addToCart = () => {
+    if (!selectedEquipmentId || !dateRange.start || !dateRange.end || quantity < 1) return;
+    addItemToCart(selectedEquipmentId, quantity);
+    
     // Reset for next item
     setSelectedEquipmentId(null);
     setDateRange({ start: '', end: '' });
     setConflicts([]);
     setQuantity(1);
+  };
+
+  const handleAddRecommendation = (rec) => {
+    addItemToCart(rec.equipmentId, rec.minQuantity || 1);
   };
 
   if (loading) {
@@ -358,6 +368,15 @@ export default function AvailabilityManager() {
                 >
                   <Plus className="w-4 h-4" /> Add {quantity} to Cart
                 </Button>
+
+                <EquipmentRecommendations
+                  selectedEquipment={equipment.find(e => e.id === selectedEquipmentId)}
+                  equipment={equipment}
+                  cartItems={cartItems}
+                  onAddRecommendation={handleAddRecommendation}
+                  dateRange={dateRange}
+                  quantity={quantity}
+                />
               </div>
             )}
           </div>
