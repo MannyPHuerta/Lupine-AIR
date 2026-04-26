@@ -20,6 +20,7 @@ import ContactReview from "./pages/ContactReview";
 import StaffPhoneManager from "./pages/StaffPhoneManager";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import LupinePlan from "./pages/LupinePlan";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
       <Route path="/staff-phones" element={<StaffPhoneManager />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/lupine" element={<LupinePlan />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
