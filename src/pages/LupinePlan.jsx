@@ -88,7 +88,7 @@ export default function LupinePlan() {
           </button>
           <div>
             <div className="text-lg font-bold tracking-tight">Project Lupine</div>
-            <div className="text-indigo-300 text-xs">Master Development Trajectory — v4.0 | April 2026 | Confidential</div>
+            <div className="text-indigo-300 text-xs">Master Development Trajectory — v5.0 | April 2026 | Confidential</div>
           </div>
           <div className="ml-auto flex gap-2 flex-wrap justify-end">
             <Badge color="green">Phase 0 Active</Badge>
@@ -112,27 +112,101 @@ export default function LupinePlan() {
         <Section title="⚙️ Phase 0 — Data Migration Wizard  |  Now → Q3 2026" defaultOpen={true}>
           <InfoBox>Goal: Revenue now, clean data for later. This becomes the sales tool — "We migrate you in a day."</InfoBox>
 
-          <div className="font-semibold text-gray-800 mb-2">CPro Migration Track</div>
+          {/* Migration Philosophy */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 my-3">
+            <div className="font-bold text-green-900 text-sm mb-2">📋 Migration Philosophy — Tiered Archive Model</div>
+            <div className="text-green-800 text-xs space-y-2">
+              <p>Proven in high-stakes data migrations (including medical EMR transitions): attempting to digitize and migrate every historical record is expensive, error-prone, and almost never necessary. The tiered approach:</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                <div className="bg-white border border-green-200 rounded p-2">
+                  <div className="font-semibold text-green-800 mb-1">🗄️ Tier 1 — Archive</div>
+                  <div className="text-green-700">Records 2+ years old. Stay in CPro. Never touched. Frozen read-only. Pulled only if legally required.</div>
+                </div>
+                <div className="bg-white border border-green-200 rounded p-2">
+                  <div className="font-semibold text-green-800 mb-1">📁 Tier 2 — Retain In-House</div>
+                  <div className="text-green-700">Records under 2 years, not currently active. Kept accessible in CPro. Archived at the 2-year mark naturally.</div>
+                </div>
+                <div className="bg-white border border-green-200 rounded p-2">
+                  <div className="font-semibold text-green-800 mb-1">✅ Tier 3 — Active / New</div>
+                  <div className="text-green-700">Active contracts digitized as needed at cutover. All new business created in Lupine from day one.</div>
+                </div>
+              </div>
+              <p className="mt-2 font-medium">CPro remains live (read-only) for 12 months post-cutover. Frozen and archived after that. Never deleted.</p>
+            </div>
+          </div>
+
+          {/* What to migrate */}
+          <div className="font-semibold text-gray-800 mb-2 mt-3">Migration Scope — Intentional Decisions</div>
+          <Table
+            headers={['Data Type', 'Action', 'Rationale']}
+            rows={[
+              ['Equipment catalog', '✅ Full extraction → Lupine', 'Core operational data — already done'],
+              ['Customer records (active)', '✅ Extract → Lupine', 'Needed for day-one operations'],
+              ['Customer records (inactive <2yr)', '📁 Retain in CPro', 'Available on request; archive at 2yr mark'],
+              ['Customer records (2yr+)', '🗄️ Archive in CPro', 'Frozen; never migrated'],
+              ['Vendor records', '✅ Extract → Lupine + QB', 'Needed for parts/purchasing workflow'],
+              ['Open/active contracts', '✅ Manual transfer at cutover', 'Small number; faster to enter than migrate'],
+              ['Rental rate tables', '✅ Extract if readable, else re-enter', 'TBD on APro format'],
+              ['AR history / invoices', '❌ Stay in CPro', 'Historical reference only; not operational'],
+              ['Payment / ledger history', '❌ Stay in CPro', 'CPro is the archive — do not duplicate'],
+              ['Payroll history', '❌ Stay in CPro', 'Legal retention in original system'],
+              ['Tax records', '❌ Stay in CPro', 'Never migrated — original system is the record'],
+            ]}
+          />
+
+          {/* QuickBooks */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 my-3 text-xs text-blue-800">
+            <div className="font-bold mb-1">💼 QuickBooks Integration at Cutover</div>
+            <p>If subscriber already has QuickBooks: customer list and vendor list import via CSV in minutes. Opening AR balances entered as a single journal entry by their bookkeeper (1–2 hours of work, not a migration). Historical invoices stay in CPro — importing them into QB creates reconciliation nightmares and is never worth the effort.</p>
+            <p className="mt-1">If subscriber is NOT on QuickBooks yet: one-time QB setup (chart of accounts, opening balances) with a bookkeeper. A few hours, not a software project. Subscriber's chart of accounts can be seeded from APro extraction if the data is readable.</p>
+            <p className="mt-1 font-medium">Rate tables live in Lupine entirely — QB doesn't do rental rate management.</p>
+          </div>
+
+          {/* Cutover Strategy */}
+          <div className="font-semibold text-gray-800 mb-2 mt-3">Cutover Strategy</div>
+          <Code>{`Pre-Cutover (CPro still primary)
+  · All new quotes still go into CPro
+  · Lupine running parallel — catalog live, staff training
+  · Migration team extracting and validating data
+
+Cutover Day
+  · Customer records (active) loaded into Lupine ✅
+  · Equipment catalog live in Lupine ✅
+  · Open contracts transferred manually (small number) ✅
+  · Opening AR balances recorded in QB as lump entry ✅
+  · CPro switched to read-only for staff reference
+
+Post-Cutover
+  · All new business → Lupine only
+  · CPro read-only for 12 months (staff can look up old records)
+  · Old contracts close naturally in CPro
+  · CPro frozen and archived after 12 months
+  · Never deleted — legal and tax record preserved`}</Code>
+
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 my-2 text-xs text-indigo-800">
+            <strong>The subscriber pitch:</strong> "Historical financial records remain in CPro, which stays live in read-only mode for 12 months. Your bookkeeper records opening balances in QuickBooks in an afternoon. All new business from cutover forward runs through Lupine + QuickBooks. This is cleaner, faster, and eliminates the reconciliation risk of migrating years of transaction history into a new system. This is a feature, not a limitation."
+          </div>
+
+          <div className="font-semibold text-gray-800 mt-4 mb-2">CPro Extraction Track</div>
           <CheckItem done>Binary file extractors (cuaux, inv, TPS/DBF)</CheckItem>
           <CheckItem done>Equipment catalog extracted (1,117 items)</CheckItem>
           <CheckItem>Field mapping UI with AI-assisted suggestions</CheckItem>
           <CheckItem>Deduplication and conflict resolution</CheckItem>
           <CheckItem>Staged import with preview/approval before commit</CheckItem>
-          <CheckItem>Customer record migration (CPro contacts)</CheckItem>
+          <CheckItem>Active customer records extraction</CheckItem>
 
-          <div className="font-semibold text-gray-800 mt-4 mb-2">APro Migration Track</div>
+          <div className="font-semibold text-gray-800 mt-4 mb-2">APro Extraction Track <span className="text-gray-400 font-normal text-xs">(narrowed scope — accounting history stays in APro)</span></div>
           <CheckItem>APro binary format analysis and schema mapping</CheckItem>
-          <CheckItem>Customer account balance & payment history extraction</CheckItem>
-          <CheckItem>Invoice history extraction (rental history, not just catalog)</CheckItem>
-          <CheckItem>Vendor record migration</CheckItem>
-          <CheckItem>Chart of accounts extraction (maps to QB integration in Phase 6)</CheckItem>
-          <CheckItem>Cross-reference CPro ↔ APro records via shared account numbers</CheckItem>
-          <CheckItem>Employee/payroll history extraction</CheckItem>
+          <CheckItem>Vendor records extraction → Lupine + QB import</CheckItem>
+          <CheckItem>Rental rate table extraction (if format permits)</CheckItem>
+          <CheckItem>Cross-reference CPro ↔ APro account numbers for customer matching</CheckItem>
+          <CheckItem>Chart of accounts extraction → seeds QB setup (if subscriber needs it)</CheckItem>
 
           <div className="font-semibold text-gray-800 mt-4 mb-2">Migration Infrastructure</div>
-          <CheckItem>Export to standard formats (CSV, JSON, future API)</CheckItem>
+          <CheckItem>Export to standard formats (CSV, JSON)</CheckItem>
           <CheckItem>Migration session history and rollback</CheckItem>
           <CheckItem>Data validation report before commit</CheckItem>
+          <CheckItem>Cutover checklist tool — tracks readiness across all migration tasks</CheckItem>
         </Section>
 
         {/* Phase 1 */}
@@ -607,7 +681,7 @@ Cannot submit until ⚠️ items resolved.`}</Code>
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-400 py-6 border-t border-gray-200 mt-4">
-          <div className="font-semibold text-gray-600 mb-1">Project Lupine — v4.0 | April 2026</div>
+          <div className="font-semibold text-gray-600 mb-1">Project Lupine — v5.0 | April 2026</div>
           <div>Confidential — Rental World LLC</div>
           <div className="mt-1 italic">"The floor plan is the order."</div>
         </div>
