@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2, Settings } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2, Settings, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import RentalForm from '@/components/RentalForm';
@@ -16,6 +16,8 @@ export default function AvailabilityManager() {
   const [conflicts, setConflicts] = useState([]);
   const [migrating, setMigrating] = useState(false);
   const [showRentalForm, setShowRentalForm] = useState(false);
+  const [searchLetter, setSearchLetter] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const fetchData = async () => {
     const [eq, rent] = await Promise.all([
@@ -30,6 +32,26 @@ export default function AvailabilityManager() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Quick search by letter
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !showRentalForm) {
+        e.preventDefault();
+        setSearchLetter(e.key.toUpperCase());
+        setShowSearch(true);
+      }
+      if (e.key === 'Escape') {
+        setShowSearch(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showRentalForm]);
+
+  const searchResults = searchLetter
+    ? equipment.filter(eq => eq.name.toUpperCase().startsWith(searchLetter))
+    : [];
 
   const handleMigrate = async () => {
     setMigrating(true);
@@ -272,6 +294,48 @@ export default function AvailabilityManager() {
               setSelectedEquipmentId(null);
             }}
           />
+        )}
+
+        {/* Quick Search Modal */}
+        {showSearch && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+              <div className="p-4 border-b flex items-center gap-2">
+                <Search className="w-5 h-5 text-indigo-600" />
+                <span className="font-semibold text-lg">{searchLetter}</span>
+                <span className="text-sm text-gray-500 ml-auto">{searchResults.length} result(s)</span>
+                <button
+                  onClick={() => setShowSearch(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto">
+                {searchResults.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">No equipment starting with "{searchLetter}"</div>
+                ) : (
+                  <div className="divide-y">
+                    {searchResults.map(eq => (
+                      <button
+                        key={eq.id}
+                        onClick={() => {
+                          setSelectedEquipmentId(eq.id);
+                          setShowSearch(false);
+                          setSearchLetter('');
+                        }}
+                        className="w-full px-4 py-3 hover:bg-indigo-50 transition text-left"
+                      >
+                        <div className="font-medium text-gray-900">{eq.name}</div>
+                        <div className="text-xs text-gray-500">{eq.category} • ${eq.dailyRate}/day</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
