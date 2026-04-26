@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const RECORD_SIZE = 552;
+const RECORD_SIZE = 1356;
 
 // Each record is 552 bytes:
 // Bytes 0–442: Equipment CSV line (variable length, null-terminated)
@@ -75,28 +75,17 @@ Deno.serve(async (req) => {
     let i = chunkRecordStart;
 
     while (i + RECORD_SIZE <= bytes.length && records.length < limit) {
-      // Extract equipment CSV (bytes 0–442) and numeric CSV (bytes 444–551)
-      const equipmentLine = extractString(bytes, i, 443).trim();
-      const numericLine = extractString(bytes, i + 444, 108).trim();
+      // Read the whole record as a single text block
+      const recordText = extractString(bytes, i, RECORD_SIZE).trim();
 
-      if (equipmentLine.length > 0) {
-        const equipFields = parseCSVLine(equipmentLine);
-        const numFields = parseCSVLine(numericLine);
+      if (recordText.length > 0) {
+        const rawFields = parseCSVLine(recordText);
 
         const rec = {
           recordIndex: Math.floor((globalOffset + i - hdr) / RECORD_SIZE),
           byteOffset: globalOffset + i,
-          rawFields: equipFields,
-          rawNumeric: numFields,
+          rawFields,
         };
-
-        // Map CSV fields to known attributes (adjust based on actual column order)
-        rec.description1 = equipFields[2] || '';
-        rec.description2 = equipFields[3] || '';
-        rec.serialNumber = equipFields[6] || '';
-        rec.assignedTo = equipFields[8] ? [equipFields[8]] : [];
-        rec.location = equipFields[9] || '';
-        rec.disposition = equipFields[10] || '';
 
         records.push(rec);
       }
