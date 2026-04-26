@@ -70,11 +70,10 @@ export default function InvExtractor() {
 
   const exportCSV = () => {
     const maxFields = Math.max(...records.map(r => r.rawFields?.length || 0), 0);
-    const headers = ['RecordIndex', 'ByteOffset', ...Array.from({ length: maxFields }, (_, i) => `F${i + 1}_offset`), ...Array.from({ length: maxFields }, (_, i) => `F${i + 1}_value`)];
+    const headers = ['RecordIndex', 'ByteOffset', ...Array.from({ length: maxFields }, (_, i) => `F${i + 1}`)];
     const rows = records.map(r => {
-      const offsets = Array.from({ length: maxFields }, (_, i) => r.rawFields?.[i]?.offset ?? '');
-      const values = Array.from({ length: maxFields }, (_, i) => r.rawFields?.[i]?.value ?? '');
-      return [r.recordIndex, r.byteOffset, ...offsets, ...values];
+      const values = Array.from({ length: maxFields }, (_, i) => r.rawFields?.[i] ?? '');
+      return [r.recordIndex, r.byteOffset, ...values];
     });
     const csv = [headers, ...rows]
       .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
