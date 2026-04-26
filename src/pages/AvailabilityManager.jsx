@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2, Settings, Search, X } from 'lucide-react';
@@ -19,6 +19,7 @@ export default function AvailabilityManager() {
   const [searchStr, setSearchStr] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [searchHighlight, setSearchHighlight] = useState(0);
+  const searchItemsRef = useRef([]);
 
   const fetchData = async () => {
     const [eq, rent] = await Promise.all([
@@ -64,11 +65,19 @@ export default function AvailabilityManager() {
         }
         if (e.key === 'ArrowDown') {
           e.preventDefault();
-          setSearchHighlight(prev => Math.min(prev + 1, searchResults.length - 1));
+          setSearchHighlight(prev => {
+            const next = Math.min(prev + 1, searchResults.length - 1);
+            setTimeout(() => searchItemsRef.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
+            return next;
+          });
         }
         if (e.key === 'ArrowUp') {
           e.preventDefault();
-          setSearchHighlight(prev => Math.max(prev - 1, 0));
+          setSearchHighlight(prev => {
+            const next = Math.max(prev - 1, 0);
+            setTimeout(() => searchItemsRef.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
+            return next;
+          });
         }
         if (e.key === 'Enter' && searchResults.length > 0) {
           e.preventDefault();
@@ -370,6 +379,7 @@ export default function AvailabilityManager() {
                     {searchResults.map((eq, idx) => (
                       <button
                         key={eq.id}
+                        ref={el => searchItemsRef.current[idx] = el}
                         onClick={() => {
                           setSelectedEquipmentId(eq.id);
                           setShowSearch(false);
