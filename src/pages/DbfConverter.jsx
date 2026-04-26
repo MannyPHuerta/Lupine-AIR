@@ -8,6 +8,7 @@ import RecordProber from '@/components/RecordProber';
 import CproRecordExtractor from '@/components/CproRecordExtractor';
 import InvExtractor from '@/components/InvExtractor';
 import InvImporter from '@/components/InvImporter';
+import InvOffsetExtractor from '@/components/InvOffsetExtractor';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
@@ -80,6 +81,12 @@ export default function DbfConverter() {
           >
             inv Importer
           </button>
+          <button
+            onClick={() => setActiveTab('inv-offset')}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'inv-offset' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            inv by Offset
+          </button>
         </div>
 
         {activeTab === 'tps' ? (
@@ -108,11 +115,17 @@ export default function DbfConverter() {
             <p className="text-sm text-gray-500 mb-4">Reads all 1356-byte records from the <code className="bg-gray-100 px-1 rounded">inv</code> file and extracts equipment descriptions, codes, and notes. Export as CSV to review.</p>
             <InvExtractor />
           </div>
-        ) : (
+        ) : activeTab === 'inv-import' ? (
           <div className="bg-white rounded-xl border shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">Inventory (inv) Importer</h2>
             <p className="text-sm text-gray-500 mb-4">Upload the exported <code className="bg-gray-100 px-1 rounded">inv_records.csv</code> to import equipment records into the database with smart field detection.</p>
             <InvImporter onComplete={handleImportComplete} />
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">inv Extractor by Stored Offsets</h2>
+            <p className="text-sm text-gray-500 mb-4">Uses the byte offsets already in the database to extract the exact content of each record — no fixed record size guessing.</p>
+            <InvOffsetExtractor />
           </div>
         )}
 
