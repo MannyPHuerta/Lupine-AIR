@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     // Get all items and filter client-side
     let approved = 0;
     let offset = 0;
-    const batchSize = 50;
+    const batchSize = 25;
     
     while (true) {
       const items = await base44.asServiceRole.entities.InventoryItem.list('-created_date', batchSize, offset);
@@ -24,17 +24,17 @@ Deno.serve(async (req) => {
         !item.reviewStatus && (item.description1 || item.description2 || item.serialNumber)
       );
       
-      // Update sequentially with longer delay to respect rate limits
+      // Update sequentially with aggressive delay
       for (const item of needsApproval) {
         await base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' });
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 300));
       }
       
       approved += needsApproval.length;
       offset += batchSize;
       
-      // Delay between batches
-      await new Promise(r => setTimeout(r, 500));
+      // Longer delay between batches
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     return Response.json({ approved });
