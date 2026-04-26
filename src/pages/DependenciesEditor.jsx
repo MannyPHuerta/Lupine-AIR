@@ -18,7 +18,7 @@ export default function DependenciesEditor() {
 
   useEffect(() => {
     base44.entities.Equipment.list('-created_date', 500).then(eq => {
-      setEquipment(eq);
+      setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setLoading(false);
     });
   }, []);

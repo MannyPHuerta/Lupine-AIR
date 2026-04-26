@@ -31,7 +31,7 @@ export default function AvailabilityManager() {
       base44.entities.Equipment.list('-created_date', 500),
       base44.entities.Rental.list('-created_date', 1000)
     ]);
-    setEquipment(eq);
+    setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
     setRentals(rent);
     setLoading(false);
   };
