@@ -19,6 +19,7 @@ export default function AvailabilityManager() {
   const [cartItems, setCartItems] = useState([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const [searchStr, setSearchStr] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [searchHighlight, setSearchHighlight] = useState(0);
@@ -156,7 +157,7 @@ export default function AvailabilityManager() {
   const isConflictFree = conflicts.length === 0;
 
   const addToCart = () => {
-    if (!selectedEquipmentId || !dateRange.start || !dateRange.end) return;
+    if (!selectedEquipmentId || !dateRange.start || !dateRange.end || quantity < 1) return;
 
     const eq = equipment.find(e => e.id === selectedEquipmentId);
     const days = new Date(dateRange.end) - new Date(dateRange.start);
@@ -168,22 +169,26 @@ export default function AvailabilityManager() {
 
     const baseAmount = rate * daysCount;
 
-    setCartItems(prev => [...prev, {
-      equipmentId: selectedEquipmentId,
-      name: eq.name,
-      startDate: dateRange.start,
-      endDate: dateRange.end,
-      totalDays: daysCount,
-      baseAmount: Math.round(baseAmount * 100) / 100,
-      taxRate: 0.0825,
-      taxable: eq.taxable,
-      deposit: eq.depositRequired || 0
-    }]);
+    // Add quantity times
+    for (let i = 0; i < quantity; i++) {
+      setCartItems(prev => [...prev, {
+        equipmentId: selectedEquipmentId,
+        name: eq.name,
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+        totalDays: daysCount,
+        baseAmount: Math.round(baseAmount * 100) / 100,
+        taxRate: 0.0825,
+        taxable: eq.taxable,
+        deposit: eq.depositRequired || 0
+      }]);
+    }
 
     // Reset for next item
     setSelectedEquipmentId(null);
     setDateRange({ start: '', end: '' });
     setConflicts([]);
+    setQuantity(1);
   };
 
   if (loading) {
@@ -254,10 +259,11 @@ export default function AvailabilityManager() {
               <select
                 value={selectedEquipmentId || ''}
                 onChange={(e) => {
-                  setSelectedEquipmentId(e.target.value);
-                  setDateRange({ start: '', end: '' });
-                  setConflicts([]);
-                }}
+                   setSelectedEquipmentId(e.target.value);
+                   setDateRange({ start: '', end: '' });
+                   setConflicts([]);
+                   setQuantity(1);
+                 }}
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="">Select equipment...</option>
@@ -321,12 +327,38 @@ export default function AvailabilityManager() {
             )}
 
             {isConflictFree && dateRange.start && dateRange.end && (
-              <Button
-                onClick={addToCart}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
-              >
-                <Plus className="w-4 h-4" /> Add to Cart
-              </Button>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-3 py-2 border rounded-lg hover:bg-gray-50"
+                    >
+                      −
+                    </button>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="text-center"
+                    />
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="px-3 py-2 border rounded-lg hover:bg-gray-50"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  onClick={addToCart}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Add {quantity} to Cart
+                </Button>
+              </div>
             )}
           </div>
         </div>
