@@ -45,13 +45,17 @@ export default function AvailabilityManager() {
         setSearchStr(prev => (prev + e.key).toUpperCase());
         setShowSearch(true);
       }
-      if (e.key === 'Backspace' && showSearch) {
+      if (e.key === 'Backspace' && !showRentalForm) {
         e.preventDefault();
-        setSearchStr(prev => {
-          const next = prev.slice(0, -1);
-          if (!next) setSelectedEquipmentId(null);
-          return next;
-        });
+        if (showSearch) {
+          setSearchStr(prev => {
+            const next = prev.slice(0, -1);
+            if (!next) setSelectedEquipmentId(null);
+            return next;
+          });
+        } else if (selectedEquipmentId) {
+          setSelectedEquipmentId(null);
+        }
       }
       if (e.key === 'Escape') {
         setShowSearch(false);
@@ -67,7 +71,7 @@ export default function AvailabilityManager() {
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showSearch, showRentalForm, searchResults]);
+  }, [showSearch, showRentalForm, searchResults, selectedEquipmentId]);
 
   const handleMigrate = async () => {
     setMigrating(true);
