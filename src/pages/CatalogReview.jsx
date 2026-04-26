@@ -72,11 +72,21 @@ export default function CatalogReview() {
     // Update sequentially with delay to avoid rate limits
     for (const id of ids) {
       await base44.entities.InventoryItem.update(id, { reviewStatus: status });
-      await new Promise(r => setTimeout(r, 50)); // 50ms delay between updates
+      await new Promise(r => setTimeout(r, 50));
     }
     setSelected(new Set());
     await fetchItems();
     setSaving(false);
+  };
+
+  const approveAll = async () => {
+    setSaving(true);
+    try {
+      await base44.functions.invoke('approveAllCatalog', {});
+      await fetchItems();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveEdit = async (updated) => {
@@ -140,16 +150,25 @@ export default function CatalogReview() {
       <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
         <CatalogStats onFilterClick={setFilter} />
 
-        <CatalogFilters
-          filter={filter}
-          setFilter={setFilter}
-          search={search}
-          setSearch={setSearch}
-          selected={selected}
-          onApproveSelected={() => markItems([...selected], 'approved')}
-          onJunkSelected={() => markItems([...selected], 'junk')}
-          saving={saving}
-        />
+        <div className="flex gap-2">
+          <CatalogFilters
+            filter={filter}
+            setFilter={setFilter}
+            search={search}
+            setSearch={setSearch}
+            selected={selected}
+            onApproveSelected={() => markItems([...selected], 'approved')}
+            onJunkSelected={() => markItems([...selected], 'junk')}
+            saving={saving}
+          />
+          <button
+            onClick={approveAll}
+            disabled={saving}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg whitespace-nowrap"
+          >
+            ✓ Approve All
+          </button>
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-20">
