@@ -30,6 +30,11 @@
       "type": "number",
       "description": "Security deposit (USD)"
     },
+    "taxable": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this equipment is subject to sales tax"
+    },
     "status": {
       "type": "string",
       "enum": [

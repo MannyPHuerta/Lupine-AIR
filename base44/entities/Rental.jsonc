@@ -36,6 +36,14 @@
       "type": "number",
       "description": "Rental cost before tax/fees (USD)"
     },
+    "taxRate": {
+      "type": "number",
+      "description": "Sales tax rate (as decimal, e.g. 0.0825 for 8.25%)"
+    },
+    "taxAmount": {
+      "type": "number",
+      "description": "Calculated tax amount (USD)"
+    },
     "deposit": {
       "type": "number",
       "description": "Security deposit charged (USD)"

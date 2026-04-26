@@ -12,6 +12,7 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
     customerPhone: '',
     notes: ''
   });
+  const [taxRate, setTaxRate] = useState(0.0825); // Default TX rate
   const [loading, setLoading] = useState(false);
 
   const days = differenceInDays(new Date(endDate), new Date(startDate)) + 1;
@@ -22,8 +23,9 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
   else if (days >= 7) rate = equipment.weeklyRate / 7;
 
   const baseAmount = rate * days;
+  const taxAmount = equipment.taxable ? baseAmount * taxRate : 0;
   const deposit = equipment.depositRequired || 0;
-  const total = baseAmount + deposit;
+  const total = baseAmount + taxAmount + deposit;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,6 +42,8 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
         customerPhone: form.customerPhone,
         totalDays: days,
         baseAmount: Math.round(baseAmount * 100) / 100,
+        taxRate,
+        taxAmount: Math.round(taxAmount * 100) / 100,
         deposit,
         status: 'pending',
         notes: form.notes
@@ -116,12 +120,33 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
             />
           </div>
 
+          {/* Tax Rate */}
+          {equipment.taxable && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={(taxRate * 100).toFixed(2)}
+                onChange={(e) => setTaxRate(parseFloat(e.target.value) / 100)}
+              />
+            </div>
+          )}
+
           {/* Pricing */}
           <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Base ({days} days @ ${rate.toFixed(2)}/day):</span>
               <span className="font-medium">${baseAmount.toFixed(2)}</span>
             </div>
+            {equipment.taxable && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tax ({(taxRate * 100).toFixed(2)}%):</span>
+                <span className="font-medium">${taxAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-600">Deposit:</span>
               <span className="font-medium">${deposit.toFixed(2)}</span>
