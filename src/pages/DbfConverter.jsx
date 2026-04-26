@@ -9,6 +9,7 @@ import CproRecordExtractor from '@/components/CproRecordExtractor';
 import InvExtractor from '@/components/InvExtractor';
 import InvImporter from '@/components/InvImporter';
 import InvOffsetExtractor from '@/components/InvOffsetExtractor';
+import CuauxExtractor from '@/components/CuauxExtractor';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
@@ -87,6 +88,12 @@ export default function DbfConverter() {
           >
             inv by Offset
           </button>
+          <button
+            onClick={() => setActiveTab('cuaux')}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'cuaux' ? 'bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            cuaux Catalog
+          </button>
         </div>
 
         {activeTab === 'tps' ? (
@@ -121,11 +128,17 @@ export default function DbfConverter() {
             <p className="text-sm text-gray-500 mb-4">Upload the exported <code className="bg-gray-100 px-1 rounded">inv_records.csv</code> to import equipment records into the database with smart field detection.</p>
             <InvImporter onComplete={handleImportComplete} />
           </div>
-        ) : (
+        ) : activeTab === 'inv-offset' ? (
           <div className="bg-white rounded-xl border shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">inv Extractor by Stored Offsets</h2>
             <p className="text-sm text-gray-500 mb-4">Uses the byte offsets already in the database to extract the exact content of each record — no fixed record size guessing.</p>
             <InvOffsetExtractor />
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">cuaux Equipment Catalog Extractor</h2>
+            <p className="text-sm text-gray-500 mb-4">Scans the cuaux file to extract every unique equipment name for a complete, lossless catalog export.</p>
+            <CuauxExtractor />
           </div>
         )}
 
