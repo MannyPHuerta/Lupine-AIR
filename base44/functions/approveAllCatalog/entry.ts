@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     }
 
     // Get all items that need review
-    const items = await base44.asServiceRole.entities.InventoryItem.list('-created_date', 5000);
+    const items = await base44.asServiceRole.entities.InventoryItem.list('-created_date', 10000);
     const needsApproval = items.filter(item => !item.reviewStatus && (item.description1 || item.description2 || item.serialNumber));
 
     // Update all in bulk via service role
