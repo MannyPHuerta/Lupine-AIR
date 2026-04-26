@@ -19,6 +19,7 @@ export default function AvailabilityManager() {
   const [searchStr, setSearchStr] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [searchHighlight, setSearchHighlight] = useState(0);
+  const [lastCustomer, setLastCustomer] = useState(null);
   const searchItemsRef = useRef([]);
 
   const fetchData = async () => {
@@ -343,11 +344,18 @@ export default function AvailabilityManager() {
             equipment={equipment.find(e => e.id === selectedEquipmentId)}
             startDate={dateRange.start}
             endDate={dateRange.end}
+            initialCustomer={lastCustomer}
             onClose={() => setShowRentalForm(false)}
-            onSuccess={() => {
-              fetchData();
-              setDateRange({ start: '', end: '' });
+            onSuccess={(customerData) => {
+              setLastCustomer(customerData);
               setSelectedEquipmentId(null);
+              setDateRange({ start: '', end: '' });
+              fetchData();
+            }}
+            onAddAnother={(customerData) => {
+              setLastCustomer(customerData);
+              setSelectedEquipmentId(null);
+              fetchData();
             }}
           />
         )}

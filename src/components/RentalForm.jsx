@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Loader2, X } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 
-export default function RentalForm({ equipment, startDate, endDate, onClose, onSuccess }) {
+export default function RentalForm({ equipment, startDate, endDate, onClose, onSuccess, onAddAnother, initialCustomer }) {
   const [form, setForm] = useState({
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    notes: ''
+    customerName: initialCustomer?.customerName || '',
+    customerEmail: initialCustomer?.customerEmail || '',
+    customerPhone: initialCustomer?.customerPhone || '',
+    notes: initialCustomer?.notes || ''
   });
   const [taxRate, setTaxRate] = useState(0.0825); // Default TX rate
   const [loading, setLoading] = useState(false);
@@ -48,7 +48,7 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
         status: 'pending',
         notes: form.notes
       });
-      onSuccess();
+      onSuccess(form);
       onClose();
     } catch (error) {
       alert(`Error: ${error.message}`);
@@ -78,7 +78,7 @@ export default function RentalForm({ equipment, startDate, endDate, onClose, onS
         status: 'pending',
         notes: form.notes
       });
-      onSuccess();
+      onAddAnother(form);
     } catch (error) {
       alert(`Error: ${error.message}`);
     } finally {
