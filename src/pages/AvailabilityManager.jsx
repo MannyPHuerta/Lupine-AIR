@@ -16,7 +16,7 @@ export default function AvailabilityManager() {
   const [conflicts, setConflicts] = useState([]);
   const [migrating, setMigrating] = useState(false);
   const [showRentalForm, setShowRentalForm] = useState(false);
-  const [searchLetter, setSearchLetter] = useState('');
+  const [searchStr, setSearchStr] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
   const fetchData = async () => {
@@ -33,24 +33,35 @@ export default function AvailabilityManager() {
     fetchData();
   }, []);
 
-  // Quick search by letter
+  // Quick search by accumulated letters
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !showRentalForm) {
         e.preventDefault();
-        setSearchLetter(e.key.toUpperCase());
+        setSearchStr(prev => (prev + e.key).toUpperCase());
         setShowSearch(true);
+      }
+      if (e.key === 'Backspace' && showSearch) {
+        e.preventDefault();
+        setSearchStr(prev => prev.slice(0, -1));
       }
       if (e.key === 'Escape') {
         setShowSearch(false);
+        setSearchStr('');
+      }
+      if (e.key === 'Enter' && showSearch && searchResults.length > 0) {
+        e.preventDefault();
+        setSelectedEquipmentId(searchResults[0].id);
+        setShowSearch(false);
+        setSearchStr('');
       }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showRentalForm]);
+  }, [showSearch, showRentalForm]);
 
-  const searchResults = searchLetter
-    ? equipment.filter(eq => eq.name.toUpperCase().startsWith(searchLetter))
+  const searchResults = searchStr
+    ? equipment.filter(eq => eq.name.toUpperCase().startsWith(searchStr))
     : [];
 
   const handleMigrate = async () => {
@@ -302,10 +313,13 @@ export default function AvailabilityManager() {
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
               <div className="p-4 border-b flex items-center gap-2">
                 <Search className="w-5 h-5 text-indigo-600" />
-                <span className="font-semibold text-lg">{searchLetter}</span>
-                <span className="text-sm text-gray-500 ml-auto">{searchResults.length} result(s)</span>
+                <span className="font-mono font-bold text-xl text-indigo-700">{searchStr}</span>
+                <span className="text-sm text-gray-500 ml-auto">{searchResults.length} match(es)</span>
                 <button
-                  onClick={() => setShowSearch(false)}
+                  onClick={() => {
+                    setShowSearch(false);
+                    setSearchStr('');
+                  }}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="w-5 h-5" />
@@ -314,18 +328,20 @@ export default function AvailabilityManager() {
 
               <div className="max-h-96 overflow-y-auto">
                 {searchResults.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">No equipment starting with "{searchLetter}"</div>
+                  <div className="p-6 text-center text-gray-500">No matches for "{searchStr}"</div>
                 ) : (
                   <div className="divide-y">
-                    {searchResults.map(eq => (
+                    {searchResults.map((eq, idx) => (
                       <button
                         key={eq.id}
                         onClick={() => {
                           setSelectedEquipmentId(eq.id);
                           setShowSearch(false);
-                          setSearchLetter('');
+                          setSearchStr('');
                         }}
-                        className="w-full px-4 py-3 hover:bg-indigo-50 transition text-left"
+                        className={`w-full px-4 py-3 transition text-left ${
+                          idx === 0 ? 'bg-indigo-50 hover:bg-indigo-100' : 'hover:bg-gray-50'
+                        }`}
                       >
                         <div className="font-medium text-gray-900">{eq.name}</div>
                         <div className="text-xs text-gray-500">{eq.category} • ${eq.dailyRate}/day</div>
@@ -333,6 +349,9 @@ export default function AvailabilityManager() {
                     ))}
                   </div>
                 )}
+              </div>
+              <div className="p-3 bg-gray-50 border-t text-xs text-gray-600">
+                Type to narrow • Enter to select • Esc to close • Backspace to delete
               </div>
             </div>
           </div>
