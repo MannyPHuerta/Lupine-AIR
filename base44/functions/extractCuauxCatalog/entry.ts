@@ -1,8 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Extract runs of printable ASCII (min length 8) from a byte slice
+// Extract runs of printable ASCII (min length 6) from a byte slice
 function extractTextRuns(bytes, start, len) {
-  const MIN_RUN = 8;
+  const MIN_RUN = 6;
   const runs = [];
   let run = '';
 
@@ -19,31 +19,67 @@ function extractTextRuns(bytes, start, len) {
   return runs;
 }
 
-// Clean a raw text run into candidate equipment name tokens
-function cleanAndSplit(raw) {
-  // Strip leading > or . prefix chars
-  const cleaned = raw.replace(/^[>.]+/, '').trim();
+// Equipment name patterns — must look like a real equipment catalog entry
+// Format: starts with capital letter, mostly uppercase words, no digits-only,
+// no credit card patterns, no sentence punctuation like ! ? . at start
+function isEquipmentName(str) {
+  const s = str.trim();
 
-  // Split on sequences of non-name chars (control suffixes like " 5", " 1", " -", " %", " e", " i", etc.)
-  // We split on: trailing single char + optional whitespace at boundaries between names
-  // Names are separated by a short suffix char followed by whitespace or end
-  const parts = cleaned.split(/\s+[a-z%\-\d]{1,3}\s+(?=[A-Z])/);
+  // Must be 4–80 chars
+  if (s.length < 4 || s.length > 80) return false;
 
-  const results = [];
-  for (const part of parts) {
-    // Remove trailing junk: single chars, numbers, punctuation at end
-    const trimmed = part.replace(/\s+[a-z%\-\d]{1,6}$/, '').trim();
-    // Must be mostly uppercase, at least 6 chars, contain a letter
-    if (
-      trimmed.length >= 6 &&
-      /[A-Z]/.test(trimmed) &&
-      // At least 60% uppercase letters or spaces or digits or common punct
-      (trimmed.match(/[A-Z0-9 ',\-\.\/\(\)"#]/g) || []).length / trimmed.length > 0.6
-    ) {
-      results.push(trimmed);
-    }
+  // Must start with an uppercase letter
+  if (!/^[A-Z]/.test(s)) return false;
+
+  // Reject if starts with common non-equipment words
+  const badStarts = [
+    'DO NOT', 'CALL ', 'CUSTOMER', 'ACCOUNT', 'PLEASE', 'NOTE',
+    'CARD', 'PHONE', 'FAX', 'CREDIT', 'DEBIT', 'RENTAL', 'PAYMENT',
+    'INVOICE', 'BALANCE', 'DEPOSIT', 'RECEIPT', 'CHARGE', 'TAX',
+    'ADDRESS', 'CITY', 'STATE', 'ZIP', 'INSURANCE', 'PO BOX',
+    'CONTACT', 'EMAIL', 'OWNER', 'MANAGER', 'DRIVER', 'EMPLOYEE',
+    'OLD ', 'NEW ', 'SEE ', 'REF ', 'PER ', 'GET ', 'ASK ',
+    'THIS ', 'THAT ', 'WHEN ', 'NEED ', 'SEND ', 'MAKE ', 'KEEP ',
+    'MUST', 'WILL', 'DOES', 'THEY', 'ALSO', 'ONLY', 'EACH',
+    'SAME', 'WITH', 'FROM', 'HAVE', 'BEEN', 'WERE', 'THEIR',
+    'REAL ', 'FARM ', 'MEDIUM', 'SMALL', 'LARGE',
+    'AMEX', 'VISA', 'MASTER', 'DISC',
+    'MC ', 'VI ', 'AM ', 'DI ',
+  ];
+  for (const bad of badStarts) {
+    if (s.toUpperCase().startsWith(bad)) return false;
   }
-  return results;
+
+  // Reject if contains credit card-like patterns (4 groups of 4 digits)
+  if (/\d{4}[-\s]\d{4}/.test(s)) return false;
+
+  // Reject if contains sentence-ending punctuation or email/url
+  if (/[!?@#$%^&*=<>]/.test(s)) return false;
+
+  // Reject if it's mostly digits
+  const digitCount = (s.match(/\d/g) || []).length;
+  if (digitCount / s.length > 0.4) return false;
+
+  // Reject if it contains too many lowercase words (it's a sentence/note)
+  const words = s.split(/\s+/);
+  const lowercaseWords = words.filter(w => /^[a-z]/.test(w));
+  if (lowercaseWords.length > 1) return false;
+
+  // Reject if it contains common English filler words mid-sentence
+  const fillerWords = ['the ', ' is ', ' are ', ' was ', ' for ', ' and ', ' not ', ' per '];
+  const lower = s.toLowerCase();
+  for (const filler of fillerWords) {
+    if (lower.includes(filler)) return false;
+  }
+
+  // Must contain at least one uppercase letter sequence (an actual word)
+  if (!/[A-Z]{2,}/.test(s)) return false;
+
+  // Must be mostly uppercase letters, spaces, digits, and common equipment punctuation
+  const allowedChars = (s.match(/[A-Z0-9 ',\-\.\/\(\)"]/g) || []).length;
+  if (allowedChars / s.length < 0.85) return false;
+
+  return true;
 }
 
 Deno.serve(async (req) => {
@@ -61,14 +97,21 @@ Deno.serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i) & 0xff;
     }
 
-    // Extract all text runs from the entire chunk
     const runs = extractTextRuns(bytes, 0, bytes.length);
 
     const names = new Set();
     for (const run of runs) {
-      const candidates = cleanAndSplit(run);
-      for (const c of candidates) {
-        names.add(c);
+      // Split on null-like separators that appear between packed entries
+      // Each catalog entry is typically a short clean string
+      const parts = run.split(/\s{2,}|\t|\|/).map(p => p.trim());
+      for (const part of parts) {
+        if (isEquipmentName(part)) {
+          names.add(part);
+        }
+      }
+      // Also try the full run itself
+      if (isEquipmentName(run.trim())) {
+        names.add(run.trim());
       }
     }
 
