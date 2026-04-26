@@ -18,6 +18,7 @@ export default function AvailabilityManager() {
   const [showRentalForm, setShowRentalForm] = useState(false);
   const [searchStr, setSearchStr] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [searchHighlight, setSearchHighlight] = useState(0);
 
   const fetchData = async () => {
     const [eq, rent] = await Promise.all([
@@ -40,10 +41,11 @@ export default function AvailabilityManager() {
   // Quick search by accumulated letters
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !showRentalForm) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !showRentalForm && !showSearch) {
         e.preventDefault();
         setSearchStr(prev => (prev + e.key).toUpperCase());
         setShowSearch(true);
+        setSearchHighlight(0);
       }
       if (e.key === 'Backspace' && !showRentalForm) {
         e.preventDefault();
@@ -53,6 +55,7 @@ export default function AvailabilityManager() {
             if (!next) setSelectedEquipmentId(null);
             return next;
           });
+          setSearchHighlight(0);
         } else if (selectedEquipmentId) {
           setSelectedEquipmentId(null);
         }
@@ -61,17 +64,27 @@ export default function AvailabilityManager() {
         setShowSearch(false);
         setSearchStr('');
         setSelectedEquipmentId(null);
+        setSearchHighlight(0);
+      }
+      if (e.key === 'ArrowDown' && showSearch) {
+        e.preventDefault();
+        setSearchHighlight(prev => Math.min(prev + 1, searchResults.length - 1));
+      }
+      if (e.key === 'ArrowUp' && showSearch) {
+        e.preventDefault();
+        setSearchHighlight(prev => Math.max(prev - 1, 0));
       }
       if (e.key === 'Enter' && showSearch && searchResults.length > 0) {
         e.preventDefault();
-        setSelectedEquipmentId(searchResults[0].id);
+        setSelectedEquipmentId(searchResults[searchHighlight].id);
         setShowSearch(false);
         setSearchStr('');
+        setSearchHighlight(0);
       }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showSearch, showRentalForm, searchResults, selectedEquipmentId]);
+  }, [showSearch, showRentalForm, searchResults, selectedEquipmentId, searchHighlight]);
 
   const handleMigrate = async () => {
     setMigrating(true);
@@ -347,9 +360,10 @@ export default function AvailabilityManager() {
                           setSelectedEquipmentId(eq.id);
                           setShowSearch(false);
                           setSearchStr('');
+                          setSearchHighlight(0);
                         }}
                         className={`w-full px-4 py-3 transition text-left ${
-                          idx === 0 ? 'bg-indigo-50 hover:bg-indigo-100' : 'hover:bg-gray-50'
+                          idx === searchHighlight ? 'bg-indigo-50 hover:bg-indigo-100' : 'hover:bg-gray-50'
                         }`}
                       >
                         <div className="font-medium text-gray-900">{eq.name}</div>
