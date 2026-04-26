@@ -43,11 +43,16 @@ export default function AvailabilityManager() {
       }
       if (e.key === 'Backspace' && showSearch) {
         e.preventDefault();
-        setSearchStr(prev => prev.slice(0, -1));
+        setSearchStr(prev => {
+          const next = prev.slice(0, -1);
+          if (!next) setSelectedEquipmentId(null);
+          return next;
+        });
       }
       if (e.key === 'Escape') {
         setShowSearch(false);
         setSearchStr('');
+        setSelectedEquipmentId(null);
       }
       if (e.key === 'Enter' && showSearch && searchResults.length > 0) {
         e.preventDefault();
@@ -58,7 +63,7 @@ export default function AvailabilityManager() {
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showSearch, showRentalForm]);
+  }, [showSearch, showRentalForm, searchResults]);
 
   const searchResults = searchStr
     ? equipment.filter(eq => eq.name.toUpperCase().startsWith(searchStr))
