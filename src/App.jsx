@@ -23,6 +23,7 @@ import Terms from "./pages/Terms";
 import LupinePlan from "./pages/LupinePlan";
 import CatalogReview from "./pages/CatalogReview";
 import AvailabilityManager from "./pages/AvailabilityManager";
+import PricingEditor from "./pages/PricingEditor";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
       <Route path="/lupine" element={<LupinePlan />} />
       <Route path="/catalog-review" element={<CatalogReview />} />
       <Route path="/availability" element={<AvailabilityManager />} />
+      <Route path="/pricing-editor" element={<PricingEditor />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

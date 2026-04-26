@@ -1,0 +1,170 @@
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+export default function PricingEditor() {
+  const navigate = useNavigate();
+  const [equipment, setEquipment] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState({});
+  const [edited, setEdited] = useState({});
+
+  useEffect(() => {
+    base44.entities.Equipment.list('-created_date', 1000).then(eq => {
+      setEquipment(eq);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleFieldChange = (id, field, value) => {
+    setEdited(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: parseFloat(value) || 0 }
+    }));
+  };
+
+  const saveEquipment = async (id) => {
+    setSaving(prev => ({ ...prev, [id]: true }));
+    try {
+      const updates = edited[id];
+      await base44.entities.Equipment.update(id, updates);
+      setEdited(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      // Update local state
+      setEquipment(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setSaving(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const getDisplayValue = (equipment, field) => {
+    return edited[equipment.id]?.[field] ?? equipment[field];
+  };
+
+  const hasChanges = (id) => !!edited[id];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-7xl mx-auto">
+          <button
+            onClick={() => navigate('/availability')}
+            className="text-white p-2 rounded-lg hover:bg-indigo-800"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="text-lg font-bold">Pricing Editor</div>
+            <div className="text-indigo-300 text-xs">{equipment.length} items</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Equipment</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Daily</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Weekly</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Monthly</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Deposit</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {equipment.map(eq => (
+                  <tr key={eq.id} className={hasChanges(eq.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{eq.name}</div>
+                      <div className="text-xs text-gray-500">{eq.location}</div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{eq.category}</td>
+                    <td className="px-4 py-3">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={getDisplayValue(eq, 'dailyRate')}
+                        onChange={(e) => handleFieldChange(eq.id, 'dailyRate', e.target.value)}
+                        className="w-24 text-right"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={getDisplayValue(eq, 'weeklyRate')}
+                        onChange={(e) => handleFieldChange(eq.id, 'weeklyRate', e.target.value)}
+                        className="w-24 text-right"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={getDisplayValue(eq, 'monthlyRate')}
+                        onChange={(e) => handleFieldChange(eq.id, 'monthlyRate', e.target.value)}
+                        className="w-24 text-right"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={getDisplayValue(eq, 'depositRequired')}
+                        onChange={(e) => handleFieldChange(eq.id, 'depositRequired', e.target.value)}
+                        className="w-24 text-right"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {hasChanges(eq.id) ? (
+                        <Button
+                          size="sm"
+                          onClick={() => saveEquipment(eq.id)}
+                          disabled={saving[eq.id]}
+                          className="bg-green-600 hover:bg-green-700 gap-1"
+                        >
+                          {saving[eq.id] ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Save className="w-3 h-3" />
+                          )}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

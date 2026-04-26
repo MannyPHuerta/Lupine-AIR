@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import RentalForm from '@/components/RentalForm';
 
 export default function AvailabilityManager() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function AvailabilityManager() {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [conflicts, setConflicts] = useState([]);
   const [migrating, setMigrating] = useState(false);
+  const [showRentalForm, setShowRentalForm] = useState(false);
 
   const fetchData = async () => {
     const [eq, rent] = await Promise.all([
@@ -95,8 +97,15 @@ export default function AvailabilityManager() {
             <div className="text-lg font-bold">Availability Manager</div>
             <div className="text-indigo-300 text-xs">Phase 1 — Equipment Calendars</div>
           </div>
-          <div className="ml-auto text-indigo-200 text-sm">
-            {equipment.length} items · {rentals.length} rentals
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-indigo-200 text-sm">{equipment.length} items · {rentals.length} rentals</span>
+            <button
+              onClick={() => navigate('/pricing-editor')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Edit pricing"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -198,7 +207,10 @@ export default function AvailabilityManager() {
             )}
 
             {isConflictFree && dateRange.start && dateRange.end && (
-              <Button className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2">
+              <Button
+                onClick={() => setShowRentalForm(true)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
+              >
                 <Plus className="w-4 h-4" /> Create Rental
               </Button>
             )}
@@ -247,6 +259,20 @@ export default function AvailabilityManager() {
             })}
           </div>
         </div>
+
+        {showRentalForm && selectedEquipmentId && (
+          <RentalForm
+            equipment={equipment.find(e => e.id === selectedEquipmentId)}
+            startDate={dateRange.start}
+            endDate={dateRange.end}
+            onClose={() => setShowRentalForm(false)}
+            onSuccess={() => {
+              fetchData();
+              setDateRange({ start: '', end: '' });
+              setSelectedEquipmentId(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
