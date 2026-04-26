@@ -267,6 +267,7 @@ export default function AvailabilityManager() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Equipment</label>
               <select
+                autoFocus
                 value={selectedEquipmentId || ''}
                 onChange={(e) => {
                    setSelectedEquipmentId(e.target.value);
