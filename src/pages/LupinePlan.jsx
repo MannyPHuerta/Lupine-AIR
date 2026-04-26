@@ -90,9 +90,15 @@ export default function LupinePlan() {
             <div className="text-lg font-bold tracking-tight">Project Lupine</div>
             <div className="text-indigo-300 text-xs">Master Development Trajectory — v5.0 | April 2026 | Confidential</div>
           </div>
-          <div className="ml-auto flex gap-2 flex-wrap justify-end">
+          <div className="ml-auto flex gap-2 flex-wrap justify-end items-center">
             <Badge color="green">Phase 0 Active</Badge>
             <Badge color="blue">1,117 Items Extracted</Badge>
+            <button
+              onClick={() => navigate('/catalog-review')}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              📋 Review Catalog →
+            </button>
           </div>
         </div>
       </div>

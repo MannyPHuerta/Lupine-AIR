@@ -12,11 +12,11 @@
     },
     "description1": {
       "type": "string",
-      "description": "Primary equipment description"
+      "description": "Primary equipment description (raw from CPro)"
     },
     "description2": {
       "type": "string",
-      "description": "Secondary equipment description"
+      "description": "Secondary equipment description (raw from CPro)"
     },
     "serialNumber": {
       "type": "string",
@@ -58,6 +58,63 @@
     "migrationSessionId": {
       "type": "string",
       "description": "Session ID for batch import tracking"
+    },
+    "cleanName": {
+      "type": "string",
+      "description": "Human-reviewed canonical equipment name for the Lupine catalog"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Air Compressor",
+        "Backhoe",
+        "Boom Lift",
+        "Bulldozer",
+        "Chair",
+        "Chipper/Shredder",
+        "Compactor",
+        "Concrete Equipment",
+        "Dance Floor",
+        "Dump Truck",
+        "Excavator",
+        "Floor Sander",
+        "Forklift",
+        "Generator",
+        "Grader",
+        "Inflatable",
+        "Light Tower",
+        "Loader",
+        "Pallet Jack",
+        "Paving Equipment",
+        "Plate Compactor",
+        "Pressure Washer",
+        "Sandblaster",
+        "Scissor Lift",
+        "Skid Steer",
+        "Staging",
+        "Stump Grinder",
+        "Table",
+        "Telehandler",
+        "Tent",
+        "Tile Stripper",
+        "Trailer",
+        "Trencher",
+        "Water Pump",
+        "Welder",
+        "Zero Turn Mower",
+        "Fleet Vehicle",
+        "Tool",
+        "Other"
+      ],
+      "description": "Lupine catalog category assigned during review"
+    },
+    "reviewStatus": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "junk"
+      ],
+      "description": "Migration review decision \u2014 approved records become Lupine catalog entries"
     }
   },
   "required": [
