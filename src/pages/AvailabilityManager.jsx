@@ -47,43 +47,57 @@ export default function AvailabilityManager() {
         setShowSearch(true);
         setSearchHighlight(0);
       }
-      if (e.key === 'Backspace' && !showRentalForm) {
-        e.preventDefault();
-        if (showSearch) {
+      if (showSearch) {
+        e.stopPropagation();
+        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+          e.preventDefault();
+          setSearchStr(prev => (prev + e.key).toUpperCase());
+        }
+        if (e.key === 'Backspace') {
+          e.preventDefault();
           setSearchStr(prev => {
             const next = prev.slice(0, -1);
             if (!next) setSelectedEquipmentId(null);
             return next;
           });
           setSearchHighlight(0);
-        } else if (selectedEquipmentId) {
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSearchHighlight(prev => Math.min(prev + 1, searchResults.length - 1));
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSearchHighlight(prev => Math.max(prev - 1, 0));
+        }
+        if (e.key === 'Enter' && searchResults.length > 0) {
+          e.preventDefault();
+          setSelectedEquipmentId(searchResults[searchHighlight].id);
+          setShowSearch(false);
+          setSearchStr('');
+          setSearchHighlight(0);
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setShowSearch(false);
+          setSearchStr('');
+          setSelectedEquipmentId(null);
+          setSearchHighlight(0);
+        }
+      } else {
+        if (e.key === 'Backspace' && !showRentalForm && selectedEquipmentId) {
+          e.preventDefault();
           setSelectedEquipmentId(null);
         }
-      }
-      if (e.key === 'Escape') {
-        setShowSearch(false);
-        setSearchStr('');
-        setSelectedEquipmentId(null);
-        setSearchHighlight(0);
-      }
-      if (e.key === 'ArrowDown' && showSearch) {
-        e.preventDefault();
-        setSearchHighlight(prev => Math.min(prev + 1, searchResults.length - 1));
-      }
-      if (e.key === 'ArrowUp' && showSearch) {
-        e.preventDefault();
-        setSearchHighlight(prev => Math.max(prev - 1, 0));
-      }
-      if (e.key === 'Enter' && showSearch && searchResults.length > 0) {
-        e.preventDefault();
-        setSelectedEquipmentId(searchResults[searchHighlight].id);
-        setShowSearch(false);
-        setSearchStr('');
-        setSearchHighlight(0);
+        if (e.key === 'Escape') {
+          setSearchStr('');
+          setSelectedEquipmentId(null);
+          setSearchHighlight(0);
+        }
       }
     };
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener('keydown', handleKeyPress, true);
+    return () => window.removeEventListener('keydown', handleKeyPress, true);
   }, [showSearch, showRentalForm, searchResults, selectedEquipmentId, searchHighlight]);
 
   const handleMigrate = async () => {
