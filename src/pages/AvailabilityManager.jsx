@@ -45,7 +45,7 @@ export default function AvailabilityManager() {
   // Quick search by accumulated letters
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !showRentalForm && !showSearch) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !showSearch) {
         e.preventDefault();
         setSearchStr(prev => (prev + e.key).toUpperCase());
         setShowSearch(true);
@@ -97,7 +97,7 @@ export default function AvailabilityManager() {
           setSearchHighlight(0);
         }
       } else {
-        if (e.key === 'Backspace' && !showRentalForm && selectedEquipmentId) {
+        if (e.key === 'Backspace' && selectedEquipmentId) {
           e.preventDefault();
           setSelectedEquipmentId(null);
         }
@@ -110,7 +110,7 @@ export default function AvailabilityManager() {
     };
     window.addEventListener('keydown', handleKeyPress, true);
     return () => window.removeEventListener('keydown', handleKeyPress, true);
-  }, [showSearch, showRentalForm, searchResults, selectedEquipmentId, searchHighlight]);
+  }, [showSearch, searchResults, selectedEquipmentId, searchHighlight]);
 
   const handleMigrate = async () => {
     setMigrating(true);
@@ -453,5 +453,3 @@ export default function AvailabilityManager() {
             </div>
             );
             }
-
-            export default AvailabilityManager;
