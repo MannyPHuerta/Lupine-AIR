@@ -69,11 +69,10 @@ export default function CatalogReview() {
 
   const markItems = async (ids, status) => {
     setSaving(true);
-    // Batch updates in groups of 10 with delay to avoid rate limits
-    for (let i = 0; i < ids.length; i += 10) {
-      const batch = ids.slice(i, i + 10);
-      await Promise.all(batch.map(id => base44.entities.InventoryItem.update(id, { reviewStatus: status })));
-      if (i + 10 < ids.length) await new Promise(r => setTimeout(r, 200)); // 200ms delay between batches
+    // Update sequentially with delay to avoid rate limits
+    for (const id of ids) {
+      await base44.entities.InventoryItem.update(id, { reviewStatus: status });
+      await new Promise(r => setTimeout(r, 50)); // 50ms delay between updates
     }
     setSelected(new Set());
     await fetchItems();
