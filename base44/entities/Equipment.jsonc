@@ -1,0 +1,58 @@
+{
+  "name": "Equipment",
+  "type": "object",
+  "properties": {
+    "inventoryItemId": {
+      "type": "string",
+      "description": "Reference to the approved InventoryItem"
+    },
+    "name": {
+      "type": "string",
+      "description": "Equipment name (from InventoryItem.cleanName)"
+    },
+    "category": {
+      "type": "string",
+      "description": "Equipment category"
+    },
+    "dailyRate": {
+      "type": "number",
+      "description": "Base rental rate per day (USD)"
+    },
+    "weeklyRate": {
+      "type": "number",
+      "description": "Weekly rental rate (7+ days discount)"
+    },
+    "monthlyRate": {
+      "type": "number",
+      "description": "Monthly rental rate (30+ days discount)"
+    },
+    "depositRequired": {
+      "type": "number",
+      "description": "Security deposit (USD)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "unavailable",
+        "maintenance",
+        "retired"
+      ],
+      "default": "available",
+      "description": "Current equipment status"
+    },
+    "location": {
+      "type": "string",
+      "description": "Current storage/branch location"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Condition, special handling, restrictions"
+    }
+  },
+  "required": [
+    "inventoryItemId",
+    "name",
+    "dailyRate"
+  ]
+}

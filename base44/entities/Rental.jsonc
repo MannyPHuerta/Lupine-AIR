@@ -1,0 +1,66 @@
+{
+  "name": "Rental",
+  "type": "object",
+  "properties": {
+    "equipmentId": {
+      "type": "string",
+      "description": "Reference to Equipment"
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Rental start date"
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Rental end date"
+    },
+    "customerName": {
+      "type": "string",
+      "description": "Customer name"
+    },
+    "customerEmail": {
+      "type": "string",
+      "description": "Customer email"
+    },
+    "customerPhone": {
+      "type": "string",
+      "description": "Customer phone number"
+    },
+    "totalDays": {
+      "type": "integer",
+      "description": "Number of rental days"
+    },
+    "baseAmount": {
+      "type": "number",
+      "description": "Rental cost before tax/fees (USD)"
+    },
+    "deposit": {
+      "type": "number",
+      "description": "Security deposit charged (USD)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "active",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Rental lifecycle status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Special requests, damage notes, etc."
+    }
+  },
+  "required": [
+    "equipmentId",
+    "startDate",
+    "endDate",
+    "customerName"
+  ]
+}
