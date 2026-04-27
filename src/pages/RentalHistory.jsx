@@ -48,7 +48,7 @@ function groupIntoOrders(rentals) {
       quantity: 1,
       rate: r.baseAmount && r.totalDays ? r.baseAmount / r.totalDays : 0,
       baseAmount: r.baseAmount || 0,
-      taxable: r.taxRate > 0,
+      taxable: r.taxRate == null ? true : r.taxRate > 0,
       deposit: r.deposit || 0,
       startDate: r.startDate,
       endDate: r.endDate,
@@ -173,20 +173,26 @@ function buildInvoiceHTML(order, amountPaid) {
     Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.
   </div>
 
-  <script>
-    const grandTotal = ${grandTotal};
+  <script type="text/javascript">
+    var GT = ${grandTotal};
     function updateTotals() {
-      const paidVal = parseFloat(document.getElementById('paid-input').value) || 0;
-      const balance = grandTotal - paidVal;
-      document.getElementById('paid-display').innerHTML = paidVal > 0
-        ? '<div class="paid-row"><span>Paid</span><span>$' + paidVal.toFixed(2) + '</span></div>' : '';
-      document.getElementById('balance-section').innerHTML = paidVal > 0
-        ? '<div class="balance-row"><span>Balance</span><span style="color:' + (balance <= 0 ? '#16a34a' : '#dc2626') + '">$' + balance.toFixed(2) + '</span></div>' : '';
-      document.getElementById('balance-display').textContent = paidVal > 0
-        ? 'Balance: $' + balance.toFixed(2) : '';
-      document.getElementById('balance-display').style.color = balance <= 0 ? '#16a34a' : '#dc2626';
+      var paidVal = parseFloat(document.getElementById('paid-input').value) || 0;
+      var balance = GT - paidVal;
+      var paidEl = document.getElementById('paid-display');
+      var balEl = document.getElementById('balance-section');
+      var bdEl = document.getElementById('balance-display');
+      if (paidVal > 0) {
+        paidEl.innerHTML = '<div class="paid-row"><span>Paid</span><span>$' + paidVal.toFixed(2) + '</span></div>';
+        balEl.innerHTML = '<div class="balance-row"><span>Balance</span><span style="color:' + (balance <= 0 ? '#16a34a' : '#dc2626') + '">$' + balance.toFixed(2) + '</span></div>';
+        bdEl.textContent = 'Balance: $' + balance.toFixed(2);
+        bdEl.style.color = balance <= 0 ? '#16a34a' : '#dc2626';
+      } else {
+        paidEl.innerHTML = '';
+        balEl.innerHTML = '';
+        bdEl.textContent = '';
+      }
     }
-    updateTotals();
+    window.onload = function() { updateTotals(); };
   </script>
 </body>
 </html>`;
@@ -216,18 +222,19 @@ function OrderCard({ order, equipment, onConfirmed }) {
   });
 
   const handlePrint = async () => {
+    // Open window immediately (must be synchronous with user click to avoid popup block)
+    const win = window.open('', '_blank');
+    const html = buildInvoiceHTML({ ...order, lines: enriched }, amountPaid);
+    win.document.write(html);
+    win.document.close();
+
+    // Confirm in background
     setPrinting(true);
-    // Confirm all rentals in this order
     await Promise.all(order.rentalIds.map(id =>
       base44.entities.Rental.update(id, { status: 'confirmed' })
     ));
     setPrinting(false);
     onConfirmed();
-
-    const html = buildInvoiceHTML({ ...order, lines: enriched }, amountPaid);
-    const win = window.open('', '_blank');
-    win.document.write(html);
-    win.document.close();
   };
 
   return (
