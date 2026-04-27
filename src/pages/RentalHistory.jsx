@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import PrintableInvoice from '@/components/invoice/PrintableInvoice';
 import { getBranchInfo } from '@/lib/branchInfo';
 
 const STATUS_COLORS = {
@@ -14,6 +13,8 @@ const STATUS_COLORS = {
   completed: 'bg-gray-100 text-gray-700',
   cancelled: 'bg-red-100 text-red-700',
 };
+
+const fmt = (n) => (n || 0).toFixed(2);
 
 // Group rentals into "orders" by customerName + same created_date minute
 function groupIntoOrders(rentals) {
@@ -34,8 +35,7 @@ function groupIntoOrders(rentals) {
         },
         lines: [],
         status: r.status,
-        discount: '',
-        taxRate: '8.25',
+        taxRate: 8.25,
       };
     }
     map[key].lines.push({
@@ -53,9 +53,106 @@ function groupIntoOrders(rentals) {
   return Object.values(map).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
 
+function buildInvoiceHTML(order) {
+  const branch = getBranchInfo(order.customer.branch);
+  const lines = order.lines;
+  const taxRateDecimal = (order.taxRate || 8.25) / 100;
+  const rentalSubtotal = lines.reduce((s, l) => s + (l.baseAmount || 0), 0);
+  const depositTotal = lines.reduce((s, l) => s + (l.deposit || 0) * (l.quantity || 1), 0);
+  const taxableBase = lines.reduce((s, l) => s + (l.taxable ? (l.baseAmount || 0) : 0), 0);
+  const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
+  const grandTotal = rentalSubtotal + taxAmount + depositTotal;
+
+  const dateStr = order.createdAt
+    ? new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+
+  const lineRows = lines.filter(l => l.equipmentId).map(l => {
+    const tax = l.taxable ? Math.round((l.baseAmount || 0) * taxRateDecimal * 100) / 100 : 0;
+    const total = (l.baseAmount || 0) + tax + (l.deposit || 0) * (l.quantity || 1);
+    return `
+      <tr>
+        <td style="padding:6px 8px 6px 0;border-bottom:1px solid #f0f0f0;font-weight:500">${l.equipmentName}</td>
+        <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:center;color:#666">${l.quantity}</td>
+        <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:center;font-size:11px;color:#666">${l.startDate || ''} – ${l.endDate || ''}</td>
+        <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:right;color:#666">$${fmt(l.rate)}</td>
+        <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:right">$${fmt(l.baseAmount)}</td>
+        <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:right;color:#666">${l.taxable ? '$' + fmt(tax) : '—'}</td>
+        <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:right;color:#666">${l.deposit > 0 ? '$' + fmt((l.deposit || 0) * (l.quantity || 1)) : '—'}</td>
+        <td style="padding:6px 0 6px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600">$${fmt(total)}</td>
+      </tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Invoice – ${order.customer.name}</title>
+  <style>
+    body { font-family: sans-serif; font-size: 13px; color: #111; margin: 0; padding: 32px; }
+    @media print { body { padding: 16px; } }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px 8px; border-bottom: 2px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
+    <div>
+      <div style="font-size:20px;font-weight:700;color:#1e1b4b">${branch.name}</div>
+      ${branch.address ? `<div style="color:#555;margin-top:4px">${branch.address}</div>` : ''}
+      ${branch.phone ? `<div style="color:#555">${branch.phone}</div>` : ''}
+      ${branch.email ? `<div style="color:#555">${branch.email}</div>` : ''}
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:28px;font-weight:700;color:#d1d5db">INVOICE</div>
+      ${order.id ? `<div style="font-size:11px;color:#888">#${order.id.slice(-8).toUpperCase()}</div>` : ''}
+      ${dateStr ? `<div style="font-size:11px;color:#888">${dateStr}</div>` : ''}
+    </div>
+  </div>
+
+  <div style="background:#f9fafb;border-radius:8px;padding:16px;margin-bottom:24px">
+    <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Bill To</div>
+    <div style="font-weight:600">${order.customer.name}</div>
+    ${order.customer.phone ? `<div style="color:#555">${order.customer.phone}</div>` : ''}
+    ${order.customer.email ? `<div style="color:#555">${order.customer.email}</div>` : ''}
+    ${order.customer.notes ? `<div style="color:#888;font-size:12px;margin-top:6px;font-style:italic">${order.customer.notes}</div>` : ''}
+  </div>
+
+  <table style="margin-bottom:24px">
+    <thead>
+      <tr>
+        <th style="text-align:left">Item</th>
+        <th style="text-align:center;width:48px">Qty</th>
+        <th style="text-align:center;width:140px">Dates</th>
+        <th style="text-align:right;width:72px">Rate/Day</th>
+        <th style="text-align:right;width:80px">Rental</th>
+        <th style="text-align:right;width:64px">Tax</th>
+        <th style="text-align:right;width:72px">Deposit</th>
+        <th style="text-align:right;width:80px">Total</th>
+      </tr>
+    </thead>
+    <tbody>${lineRows}</tbody>
+  </table>
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
+    <div style="width:200px">
+      <div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Rental Subtotal</span><span>$${fmt(rentalSubtotal)}</span></div>
+      <div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Sales Tax (${(taxRateDecimal * 100).toFixed(2)}%)</span><span>$${fmt(taxAmount)}</span></div>
+      ${depositTotal > 0 ? `<div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:2px solid #e5e7eb;padding-top:8px;margin-top:8px"><span>Total Due</span><span style="color:#3730a3">$${fmt(grandTotal)}</span></div>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
+    Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.
+  </div>
+  <script>window.onload = () => { window.print(); }</script>
+</body>
+</html>`;
+}
+
 function OrderCard({ order, equipment }) {
   const [expanded, setExpanded] = useState(false);
-  const [printing, setPrinting] = useState(false);
 
   const lines = order.lines;
   const rentalTotal = lines.reduce((s, l) => s + (l.baseAmount || 0), 0);
@@ -63,92 +160,82 @@ function OrderCard({ order, equipment }) {
     ? `${lines[0].startDate || '?'} – ${lines[lines.length - 1].endDate || '?'}`
     : '';
 
-  // Enrich line names from equipment catalog
   const enriched = lines.map(l => {
     const eq = equipment.find(e => e.id === l.equipmentId);
     return { ...l, equipmentName: eq?.name || l.equipmentName || l.equipmentId };
   });
 
   const handlePrint = () => {
-    setPrinting(true);
-    setTimeout(() => { window.print(); setPrinting(false); }, 300);
+    const html = buildInvoiceHTML({ ...order, lines: enriched });
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
   };
 
   return (
-    <>
-      {printing && (
-        <div className="hidden print:block">
-          <PrintableInvoice order={{ ...order, lines: enriched }} />
+    <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+      {/* Summary row */}
+      <div
+        className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-gray-50"
+        onClick={() => setExpanded(e => !e)}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-gray-900">{order.customer.name}</div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            {lines.length} item{lines.length !== 1 ? 's' : ''} · {dateRange}
+            {order.customer.branch && <span className="ml-2 text-gray-400">{order.customer.branch}</span>}
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="font-bold text-indigo-700">${rentalTotal.toFixed(2)}</div>
+          <div className="text-xs text-gray-400">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''}</div>
+        </div>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
+          {order.status}
+        </span>
+        <button className="text-gray-400 ml-1">
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="border-t px-5 py-4 space-y-3">
+          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+            {order.customer.phone && <span>📞 {order.customer.phone}</span>}
+            {order.customer.email && <span>✉️ {order.customer.email}</span>}
+            {order.customer.notes && <span className="italic text-gray-400">"{order.customer.notes}"</span>}
+          </div>
+
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-gray-500 border-b">
+                <th className="text-left pb-1">Item</th>
+                <th className="text-center pb-1 w-16">Qty</th>
+                <th className="text-center pb-1 w-32">Dates</th>
+                <th className="text-right pb-1 w-24">Rental</th>
+              </tr>
+            </thead>
+            <tbody>
+              {enriched.map((l, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="py-1.5">{l.equipmentName}</td>
+                  <td className="py-1.5 text-center text-gray-500">{l.quantity}</td>
+                  <td className="py-1.5 text-center text-xs text-gray-500">{l.startDate} – {l.endDate}</td>
+                  <td className="py-1.5 text-right font-medium">${(l.baseAmount || 0).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="flex justify-end">
+            <Button size="sm" variant="outline" onClick={handlePrint} className="gap-2">
+              <Printer className="w-4 h-4" /> Print Invoice
+            </Button>
+          </div>
         </div>
       )}
-      <div className="bg-white rounded-xl border shadow-sm overflow-hidden print:hidden">
-        {/* Summary row */}
-        <div
-          className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-gray-50"
-          onClick={() => setExpanded(e => !e)}
-        >
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-gray-900">{order.customer.name}</div>
-            <div className="text-xs text-gray-500 mt-0.5">
-              {lines.length} item{lines.length !== 1 ? 's' : ''} · {dateRange}
-              {order.customer.branch && <span className="ml-2 text-gray-400">{order.customer.branch}</span>}
-            </div>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="font-bold text-indigo-700">${rentalTotal.toFixed(2)}</div>
-            <div className="text-xs text-gray-400">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''}</div>
-          </div>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
-            {order.status}
-          </span>
-          <button className="text-gray-400 ml-1">
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Expanded detail */}
-        {expanded && (
-          <div className="border-t px-5 py-4 space-y-3">
-            {/* Customer contact */}
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-              {order.customer.phone && <span>📞 {order.customer.phone}</span>}
-              {order.customer.email && <span>✉️ {order.customer.email}</span>}
-              {order.customer.notes && <span className="italic text-gray-400">"{order.customer.notes}"</span>}
-            </div>
-
-            {/* Line items */}
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-gray-500 border-b">
-                  <th className="text-left pb-1">Item</th>
-                  <th className="text-center pb-1 w-16">Qty</th>
-                  <th className="text-center pb-1 w-32">Dates</th>
-                  <th className="text-right pb-1 w-24">Rental</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enriched.map((l, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="py-1.5">{l.equipmentName}</td>
-                    <td className="py-1.5 text-center text-gray-500">{l.quantity}</td>
-                    <td className="py-1.5 text-center text-xs text-gray-500">
-                      {l.startDate} – {l.endDate}
-                    </td>
-                    <td className="py-1.5 text-right font-medium">${(l.baseAmount || 0).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex justify-end">
-              <Button size="sm" variant="outline" onClick={handlePrint} className="gap-2">
-                <Printer className="w-4 h-4" /> Print Invoice
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -185,9 +272,8 @@ export default function RentalHistory() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg print:hidden">
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
           <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
@@ -199,8 +285,7 @@ export default function RentalHistory() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-4 print:hidden">
-        {/* Filters */}
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -225,7 +310,6 @@ export default function RentalHistory() {
           </select>
         </div>
 
-        {/* Orders */}
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
