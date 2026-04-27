@@ -1,6 +1,6 @@
 import { getBranchInfo } from '@/lib/branchInfo';
 
-function fmt(n) { return (n || 0).toFixed(2); }
+const fmt = (n) => (n || 0).toFixed(2);
 
 export default function PrintableInvoice({ order }) {
   const { customer, lines, discount, taxRate, createdAt, id } = order;
