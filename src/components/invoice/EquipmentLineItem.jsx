@@ -15,18 +15,13 @@ function calcDays(start, end) {
 }
 
 function LineDateInput({ label, value, onChange }) {
-  const ref = useRef(null);
-  const open = () => { try { ref.current?.showPicker?.(); } catch (_) {} };
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-gray-500 shrink-0">{label}</span>
       <input
-        ref={ref}
         type="date"
         value={value}
         onChange={e => onChange(e.target.value)}
-        onClick={open}
-        onFocus={open}
         className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm cursor-pointer outline-none focus:ring-1 focus:ring-indigo-400 w-36"
       />
     </div>
