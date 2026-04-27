@@ -21,7 +21,7 @@ function formatPhone(raw) {
 
 function DateInput({ label, value, onChange }) {
   const ref = useRef(null);
-  const open = () => { ref.current?.showPicker?.(); ref.current?.focus(); };
+  const open = () => { try { ref.current?.showPicker?.(); } catch (_) {} ref.current?.focus(); };
 
   return (
     <div>
