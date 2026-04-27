@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import AISuggestions from './AISuggestions';
 
 function calcRate(eq, days) {
   if (!eq) return 0;
@@ -49,7 +50,7 @@ function LineDateInput({ label, value, onChange }) {
   );
 }
 
-export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef }) {
+export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef, onAddLine }) {
   const [search, setSearch] = useState(line.equipmentName || '');
   const [open, setOpen] = useState(!line.equipmentId);
   const [highlight, setHighlight] = useState(0);
@@ -226,6 +227,20 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
             </div>
           )}
         </div>
+      )}
+
+      {/* AI Suggestions */}
+      {line.equipmentId && (
+        <AISuggestions
+          equipmentId={line.equipmentId}
+          equipmentName={line.equipmentName}
+          onAddToCart={(sugg) => {
+            if (onAddLine) {
+              const eq = equipment.find(e => e.id === sugg.id);
+              onAddLine(sugg, line.startDate, line.endDate, eq);
+            }
+          }}
+        />
       )}
     </div>
   );

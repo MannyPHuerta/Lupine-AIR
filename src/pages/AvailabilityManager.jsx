@@ -77,6 +77,34 @@ export default function AvailabilityManager() {
     });
   };
 
+  const handleAddSuggestedItem = (sugg, startDate, endDate, eq) => {
+    const newItem = {
+      ...newLine(),
+      equipmentId: sugg.id,
+      equipmentName: sugg.name,
+      startDate: startDate || '',
+      endDate: endDate || '',
+      taxable: eq?.taxable !== false,
+      deposit: eq?.depositRequired || 0,
+    };
+    const rate = calcRate(eq, calcDays(startDate, endDate));
+    const days = calcDays(startDate, endDate);
+    const baseAmount = Math.round(rate * days * 100) / 100;
+    setLines(prev => [...prev, { ...newItem, rate, baseAmount }]);
+  };
+
+  const calcRate = (eq, days) => {
+    if (!eq) return 0;
+    if (days >= 30 && eq.monthlyRate) return eq.monthlyRate / 30;
+    if (days >= 7 && eq.weeklyRate) return eq.weeklyRate / 7;
+    return eq.dailyRate || 0;
+  };
+
+  const calcDays = (start, end) => {
+    if (!start || !end) return 0;
+    return Math.floor((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1;
+  };
+
   const buildOrder = (validLines, invNumber = '') => ({
     id: invNumber || null,
     createdAt: new Date().toISOString(),
@@ -287,6 +315,7 @@ export default function AvailabilityManager() {
                 onUpdate={(updated) => updateLine(line.id, updated)}
                 onRemove={() => removeLine(line.id)}
                 qtyRef={qtyRefs.current[line.id]}
+                onAddLine={handleAddSuggestedItem}
               />
             );
           })}
