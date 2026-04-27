@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { Input } from '@/components/ui/input';
+import BranchSelect from '@/components/invoice/BranchSelect';
 
 const BRANCHES = [
   '01 McAllen',
@@ -80,13 +81,7 @@ export function CustomerIdentity({ customer, onChange }) {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Branch</label>
-          <select
-            value={customer.branch}
-            onChange={e => set('branch', e.target.value)}
-            className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
+          <BranchSelect value={customer.branch} onChange={v => set('branch', v)} />
         </div>
       </div>
     </div>
