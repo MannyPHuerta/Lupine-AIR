@@ -1,0 +1,42 @@
+{
+  "name": "CompanySettings",
+  "type": "object",
+  "properties": {
+    "companyName": {
+      "type": "string",
+      "description": "Legal company name"
+    },
+    "logoUrl": {
+      "type": "string",
+      "description": "URL to company logo for invoices"
+    },
+    "taxId": {
+      "type": "string",
+      "description": "Federal Tax ID / EIN"
+    },
+    "dunsNumber": {
+      "type": "string",
+      "description": "DUNS number"
+    },
+    "cageCode": {
+      "type": "string",
+      "description": "CAGE code (government contractor ID)"
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of certifications (e.g., ISO 9001, WBE, MBE)"
+    },
+    "invoiceTerms": {
+      "type": "string",
+      "description": "Standard payment terms (e.g., Net 30)"
+    },
+    "invoiceFooter": {
+      "type": "string",
+      "description": "Custom footer text for invoices"
+    }
+  },
+  "required": []
+}

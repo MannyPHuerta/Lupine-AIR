@@ -27,7 +27,7 @@ const DEFAULT_PREFIXES = {
 
 export default function BranchSettingsPage() {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState({});   // branch -> { id?, prefix, nextNumber }
+  const [settings, setSettings] = useState({});   // branch -> { id?, prefix, nextNumber, address, phone, email }
   const [saving, setSaving] = useState({});
   const [saved, setSaved] = useState({});
   const [loading, setLoading] = useState(true);
@@ -36,11 +36,18 @@ export default function BranchSettingsPage() {
     base44.entities.BranchSettings.list().then(records => {
       const map = {};
       records.forEach(r => {
-        map[r.branch] = { id: r.id, prefix: r.invoicePrefix || DEFAULT_PREFIXES[r.branch] || '', nextNumber: r.nextInvoiceNumber ?? 1000 };
+        map[r.branch] = {
+          id: r.id,
+          prefix: r.invoicePrefix || DEFAULT_PREFIXES[r.branch] || '',
+          nextNumber: r.nextInvoiceNumber ?? 1000,
+          address: r.address || '',
+          phone: r.phone || '',
+          email: r.email || '',
+        };
       });
       // Fill in any branches not yet configured
       BRANCHES.forEach(b => {
-        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000 };
+        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '' };
       });
       setSettings(map);
       setLoading(false);
@@ -58,6 +65,9 @@ export default function BranchSettingsPage() {
       branch,
       invoicePrefix: s.prefix,
       nextInvoiceNumber: parseInt(s.nextNumber) || 1000,
+      address: s.address,
+      phone: s.phone,
+      email: s.email,
     };
     if (s.id) {
       await base44.entities.BranchSettings.update(s.id, payload);
@@ -97,7 +107,7 @@ export default function BranchSettingsPage() {
             </p>
 
             {BRANCHES.map(branch => {
-              const s = settings[branch] || { prefix: '', nextNumber: 1000 };
+              const s = settings[branch] || { prefix: '', nextNumber: 1000, address: '', phone: '', email: '' };
               const preview = `${s.prefix || '???'}-${String(s.nextNumber || 1000).padStart(4, '0')}`;
               return (
                 <div key={branch} className="bg-white rounded-xl border shadow-sm p-5">
@@ -116,25 +126,59 @@ export default function BranchSettingsPage() {
                       {saved[branch] ? 'Saved!' : saving[branch] ? 'Saving…' : 'Save'}
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Invoice Prefix</label>
-                      <Input
-                        value={s.prefix}
-                        onChange={e => handleChange(branch, 'prefix', e.target.value.toUpperCase().slice(0, 6))}
-                        placeholder="e.g. MCL"
-                        className="font-mono uppercase"
-                        maxLength={6}
-                      />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Invoice Prefix</label>
+                        <Input
+                          value={s.prefix}
+                          onChange={e => handleChange(branch, 'prefix', e.target.value.toUpperCase().slice(0, 6))}
+                          placeholder="e.g. MCL"
+                          className="font-mono uppercase"
+                          maxLength={6}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Next Invoice Number</label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={s.nextNumber}
+                          onChange={e => handleChange(branch, 'nextNumber', e.target.value)}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Next Invoice Number</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={s.nextNumber}
-                        onChange={e => handleChange(branch, 'nextNumber', e.target.value)}
-                      />
+                    <div className="border-t pt-4">
+                      <div className="text-xs font-semibold text-gray-700 mb-3">Contact Information</div>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                          <Input
+                            value={s.address}
+                            onChange={e => handleChange(branch, 'address', e.target.value)}
+                            placeholder="Street address"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                            <Input
+                              value={s.phone}
+                              onChange={e => handleChange(branch, 'phone', e.target.value)}
+                              placeholder="(956) 123-4567"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                            <Input
+                              type="email"
+                              value={s.email}
+                              onChange={e => handleChange(branch, 'email', e.target.value)}
+                              placeholder="branch@example.com"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
