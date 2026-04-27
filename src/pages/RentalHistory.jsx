@@ -222,11 +222,10 @@ function OrderCard({ order, equipment, onConfirmed }) {
   });
 
   const handlePrint = async () => {
-    // Open window immediately (must be synchronous with user click to avoid popup block)
-    const win = window.open('', '_blank');
     const html = buildInvoiceHTML({ ...order, lines: enriched }, amountPaid);
-    win.document.write(html);
-    win.document.close();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
 
     // Confirm in background
     setPrinting(true);
