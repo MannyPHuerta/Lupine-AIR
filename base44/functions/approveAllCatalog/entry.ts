@@ -9,32 +9,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all items and filter client-side
-    let approved = 0;
-    let offset = 0;
-    const batchSize = 25;
+    // Get all items
+    const allItems = await base44.asServiceRole.entities.InventoryItem.list('-created_date', 5000);
     
-    while (true) {
-      const items = await base44.asServiceRole.entities.InventoryItem.list('-created_date', batchSize, offset);
-      
-      if (items.length === 0) break;
-      
-      // Filter for items needing review (no reviewStatus AND has content)
-      const needsApproval = items.filter(item => 
-        !item.reviewStatus && (item.description1 || item.description2 || item.serialNumber)
-      );
-      
-      // Update sequentially with aggressive delay
-      for (const item of needsApproval) {
-        await base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' });
-        await new Promise(r => setTimeout(r, 300));
+    // Filter for items needing review (no reviewStatus AND has content)
+    const needsApproval = allItems.filter(item => 
+      !item.reviewStatus && (item.description1 || item.description2 || item.serialNumber)
+    );
+    
+    // Update with batching to avoid timeouts
+    let approved = 0;
+    for (let i = 0; i < needsApproval.length; i += 20) {
+      const batch = needsApproval.slice(i, i + 20);
+      await Promise.all(batch.map(item => 
+        base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' })
+      ));
+      approved += batch.length;
+      if (i + 20 < needsApproval.length) {
+        await new Promise(r => setTimeout(r, 500));
       }
-      
-      approved += needsApproval.length;
-      offset += batchSize;
-      
-      // Longer delay between batches
-      await new Promise(r => setTimeout(r, 2000));
     }
 
     return Response.json({ approved });
