@@ -36,6 +36,7 @@ export default function AvailabilityManager() {
   const [lines, setLines] = useState([newLine()]);
   const [discount, setDiscount] = useState('');
   const [taxRate, setTaxRate] = useState('8.25');
+  const [amountPaid, setAmountPaid] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const qtyRefs = useRef({});
@@ -67,59 +68,49 @@ export default function AvailabilityManager() {
     });
   };
 
-  const handlePreviewInvoice = () => {
+  const buildOrder = (validLines) => ({
+    id: null,
+    createdAt: new Date().toISOString(),
+    taxRate: parseFloat(taxRate) || 8.25,
+    customer: {
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email,
+      branch: customer.branch,
+      notes: customer.notes,
+    },
+    lines: validLines.map(l => ({
+      equipmentId: l.equipmentId,
+      equipmentName: l.equipmentName,
+      quantity: l.quantity || 1,
+      rate: l.rate || 0,
+      baseAmount: l.baseAmount || 0,
+      taxable: l.taxable !== false,
+      deposit: (l.deposit || 0) * (l.quantity || 1),
+      startDate: l.startDate,
+      endDate: l.endDate,
+    })),
+  });
+
+  const validate = () => {
+    if (!customer.name) { alert('Please fill in customer name.'); return false; }
     const validLines = lines.filter(l => l.equipmentId);
-    if (!customer.name || validLines.length === 0) {
-      alert('Please fill in customer name and add at least one equipment item.');
-      return;
-    }
-    const taxRateNum = parseFloat(taxRate) || 8.25;
-    const order = {
-      id: null,
-      createdAt: new Date().toISOString(),
-      taxRate: taxRateNum,
-      customer: {
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email,
-        branch: customer.branch,
-        notes: customer.notes,
-      },
-      lines: validLines.map(l => ({
-        equipmentId: l.equipmentId,
-        equipmentName: l.equipmentName,
-        quantity: l.quantity || 1,
-        rate: l.rate || 0,
-        baseAmount: l.baseAmount || 0,
-        taxable: l.taxable !== false,
-        deposit: (l.deposit || 0) * (l.quantity || 1),
-        startDate: l.startDate,
-        endDate: l.endDate,
-      })),
-    };
-    openInvoicePopup(order, 0);
+    if (validLines.length === 0) { alert('Please add at least one equipment item.'); return false; }
+    if (validLines.some(l => !l.startDate || !l.endDate)) { alert('Please set dates for all equipment lines.'); return false; }
+    return validLines;
   };
 
   const handleSave = async (status = 'pending') => {
-    if (!customer.name) {
-      alert('Please fill in customer name.');
-      return;
-    }
-    const missingDates = lines.filter(l => l.equipmentId).some(l => !l.startDate || !l.endDate);
-    if (missingDates) {
-      alert('Please set dates for all equipment lines.');
-      return;
-    }
-    const validLines = lines.filter(l => l.equipmentId);
-    if (validLines.length === 0) {
-      alert('Please add at least one equipment item.');
-      return;
-    }
+    const validLines = validate();
+    if (!validLines) return;
+
+    const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
+    const paid = parseFloat(amountPaid) || 0;
 
     setSaving(true);
     try {
       for (const line of validLines) {
-        const taxAmount = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
+        const taxAmount = line.taxable !== false ? Math.round(line.baseAmount * taxRateDecimal * 100) / 100 : 0;
         const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
         await base44.entities.Rental.create({
           equipmentId: line.equipmentId,
@@ -132,27 +123,38 @@ export default function AvailabilityManager() {
           branch: customer.branch,
           totalDays,
           baseAmount: line.baseAmount,
-          taxRate: 0.0825,
+          taxRate: taxRateDecimal,
           taxAmount,
           deposit: (line.deposit || 0) * line.quantity,
+          amountPaid: status === 'confirmed' ? paid : 0,
           status,
           notes: customer.notes,
         });
       }
       setSaved(true);
-      // Reload rentals to update availability checks
       base44.entities.Rental.list('-created_date', 1000).then(setRentals);
-      // Reset form
       setCustomer(EMPTY_CUSTOMER);
       setLines([newLine()]);
       setDiscount('');
       setTaxRate('8.25');
+      setAmountPaid('');
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       alert(`Error: ${err.message}`);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePrintAndConfirm = async () => {
+    const validLines = validate();
+    if (!validLines) return;
+
+    // Open invoice popup first (non-blocking)
+    openInvoicePopup(buildOrder(validLines), parseFloat(amountPaid) || 0);
+
+    // Then save as confirmed
+    await handleSave('confirmed');
   };
 
   if (loading) {
@@ -247,6 +249,8 @@ export default function AvailabilityManager() {
             onDiscountChange={setDiscount}
             taxRate={taxRate}
             onTaxRateChange={setTaxRate}
+            amountPaid={amountPaid}
+            onAmountPaidChange={setAmountPaid}
           />
         )}
 
@@ -254,16 +258,9 @@ export default function AvailabilityManager() {
         <div className="flex gap-3 justify-end print:hidden pb-8 flex-wrap">
           <Button
             variant="outline"
-            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); }}
+            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); setAmountPaid(''); }}
           >
             Clear
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handlePreviewInvoice}
-            className="border-gray-400 text-gray-700 hover:bg-gray-50 gap-2"
-          >
-            <Printer className="w-4 h-4" /> Preview Invoice
           </Button>
           <Button
             onClick={() => handleSave('pending')}
@@ -274,11 +271,11 @@ export default function AvailabilityManager() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save as Draft'}
           </Button>
           <Button
-            onClick={() => handleSave('confirmed')}
+            onClick={handlePrintAndConfirm}
             disabled={saving}
             className="bg-indigo-600 hover:bg-indigo-700 gap-2"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : '✓ Confirm Rental'}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Printer className="w-4 h-4" /> Print & Confirm</>}
           </Button>
         </div>
       </div>

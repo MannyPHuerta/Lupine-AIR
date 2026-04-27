@@ -1,15 +1,17 @@
 import { useState } from 'react';
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange }) {
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
 
   const discountAmount = Math.min(Math.max(parseFloat(discount) || 0, 0), rentalSubtotal);
-  const taxableBase = lines.reduce((acc, line) => acc + (line.taxable ? (line.baseAmount || 0) : 0), 0);
-  const taxRateDecimal = Math.max(0, parseFloat(taxRate) || 0) / 100;
+  const taxableBase = lines.reduce((acc, line) => acc + (line.taxable !== false ? (line.baseAmount || 0) : 0), 0);
+  const taxRateDecimal = Math.max(0, parseFloat(taxRate) || 8.25) / 100;
   const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
 
   const grand = rentalSubtotal - discountAmount + taxAmount + depositTotal;
+  const paid = parseFloat(amountPaid) || 0;
+  const balance = grand - paid;
 
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6">
@@ -78,6 +80,30 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
           <span>Total Due</span>
           <span className="text-indigo-700">${grand.toFixed(2)}</span>
         </div>
+
+        {/* Amount Paid */}
+        <div className="flex items-center justify-between text-gray-600 gap-4">
+          <span className="shrink-0">Amount Paid</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-400">$</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={amountPaid}
+              onChange={e => onAmountPaidChange(e.target.value)}
+              placeholder="0.00"
+              className="w-24 text-right border rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </div>
+        </div>
+
+        {paid > 0 && (
+          <div className="flex justify-between font-bold text-base border-t pt-2">
+            <span>Balance</span>
+            <span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span>
+          </div>
+        )}
       </div>
     </div>
   );
