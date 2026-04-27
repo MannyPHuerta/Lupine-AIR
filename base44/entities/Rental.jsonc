@@ -61,6 +61,10 @@
       "default": 0,
       "description": "Amount paid by customer (USD)"
     },
+    "invoiceNumber": {
+      "type": "string",
+      "description": "Formatted invoice number (e.g. MCL-1042)"
+    },
     "status": {
       "type": "string",
       "enum": [

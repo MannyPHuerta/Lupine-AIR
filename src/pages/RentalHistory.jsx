@@ -38,8 +38,11 @@ function groupIntoOrders(rentals) {
       };
     }
     map[key].rentalIds.push(r.id);
-    // amountPaid is stored on every rental in the order (same value) — only take it once
-    if (map[key].rentalIds.length === 1) map[key].amountPaid = r.amountPaid || 0;
+    // amountPaid and invoiceNumber are stored on every rental in the order — only take from first
+    if (map[key].rentalIds.length === 1) {
+      map[key].amountPaid = r.amountPaid || 0;
+      map[key].invoiceNumber = r.invoiceNumber || '';
+    }
     map[key].lines.push({
       rentalId: r.id,
       equipmentId: r.equipmentId,
@@ -102,6 +105,7 @@ function OrderCard({ order, equipment, onConfirmed }) {
           <div className="text-xs text-gray-500 mt-0.5">
             {lines.length} item{lines.length !== 1 ? 's' : ''} · {dateRange}
             {order.customer.branch && <span className="ml-2 text-gray-400">{order.customer.branch}</span>}
+            {order.invoiceNumber && <span className="ml-2 font-mono text-indigo-500">#{order.invoiceNumber}</span>}
           </div>
         </div>
         <div className="text-right shrink-0">

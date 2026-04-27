@@ -26,6 +26,7 @@ import AvailabilityManager from "./pages/AvailabilityManager.jsx";
 import RentalHistory from "./pages/RentalHistory";
 import PricingEditor from "./pages/PricingEditor";
 import DependenciesEditor from "./pages/DependenciesEditor";
+import BranchSettingsPage from "./pages/BranchSettingsPage";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -78,6 +79,7 @@ const AuthenticatedApp = () => {
       <Route path="/rental-history" element={<RentalHistory />} />
       <Route path="/pricing-editor" element={<PricingEditor />} />
       <Route path="/dependencies-editor" element={<DependenciesEditor />} />
+      <Route path="/branch-settings" element={<BranchSettingsPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

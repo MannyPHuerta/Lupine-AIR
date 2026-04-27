@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2 } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
@@ -68,8 +68,8 @@ export default function AvailabilityManager() {
     });
   };
 
-  const buildOrder = (validLines) => ({
-    id: null,
+  const buildOrder = (validLines, invNumber = '') => ({
+    id: invNumber || null,
     createdAt: new Date().toISOString(),
     taxRate: parseFloat(taxRate) || 8.25,
     customer: {
@@ -107,6 +107,18 @@ export default function AvailabilityManager() {
     const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
     const paid = parseFloat(amountPaid) || 0;
 
+    // Fetch and increment invoice number for confirmed invoices
+    let invoiceNumber = '';
+    if (status === 'confirmed') {
+      const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
+      const bs = branchSettingsList[0];
+      if (bs) {
+        const num = bs.nextInvoiceNumber || 1000;
+        invoiceNumber = `${bs.invoicePrefix || ''}-${String(num).padStart(4, '0')}`;
+        await base44.entities.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
+      }
+    }
+
     setSaving(true);
     try {
       for (const line of validLines) {
@@ -127,6 +139,7 @@ export default function AvailabilityManager() {
           taxAmount,
           deposit: (line.deposit || 0) * line.quantity,
           amountPaid: status === 'confirmed' ? paid : 0,
+          invoiceNumber,
           status,
           notes: customer.notes,
         });
@@ -151,9 +164,15 @@ export default function AvailabilityManager() {
     if (!validLines) return;
 
     // Must open window synchronously (before any await) or browser blocks it
-    const invoiceOrder = buildOrder(validLines);
     const paid = parseFloat(amountPaid) || 0;
     const win = openInvoiceWindow();
+
+    // Fetch invoice number before saving
+    const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
+    const bs = branchSettingsList[0];
+    const invNumber = bs ? `${bs.invoicePrefix || ''}-${String(bs.nextInvoiceNumber || 1000).padStart(4, '0')}` : '';
+
+    const invoiceOrder = buildOrder(validLines, invNumber);
 
     // Now save async
     await handleSave('confirmed');
@@ -203,6 +222,13 @@ export default function AvailabilityManager() {
               title="Manage dependencies"
             >
               <Link2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/branch-settings')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Branch invoice settings"
+            >
+              <Building2 className="w-4 h-4" />
             </button>
           </div>
         </div>
