@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 function calcRate(eq, days) {
   if (!eq) return 0;
@@ -15,15 +18,33 @@ function calcDays(start, end) {
 }
 
 function LineDateInput({ label, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const parsed = value ? parseISO(value) : null;
+
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-gray-500 shrink-0">{label}</span>
-      <input
-        type="date"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm cursor-pointer outline-none focus:ring-1 focus:ring-indigo-400 w-36"
-      />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm cursor-pointer outline-none focus:ring-1 focus:ring-indigo-400 w-36 text-left"
+          >
+            {parsed ? format(parsed, 'MM/dd/yyyy') : <span className="text-gray-400">Pick a date</span>}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={parsed || undefined}
+            onSelect={date => {
+              onChange(date ? format(date, 'yyyy-MM-dd') : '');
+              setOpen(false);
+            }}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
