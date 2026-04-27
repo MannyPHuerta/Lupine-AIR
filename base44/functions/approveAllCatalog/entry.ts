@@ -17,17 +17,12 @@ Deno.serve(async (req) => {
       !item.reviewStatus && (item.description1 || item.description2 || item.serialNumber)
     );
     
-    // Update with batching to avoid timeouts
+    // Update sequentially with delays to respect rate limits
     let approved = 0;
-    for (let i = 0; i < needsApproval.length; i += 20) {
-      const batch = needsApproval.slice(i, i + 20);
-      await Promise.all(batch.map(item => 
-        base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' })
-      ));
-      approved += batch.length;
-      if (i + 20 < needsApproval.length) {
-        await new Promise(r => setTimeout(r, 500));
-      }
+    for (const item of needsApproval) {
+      await base44.asServiceRole.entities.InventoryItem.update(item.id, { reviewStatus: 'approved' });
+      approved++;
+      await new Promise(r => setTimeout(r, 200));
     }
 
     return Response.json({ approved });
