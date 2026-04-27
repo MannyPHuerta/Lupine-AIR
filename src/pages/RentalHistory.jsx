@@ -96,15 +96,29 @@ function buildInvoiceHTML(order, amountPaid) {
   <title>Invoice – ${order.customer.name}</title>
   <style>
     body { font-family: sans-serif; font-size: 13px; color: #111; margin: 0; padding: 32px; }
-    @media print { body { padding: 16px; } #print-btn { display: none !important; } }
+    @media print { body { padding: 16px; } #toolbar { display: none !important; } }
     table { width: 100%; border-collapse: collapse; }
     th { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px 8px; border-bottom: 2px solid #e5e7eb; }
-    #print-btn { display:block; margin: 0 auto 24px; padding: 10px 32px; background:#3730a3; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; }
+    #toolbar { display:flex; align-items:center; gap:12px; margin-bottom:24px; padding:12px 16px; background:#f1f5f9; border-radius:8px; }
+    #paid-input { border:1px solid #cbd5e1; border-radius:6px; padding:6px 10px; font-size:14px; width:120px; }
+    #print-btn { padding: 8px 24px; background:#3730a3; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; }
     #print-btn:hover { background:#312e81; }
+    #balance-display { font-weight:700; font-size:15px; margin-left:auto; }
+    #totals-section { display:flex;justify-content:flex-end;margin-bottom:32px; }
+    #totals-box { width:220px; }
+    .total-row { display:flex; justify-content:space-between; color:#555; margin-bottom:4px; }
+    .grand-row { display:flex; justify-content:space-between; font-weight:700; font-size:15px; border-top:2px solid #e5e7eb; padding-top:8px; margin-top:8px; }
+    .paid-row { display:flex; justify-content:space-between; color:#16a34a; margin-top:6px; font-weight:600; }
+    .balance-row { display:flex; justify-content:space-between; font-weight:700; font-size:15px; border-top:2px solid #e5e7eb; padding-top:8px; margin-top:4px; }
   </style>
 </head>
 <body>
-  <button id="print-btn" onclick="window.print()">🖨 Print Invoice</button>
+  <div id="toolbar">
+    <label style="font-weight:600;font-size:14px">Amount Paid: $</label>
+    <input id="paid-input" type="number" min="0" step="0.01" value="${paid}" oninput="updateTotals()" />
+    <button id="print-btn" onclick="window.print()">🖨 Print Invoice</button>
+    <span id="balance-display"></span>
+  </div>
 
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
     <div>
@@ -144,35 +158,53 @@ function buildInvoiceHTML(order, amountPaid) {
     <tbody>${lineRows}</tbody>
   </table>
 
-  <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
-    <div style="width:220px">
-      <div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Rental Subtotal</span><span>$${fmt(rentalSubtotal)}</span></div>
-      <div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Sales Tax (${(taxRateDecimal * 100).toFixed(2)}%)</span><span>$${fmt(taxAmount)}</span></div>
-      ${depositTotal > 0 ? `<div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
-      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:2px solid #e5e7eb;padding-top:8px;margin-top:8px"><span>Total Due</span><span style="color:#3730a3">$${fmt(grandTotal)}</span></div>
-      ${paid > 0 ? `<div style="display:flex;justify-content:space-between;color:#16a34a;margin-top:6px;font-weight:600"><span>Paid</span><span>$${fmt(paid)}</span></div>` : ''}
-      ${paid > 0 ? `<div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:2px solid #e5e7eb;padding-top:8px;margin-top:4px"><span>Balance</span><span style="color:${balance <= 0 ? '#16a34a' : '#dc2626'}">$${fmt(balance)}</span></div>` : ''}
+  <div id="totals-section">
+    <div id="totals-box">
+      <div class="total-row"><span>Rental Subtotal</span><span>$${fmt(rentalSubtotal)}</span></div>
+      <div class="total-row"><span>Sales Tax (${(taxRateDecimal * 100).toFixed(2)}%)</span><span>$${fmt(taxAmount)}</span></div>
+      ${depositTotal > 0 ? `<div class="total-row"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
+      <div class="grand-row"><span>Total Due</span><span style="color:#3730a3">$${fmt(grandTotal)}</span></div>
+      <div id="paid-display"></div>
+      <div id="balance-section"></div>
     </div>
   </div>
 
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
     Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.
   </div>
+
+  <script>
+    const grandTotal = ${grandTotal};
+    function updateTotals() {
+      const paidVal = parseFloat(document.getElementById('paid-input').value) || 0;
+      const balance = grandTotal - paidVal;
+      document.getElementById('paid-display').innerHTML = paidVal > 0
+        ? '<div class="paid-row"><span>Paid</span><span>$' + paidVal.toFixed(2) + '</span></div>' : '';
+      document.getElementById('balance-section').innerHTML = paidVal > 0
+        ? '<div class="balance-row"><span>Balance</span><span style="color:' + (balance <= 0 ? '#16a34a' : '#dc2626') + '">$' + balance.toFixed(2) + '</span></div>' : '';
+      document.getElementById('balance-display').textContent = paidVal > 0
+        ? 'Balance: $' + balance.toFixed(2) : '';
+      document.getElementById('balance-display').style.color = balance <= 0 ? '#16a34a' : '#dc2626';
+    }
+    updateTotals();
+  </script>
 </body>
 </html>`;
 }
 
 function OrderCard({ order, equipment, onConfirmed }) {
   const [expanded, setExpanded] = useState(false);
-  const [paid, setPaid] = useState(order.amountPaid || 0);
-  const [savingPaid, setSavingPaid] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   const lines = order.lines;
+  const taxRateDecimal = (order.taxRate || 8.25) / 100;
   const rentalTotal = lines.reduce((s, l) => s + (l.baseAmount || 0), 0);
-  const taxAmount = Math.round(lines.reduce((s, l) => s + (l.taxable ? l.baseAmount : 0), 0) * 0.0825 * 100) / 100;
+  const taxableBase = lines.reduce((s, l) => s + (l.taxable ? (l.baseAmount || 0) : 0), 0);
+  const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
   const depositTotal = lines.reduce((s, l) => s + (l.deposit || 0), 0);
   const grandTotal = rentalTotal + taxAmount + depositTotal;
-  const balance = grandTotal - (parseFloat(paid) || 0);
+  const amountPaid = order.amountPaid || 0;
+  const balance = grandTotal - amountPaid;
 
   const dateRange = lines.length > 0
     ? `${lines[0].startDate || '?'} – ${lines[lines.length - 1].endDate || '?'}`
@@ -184,29 +216,18 @@ function OrderCard({ order, equipment, onConfirmed }) {
   });
 
   const handlePrint = async () => {
-    // Save paid amount and confirm all rentals in this order
-    setSavingPaid(true);
-    const paidVal = parseFloat(paid) || 0;
+    setPrinting(true);
+    // Confirm all rentals in this order
     await Promise.all(order.rentalIds.map(id =>
-      base44.entities.Rental.update(id, { status: 'confirmed', amountPaid: paidVal / order.rentalIds.length })
+      base44.entities.Rental.update(id, { status: 'confirmed' })
     ));
-    setSavingPaid(false);
+    setPrinting(false);
     onConfirmed();
 
-    const html = buildInvoiceHTML({ ...order, lines: enriched }, paidVal);
+    const html = buildInvoiceHTML({ ...order, lines: enriched }, amountPaid);
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
-  };
-
-  const handleSavePaid = async () => {
-    setSavingPaid(true);
-    const paidVal = parseFloat(paid) || 0;
-    await Promise.all(order.rentalIds.map(id =>
-      base44.entities.Rental.update(id, { amountPaid: paidVal / order.rentalIds.length })
-    ));
-    setSavingPaid(false);
-    onConfirmed();
   };
 
   return (
@@ -223,7 +244,7 @@ function OrderCard({ order, equipment, onConfirmed }) {
           </div>
         </div>
         <div className="text-right shrink-0">
-          <div className="font-bold text-indigo-700">${rentalTotal.toFixed(2)}</div>
+          <div className="font-bold text-indigo-700">${grandTotal.toFixed(2)}</div>
           <div className="text-xs text-gray-400">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''}</div>
         </div>
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
@@ -263,36 +284,19 @@ function OrderCard({ order, equipment, onConfirmed }) {
             </tbody>
           </table>
 
-          {/* Payment row */}
-          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Total Due</span>
-              <span className="font-semibold text-indigo-700">${grandTotal.toFixed(2)}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 shrink-0">Paid ($)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={paid}
-                onChange={e => setPaid(e.target.value)}
-                className="flex-1 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                onClick={e => e.stopPropagation()}
-              />
-              <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleSavePaid(); }} disabled={savingPaid}>
-                Save
-              </Button>
-            </div>
-            <div className="flex justify-between text-sm font-semibold">
-              <span>Balance</span>
-              <span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span>
-            </div>
+          {/* Totals summary */}
+          <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm text-gray-600">
+            <div className="flex justify-between"><span>Rental Subtotal</span><span>${rentalTotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>Sales Tax (8.25%)</span><span>${taxAmount.toFixed(2)}</span></div>
+            {depositTotal > 0 && <div className="flex justify-between"><span>Deposits</span><span>${depositTotal.toFixed(2)}</span></div>}
+            <div className="flex justify-between font-bold text-gray-900 border-t pt-1 mt-1"><span>Total Due</span><span className="text-indigo-700">${grandTotal.toFixed(2)}</span></div>
+            {amountPaid > 0 && <div className="flex justify-between text-green-700 font-semibold"><span>Paid</span><span>${amountPaid.toFixed(2)}</span></div>}
+            {amountPaid > 0 && <div className="flex justify-between font-bold border-t pt-1"><span>Balance</span><span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span></div>}
           </div>
 
           <div className="flex justify-end">
-            <Button size="sm" onClick={handlePrint} disabled={savingPaid} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-              <Printer className="w-4 h-4" /> Print & Confirm
+            <Button size="sm" onClick={handlePrint} disabled={printing} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+              <Printer className="w-4 h-4" /> {printing ? 'Saving…' : 'Print & Confirm'}
             </Button>
           </div>
         </div>
