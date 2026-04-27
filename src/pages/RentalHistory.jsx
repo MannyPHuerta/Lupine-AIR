@@ -48,7 +48,7 @@ function groupIntoOrders(rentals) {
       quantity: 1,
       rate: r.baseAmount && r.totalDays ? r.baseAmount / r.totalDays : 0,
       baseAmount: r.baseAmount || 0,
-      taxable: r.taxRate == null ? true : r.taxRate > 0,
+      taxable: r.taxRate !== 0,
       deposit: r.deposit || 0,
       startDate: r.startDate,
       endDate: r.endDate,
@@ -192,7 +192,7 @@ function buildInvoiceHTML(order, amountPaid) {
         bdEl.textContent = '';
       }
     }
-    window.onload = function() { updateTotals(); };
+    updateTotals();
   </script>
 </body>
 </html>`;
@@ -222,10 +222,12 @@ function OrderCard({ order, equipment, onConfirmed }) {
   });
 
   const handlePrint = async () => {
+    const win = window.open('', '_blank');
+    if (!win) { alert('Please allow popups for this site.'); return; }
     const html = buildInvoiceHTML({ ...order, lines: enriched }, amountPaid);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
 
     // Confirm in background
     setPrinting(true);
