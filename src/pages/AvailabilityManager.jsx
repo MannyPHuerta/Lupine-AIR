@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2 } from 'lucide-react';
@@ -37,6 +37,8 @@ export default function AvailabilityManager() {
   const [lines, setLines] = useState([newLine()]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const qtyRefs = useRef({});
+  const addButtonRef = useRef(null);
 
   useEffect(() => {
     Promise.all([
@@ -165,19 +167,24 @@ export default function AvailabilityManager() {
             <span className="text-xs text-gray-400">Qty · Availability auto-checked against dates above</span>
           </div>
 
-          {lines.map(line => (
-            <EquipmentLineItem
-              key={line.id}
-              line={line}
-              equipment={equipment}
-              rentals={rentals}
-              dateRange={dateRange}
-              onUpdate={(updated) => updateLine(line.id, updated)}
-              onRemove={() => removeLine(line.id)}
-            />
-          ))}
+          {lines.map(line => {
+            if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
+            return (
+              <EquipmentLineItem
+                key={line.id}
+                line={line}
+                equipment={equipment}
+                rentals={rentals}
+                dateRange={dateRange}
+                onUpdate={(updated) => updateLine(line.id, updated)}
+                onRemove={() => removeLine(line.id)}
+                qtyRef={qtyRefs.current[line.id]}
+              />
+            );
+          })}
 
           <button
+            ref={addButtonRef}
             onClick={addLine}
             className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2"
           >

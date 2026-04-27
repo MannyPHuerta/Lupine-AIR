@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Input } from '@/components/ui/input';
 
 const BRANCHES = [
@@ -10,8 +11,49 @@ const BRANCHES = [
   '99 Warehouse',
 ];
 
+// Format phone as (XXX) XXX-XXXX
+function formatPhone(raw) {
+  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 3) return digits.length ? `(${digits}` : '';
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function DateInput({ label, value, onChange }) {
+  const ref = useRef(null);
+
+  const open = () => {
+    ref.current?.showPicker?.();
+    ref.current?.focus();
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <div
+        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm cursor-pointer items-center"
+        onClick={open}
+      >
+        <input
+          ref={ref}
+          type="date"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={open}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') open(); }}
+          className="flex-1 bg-transparent outline-none text-sm cursor-pointer"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function CustomerHeader({ customer, onChange }) {
   const set = (field, value) => onChange({ ...customer, [field]: value });
+
+  const handlePhone = (e) => {
+    set('phone', formatPhone(e.target.value));
+  };
 
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6">
@@ -29,9 +71,10 @@ export default function CustomerHeader({ customer, onChange }) {
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
           <Input
-            placeholder="(555) 123-4567"
+            placeholder="(956) 123-4567"
             value={customer.phone}
-            onChange={e => set('phone', e.target.value)}
+            onChange={handlePhone}
+            inputMode="numeric"
           />
         </div>
         <div>
@@ -55,22 +98,8 @@ export default function CustomerHeader({ customer, onChange }) {
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Start Date *</label>
-          <Input
-            type="date"
-            value={customer.startDate}
-            onChange={e => set('startDate', e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">End Date *</label>
-          <Input
-            type="date"
-            value={customer.endDate}
-            onChange={e => set('endDate', e.target.value)}
-          />
-        </div>
+        <DateInput label="Start Date *" value={customer.startDate} onChange={v => set('startDate', v)} />
+        <DateInput label="End Date *" value={customer.endDate} onChange={v => set('endDate', v)} />
         <div className="sm:col-span-2">
           <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
           <Input
