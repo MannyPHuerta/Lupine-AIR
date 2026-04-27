@@ -3,7 +3,13 @@ import { getBranchInfo } from '@/lib/branchInfo';
 const fmt = (n) => (n || 0).toFixed(2);
 
 export default function PrintableInvoice({ order }) {
-  const { customer, lines, discount, taxRate, createdAt, id } = order;
+  const customer = order.customer;
+  const lines = order.lines;
+  const discount = order.discount;
+  const taxRate = order.taxRate;
+  const createdAt = order.createdAt;
+  const orderId = order.id;
+
   const branch = getBranchInfo(customer.branch);
 
   const rentalSubtotal = lines.reduce((s, l) => s + (l.baseAmount || 0), 0);
@@ -30,7 +36,7 @@ export default function PrintableInvoice({ order }) {
         </div>
         <div className="text-right">
           <div className="text-3xl font-bold text-gray-300 font-label">INVOICE</div>
-          {id && <div className="text-xs text-gray-500 mt-1">#{id.slice(-8).toUpperCase()}</div>}
+          {orderId && <div className="text-xs text-gray-500 mt-1">#{orderId.slice(-8).toUpperCase()}</div>}
           {dateStr && <div className="text-xs text-gray-500">{dateStr}</div>}
         </div>
       </div>
