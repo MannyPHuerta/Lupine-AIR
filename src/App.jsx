@@ -23,6 +23,7 @@ import Terms from "./pages/Terms";
 import LupinePlan from "./pages/LupinePlan";
 import CatalogReview from "./pages/CatalogReview";
 import AvailabilityManager from "./pages/AvailabilityManager.jsx";
+import RentalHistory from "./pages/RentalHistory";
 import PricingEditor from "./pages/PricingEditor";
 import DependenciesEditor from "./pages/DependenciesEditor";
 
@@ -74,6 +75,7 @@ const AuthenticatedApp = () => {
       <Route path="/lupine" element={<LupinePlan />} />
       <Route path="/catalog-review" element={<CatalogReview />} />
       <Route path="/availability" element={<AvailabilityManager />} />
+      <Route path="/rental-history" element={<RentalHistory />} />
       <Route path="/pricing-editor" element={<PricingEditor />} />
       <Route path="/dependencies-editor" element={<DependenciesEditor />} />
       <Route path="*" element={<PageNotFound />} />

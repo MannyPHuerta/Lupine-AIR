@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Reference to Equipment"
     },
+    "equipmentName": {
+      "type": "string",
+      "description": "Denormalized equipment name for display"
+    },
     "startDate": {
       "type": "string",
       "format": "date",
@@ -27,6 +31,10 @@
     "customerPhone": {
       "type": "string",
       "description": "Customer phone number"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch location for this rental"
     },
     "totalDays": {
       "type": "integer",

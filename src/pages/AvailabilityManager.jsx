@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2 } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
@@ -89,11 +89,13 @@ export default function AvailabilityManager() {
         const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
         await base44.entities.Rental.create({
           equipmentId: line.equipmentId,
+          equipmentName: line.equipmentName,
           startDate: line.startDate,
           endDate: line.endDate,
           customerName: customer.name,
           customerEmail: customer.email,
           customerPhone: customer.phone,
+          branch: customer.branch,
           totalDays,
           baseAmount: line.baseAmount,
           taxRate: 0.0825,
@@ -140,6 +142,13 @@ export default function AvailabilityManager() {
             <div className="text-indigo-300 text-xs">{equipment.length} items in catalog</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => navigate('/rental-history')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Rental history"
+            >
+              <History className="w-4 h-4" />
+            </button>
             <button
               onClick={() => navigate('/pricing-editor')}
               className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
