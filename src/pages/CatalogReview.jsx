@@ -22,6 +22,7 @@ export default function CatalogReview() {
   const [editingItem, setEditingItem] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [saving, setSaving] = useState(false);
+  const [migrating, setMigrating] = useState(false);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -89,6 +90,19 @@ export default function CatalogReview() {
     }
   };
 
+  const migrateToEquipment = async () => {
+    setMigrating(true);
+    try {
+      const res = await base44.functions.invoke('migrateApprovedToEquipment', {});
+      alert(`Created ${res.created} equipment records (skipped ${res.skipped})`);
+      if (res.errors?.length) {
+        console.warn('Migration errors:', res.errors);
+      }
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   const handleSaveEdit = async (updated) => {
     await base44.entities.InventoryItem.update(updated.id, {
       description1: updated.description1,
@@ -142,6 +156,13 @@ export default function CatalogReview() {
           )}
           <div className="ml-auto flex gap-2 items-center">
             <span className="text-indigo-200 text-xs font-medium">{total} records</span>
+            <button
+              onClick={migrateToEquipment}
+              disabled={migrating || saving}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg whitespace-nowrap disabled:opacity-50"
+            >
+              {migrating ? 'Migrating…' : '→ Migrate to Equipment'}
+            </button>
             <CatalogBulkImport onComplete={fetchItems} />
           </div>
         </div>
