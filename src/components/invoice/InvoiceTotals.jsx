@@ -1,30 +1,79 @@
-export default function InvoiceTotals({ lines }) {
-  const totals = lines.reduce((acc, line) => {
-    const tax = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
-    return {
-      rental: acc.rental + (line.baseAmount || 0),
-      tax: acc.tax + tax,
-      deposit: acc.deposit + (line.deposit || 0) * (line.quantity || 1),
-    };
-  }, { rental: 0, tax: 0, deposit: 0 });
+import { useState } from 'react';
 
-  const grand = totals.rental + totals.tax + totals.deposit;
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange }) {
+  const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
+  const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
+
+  const discountAmount = Math.min(Math.max(parseFloat(discount) || 0, 0), rentalSubtotal);
+  const taxableBase = lines.reduce((acc, line) => acc + (line.taxable ? (line.baseAmount || 0) : 0), 0);
+  const taxRateDecimal = Math.max(0, parseFloat(taxRate) || 0) / 100;
+  const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
+
+  const grand = rentalSubtotal - discountAmount + taxAmount + depositTotal;
 
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6">
-      <div className="space-y-2 text-sm">
+      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Invoice Totals</h3>
+      <div className="space-y-3 text-sm">
+
+        {/* Rental Subtotal */}
         <div className="flex justify-between text-gray-600">
           <span>Rental Subtotal</span>
-          <span>${totals.rental.toFixed(2)}</span>
+          <span>${rentalSubtotal.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Sales Tax (8.25%)</span>
-          <span>${totals.tax.toFixed(2)}</span>
+
+        {/* Discount */}
+        <div className="flex items-center justify-between text-gray-600 gap-4">
+          <span className="shrink-0">Discount</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-400">−$</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={discount}
+              onChange={e => onDiscountChange(e.target.value)}
+              placeholder="0.00"
+              className="w-24 text-right border rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </div>
         </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Deposits</span>
-          <span>${totals.deposit.toFixed(2)}</span>
+
+        {discountAmount > 0 && (
+          <div className="flex justify-between text-green-700 text-xs font-medium">
+            <span>After Discount</span>
+            <span>${(rentalSubtotal - discountAmount).toFixed(2)}</span>
+          </div>
+        )}
+
+        {/* Tax Rate */}
+        <div className="flex items-center justify-between text-gray-600 gap-4">
+          <span className="shrink-0">Sales Tax</span>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min="0"
+              max="30"
+              step="0.01"
+              value={taxRate}
+              onChange={e => onTaxRateChange(e.target.value)}
+              placeholder="8.25"
+              className="w-20 text-right border rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+            <span className="text-gray-400">%</span>
+            <span className="text-gray-500 ml-2">${taxAmount.toFixed(2)}</span>
+          </div>
         </div>
+
+        {/* Deposits */}
+        {depositTotal > 0 && (
+          <div className="flex justify-between text-gray-600">
+            <span>Deposits</span>
+            <span>${depositTotal.toFixed(2)}</span>
+          </div>
+        )}
+
+        {/* Total */}
         <div className="border-t pt-3 flex justify-between text-lg font-bold">
           <span>Total Due</span>
           <span className="text-indigo-700">${grand.toFixed(2)}</span>

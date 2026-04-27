@@ -35,6 +35,8 @@ export default function AvailabilityManager() {
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState(EMPTY_CUSTOMER);
   const [lines, setLines] = useState([newLine()]);
+  const [discount, setDiscount] = useState('');
+  const [taxRate, setTaxRate] = useState('8.25');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const qtyRefs = useRef({});
@@ -102,6 +104,8 @@ export default function AvailabilityManager() {
       // Reset form
       setCustomer(EMPTY_CUSTOMER);
       setLines([newLine()]);
+      setDiscount('');
+      setTaxRate('8.25');
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -194,14 +198,20 @@ export default function AvailabilityManager() {
 
         {/* Totals */}
         {lines.some(l => l.equipmentId) && (
-          <InvoiceTotals lines={lines} />
+          <InvoiceTotals
+            lines={lines}
+            discount={discount}
+            onDiscountChange={setDiscount}
+            taxRate={taxRate}
+            onTaxRateChange={setTaxRate}
+          />
         )}
 
         {/* Actions */}
         <div className="flex gap-3 justify-end print:hidden pb-8">
           <Button
             variant="outline"
-            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); }}
+            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); }}
           >
             Clear
           </Button>
