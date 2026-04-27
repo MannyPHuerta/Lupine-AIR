@@ -14,7 +14,9 @@ export default function PrintableInvoice({ order }) {
   const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
   const grandTotal = rentalSubtotal - discountAmount + taxAmount + depositTotal;
 
-  const dateStr = createdAt ? new Date(createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+  const dateStr = createdAt
+    ? new Date(createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
 
   return (
     <div className="font-body text-sm text-gray-900 bg-white p-8 max-w-3xl mx-auto print:p-4 print:max-w-none">
