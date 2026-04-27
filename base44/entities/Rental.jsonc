@@ -56,6 +56,11 @@
       "type": "number",
       "description": "Security deposit charged (USD)"
     },
+    "amountPaid": {
+      "type": "number",
+      "default": 0,
+      "description": "Amount paid by customer (USD)"
+    },
     "status": {
       "type": "string",
       "enum": [

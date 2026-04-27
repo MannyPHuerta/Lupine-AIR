@@ -16,7 +16,6 @@ const STATUS_COLORS = {
 
 const fmt = (n) => (n || 0).toFixed(2);
 
-// Group rentals into "orders" by customerName + same created_date minute
 function groupIntoOrders(rentals) {
   const map = {};
   rentals.forEach(r => {
@@ -26,6 +25,7 @@ function groupIntoOrders(rentals) {
       map[key] = {
         id: key,
         createdAt: r.created_date,
+        rentalIds: [],
         customer: {
           name: r.customerName,
           phone: r.customerPhone || '',
@@ -36,9 +36,13 @@ function groupIntoOrders(rentals) {
         lines: [],
         status: r.status,
         taxRate: 8.25,
+        amountPaid: 0,
       };
     }
+    map[key].rentalIds.push(r.id);
+    map[key].amountPaid += (r.amountPaid || 0);
     map[key].lines.push({
+      rentalId: r.id,
       equipmentId: r.equipmentId,
       equipmentName: r.equipmentName || r.equipmentId,
       quantity: 1,
@@ -53,7 +57,7 @@ function groupIntoOrders(rentals) {
   return Object.values(map).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
 
-function buildInvoiceHTML(order) {
+function buildInvoiceHTML(order, amountPaid) {
   const branch = getBranchInfo(order.customer.branch);
   const lines = order.lines;
   const taxRateDecimal = (order.taxRate || 8.25) / 100;
@@ -62,6 +66,8 @@ function buildInvoiceHTML(order) {
   const taxableBase = lines.reduce((s, l) => s + (l.taxable ? (l.baseAmount || 0) : 0), 0);
   const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
   const grandTotal = rentalSubtotal + taxAmount + depositTotal;
+  const paid = parseFloat(amountPaid) || 0;
+  const balance = grandTotal - paid;
 
   const dateStr = order.createdAt
     ? new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -90,12 +96,16 @@ function buildInvoiceHTML(order) {
   <title>Invoice – ${order.customer.name}</title>
   <style>
     body { font-family: sans-serif; font-size: 13px; color: #111; margin: 0; padding: 32px; }
-    @media print { body { padding: 16px; } }
+    @media print { body { padding: 16px; } #print-btn { display: none !important; } }
     table { width: 100%; border-collapse: collapse; }
     th { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px 8px; border-bottom: 2px solid #e5e7eb; }
+    #print-btn { display:block; margin: 0 auto 24px; padding: 10px 32px; background:#3730a3; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; }
+    #print-btn:hover { background:#312e81; }
   </style>
 </head>
 <body>
+  <button id="print-btn" onclick="window.print()">🖨 Print Invoice</button>
+
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
     <div>
       <div style="font-size:20px;font-weight:700;color:#1e1b4b">${branch.name}</div>
@@ -135,27 +145,35 @@ function buildInvoiceHTML(order) {
   </table>
 
   <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
-    <div style="width:200px">
+    <div style="width:220px">
       <div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Rental Subtotal</span><span>$${fmt(rentalSubtotal)}</span></div>
       <div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Sales Tax (${(taxRateDecimal * 100).toFixed(2)}%)</span><span>$${fmt(taxAmount)}</span></div>
       ${depositTotal > 0 ? `<div style="display:flex;justify-content:space-between;color:#555;margin-bottom:4px"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
       <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:2px solid #e5e7eb;padding-top:8px;margin-top:8px"><span>Total Due</span><span style="color:#3730a3">$${fmt(grandTotal)}</span></div>
+      ${paid > 0 ? `<div style="display:flex;justify-content:space-between;color:#16a34a;margin-top:6px;font-weight:600"><span>Paid</span><span>$${fmt(paid)}</span></div>` : ''}
+      ${paid > 0 ? `<div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:2px solid #e5e7eb;padding-top:8px;margin-top:4px"><span>Balance</span><span style="color:${balance <= 0 ? '#16a34a' : '#dc2626'}">$${fmt(balance)}</span></div>` : ''}
     </div>
   </div>
 
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
     Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.
   </div>
-  <script>window.onload = () => { window.print(); }</script>
 </body>
 </html>`;
 }
 
-function OrderCard({ order, equipment }) {
+function OrderCard({ order, equipment, onConfirmed }) {
   const [expanded, setExpanded] = useState(false);
+  const [paid, setPaid] = useState(order.amountPaid || 0);
+  const [savingPaid, setSavingPaid] = useState(false);
 
   const lines = order.lines;
   const rentalTotal = lines.reduce((s, l) => s + (l.baseAmount || 0), 0);
+  const taxAmount = Math.round(lines.reduce((s, l) => s + (l.taxable ? l.baseAmount : 0), 0) * 0.0825 * 100) / 100;
+  const depositTotal = lines.reduce((s, l) => s + (l.deposit || 0), 0);
+  const grandTotal = rentalTotal + taxAmount + depositTotal;
+  const balance = grandTotal - (parseFloat(paid) || 0);
+
   const dateRange = lines.length > 0
     ? `${lines[0].startDate || '?'} – ${lines[lines.length - 1].endDate || '?'}`
     : '';
@@ -165,16 +183,34 @@ function OrderCard({ order, equipment }) {
     return { ...l, equipmentName: eq?.name || l.equipmentName || l.equipmentId };
   });
 
-  const handlePrint = () => {
-    const html = buildInvoiceHTML({ ...order, lines: enriched });
+  const handlePrint = async () => {
+    // Save paid amount and confirm all rentals in this order
+    setSavingPaid(true);
+    const paidVal = parseFloat(paid) || 0;
+    await Promise.all(order.rentalIds.map(id =>
+      base44.entities.Rental.update(id, { status: 'confirmed', amountPaid: paidVal / order.rentalIds.length })
+    ));
+    setSavingPaid(false);
+    onConfirmed();
+
+    const html = buildInvoiceHTML({ ...order, lines: enriched }, paidVal);
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
   };
 
+  const handleSavePaid = async () => {
+    setSavingPaid(true);
+    const paidVal = parseFloat(paid) || 0;
+    await Promise.all(order.rentalIds.map(id =>
+      base44.entities.Rental.update(id, { amountPaid: paidVal / order.rentalIds.length })
+    ));
+    setSavingPaid(false);
+    onConfirmed();
+  };
+
   return (
     <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-      {/* Summary row */}
       <div
         className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-gray-50"
         onClick={() => setExpanded(e => !e)}
@@ -198,7 +234,6 @@ function OrderCard({ order, equipment }) {
         </button>
       </div>
 
-      {/* Expanded detail */}
       {expanded && (
         <div className="border-t px-5 py-4 space-y-3">
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
@@ -228,9 +263,36 @@ function OrderCard({ order, equipment }) {
             </tbody>
           </table>
 
+          {/* Payment row */}
+          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Total Due</span>
+              <span className="font-semibold text-indigo-700">${grandTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-600 shrink-0">Paid ($)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={paid}
+                onChange={e => setPaid(e.target.value)}
+                className="flex-1 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                onClick={e => e.stopPropagation()}
+              />
+              <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleSavePaid(); }} disabled={savingPaid}>
+                Save
+              </Button>
+            </div>
+            <div className="flex justify-between text-sm font-semibold">
+              <span>Balance</span>
+              <span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span>
+            </div>
+          </div>
+
           <div className="flex justify-end">
-            <Button size="sm" variant="outline" onClick={handlePrint} className="gap-2">
-              <Printer className="w-4 h-4" /> Print Invoice
+            <Button size="sm" onClick={handlePrint} disabled={savingPaid} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+              <Printer className="w-4 h-4" /> Print & Confirm
             </Button>
           </div>
         </div>
@@ -246,6 +308,10 @@ export default function RentalHistory() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const reload = () => {
+    base44.entities.Rental.list('-created_date', 2000).then(setRentals);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -319,7 +385,7 @@ export default function RentalHistory() {
         ) : (
           <div className="space-y-3">
             {filtered.map(order => (
-              <OrderCard key={order.id} order={order} equipment={equipment} />
+              <OrderCard key={order.id} order={order} equipment={equipment} onConfirmed={reload} />
             ))}
           </div>
         )}
