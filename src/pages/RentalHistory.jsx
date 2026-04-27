@@ -38,7 +38,8 @@ function groupIntoOrders(rentals) {
       };
     }
     map[key].rentalIds.push(r.id);
-    map[key].amountPaid += (r.amountPaid || 0);
+    // amountPaid is stored on every rental in the order (same value) — only take it once
+    if (map[key].rentalIds.length === 1) map[key].amountPaid = r.amountPaid || 0;
     map[key].lines.push({
       rentalId: r.id,
       equipmentId: r.equipmentId,
