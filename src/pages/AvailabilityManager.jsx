@@ -1,210 +1,117 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Plus, AlertCircle, Loader2, Settings, Search, X } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import RentalCart from '@/components/RentalCart';
-import CheckoutForm from '@/components/CheckoutForm';
-import EquipmentRecommendations from '@/components/EquipmentRecommendations';
+import CustomerHeader from '@/components/invoice/CustomerHeader';
+import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
+import InvoiceTotals from '@/components/invoice/InvoiceTotals';
+
+const EMPTY_CUSTOMER = {
+  name: '',
+  phone: '',
+  email: '',
+  branch: '01 McAllen',
+  startDate: '',
+  endDate: '',
+  notes: '',
+};
+
+const newLine = () => ({
+  id: crypto.randomUUID(),
+  equipmentId: '',
+  equipmentName: '',
+  quantity: 1,
+  rate: 0,
+  baseAmount: 0,
+  taxable: true,
+  deposit: 0,
+});
 
 export default function AvailabilityManager() {
   const navigate = useNavigate();
   const [equipment, setEquipment] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState(null);
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [conflicts, setConflicts] = useState([]);
-  const [migrating, setMigrating] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [searchStr, setSearchStr] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchHighlight, setSearchHighlight] = useState(0);
-  const searchItemsRef = useRef([]);
-
-  const fetchData = async () => {
-    const [eq, rent] = await Promise.all([
-      base44.entities.Equipment.list('-created_date', 500),
-      base44.entities.Rental.list('-created_date', 1000)
-    ]);
-    setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
-    setRentals(rent);
-    setLoading(false);
-  };
+  const [customer, setCustomer] = useState(EMPTY_CUSTOMER);
+  const [lines, setLines] = useState([newLine()]);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    Promise.all([
+      base44.entities.Equipment.list('-created_date', 500),
+      base44.entities.Rental.list('-created_date', 1000),
+    ]).then(([eq, rent]) => {
+      setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
+      setRentals(rent);
+      setLoading(false);
+    });
   }, []);
 
-  const searchResults = searchStr
-    ? equipment.filter(eq => eq.name.toUpperCase().startsWith(searchStr))
-    : [];
+  const dateRange = { start: customer.startDate, end: customer.endDate };
 
-  // Quick search by accumulated letters
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !showSearch) {
-        e.preventDefault();
-        setSearchStr(prev => (prev + e.key).toUpperCase());
-        setShowSearch(true);
-        setSearchHighlight(0);
-      }
-      if (showSearch) {
-        e.stopPropagation();
-        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-          e.preventDefault();
-          setSearchStr(prev => (prev + e.key).toUpperCase());
-        }
-        if (e.key === 'Backspace') {
-          e.preventDefault();
-          setSearchStr(prev => {
-            const next = prev.slice(0, -1);
-            if (!next) setSelectedEquipmentId(null);
-            return next;
-          });
-          setSearchHighlight(0);
-        }
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          setSearchHighlight(prev => {
-            const next = Math.min(prev + 1, searchResults.length - 1);
-            setTimeout(() => searchItemsRef.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
-            return next;
-          });
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setSearchHighlight(prev => {
-            const next = Math.max(prev - 1, 0);
-            setTimeout(() => searchItemsRef.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
-            return next;
-          });
-        }
-        if (e.key === 'Enter' && searchResults.length > 0) {
-          e.preventDefault();
-          setSelectedEquipmentId(searchResults[searchHighlight].id);
-          setShowSearch(false);
-          setSearchStr('');
-          setSearchHighlight(0);
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          setShowSearch(false);
-          setSearchStr('');
-          setSelectedEquipmentId(null);
-          setSearchHighlight(0);
-        }
-      } else {
-        if (e.key === 'Backspace' && selectedEquipmentId) {
-          e.preventDefault();
-          setSelectedEquipmentId(null);
-        }
-        if (e.key === 'Escape') {
-          setSearchStr('');
-          setSelectedEquipmentId(null);
-          setSearchHighlight(0);
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyPress, true);
-    return () => window.removeEventListener('keydown', handleKeyPress, true);
-  }, [showSearch, searchResults, selectedEquipmentId, searchHighlight]);
+  const updateLine = (id, updated) => {
+    setLines(prev => prev.map(l => l.id === id ? updated : l));
+  };
 
-  const handleMigrate = async () => {
-    setMigrating(true);
+  const removeLine = (id) => {
+    setLines(prev => prev.filter(l => l.id !== id));
+  };
+
+  const addLine = () => {
+    setLines(prev => [...prev, newLine()]);
+  };
+
+  const handleSave = async (status = 'pending') => {
+    if (!customer.name || !customer.startDate || !customer.endDate) {
+      alert('Please fill in customer name and dates.');
+      return;
+    }
+    const validLines = lines.filter(l => l.equipmentId);
+    if (validLines.length === 0) {
+      alert('Please add at least one equipment item.');
+      return;
+    }
+
+    setSaving(true);
     try {
-      const result = await base44.functions.invoke('migrateItemsToEquipment', {});
-      await fetchData();
-      alert(`✓ Created ${result.created} equipment items`);
-    } catch (error) {
-      alert(`Error: ${error.message}`);
+      for (const line of validLines) {
+        const taxAmount = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
+        await base44.entities.Rental.create({
+          equipmentId: line.equipmentId,
+          startDate: customer.startDate,
+          endDate: customer.endDate,
+          customerName: customer.name,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          totalDays: Math.floor((new Date(customer.endDate) - new Date(customer.startDate)) / (1000 * 60 * 60 * 24)) + 1,
+          baseAmount: line.baseAmount,
+          taxRate: 0.0825,
+          taxAmount,
+          deposit: (line.deposit || 0) * line.quantity,
+          status,
+          notes: customer.notes,
+        });
+      }
+      setSaved(true);
+      // Reload rentals to update availability checks
+      base44.entities.Rental.list('-created_date', 1000).then(setRentals);
+      // Reset form
+      setCustomer(EMPTY_CUSTOMER);
+      setLines([newLine()]);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      alert(`Error: ${err.message}`);
     } finally {
-      setMigrating(false);
+      setSaving(false);
     }
-  };
-
-  const checkConflicts = (equipId, startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    const conflicting = rentals.filter(r => {
-      if (r.equipmentId !== equipId) return false;
-      if (['cancelled', 'completed'].includes(r.status)) return false;
-      
-      const rStart = new Date(r.startDate);
-      const rEnd = new Date(r.endDate);
-      
-      return !(end < rStart || start > rEnd);
-    });
-    
-    setConflicts(conflicting);
-    return conflicting.length === 0;
-  };
-
-  const handleDateChange = (e) => {
-    const { name, value } = e.target;
-    const newRange = { ...dateRange, [name]: value };
-    setDateRange(newRange);
-    
-    if (selectedEquipmentId && newRange.start && newRange.end) {
-      checkConflicts(selectedEquipmentId, newRange.start, newRange.end);
-    }
-  };
-
-  const isConflictFree = conflicts.length === 0;
-
-  const addItemToCart = (equipmentId, qty = 1) => {
-    if (!equipmentId || !dateRange.start || !dateRange.end || qty < 1) return;
-
-    const eq = equipment.find(e => e.id === equipmentId);
-    const days = new Date(dateRange.end) - new Date(dateRange.start);
-    const daysCount = Math.floor(days / (1000 * 60 * 60 * 24)) + 1;
-
-    let rate = eq.dailyRate;
-    if (daysCount >= 30) rate = eq.monthlyRate / 30;
-    else if (daysCount >= 7) rate = eq.weeklyRate / 7;
-
-    const baseAmount = rate * daysCount;
-
-    // Add qty times
-    for (let i = 0; i < qty; i++) {
-      setCartItems(prev => [...prev, {
-        equipmentId: equipmentId,
-        name: eq.name,
-        startDate: dateRange.start,
-        endDate: dateRange.end,
-        totalDays: daysCount,
-        baseAmount: Math.round(baseAmount * 100) / 100,
-        taxRate: 0.0825,
-        taxable: eq.taxable,
-        deposit: eq.depositRequired || 0
-      }]);
-    }
-  };
-
-  const addToCart = () => {
-    if (!selectedEquipmentId || !dateRange.start || !dateRange.end || quantity < 1) return;
-    addItemToCart(selectedEquipmentId, quantity);
-    
-    // Reset for next item
-    setSelectedEquipmentId(null);
-    setDateRange({ start: '', end: '' });
-    setConflicts([]);
-    setQuantity(1);
-  };
-
-  const handleAddRecommendation = (rec) => {
-    addItemToCart(rec.equipmentId, rec.minQuantity || 1);
   };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -212,303 +119,102 @@ export default function AvailabilityManager() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-7xl mx-auto">
-          <button
-            onClick={() => navigate('/lupine')}
-            className="text-white p-2 rounded-lg hover:bg-indigo-800"
-          >
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg print:hidden">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
+          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <div className="text-lg font-bold">Availability Manager</div>
-            <div className="text-indigo-300 text-xs">Phase 1 — Equipment Calendars</div>
+            <div className="text-lg font-bold">New Rental Invoice</div>
+            <div className="text-indigo-300 text-xs">{equipment.length} items in catalog</div>
           </div>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-indigo-200 text-sm">{equipment.length} items · {rentals.length} rentals</span>
+          <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => navigate('/pricing-editor')}
               className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
               title="Edit pricing"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate('/dependencies-editor')}
               className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
               title="Manage dependencies"
             >
-              <Plus className="w-5 h-5" />
+              <Link2 className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side - item selection */}
-        <div className="lg:col-span-2 space-y-6">
-        {/* Migration Banner */}
-        {equipment.length === 0 && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
-            <p className="text-sm text-indigo-900">No equipment yet. Migrate approved catalog items to get started.</p>
-            <Button
-              onClick={handleMigrate}
-              disabled={migrating}
-              className="bg-indigo-600 hover:bg-indigo-700 gap-2"
-            >
-              {migrating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              {migrating ? 'Migrating...' : 'Migrate Catalog'}
-            </Button>
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {/* Success banner */}
+        {saved && (
+          <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
+            ✓ Rental saved successfully!
           </div>
         )}
 
-        {/* Quick Check Availability */}
-        <div className="bg-white rounded-xl border shadow-sm p-6">
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-indigo-600" />
-            Check Availability
-          </h2>
-          
-          <div className="space-y-4">
-            {/* Equipment selector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Equipment</label>
-              <select
-                autoFocus
-                value={selectedEquipmentId || ''}
-                onChange={(e) => {
-                   setSelectedEquipmentId(e.target.value);
-                   setDateRange({ start: '', end: '' });
-                   setConflicts([]);
-                   setQuantity(1);
-                 }}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="">Select equipment...</option>
-                {equipment.map(eq => (
-                  <option key={eq.id} value={eq.id}>
-                    {eq.name} ({eq.category})
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Customer info */}
+        <CustomerHeader customer={customer} onChange={setCustomer} />
 
-            {/* Date range */}
-            {selectedEquipmentId && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                  <Input
-                    type="date"
-                    name="start"
-                    value={dateRange.start}
-                    onChange={handleDateChange}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                  <Input
-                    type="date"
-                    name="end"
-                    value={dateRange.end}
-                    onChange={handleDateChange}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Conflict status */}
-            {dateRange.start && dateRange.end && (
-              <div className={`p-4 rounded-lg flex items-start gap-3 ${
-                isConflictFree
-                  ? 'bg-green-50 border border-green-200'
-                  : 'bg-red-50 border border-red-200'
-              }`}>
-                <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                  isConflictFree ? 'text-green-600' : 'text-red-600'
-                }`} />
-                <div>
-                  <div className={`font-medium ${isConflictFree ? 'text-green-900' : 'text-red-900'}`}>
-                    {isConflictFree ? '✓ Available' : `⚠ ${conflicts.length} Conflict(s)`}
-                  </div>
-                  {!isConflictFree && (
-                    <div className="text-xs text-red-700 mt-2 space-y-1">
-                      {conflicts.map(c => (
-                        <div key={c.id}>
-                          {c.customerName} ({c.startDate} → {c.endDate})
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {isConflictFree && dateRange.start && dateRange.end && (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-3 py-2 border rounded-lg hover:bg-gray-50"
-                    >
-                      −
-                    </button>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="text-center"
-                    />
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="px-3 py-2 border rounded-lg hover:bg-gray-50"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-                <Button
-                  onClick={addToCart}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
-                >
-                  <Plus className="w-4 h-4" /> Add {quantity} to Cart
-                </Button>
-
-                <EquipmentRecommendations
-                  selectedEquipment={equipment.find(e => e.id === selectedEquipmentId)}
-                  equipment={equipment}
-                  cartItems={cartItems}
-                  onAddRecommendation={handleAddRecommendation}
-                  dateRange={dateRange}
-                  quantity={quantity}
-                />
-              </div>
-            )}
+        {/* Line items */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-700">Equipment</h2>
+            <span className="text-xs text-gray-400">Qty · Availability auto-checked against dates above</span>
           </div>
+
+          {lines.map(line => (
+            <EquipmentLineItem
+              key={line.id}
+              line={line}
+              equipment={equipment}
+              rentals={rentals}
+              dateRange={dateRange}
+              onUpdate={(updated) => updateLine(line.id, updated)}
+              onRemove={() => removeLine(line.id)}
+            />
+          ))}
+
+          <button
+            onClick={addLine}
+            className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Add Equipment
+          </button>
         </div>
 
-        {/* Equipment Grid */}
-        <div>
-          <h2 className="text-lg font-bold mb-4">Equipment Catalog</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {equipment.map(eq => {
-              const activeRentals = rentals.filter(
-                r => r.equipmentId === eq.id && !['cancelled', 'completed'].includes(r.status)
-              );
-              return (
-                <div key={eq.id} className="bg-white rounded-lg border p-4 hover:shadow-md transition">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="font-bold text-gray-900">{eq.name}</h3>
-                      <p className="text-xs text-gray-500">{eq.category}</p>
-                    </div>
-                    <span className={`text-xs font-medium px-2 py-1 rounded ${
-                      eq.status === 'available'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {eq.status}
-                    </span>
-                  </div>
-                  <div className="space-y-1 text-sm mb-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Daily Rate:</span>
-                      <span className="font-medium">${eq.dailyRate}</span>
-                    </div>
-                    {activeRentals.length > 0 && (
-                      <div className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded mt-2">
-                        {activeRentals.length} active rental(s)
-                      </div>
-                    )}
-                  </div>
-                  {eq.notes && (
-                    <p className="text-xs text-gray-500 italic">{eq.notes}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Totals */}
+        {lines.some(l => l.equipmentId) && (
+          <InvoiceTotals lines={lines} />
+        )}
 
-        </div>
-
-        {/* Right side - cart */}
-        <div className="lg:col-span-1 sticky top-20 h-fit">
-          <RentalCart
-            items={cartItems}
-            onRemove={(idx) => setCartItems(prev => prev.filter((_, i) => i !== idx))}
-            onCheckout={() => setShowCheckout(true)}
-            loading={checkoutLoading}
-          />
+        {/* Actions */}
+        <div className="flex gap-3 justify-end print:hidden pb-8">
+          <Button
+            variant="outline"
+            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); }}
+          >
+            Clear
+          </Button>
+          <Button
+            onClick={() => handleSave('pending')}
+            disabled={saving}
+            variant="outline"
+            className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save as Draft'}
+          </Button>
+          <Button
+            onClick={() => handleSave('confirmed')}
+            disabled={saving}
+            className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : '✓ Confirm Rental'}
+          </Button>
         </div>
       </div>
-
-      {showCheckout && (
-        <CheckoutForm
-          items={cartItems}
-          onClose={() => setShowCheckout(false)}
-          onSuccess={(customerData) => {
-            setShowCheckout(false);
-            setCartItems([]);
-            fetchData();
-          }}
-        />
-      )}
-
-      {/* Quick Search Modal */}
-      {showSearch && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-              <div className="p-4 border-b flex items-center gap-2">
-                <Search className="w-5 h-5 text-indigo-600" />
-                <span className="font-mono font-bold text-xl text-indigo-700">{searchStr}</span>
-                <span className="text-sm text-gray-500 ml-auto">{searchResults.length} match(es)</span>
-                <button
-                  onClick={() => {
-                    setShowSearch(false);
-                    setSearchStr('');
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="max-h-96 overflow-y-auto">
-                {searchResults.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">No matches for "{searchStr}"</div>
-                ) : (
-                  <div className="divide-y">
-                    {searchResults.map((eq, idx) => (
-                      <button
-                        key={eq.id}
-                        ref={el => searchItemsRef.current[idx] = el}
-                        onClick={() => {
-                          setSelectedEquipmentId(eq.id);
-                          setShowSearch(false);
-                          setSearchStr('');
-                          setSearchHighlight(0);
-                        }}
-                        className={`w-full px-4 py-3 transition text-left ${
-                          idx === searchHighlight ? 'bg-indigo-50 hover:bg-indigo-100' : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="font-medium text-gray-900">{eq.name}</div>
-                        <div className="text-xs text-gray-500">{eq.category} • ${eq.dailyRate}/day</div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-gray-50 border-t text-xs text-gray-600">
-                Type to narrow • Enter to select • Esc to close • Backspace to delete
-              </div>
-            </div>
-            </div>
-            )}
-            </div>
-            );
-            }
+    </div>
+  );
+}

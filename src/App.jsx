@@ -22,7 +22,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import LupinePlan from "./pages/LupinePlan";
 import CatalogReview from "./pages/CatalogReview";
-import AvailabilityManager from "./pages/AvailabilityManager";
+import AvailabilityManager from "./pages/AvailabilityManager.jsx";
 import PricingEditor from "./pages/PricingEditor";
 import DependenciesEditor from "./pages/DependenciesEditor";
 
