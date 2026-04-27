@@ -37,15 +37,15 @@ function LineDateInput({ label, value, onChange }) {
   );
 }
 
-export default function EquipmentLineItem({ line, equipment, rentals, defaultStart, defaultEnd, onUpdate, onRemove, qtyRef }) {
+export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef }) {
   const [search, setSearch] = useState(line.equipmentName || '');
   const [open, setOpen] = useState(!line.equipmentId);
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  const startDate = line.startDate || defaultStart || '';
-  const endDate = line.endDate || defaultEnd || '';
+  const startDate = line.startDate || '';
+  const endDate = line.endDate || '';
   const days = calcDays(startDate, endDate);
 
   const filtered = search.trim()
@@ -67,8 +67,8 @@ export default function EquipmentLineItem({ line, equipment, rentals, defaultSta
   };
 
   const recalc = (updatedLine, eq) => {
-    const start = updatedLine.startDate || defaultStart || '';
-    const end = updatedLine.endDate || defaultEnd || '';
+    const start = updatedLine.startDate || '';
+    const end = updatedLine.endDate || '';
     const d = calcDays(start, end);
     const rate = calcRate(eq, d);
     const baseAmount = Math.round(rate * d * (updatedLine.quantity || 1) * 100) / 100;
@@ -116,11 +116,8 @@ export default function EquipmentLineItem({ line, equipment, rentals, defaultSta
   const taxAmount = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
   const lineTotal = line.baseAmount + taxAmount + (line.deposit || 0);
 
-  // Show override indicator if line dates differ from defaults
-  const hasDateOverride = (line.startDate && line.startDate !== defaultStart) || (line.endDate && line.endDate !== defaultEnd);
-
   return (
-    <div className={`border rounded-lg p-4 bg-white space-y-3 ${hasDateOverride ? 'border-amber-300' : ''}`}>
+    <div className="border rounded-lg p-4 bg-white space-y-3">
       <div className="flex items-start gap-3">
         {/* Equipment search */}
         <div className="flex-1 relative">
@@ -184,14 +181,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, defaultSta
           value={line.endDate || defaultEnd || ''}
           onChange={v => handleDateChange('endDate', v)}
         />
-        {hasDateOverride && (
-          <button
-            onClick={() => { const eq = equipment.find(e => e.id === line.equipmentId); onUpdate(recalc({ ...line, startDate: '', endDate: '' }, eq)); }}
-            className="text-xs text-amber-600 hover:text-amber-800 underline"
-          >
-            reset to default
-          </button>
-        )}
+
       </div>
 
       {/* Availability & pricing row */}

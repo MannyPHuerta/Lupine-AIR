@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CustomerIdentity, RentalDates } from '@/components/invoice/CustomerHeader';
+import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
 import InvoiceTotals from '@/components/invoice/InvoiceTotals';
 
@@ -12,8 +12,6 @@ const EMPTY_CUSTOMER = {
   phone: '',
   email: '',
   branch: '01 McAllen',
-  startDate: '',
-  endDate: '',
   notes: '',
 };
 
@@ -62,7 +60,10 @@ export default function AvailabilityManager() {
   };
 
   const addLine = () => {
-    setLines(prev => [...prev, newLine()]);
+    setLines(prev => {
+      const last = prev[prev.length - 1];
+      return [...prev, { ...newLine(), startDate: last?.startDate || '', endDate: last?.endDate || '' }];
+    });
   };
 
   const handleSave = async (status = 'pending') => {
@@ -70,13 +71,9 @@ export default function AvailabilityManager() {
       alert('Please fill in customer name.');
       return;
     }
-    const missingDates = lines.filter(l => l.equipmentId).some(l => {
-      const s = l.startDate || customer.startDate;
-      const e = l.endDate || customer.endDate;
-      return !s || !e;
-    });
+    const missingDates = lines.filter(l => l.equipmentId).some(l => !l.startDate || !l.endDate);
     if (missingDates) {
-      alert('Please set dates for all equipment lines (or set default dates above).');
+      alert('Please set dates for all equipment lines.');
       return;
     }
     const validLines = lines.filter(l => l.equipmentId);
@@ -88,16 +85,12 @@ export default function AvailabilityManager() {
     setSaving(true);
     try {
       for (const line of validLines) {
-        const lineStart = line.startDate || customer.startDate;
-        const lineEnd = line.endDate || customer.endDate;
         const taxAmount = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
-        const totalDays = lineStart && lineEnd
-          ? Math.floor((new Date(lineEnd) - new Date(lineStart)) / (1000 * 60 * 60 * 24)) + 1
-          : 0;
+        const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
         await base44.entities.Rental.create({
           equipmentId: line.equipmentId,
-          startDate: lineStart,
-          endDate: lineEnd,
+          startDate: line.startDate,
+          endDate: line.endDate,
           customerName: customer.name,
           customerEmail: customer.email,
           customerPhone: customer.phone,
@@ -186,8 +179,6 @@ export default function AvailabilityManager() {
                 line={line}
                 equipment={equipment}
                 rentals={rentals}
-                defaultStart={customer.startDate}
-                defaultEnd={customer.endDate}
                 onUpdate={(updated) => updateLine(line.id, updated)}
                 onRemove={() => removeLine(line.id)}
                 qtyRef={qtyRefs.current[line.id]}
@@ -196,10 +187,7 @@ export default function AvailabilityManager() {
           })}
         </div>
 
-        {/* Rental dates & notes */}
-        <RentalDates customer={customer} onChange={setCustomer} />
-
-        {/* Add Equipment — after dates */}
+        {/* Add Equipment */}
         <button
           ref={addButtonRef}
           onClick={addLine}

@@ -83,6 +83,14 @@ export function CustomerIdentity({ customer, onChange }) {
           <label className="block text-xs font-medium text-gray-600 mb-1">Branch</label>
           <BranchSelect value={customer.branch} onChange={v => set('branch', v)} />
         </div>
+        <div className="sm:col-span-2 lg:col-span-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+          <Input
+            placeholder="Special requests, delivery instructions..."
+            value={customer.notes}
+            onChange={e => set('notes', e.target.value)}
+          />
+        </div>
       </div>
     </div>
   );
