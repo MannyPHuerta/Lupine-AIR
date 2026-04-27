@@ -173,12 +173,12 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
       <div className="flex items-center gap-3 flex-wrap">
         <LineDateInput
           label="From"
-          value={line.startDate || defaultStart || ''}
+          value={line.startDate || ''}
           onChange={v => handleDateChange('startDate', v)}
         />
         <LineDateInput
           label="To"
-          value={line.endDate || defaultEnd || ''}
+          value={line.endDate || ''}
           onChange={v => handleDateChange('endDate', v)}
         />
 
