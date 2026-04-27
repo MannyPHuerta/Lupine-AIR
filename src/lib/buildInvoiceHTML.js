@@ -147,10 +147,31 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
 </html>`;
 }
 
-export function openInvoicePopup(order, amountPaid = 0) {
-  const html = buildInvoiceHTML(order, amountPaid);
+/**
+ * Opens the invoice in a new tab.
+ * Pass the window reference obtained synchronously BEFORE any async work,
+ * so the browser does not block it as an async-triggered popup.
+ * Usage:
+ *   const win = openInvoiceWindow(); // call this synchronously
+ *   await doSomeAsyncWork();
+ *   writeInvoice(win, order, amountPaid); // then write
+ */
+export function openInvoiceWindow() {
   const win = window.open('about:blank', '_blank');
-  if (!win) { alert('Please allow popups for this site to print invoices.'); return; }
+  if (!win) { alert('Please allow popups for this site to print invoices.'); return null; }
+  return win;
+}
+
+export function writeInvoiceToWindow(win, order, amountPaid = 0) {
+  if (!win) return;
+  const html = buildInvoiceHTML(order, amountPaid);
+  win.document.open();
   win.document.write(html);
   win.document.close();
+}
+
+// Legacy convenience wrapper (sync-only use)
+export function openInvoicePopup(order, amountPaid = 0) {
+  const win = openInvoiceWindow();
+  writeInvoiceToWindow(win, order, amountPaid);
 }

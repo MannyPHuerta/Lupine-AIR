@@ -12,6 +12,11 @@ const BRANCHES = [
   '99 Warehouse',
 ];
 
+// Capitalize first letter of each word
+function toTitleCase(str) {
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
+
 // Format phone as (XXX) XXX-XXXX
 function formatPhone(raw) {
   const digits = raw.replace(/\D/g, '').slice(0, 10);
@@ -58,7 +63,7 @@ export function CustomerIdentity({ customer, onChange }) {
             autoFocus
             placeholder="John Doe"
             value={customer.name}
-            onChange={e => set('name', e.target.value)}
+            onChange={e => set('name', toTitleCase(e.target.value))}
           />
         </div>
         <div>

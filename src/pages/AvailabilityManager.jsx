@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer } from 'lucide-react';
-import { openInvoicePopup } from '@/lib/buildInvoiceHTML';
+import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
@@ -86,7 +86,7 @@ export default function AvailabilityManager() {
       rate: l.rate || 0,
       baseAmount: l.baseAmount || 0,
       taxable: l.taxable !== false,
-      deposit: (l.deposit || 0) * (l.quantity || 1),
+      deposit: l.deposit || 0,  // per-unit; buildInvoiceHTML multiplies by qty
       startDate: l.startDate,
       endDate: l.endDate,
     })),
@@ -150,11 +150,16 @@ export default function AvailabilityManager() {
     const validLines = validate();
     if (!validLines) return;
 
-    // Open invoice popup first (non-blocking)
-    openInvoicePopup(buildOrder(validLines), parseFloat(amountPaid) || 0);
+    // Must open window synchronously (before any await) or browser blocks it
+    const invoiceOrder = buildOrder(validLines);
+    const paid = parseFloat(amountPaid) || 0;
+    const win = openInvoiceWindow();
 
-    // Then save as confirmed
+    // Now save async
     await handleSave('confirmed');
+
+    // Write invoice after save completes
+    writeInvoiceToWindow(win, invoiceOrder, paid);
   };
 
   if (loading) {
