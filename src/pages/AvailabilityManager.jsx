@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2 } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
@@ -251,6 +251,13 @@ export default function AvailabilityManager() {
               title="Branch invoice settings"
             >
               <Building2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/company-settings')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Company settings & logo"
+            >
+              <Cog className="w-4 h-4" />
             </button>
           </div>
         </div>
