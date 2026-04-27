@@ -164,13 +164,8 @@ export default function AvailabilityManager() {
         {/* Customer identity */}
         <CustomerIdentity customer={customer} onChange={setCustomer} />
 
-        {/* Line items — before dates, matching natural conversation flow */}
+        {/* Line items */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-700">Equipment</h2>
-            <span className="text-xs text-gray-400">Qty · Availability checked once dates are set</span>
-          </div>
-
           {lines.map(line => {
             if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
             return (
@@ -186,18 +181,19 @@ export default function AvailabilityManager() {
               />
             );
           })}
-
-          <button
-            ref={addButtonRef}
-            onClick={addLine}
-            className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Add Equipment
-          </button>
         </div>
 
-        {/* Rental dates & notes — after equipment is selected */}
+        {/* Rental dates & notes */}
         <RentalDates customer={customer} onChange={setCustomer} />
+
+        {/* Add Equipment — after dates */}
+        <button
+          ref={addButtonRef}
+          onClick={addLine}
+          className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" /> Add Equipment
+        </button>
 
         {/* Totals */}
         {lines.some(l => l.equipmentId) && (

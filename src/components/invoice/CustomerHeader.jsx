@@ -50,7 +50,7 @@ export function CustomerIdentity({ customer, onChange }) {
 
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Customer</h2>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name *</label>
@@ -94,7 +94,7 @@ export function RentalDates({ customer, onChange }) {
 
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Rental Details</h2>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DateInput label="Start Date *" value={customer.startDate} onChange={v => set('startDate', v)} />
         <DateInput label="End Date *" value={customer.endDate} onChange={v => set('endDate', v)} />
