@@ -88,16 +88,15 @@ export function CustomerIdentity({ customer, onChange }) {
   );
 }
 
-/** Bottom card: rental dates and notes */
+/** Bottom card: default rental dates and notes */
 export function RentalDates({ customer, onChange }) {
   const set = (field, value) => onChange({ ...customer, [field]: value });
 
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6">
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <DateInput label="Start Date *" value={customer.startDate} onChange={v => set('startDate', v)} />
-        <DateInput label="End Date *" value={customer.endDate} onChange={v => set('endDate', v)} />
+        <DateInput label="Default Start" value={customer.startDate} onChange={v => set('startDate', v)} />
+        <DateInput label="Default End" value={customer.endDate} onChange={v => set('endDate', v)} />
         <div className="sm:col-span-2">
           <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
           <Input
@@ -107,6 +106,7 @@ export function RentalDates({ customer, onChange }) {
           />
         </div>
       </div>
+      <p className="text-xs text-gray-400 mt-2">Dates above pre-fill each line — override per item as needed.</p>
     </div>
   );
 }

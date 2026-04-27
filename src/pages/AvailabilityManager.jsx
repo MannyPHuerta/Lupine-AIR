@@ -53,8 +53,6 @@ export default function AvailabilityManager() {
     });
   }, []);
 
-  const dateRange = { start: customer.startDate, end: customer.endDate };
-
   const updateLine = (id, updated) => {
     setLines(prev => prev.map(l => l.id === id ? updated : l));
   };
@@ -68,8 +66,17 @@ export default function AvailabilityManager() {
   };
 
   const handleSave = async (status = 'pending') => {
-    if (!customer.name || !customer.startDate || !customer.endDate) {
-      alert('Please fill in customer name and dates.');
+    if (!customer.name) {
+      alert('Please fill in customer name.');
+      return;
+    }
+    const missingDates = lines.filter(l => l.equipmentId).some(l => {
+      const s = l.startDate || customer.startDate;
+      const e = l.endDate || customer.endDate;
+      return !s || !e;
+    });
+    if (missingDates) {
+      alert('Please set dates for all equipment lines (or set default dates above).');
       return;
     }
     const validLines = lines.filter(l => l.equipmentId);
@@ -81,15 +88,20 @@ export default function AvailabilityManager() {
     setSaving(true);
     try {
       for (const line of validLines) {
+        const lineStart = line.startDate || customer.startDate;
+        const lineEnd = line.endDate || customer.endDate;
         const taxAmount = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
+        const totalDays = lineStart && lineEnd
+          ? Math.floor((new Date(lineEnd) - new Date(lineStart)) / (1000 * 60 * 60 * 24)) + 1
+          : 0;
         await base44.entities.Rental.create({
           equipmentId: line.equipmentId,
-          startDate: customer.startDate,
-          endDate: customer.endDate,
+          startDate: lineStart,
+          endDate: lineEnd,
           customerName: customer.name,
           customerEmail: customer.email,
           customerPhone: customer.phone,
-          totalDays: Math.floor((new Date(customer.endDate) - new Date(customer.startDate)) / (1000 * 60 * 60 * 24)) + 1,
+          totalDays,
           baseAmount: line.baseAmount,
           taxRate: 0.0825,
           taxAmount,
@@ -174,7 +186,8 @@ export default function AvailabilityManager() {
                 line={line}
                 equipment={equipment}
                 rentals={rentals}
-                dateRange={dateRange}
+                defaultStart={customer.startDate}
+                defaultEnd={customer.endDate}
                 onUpdate={(updated) => updateLine(line.id, updated)}
                 onRemove={() => removeLine(line.id)}
                 qtyRef={qtyRefs.current[line.id]}

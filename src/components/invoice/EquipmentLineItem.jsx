@@ -9,22 +9,50 @@ function calcRate(eq, days) {
   return eq.dailyRate || 0;
 }
 
-export default function EquipmentLineItem({ line, equipment, rentals, dateRange, onUpdate, onRemove, qtyRef }) {
+function calcDays(start, end) {
+  if (!start || !end) return 0;
+  return Math.floor((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function LineDateInput({ label, value, onChange }) {
+  const ref = useRef(null);
+  const open = () => { try { ref.current?.showPicker?.(); } catch (_) {} ref.current?.focus(); };
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-gray-500 shrink-0">{label}</span>
+      <div
+        className="flex h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm cursor-pointer items-center"
+        onClick={open}
+      >
+        <input
+          ref={ref}
+          type="date"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={open}
+          className="bg-transparent outline-none text-xs cursor-pointer w-28"
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function EquipmentLineItem({ line, equipment, rentals, defaultStart, defaultEnd, onUpdate, onRemove, qtyRef }) {
   const [search, setSearch] = useState(line.equipmentName || '');
   const [open, setOpen] = useState(!line.equipmentId);
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  const days = dateRange.start && dateRange.end
-    ? Math.floor((new Date(dateRange.end) - new Date(dateRange.start)) / (1000 * 60 * 60 * 24)) + 1
-    : 0;
+  const startDate = line.startDate || defaultStart || '';
+  const endDate = line.endDate || defaultEnd || '';
+  const days = calcDays(startDate, endDate);
 
   const filtered = search.trim()
     ? equipment.filter(e => e.name.toUpperCase().includes(search.toUpperCase()))
     : equipment;
 
-  // Auto-open and focus when new line (no equipment yet)
+  // Auto-open and focus when new line
   useEffect(() => {
     if (!line.equipmentId) {
       setOpen(true);
@@ -32,72 +60,69 @@ export default function EquipmentLineItem({ line, equipment, rentals, dateRange,
     }
   }, []);
 
-  useEffect(() => {
-    setHighlight(0);
-  }, [search]);
+  useEffect(() => { setHighlight(0); }, [search]);
 
   const scrollToHighlight = (idx) => {
-    const el = listRef.current?.children[idx];
-    el?.scrollIntoView({ block: 'nearest' });
+    listRef.current?.children[idx]?.scrollIntoView({ block: 'nearest' });
+  };
+
+  const recalc = (updatedLine, eq) => {
+    const start = updatedLine.startDate || defaultStart || '';
+    const end = updatedLine.endDate || defaultEnd || '';
+    const d = calcDays(start, end);
+    const rate = calcRate(eq, d);
+    const baseAmount = Math.round(rate * d * (updatedLine.quantity || 1) * 100) / 100;
+    return { ...updatedLine, rate, baseAmount };
   };
 
   const handleSelect = (eq) => {
-    const rate = calcRate(eq, days);
-    const baseAmount = Math.round(rate * days * line.quantity * 100) / 100;
-    onUpdate({ ...line, equipmentId: eq.id, equipmentName: eq.name, rate, baseAmount, taxable: eq.taxable, deposit: eq.depositRequired || 0 });
+    const updated = recalc({ ...line, equipmentId: eq.id, equipmentName: eq.name, taxable: eq.taxable, deposit: eq.depositRequired || 0 }, eq);
+    onUpdate(updated);
     setSearch(eq.name);
     setOpen(false);
-    // Focus qty after selection
     setTimeout(() => qtyRef?.current?.focus(), 50);
   };
 
   const handleKeyDown = (e) => {
     if (!open) return;
     const max = Math.min(filtered.length, 30) - 1;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const next = Math.min(highlight + 1, max);
-      setHighlight(next);
-      scrollToHighlight(next);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const next = Math.max(highlight - 1, 0);
-      setHighlight(next);
-      scrollToHighlight(next);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (filtered[highlight]) handleSelect(filtered[highlight]);
-    } else if (e.key === 'Escape') {
-      setOpen(false);
-    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); const next = Math.min(highlight + 1, max); setHighlight(next); scrollToHighlight(next); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); const next = Math.max(highlight - 1, 0); setHighlight(next); scrollToHighlight(next); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (filtered[highlight]) handleSelect(filtered[highlight]); }
+    else if (e.key === 'Escape') { setOpen(false); }
   };
 
   const handleQtyChange = (qty) => {
     const q = Math.max(1, parseInt(qty) || 1);
     const eq = equipment.find(e => e.id === line.equipmentId);
-    const rate = calcRate(eq, days);
-    const baseAmount = Math.round(rate * days * q * 100) / 100;
-    onUpdate({ ...line, quantity: q, rate, baseAmount });
+    onUpdate(recalc({ ...line, quantity: q }, eq));
   };
 
-  // Availability check — compare as plain date strings (YYYY-MM-DD) to avoid timezone shifts
-  const conflicts = line.equipmentId && dateRange.start && dateRange.end
+  const handleDateChange = (field, value) => {
+    const eq = equipment.find(e => e.id === line.equipmentId);
+    onUpdate(recalc({ ...line, [field]: value }, eq));
+  };
+
+  // Availability check using this line's effective dates
+  const conflicts = line.equipmentId && startDate && endDate
     ? rentals.filter(r => {
         if (r.equipmentId !== line.equipmentId) return false;
         if (['cancelled', 'completed'].includes(r.status)) return false;
-        // overlap: not (requested end < rental start OR requested start > rental end)
-        return !(dateRange.end < r.startDate || dateRange.start > r.endDate);
+        return !(endDate < r.startDate || startDate > r.endDate);
       })
     : [];
 
-  const available = line.equipmentId && dateRange.start && dateRange.end && conflicts.length === 0;
+  const available = line.equipmentId && startDate && endDate && conflicts.length === 0;
   const taxAmount = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
   const lineTotal = line.baseAmount + taxAmount + (line.deposit || 0);
 
+  // Show override indicator if line dates differ from defaults
+  const hasDateOverride = (line.startDate && line.startDate !== defaultStart) || (line.endDate && line.endDate !== defaultEnd);
+
   return (
-    <div className="border rounded-lg p-4 bg-white space-y-3">
+    <div className={`border rounded-lg p-4 bg-white space-y-3 ${hasDateOverride ? 'border-amber-300' : ''}`}>
       <div className="flex items-start gap-3">
-        {/* Unified search input — single field, always visible */}
+        {/* Equipment search */}
         <div className="flex-1 relative">
           <Input
             ref={inputRef}
@@ -110,7 +135,6 @@ export default function EquipmentLineItem({ line, equipment, rentals, dateRange,
             onBlur={() => setTimeout(() => setOpen(false), 150)}
             readOnly={!open && !!line.equipmentId}
           />
-
           {open && (
             <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-xl">
               <div ref={listRef} className="max-h-52 overflow-y-auto">
@@ -124,9 +148,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, dateRange,
                     <div className="text-xs text-gray-500">{eq.category} · ${eq.dailyRate}/day</div>
                   </button>
                 ))}
-                {filtered.length === 0 && (
-                  <div className="px-4 py-3 text-sm text-gray-500">No matches</div>
-                )}
+                {filtered.length === 0 && <div className="px-4 py-3 text-sm text-gray-500">No matches</div>}
               </div>
             </div>
           )}
@@ -150,11 +172,33 @@ export default function EquipmentLineItem({ line, equipment, rentals, dateRange,
         </button>
       </div>
 
+      {/* Per-line date overrides */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <LineDateInput
+          label="From"
+          value={line.startDate || defaultStart || ''}
+          onChange={v => handleDateChange('startDate', v)}
+        />
+        <LineDateInput
+          label="To"
+          value={line.endDate || defaultEnd || ''}
+          onChange={v => handleDateChange('endDate', v)}
+        />
+        {hasDateOverride && (
+          <button
+            onClick={() => { const eq = equipment.find(e => e.id === line.equipmentId); onUpdate(recalc({ ...line, startDate: '', endDate: '' }, eq)); }}
+            className="text-xs text-amber-600 hover:text-amber-800 underline"
+          >
+            reset to default
+          </button>
+        )}
+      </div>
+
       {/* Availability & pricing row */}
       {line.equipmentId && (
         <div className="flex items-center justify-between text-xs gap-4 flex-wrap">
           <div className="flex items-center gap-1.5">
-            {!dateRange.start || !dateRange.end ? (
+            {!startDate || !endDate ? (
               <span className="text-gray-400">Set dates to check availability</span>
             ) : available ? (
               <>
