@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer } from 'lucide-react';
+import { openInvoicePopup } from '@/lib/buildInvoiceHTML';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
@@ -64,6 +65,39 @@ export default function AvailabilityManager() {
       const last = prev[prev.length - 1];
       return [...prev, { ...newLine(), startDate: last?.startDate || '', endDate: last?.endDate || '' }];
     });
+  };
+
+  const handlePreviewInvoice = () => {
+    const validLines = lines.filter(l => l.equipmentId);
+    if (!customer.name || validLines.length === 0) {
+      alert('Please fill in customer name and add at least one equipment item.');
+      return;
+    }
+    const taxRateNum = parseFloat(taxRate) || 8.25;
+    const order = {
+      id: null,
+      createdAt: new Date().toISOString(),
+      taxRate: taxRateNum,
+      customer: {
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        branch: customer.branch,
+        notes: customer.notes,
+      },
+      lines: validLines.map(l => ({
+        equipmentId: l.equipmentId,
+        equipmentName: l.equipmentName,
+        quantity: l.quantity || 1,
+        rate: l.rate || 0,
+        baseAmount: l.baseAmount || 0,
+        taxable: l.taxable !== false,
+        deposit: (l.deposit || 0) * (l.quantity || 1),
+        startDate: l.startDate,
+        endDate: l.endDate,
+      })),
+    };
+    openInvoicePopup(order, 0);
   };
 
   const handleSave = async (status = 'pending') => {
@@ -217,12 +251,19 @@ export default function AvailabilityManager() {
         )}
 
         {/* Actions */}
-        <div className="flex gap-3 justify-end print:hidden pb-8">
+        <div className="flex gap-3 justify-end print:hidden pb-8 flex-wrap">
           <Button
             variant="outline"
             onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); }}
           >
             Clear
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handlePreviewInvoice}
+            className="border-gray-400 text-gray-700 hover:bg-gray-50 gap-2"
+          >
+            <Printer className="w-4 h-4" /> Preview Invoice
           </Button>
           <Button
             onClick={() => handleSave('pending')}
