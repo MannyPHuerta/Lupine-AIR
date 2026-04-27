@@ -42,13 +42,22 @@ export default function AvailabilityManager() {
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
+  const [companyInfo, setCompanyInfo] = useState(null);
+  const [branchSettings, setBranchSettings] = useState({});
+
   useEffect(() => {
     Promise.all([
       base44.entities.Equipment.list('-created_date', 500),
       base44.entities.Rental.list('-created_date', 1000),
-    ]).then(([eq, rent]) => {
+      base44.entities.CompanySettings.list(),
+      base44.entities.BranchSettings.list(),
+    ]).then(([eq, rent, company, branches]) => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setRentals(rent);
+      setCompanyInfo(company[0] || null);
+      const branchMap = {};
+      branches.forEach(b => { branchMap[b.branch] = b; });
+      setBranchSettings(branchMap);
       setLoading(false);
     });
   }, []);
@@ -172,7 +181,20 @@ export default function AvailabilityManager() {
     const bs = branchSettingsList[0];
     const invNumber = bs ? `${bs.invoicePrefix || ''}-${String(bs.nextInvoiceNumber || 1000).padStart(4, '0')}` : '';
 
-    const invoiceOrder = buildOrder(validLines, invNumber);
+    const invoiceOrder = {
+      ...buildOrder(validLines, invNumber),
+      branchInfo: branchSettings[customer.branch] ? {
+        name: branchSettings[customer.branch].branchName || customer.branch,
+        address: branchSettings[customer.branch].address || '',
+        phone: branchSettings[customer.branch].phone || '',
+        email: branchSettings[customer.branch].email || '',
+      } : { name: customer.branch, address: '', phone: '', email: '' },
+      companyInfo: companyInfo ? {
+        companyName: companyInfo.companyName || '',
+        logoUrl: companyInfo.logoUrl || '',
+        invoiceFooter: companyInfo.invoiceFooter || '',
+      } : {},
+    };
 
     // Now save async
     await handleSave('confirmed');

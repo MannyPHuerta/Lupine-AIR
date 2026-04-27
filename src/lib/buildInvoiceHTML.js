@@ -1,14 +1,14 @@
-import { getBranchInfo } from '@/lib/branchInfo';
-
 const fmt = (n) => (n || 0).toFixed(2);
 
 /**
  * Builds a self-contained invoice HTML string.
- * @param {object} order - { customer, lines, taxRate, id, createdAt }
+ * @param {object} order - { customer, lines, taxRate, id, createdAt, branchInfo, companyInfo }
  * @param {number} amountPaid
  */
 export function buildInvoiceHTML(order, amountPaid = 0) {
-  const branch = getBranchInfo(order.customer.branch);
+  // Use passed-in branch/company info, fallback to defaults
+  const branch = order.branchInfo || { name: 'Rental World Equipment', address: '', phone: '', email: '' };
+  const company = order.companyInfo || { companyName: '', logoUrl: '', invoiceFooter: '' };
   const lines = order.lines;
   const taxRateDecimal = (parseFloat(order.taxRate) || 8.25) / 100;
 
@@ -75,7 +75,8 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
 
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
     <div>
-      <div style="font-size:20px;font-weight:700;color:#1e1b4b">${branch.name}</div>
+      ${company.logoUrl ? `<img src="${company.logoUrl}" style="max-width:150px;margin-bottom:8px" alt="Company Logo" />` : ''}
+      <div style="font-size:20px;font-weight:700;color:#1e1b4b">${company.companyName || branch.name}</div>
       ${branch.address ? `<div style="color:#555;margin-top:4px">${branch.address}</div>` : ''}
       ${branch.phone ? `<div style="color:#555">${branch.phone}</div>` : ''}
       ${branch.email ? `<div style="color:#555">${branch.email}</div>` : ''}
@@ -122,7 +123,7 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
   </div>
 
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
-    Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.
+    ${company.invoiceFooter || `Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.`}
   </div>
 
   <script>

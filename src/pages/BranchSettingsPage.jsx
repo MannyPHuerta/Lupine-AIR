@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatPhoneUS } from '@/lib/phoneUtils';
 
 const BRANCHES = [
   '01 McAllen',
@@ -164,8 +165,9 @@ export default function BranchSettingsPage() {
                             <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
                             <Input
                               value={s.phone}
-                              onChange={e => handleChange(branch, 'phone', e.target.value)}
+                              onChange={e => handleChange(branch, 'phone', formatPhoneUS(e.target.value))}
                               placeholder="(956) 123-4567"
+                              inputMode="numeric"
                             />
                           </div>
                           <div>

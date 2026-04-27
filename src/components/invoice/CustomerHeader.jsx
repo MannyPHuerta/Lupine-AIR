@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import BranchSelect from '@/components/invoice/BranchSelect';
+import { formatPhoneUS } from '@/lib/phoneUtils';
 
 const BRANCHES = [
   '01 McAllen',
@@ -15,14 +16,6 @@ const BRANCHES = [
 // Capitalize first letter of each word
 function toTitleCase(str) {
   return str.replace(/\b\w/g, c => c.toUpperCase());
-}
-
-// Format phone as (XXX) XXX-XXXX
-function formatPhone(raw) {
-  const digits = raw.replace(/\D/g, '').slice(0, 10);
-  if (digits.length <= 3) return digits.length ? `(${digits}` : '';
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
 function DateInput({ label, value, onChange }) {
@@ -71,7 +64,7 @@ export function CustomerIdentity({ customer, onChange }) {
           <Input
             placeholder="(956) 123-4567"
             value={customer.phone}
-            onChange={e => set('phone', formatPhone(e.target.value))}
+            onChange={e => set('phone', formatPhoneUS(e.target.value))}
             inputMode="numeric"
           />
         </div>
