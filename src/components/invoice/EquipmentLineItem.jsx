@@ -80,16 +80,13 @@ export default function EquipmentLineItem({ line, equipment, rentals, dateRange,
     onUpdate({ ...line, quantity: q, rate, baseAmount });
   };
 
-  // Availability check
+  // Availability check — compare as plain date strings (YYYY-MM-DD) to avoid timezone shifts
   const conflicts = line.equipmentId && dateRange.start && dateRange.end
     ? rentals.filter(r => {
         if (r.equipmentId !== line.equipmentId) return false;
         if (['cancelled', 'completed'].includes(r.status)) return false;
-        const rStart = new Date(r.startDate);
-        const rEnd = new Date(r.endDate);
-        const s = new Date(dateRange.start);
-        const e = new Date(dateRange.end);
-        return !(e < rStart || s > rEnd);
+        // overlap: not (requested end < rental start OR requested start > rental end)
+        return !(dateRange.end < r.startDate || dateRange.start > r.endDate);
       })
     : [];
 

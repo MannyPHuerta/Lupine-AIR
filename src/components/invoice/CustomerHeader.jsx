@@ -21,11 +21,7 @@ function formatPhone(raw) {
 
 function DateInput({ label, value, onChange }) {
   const ref = useRef(null);
-
-  const open = () => {
-    ref.current?.showPicker?.();
-    ref.current?.focus();
-  };
+  const open = () => { ref.current?.showPicker?.(); ref.current?.focus(); };
 
   return (
     <div>
@@ -40,7 +36,6 @@ function DateInput({ label, value, onChange }) {
           value={value}
           onChange={e => onChange(e.target.value)}
           onFocus={open}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') open(); }}
           className="flex-1 bg-transparent outline-none text-sm cursor-pointer"
         />
       </div>
@@ -48,16 +43,13 @@ function DateInput({ label, value, onChange }) {
   );
 }
 
-export default function CustomerHeader({ customer, onChange }) {
+/** Top card: customer identity fields (name, phone, email, branch) */
+export function CustomerIdentity({ customer, onChange }) {
   const set = (field, value) => onChange({ ...customer, [field]: value });
-
-  const handlePhone = (e) => {
-    set('phone', formatPhone(e.target.value));
-  };
 
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Customer & Rental Info</h2>
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Customer</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name *</label>
@@ -73,7 +65,7 @@ export default function CustomerHeader({ customer, onChange }) {
           <Input
             placeholder="(956) 123-4567"
             value={customer.phone}
-            onChange={handlePhone}
+            onChange={e => set('phone', formatPhone(e.target.value))}
             inputMode="numeric"
           />
         </div>
@@ -93,11 +85,22 @@ export default function CustomerHeader({ customer, onChange }) {
             onChange={e => set('branch', e.target.value)}
             className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
-            {BRANCHES.map(b => (
-              <option key={b} value={b}>{b}</option>
-            ))}
+            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Bottom card: rental dates and notes */
+export function RentalDates({ customer, onChange }) {
+  const set = (field, value) => onChange({ ...customer, [field]: value });
+
+  return (
+    <div className="bg-white rounded-xl border shadow-sm p-6">
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Rental Details</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DateInput label="Start Date *" value={customer.startDate} onChange={v => set('startDate', v)} />
         <DateInput label="End Date *" value={customer.endDate} onChange={v => set('endDate', v)} />
         <div className="sm:col-span-2">
@@ -110,5 +113,15 @@ export default function CustomerHeader({ customer, onChange }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// Default export kept for any legacy usage
+export default function CustomerHeader({ customer, onChange }) {
+  return (
+    <>
+      <CustomerIdentity customer={customer} onChange={onChange} />
+      <RentalDates customer={customer} onChange={onChange} />
+    </>
   );
 }

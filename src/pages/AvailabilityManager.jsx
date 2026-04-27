@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import CustomerHeader from '@/components/invoice/CustomerHeader';
+import { CustomerIdentity, RentalDates } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
 import InvoiceTotals from '@/components/invoice/InvoiceTotals';
 
@@ -161,14 +161,14 @@ export default function AvailabilityManager() {
           </div>
         )}
 
-        {/* Customer info */}
-        <CustomerHeader customer={customer} onChange={setCustomer} />
+        {/* Customer identity */}
+        <CustomerIdentity customer={customer} onChange={setCustomer} />
 
-        {/* Line items */}
+        {/* Line items — before dates, matching natural conversation flow */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-gray-700">Equipment</h2>
-            <span className="text-xs text-gray-400">Qty · Availability auto-checked against dates above</span>
+            <span className="text-xs text-gray-400">Qty · Availability checked once dates are set</span>
           </div>
 
           {lines.map(line => {
@@ -195,6 +195,9 @@ export default function AvailabilityManager() {
             <Plus className="w-4 h-4" /> Add Equipment
           </button>
         </div>
+
+        {/* Rental dates & notes — after equipment is selected */}
+        <RentalDates customer={customer} onChange={setCustomer} />
 
         {/* Totals */}
         {lines.some(l => l.equipmentId) && (
