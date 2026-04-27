@@ -7,8 +7,8 @@ const fmt = (n) => (n || 0).toFixed(2);
  */
 export function buildInvoiceHTML(order, amountPaid = 0) {
   // Use passed-in branch/company info, fallback to defaults
-  const branch = order.branchInfo || { name: 'Rental World Equipment', address: '', phone: '', email: '' };
-  const company = order.companyInfo || { companyName: '', logoUrl: '', invoiceFooter: '' };
+  const branch = order.branchInfo || { name: 'Rental World LLC', address: '', phone: '', email: '' };
+  const company = order.companyInfo || { companyName: 'Rental World LLC', logoUrl: '', invoiceFooter: '' };
   const lines = order.lines;
   const taxRateDecimal = (parseFloat(order.taxRate) || 8.25) / 100;
 
@@ -119,6 +119,20 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
       ${depositTotal > 0 ? `<div class="total-row"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
       <div class="grand-row"><span>Total Due</span><span style="color:#3730a3">$${fmt(grandTotal)}</span></div>
       <div id="dynamic-paid"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px;font-size:12px">
+    <div style="display:flex;justify-content:space-between;gap:40px;margin-bottom:32px">
+      <div>
+        <div style="border-bottom:1px solid #111;width:200px;height:40px"></div>
+        <div style="margin-top:4px;font-weight:600;color:#111">Authorized Signature</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Date: __________________</div>
+      </div>
+    </div>
+    
+    <div style="font-size:11px;line-height:1.6;color:#333;background:#f9fafb;padding:12px;border-radius:6px;margin-bottom:16px">
+      <strong>AGREEMENT TO PAY:</strong> The undersigned agrees to pay the amount due as shown on this invoice in full according to the terms specified. Equipment must be returned by the end date listed above in good condition. Customer acknowledges acceptance of all rental terms and conditions.
     </div>
   </div>
 
