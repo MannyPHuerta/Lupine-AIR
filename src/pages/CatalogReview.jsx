@@ -162,11 +162,11 @@ export default function CatalogReview() {
             saving={saving}
           />
           <button
-            disabled={true}
-            title="Use background scheduler instead"
-            className="px-4 py-2 bg-gray-400 text-white text-sm font-medium rounded-lg whitespace-nowrap cursor-not-allowed"
+            onClick={approveAll}
+            disabled={saving}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg whitespace-nowrap disabled:opacity-50"
           >
-            ✓ Approve All (disabled)
+            {saving ? 'Approving…' : '✓ Approve All'}
           </button>
         </div>
 
