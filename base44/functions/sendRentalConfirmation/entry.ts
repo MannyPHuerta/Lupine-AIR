@@ -2,28 +2,36 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
+    console.log('[sendRentalConfirmation] START');
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) {
+      console.log('[sendRentalConfirmation] Unauthorized');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { rentalIds, customerEmail, customerPhone, invoiceNumber, autoSendCommunications } = await req.json();
+    console.log('[sendRentalConfirmation] Payload:', { rentalIds, customerEmail, autoSendCommunications });
 
     if (!autoSendCommunications || !customerEmail) {
+      console.log('[sendRentalConfirmation] Skipped (no auto-send or email)');
       return Response.json({ success: true, skipped: true });
     }
 
     if (!rentalIds || rentalIds.length === 0) {
+      console.log('[sendRentalConfirmation] No rental IDs');
       return Response.json({ error: 'No rental IDs provided' }, { status: 400 });
     }
 
     // Fetch rental details using service role
+    console.log('[sendRentalConfirmation] Fetching rentals:', rentalIds);
     const rentals = await base44.asServiceRole.entities.Rental.filter(
       { id: { $in: rentalIds } }
     );
+    console.log('[sendRentalConfirmation] Fetched rentals:', rentals.length);
 
     if (!rentals || rentals.length === 0) {
+      console.log('[sendRentalConfirmation] No rentals found');
       return Response.json({ error: 'Rentals not found' }, { status: 404 });
     }
 
@@ -50,12 +58,14 @@ Thank you for your business!
 Rental World Equipment`;
 
     // Send email
+    console.log('[sendRentalConfirmation] Sending email to:', customerEmail);
     await base44.integrations.Core.SendEmail({
       to: customerEmail,
       subject: `Rental Confirmation - Invoice ${invoiceNumber}`,
       body: emailBody,
       from_name: 'Rental World Equipment',
     });
+    console.log('[sendRentalConfirmation] Email sent');
 
     // Try to send SMS if phone number and Twilio credentials exist
     if (customerPhone) {
