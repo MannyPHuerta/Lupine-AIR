@@ -182,7 +182,7 @@ export default function EquipmentStatusManager() {
           >
             All ({counts.all || 0})
           </button>
-          {STATUSES.map(s => counts[s.value] > 0 && (
+          {STATUSES.map(s => (
             <button
               key={s.value}
               onClick={() => setFilterStatus(s.value)}
@@ -190,7 +190,7 @@ export default function EquipmentStatusManager() {
                 ${filterStatus === s.value ? s.color + ' ring-2 ring-offset-1 ring-current' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-              {s.label} ({counts[s.value]})
+              {s.label} {counts[s.value] ? `(${counts[s.value]})` : ''}
             </button>
           ))}
         </div>
