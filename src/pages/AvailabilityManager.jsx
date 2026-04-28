@@ -334,8 +334,8 @@ export default function AvailabilityManager() {
           lines={lines}
           onAddItems={(items) => {
             setLines(prev => {
-              // Inherit dates from last line that has dates
-              const lastWithDates = [...prev].reverse().find(l => l.startDate);
+              // Inherit dates from last line that has BOTH equipment AND dates
+              const lastWithDates = [...prev].reverse().find(l => l.equipmentId && l.startDate && l.endDate);
               const inheritStart = lastWithDates?.startDate || '';
               const inheritEnd = lastWithDates?.endDate || '';
               const newLines = items.map(item => {
