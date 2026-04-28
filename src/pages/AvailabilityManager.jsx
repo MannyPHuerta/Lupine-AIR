@@ -218,6 +218,10 @@ export default function AvailabilityManager() {
           customerName: customer.name,
           customerEmail: customer.email,
           customerPhone: customer.phone,
+          customerAddress: customer.address,
+          customerCity: customer.city,
+          customerState: customer.state,
+          customerZip: customer.zip,
           branch: customer.branch,
           totalDays,
           baseAmount: line.baseAmount,
@@ -269,7 +273,7 @@ export default function AvailabilityManager() {
     const totalDue = subtotal + taxAmount + depositTotal - discountAmount;
 
     // If non-card payment method, skip payment processor and go straight to confirmation
-    if (['Cash', 'Checks', 'Net30'].includes(paymentMethod)) {
+    if (['Cash', 'Check', 'Net 30'].includes(paymentMethod)) {
       const paid = parseFloat(amountPaid) || 0;
       const win = openInvoiceWindow();
       

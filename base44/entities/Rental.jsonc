@@ -32,6 +32,22 @@
       "type": "string",
       "description": "Customer phone number"
     },
+    "customerAddress": {
+      "type": "string",
+      "description": "Customer street address"
+    },
+    "customerCity": {
+      "type": "string",
+      "description": "Customer city"
+    },
+    "customerState": {
+      "type": "string",
+      "description": "Customer state"
+    },
+    "customerZip": {
+      "type": "string",
+      "description": "Customer zip code"
+    },
     "branch": {
       "type": "string",
       "description": "Branch location for this rental"
