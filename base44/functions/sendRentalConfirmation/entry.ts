@@ -18,15 +18,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No rental IDs provided' }, { status: 400 });
     }
 
-    // Fetch rental details
-    const rentals = await Promise.all(
-      rentalIds.map(id => base44.entities.Rental.get(id))
+    // Fetch rental details using service role
+    const rentals = await base44.asServiceRole.entities.Rental.filter(
+      { id: { $in: rentalIds } }
     );
 
-    const rental = rentals[0];
-    if (!rental) {
-      return Response.json({ error: 'Rental not found' }, { status: 404 });
+    if (!rentals || rentals.length === 0) {
+      return Response.json({ error: 'Rentals not found' }, { status: 404 });
     }
+
+    const rental = rentals[0];
 
     // Build email body
     const equipmentList = rentals.map(r => `${r.equipmentName} (${r.startDate} to ${r.endDate})`).join('\n  • ');
