@@ -78,6 +78,10 @@ function analyzeCustomerHistory(name, allRentals) {
     phone: recent.customerPhone || '',
     email: recent.customerEmail || '',
     branch: recent.branch || '',
+    address: recent.address || '',
+    city: recent.city || '',
+    state: recent.state || '',
+    zip: recent.zip || '',
     rentalCount: past.length,
     typicalItems,
   };
@@ -122,6 +126,10 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
     if (!customer.phone && history.phone) updates.phone = history.phone;
     if (!customer.email && history.email) updates.email = history.email;
     if (!customer.branch && history.branch) updates.branch = history.branch;
+    if (!customer.address && history.address) updates.address = history.address;
+    if (!customer.city && history.city) updates.city = history.city;
+    if (!customer.state && history.state) updates.state = history.state;
+    if (!customer.zip && history.zip) updates.zip = history.zip;
     if (Object.keys(updates).length > 0) {
       onChange({ ...customer, ...updates });
       setAutoFilled(true);
