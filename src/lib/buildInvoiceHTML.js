@@ -28,9 +28,24 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
     const taxable = l.taxable !== false;
     const tax = taxable ? Math.round((l.baseAmount || 0) * taxRateDecimal * 100) / 100 : 0;
     const total = (l.baseAmount || 0) + tax + (l.deposit || 0) * (l.quantity || 1);
+
+    // Format specs for this line if present
+    const specsStr = l.specs && typeof l.specs === 'object' && Object.keys(l.specs).length > 0
+      ? Object.entries(l.specs)
+          .filter(([, v]) => v && String(v).trim())
+          .map(([k, v]) => {
+            const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            return `<span>${label}: <strong>${v}</strong></span>`;
+          })
+          .join('<span style="color:#ccc;margin:0 4px">·</span>')
+      : '';
+
     return `
       <tr>
-        <td style="padding:6px 8px 6px 0;border-bottom:1px solid #f0f0f0;font-weight:500">${l.equipmentName || ''}</td>
+        <td style="padding:6px 8px 6px 0;border-bottom:1px solid #f0f0f0;">
+          <div style="font-weight:500">${l.equipmentName || ''}</div>
+          ${specsStr ? `<div style="font-size:10px;color:#888;margin-top:3px;line-height:1.6">${specsStr}</div>` : ''}
+        </td>
         <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:center;color:#666">${l.quantity || 1}</td>
         <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:center;font-size:11px;color:#666">${l.startDate || ''} – ${l.endDate || ''}</td>
         <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:right;color:#666">$${fmt(l.rate)}</td>

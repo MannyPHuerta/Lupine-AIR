@@ -116,17 +116,21 @@ export default function AvailabilityManager() {
       branch: customer.branch,
       notes: customer.notes,
     },
-    lines: validLines.map(l => ({
-      equipmentId: l.equipmentId,
-      equipmentName: l.equipmentName,
-      quantity: l.quantity || 1,
-      rate: l.rate || 0,
-      baseAmount: l.baseAmount || 0,
-      taxable: l.taxable !== false,
-      deposit: l.deposit || 0,  // per-unit; buildInvoiceHTML multiplies by qty
-      startDate: l.startDate,
-      endDate: l.endDate,
-    })),
+    lines: validLines.map(l => {
+      const eqRecord = equipment.find(e => e.id === l.equipmentId);
+      return {
+        equipmentId: l.equipmentId,
+        equipmentName: l.equipmentName,
+        quantity: l.quantity || 1,
+        rate: l.rate || 0,
+        baseAmount: l.baseAmount || 0,
+        taxable: l.taxable !== false,
+        deposit: l.deposit || 0,
+        startDate: l.startDate,
+        endDate: l.endDate,
+        specs: eqRecord?.specs || {},
+      };
+    }),
   });
 
   const validate = () => {

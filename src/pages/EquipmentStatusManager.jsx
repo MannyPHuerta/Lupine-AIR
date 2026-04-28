@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, CheckCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import UnitStatusBadge, { STATUS_CONFIG } from '@/components/equipment/UnitStatusBadge';
 
@@ -25,7 +25,7 @@ function StatusPicker({ current, onSelect }) {
   );
 }
 
-function EquipmentRow({ eq, onSave }) {
+function EquipmentRow({ eq, onSave, onDetail }) {
   const [editing, setEditing] = useState(false);
   const [status, setStatus] = useState(eq.unitStatus || 'available');
   const [note, setNote] = useState(eq.statusNote || '');
@@ -65,12 +65,21 @@ function EquipmentRow({ eq, onSave }) {
           {saved && <CheckCircle className="w-4 h-4 text-green-500" />}
           <UnitStatusBadge status={status} note={!editing ? note : undefined} />
           {!editing && (
-            <button
-              onClick={() => setEditing(true)}
-              className="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 rounded px-2 py-0.5 hover:bg-indigo-50 transition"
-            >
-              Edit
-            </button>
+            <>
+              <button
+                onClick={() => setEditing(true)}
+                className="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 rounded px-2 py-0.5 hover:bg-indigo-50 transition"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => onDetail(eq.id)}
+                className="text-gray-400 hover:text-indigo-600 transition"
+                title="View specs & details"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -205,7 +214,7 @@ export default function EquipmentStatusManager() {
         ) : (
           <div className="space-y-2">
             {filtered.map(eq => (
-              <EquipmentRow key={eq.id} eq={eq} onSave={handleSave} />
+              <EquipmentRow key={eq.id} eq={eq} onSave={handleSave} onDetail={(id) => navigate(`/equipment/${id}`)} />
             ))}
           </div>
         )}

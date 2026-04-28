@@ -63,7 +63,7 @@
     },
     "statusNote": {
       "type": "string",
-      "description": "ETA or reason for current status (e.g. 'Awaiting belt, ETA Monday')"
+      "description": "ETA or reason for current status"
     },
     "statusUpdatedAt": {
       "type": "string",
@@ -81,27 +81,57 @@
       "type": "string",
       "description": "Condition, special handling, restrictions"
     },
+    "specs": {
+      "type": "object",
+      "description": "Per-unit technical specifications (key-value pairs, varies by category)",
+      "additionalProperties": true
+    },
+    "condition": {
+      "type": "string",
+      "enum": [
+        "New",
+        "Good",
+        "Fair",
+        "Needs Repair",
+        "Retired"
+      ],
+      "default": "Good",
+      "description": "Physical condition of the unit"
+    },
+    "serialNumber": {
+      "type": "string",
+      "description": "Manufacturer serial number"
+    },
+    "modelNumber": {
+      "type": "string",
+      "description": "Manufacturer model number"
+    },
+    "purchaseDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date unit was purchased"
+    },
+    "purchaseCost": {
+      "type": "number",
+      "description": "Original purchase cost (USD)"
+    },
     "dependencies": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
           "equipmentId": {
-            "type": "string",
-            "description": "ID of the dependent equipment"
+            "type": "string"
           },
           "name": {
-            "type": "string",
-            "description": "Name of the dependent equipment (denormalized for quick lookup)"
+            "type": "string"
           },
           "reason": {
-            "type": "string",
-            "description": "Why this item is recommended (e.g., 'Pads for this buffer')"
+            "type": "string"
           },
           "minQuantity": {
             "type": "integer",
-            "default": 1,
-            "description": "Minimum recommended quantity"
+            "default": 1
           }
         },
         "required": [
