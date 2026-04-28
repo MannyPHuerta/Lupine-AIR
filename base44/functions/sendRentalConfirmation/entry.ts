@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     const company = companyList[0] || {};
     const branch = branchList[0] || {};
 
-    // Build invoice HTML
+    // Build line items for invoice
     const lineItems = rentals.map(r => {
       const eq = equipmentList.find(e => e.id === r.equipmentId);
       return {
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       createdAt: new Date().toISOString(),
     };
 
-    // Build invoice HTML - inline styled for email
+    // Send email via Render backend (same as Asset Wolf)
     const fmt = (n) => (n || 0).toFixed(2);
     const taxRateDecimal = (invoiceOrder.taxRate || 8.25) / 100;
     const rentalSubtotal = lineItems.reduce((s, l) => s + (l.baseAmount || 0), 0);
@@ -152,7 +152,28 @@ ${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
 </body>
 </html>`;
 
-    // Send SMS via Twilio if phone number and credentials exist
+    // Send email via Render backend
+    console.log('[sendRentalConfirmation] Sending via Render to:', customerEmail);
+    const emailResponse = await fetch('https://asset-wolf-backend.onrender.com/send-rental-confirmation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipientEmail: customerEmail,
+        invoiceNumber,
+        invoiceHtml,
+        customerName: rental.customerName,
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      console.log('[sendRentalConfirmation] Render error:', emailResponse.status, errorText);
+      return Response.json({ error: `Render returned ${emailResponse.status}` }, { status: 502 });
+    }
+
+    console.log('[sendRentalConfirmation] Email sent via Render');
+
+    // Also send SMS via Twilio if phone available
     let smsSent = false;
     if (customerPhone) {
       try {
@@ -183,7 +204,7 @@ ${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
       }
     }
 
-    return Response.json({ success: true, smsSent, note: 'Email integration limited to app users. Use SMS for customer notifications.' });
+    return Response.json({ success: true, emailSent: true, smsSent });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
