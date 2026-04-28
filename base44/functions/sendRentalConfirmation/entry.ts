@@ -152,17 +152,8 @@ ${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
 </body>
 </html>`;
 
-    // Send email with invoice HTML
-    console.log('[sendRentalConfirmation] Sending email to:', customerEmail);
-    await base44.integrations.Core.SendEmail({
-      to: customerEmail,
-      subject: `Rental Confirmation - Invoice ${invoiceNumber}`,
-      body: invoiceHtml,
-      from_name: 'Rental World Equipment',
-    });
-    console.log('[sendRentalConfirmation] Email sent');
-
-    // Try to send SMS if phone number and Twilio credentials exist
+    // Send SMS via Twilio if phone number and credentials exist
+    let smsSent = false;
     if (customerPhone) {
       try {
         const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
@@ -172,7 +163,7 @@ ${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
         if (accountSid && authToken && twilioPhone) {
           const smsBody = `Rental confirmed! Invoice ${invoiceNumber}. Equipment rentals for ${rental.customerName}. Total: $${fmt(grandTotal)}. Thank you!`;
 
-          await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+          const smsRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
             method: 'POST',
             headers: {
               'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
@@ -184,13 +175,15 @@ ${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
               Body: smsBody,
             }).toString(),
           });
+          smsSent = smsRes.ok;
+          console.log('[sendRentalConfirmation] SMS sent:', smsSent);
         }
       } catch (smsErr) {
-        console.log('SMS send skipped (Twilio not configured):', smsErr.message);
+        console.log('[sendRentalConfirmation] SMS error:', smsErr.message);
       }
     }
 
-    return Response.json({ success: true, emailSent: true });
+    return Response.json({ success: true, smsSent, note: 'Email integration limited to app users. Use SMS for customer notifications.' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
