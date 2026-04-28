@@ -1,0 +1,17 @@
+{
+  "name": "rental-email-service",
+  "version": "1.0.0",
+  "description": "Simple branding-free email service for Rental World",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.7"
+  }
+}
