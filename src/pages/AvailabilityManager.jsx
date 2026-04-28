@@ -184,7 +184,7 @@ export default function AvailabilityManager() {
 
   const handleSave = async (status = 'pending') => {
     const validLines = validate();
-    if (!validLines) return;
+    if (!validLines) return [];
 
     const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
     const paid = parseFloat(amountPaid) || 0;
@@ -202,11 +202,12 @@ export default function AvailabilityManager() {
     }
 
     setSaving(true);
+    const createdIds = [];
     try {
       for (const line of validLines) {
         const taxAmount = line.taxable !== false ? Math.round(line.baseAmount * taxRateDecimal * 100) / 100 : 0;
         const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
-        await base44.entities.Rental.create({
+        const rental = await base44.entities.Rental.create({
           equipmentId: line.equipmentId,
           equipmentName: line.equipmentName,
           startDate: line.startDate,
@@ -225,6 +226,7 @@ export default function AvailabilityManager() {
           status,
           notes: customer.notes,
         });
+        createdIds.push(rental.id);
       }
       setSaved(true);
       base44.entities.Rental.list('-created_date', 1000).then(setRentals);
@@ -241,6 +243,7 @@ export default function AvailabilityManager() {
     } finally {
       setSaving(false);
     }
+    return createdIds;
   };
 
   const handlePrintAndConfirm = async () => {
@@ -269,13 +272,25 @@ export default function AvailabilityManager() {
         logoUrl: companyInfo.logoUrl || '',
         invoiceFooter: companyInfo.invoiceFooter || '',
       } : {},
+      paymentMethod: paymentMethod || '',
     };
 
     // Now save async
-    await handleSave('confirmed');
+    const rentalIds = await handleSave('confirmed');
 
     // Write invoice after save completes
     writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl);
+
+    // Send email/SMS if enabled
+    if (autoSendCommunications && customer.email) {
+      base44.functions.invoke('sendRentalConfirmation', {
+        rentalIds,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        invoiceNumber: invNumber,
+        autoSendCommunications,
+      }).catch(err => console.error('Failed to send confirmation:', err));
+    }
   };
 
   if (loading) {

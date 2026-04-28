@@ -150,7 +150,7 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
           : `<div style="border-bottom:1px solid #111;width:220px;height:60px"></div>`
         }
         <div style="margin-top:4px;font-weight:600;color:#111">Customer Signature</div>
-        <div style="font-size:10px;color:#666;margin-top:2px">Date: ${new Date().toLocaleDateString('en-US')}</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Date: <span id="sig-date">${new Date().toLocaleDateString('en-US')}</span></div>
       </div>
       ${order.paymentMethod ? `<div style="margin-left:auto;text-align:right">
         <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Payment Method</div>
