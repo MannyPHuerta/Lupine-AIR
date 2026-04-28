@@ -32,6 +32,7 @@ import InventoryHealth from "./pages/InventoryHealth";
 import DemandPatterns from "./pages/DemandPatterns";
 import EquipmentStatusManager from "./pages/EquipmentStatusManager";
 import EquipmentDetail from "./pages/EquipmentDetail";
+import AvailabilityCalendar from "./pages/AvailabilityCalendar";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -90,6 +91,7 @@ const AuthenticatedApp = () => {
       <Route path="/demand-patterns" element={<DemandPatterns />} />
       <Route path="/equipment-status" element={<EquipmentStatusManager />} />
       <Route path="/equipment/:id" element={<EquipmentDetail />} />
+      <Route path="/availability-calendar" element={<AvailabilityCalendar />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

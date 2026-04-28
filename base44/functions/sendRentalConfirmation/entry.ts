@@ -104,53 +104,95 @@ Deno.serve(async (req) => {
     }).join('');
 
     const invoiceHtml = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-body { font-family: Arial, sans-serif; font-size: 13px; color: #333; }
-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-th { background: #f5f5f5; padding: 8px; text-align: left; font-weight: bold; border-bottom: 1px solid #ddd; }
-td { padding: 8px; border-bottom: 1px solid #eee; }
-.header { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-.total { font-weight: bold; font-size: 16px; text-align: right; }
-</style>
-</head>
-<body>
-<div style="max-width: 600px; margin: 0 auto;">
-<p class="header">INVOICE ${invoiceNumber}</p>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #2c3e50; line-height: 1.6; margin: 0; padding: 0; }
+    .container { max-width: 650px; margin: 0 auto; background: #fff; }
+    .header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 40px 30px; text-align: center; }
+    .company-name { font-size: 28px; font-weight: bold; margin: 0 0 10px 0; }
+    .invoice-label { font-size: 12px; opacity: 0.9; letter-spacing: 1px; }
+    .content { padding: 30px; }
+    .section { margin-bottom: 30px; }
+    .section-title { font-size: 12px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+    .info-block { }
+    .info-label { font-size: 11px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; font-weight: 600; }
+    .info-value { font-size: 14px; color: #2c3e50; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th { background: #ecf0f1; padding: 12px; text-align: left; font-weight: 600; font-size: 12px; color: #2c3e50; border-bottom: 2px solid #bdc3c7; }
+    td { padding: 12px; border-bottom: 1px solid #ecf0f1; }
+    .totals { background: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0; }
+    .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+    .total-row.grand { border-top: 2px solid #1e3c72; padding-top: 12px; font-weight: bold; font-size: 16px; color: #1e3c72; margin-top: 12px; }
+    .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #7f8c8d; border-top: 1px solid #ecf0f1; }
+    .signature-note { color: #27ae60; font-size: 12px; font-weight: 600; margin: 20px 0; }
+    .thank-you { font-size: 14px; color: #2c3e50; font-weight: 500; margin: 20px 0; }
+    </style>
+    </head>
+    <body>
+    <div class="container">
+    <div class="header">
+    <div class="company-name">Rental World LLC</div>
+    <div class="invoice-label">RENTAL INVOICE</div>
+    </div>
 
-<p><strong>${invoiceOrder.companyInfo.companyName}</strong><br>
-${invoiceOrder.branchInfo.address || ''}<br>
-${invoiceOrder.branchInfo.phone || ''}</p>
+    <div class="content">
+    <div style="text-align: right; margin-bottom: 20px; font-size: 20px; font-weight: bold; color: #1e3c72;">
+     ${invoiceNumber}
+    </div>
 
-<p><strong>Bill To:</strong><br>
-${invoiceOrder.customer.name}<br>
-${invoiceOrder.customer.email || ''}<br>
-${invoiceOrder.customer.phone || ''}</p>
+    <div class="info-grid">
+     <div class="info-block">
+       <div class="section-title">From</div>
+       <div class="info-value"><strong>${invoiceOrder.branchInfo.name}</strong></div>
+       <div class="info-value">${invoiceOrder.branchInfo.address || ''}</div>
+       <div class="info-value">${invoiceOrder.branchInfo.phone || ''}</div>
+     </div>
+     <div class="info-block">
+       <div class="section-title">Bill To</div>
+       <div class="info-value"><strong>${invoiceOrder.customer.name}</strong></div>
+       <div class="info-value">${invoiceOrder.customer.email || ''}</div>
+       <div class="info-value">${invoiceOrder.customer.phone || ''}</div>
+     </div>
+    </div>
 
-<table>
-<thead>
-<tr><th>Item</th><th>Dates</th><th>Rental</th><th>Tax</th><th>Deposit</th></tr>
-</thead>
-<tbody>
-${lineRows}
-</tbody>
-</table>
+    <div class="section">
+     <table>
+       <thead>
+         <tr>
+           <th style="text-align: left;">Equipment</th>
+           <th style="text-align: center;">Rental Period</th>
+           <th style="text-align: right;">Rental</th>
+           <th style="text-align: right;">Tax</th>
+           <th style="text-align: right;">Deposit</th>
+         </tr>
+       </thead>
+       <tbody>
+         ${lineRows}
+       </tbody>
+     </table>
+    </div>
 
-<div class="total">
-<p>Subtotal: $${fmt(rentalSubtotal)}</p>
-<p>Tax (${(taxRateDecimal * 100).toFixed(2)}%): $${fmt(taxAmount)}</p>
-${depositTotal > 0 ? `<p>Deposits: $${fmt(depositTotal)}</p>` : ''}
-<p>TOTAL DUE: $${fmt(grandTotal)}</p>
-</div>
+    <div class="totals">
+     <div class="total-row"><span>Subtotal:</span><span>$${fmt(rentalSubtotal)}</span></div>
+     <div class="total-row"><span>Tax (${(taxRateDecimal * 100).toFixed(2)}%):</span><span>$${fmt(taxAmount)}</span></div>
+     ${depositTotal > 0 ? `<div class="total-row"><span>Deposits:</span><span>$${fmt(depositTotal)}</span></div>` : ''}
+     <div class="total-row grand"><span>TOTAL DUE:</span><span>$${fmt(grandTotal)}</span></div>
+    </div>
 
-${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
+    ${rental.signatureDataUrl ? `<div class="signature-note">✓ Signature captured at rental confirmation</div>` : ''}
 
-<p>Thank you for your business!</p>
-</div>
-</body>
-</html>`;
+    <div class="thank-you">Thank you for choosing Rental World LLC! We appreciate your business.</div>
+    </div>
+
+    <div class="footer">
+    <p style="margin: 0;">This is an automated rental confirmation. Please contact us if you have any questions.</p>
+    </div>
+    </div>
+    </body>
+    </html>`;
 
     // Send email via Render backend using /send-asset-report endpoint (proven working)
     console.log('[sendRentalConfirmation] Sending via Render to:', customerEmail);
@@ -161,7 +203,7 @@ ${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
     formData.append('branch', rental.branch || '');
     formData.append('comments', invoiceHtml);
     formData.append('sendTo', customerEmail);
-    formData.append('sentBy', user.email || 'system');
+    formData.append('sentBy', 'Rental World LLC');
 
     const emailResponse = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
       method: 'POST',
