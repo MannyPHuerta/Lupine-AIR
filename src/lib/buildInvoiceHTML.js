@@ -98,7 +98,7 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
     </div>
     <div style="text-align:right">
       <div style="font-size:28px;font-weight:700;color:#d1d5db">INVOICE</div>
-      ${order.id ? `<div style="font-size:11px;color:#888">#${order.id.slice(-8).toUpperCase()}</div>` : ''}
+      ${order.id ? `<div style="font-size:14px;font-weight:600;color:#3730a3;margin-top:4px">${order.id}</div>` : ''}
       ${dateStr ? `<div style="font-size:11px;color:#888">${dateStr}</div>` : ''}
     </div>
   </div>

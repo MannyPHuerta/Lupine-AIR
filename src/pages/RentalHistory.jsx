@@ -60,7 +60,7 @@ function groupIntoOrders(rentals) {
   return Object.values(map).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
 
-function OrderCard({ order, equipment, onConfirmed }) {
+function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed }) {
   const [expanded, setExpanded] = useState(false);
   const [printing, setPrinting] = useState(false);
 
@@ -80,11 +80,18 @@ function OrderCard({ order, equipment, onConfirmed }) {
 
   const enriched = lines.map(l => {
     const eq = equipment.find(e => e.id === l.equipmentId);
-    return { ...l, equipmentName: eq?.name || l.equipmentName || l.equipmentId };
+    return { ...l, equipmentName: eq?.name || l.equipmentName || l.equipmentId, specs: eq?.specs || {} };
   });
 
   const handlePrint = async () => {
-    openInvoicePopup({ ...order, lines: enriched }, amountPaid);
+    const bs = branchSettings[order.customer.branch];
+    openInvoicePopup({
+      ...order,
+      id: order.invoiceNumber || order.id,
+      lines: enriched,
+      branchInfo: bs ? { name: bs.branchName || order.customer.branch, address: bs.address || '', phone: bs.phone || '', email: bs.email || '' } : { name: order.customer.branch, address: '', phone: '', email: '' },
+      companyInfo: companyInfo ? { companyName: companyInfo.companyName || '', logoUrl: companyInfo.logoUrl || '', invoiceFooter: companyInfo.invoiceFooter || '' } : {},
+    }, amountPaid);
 
     setPrinting(true);
     await Promise.all(order.rentalIds.map(id =>
@@ -174,6 +181,8 @@ export default function RentalHistory() {
   const navigate = useNavigate();
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
+  const [companyInfo, setCompanyInfo] = useState(null);
+  const [branchSettings, setBranchSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -186,9 +195,15 @@ export default function RentalHistory() {
     Promise.all([
       base44.entities.Rental.list('-created_date', 2000),
       base44.entities.Equipment.list('-created_date', 500),
-    ]).then(([rent, eq]) => {
+      base44.entities.CompanySettings.list(),
+      base44.entities.BranchSettings.list(),
+    ]).then(([rent, eq, company, branches]) => {
       setRentals(rent);
       setEquipment(eq);
+      setCompanyInfo(company[0] || null);
+      const branchMap = {};
+      branches.forEach(b => { branchMap[b.branch] = b; });
+      setBranchSettings(branchMap);
       setLoading(false);
     });
   }, []);
@@ -254,7 +269,7 @@ export default function RentalHistory() {
         ) : (
           <div className="space-y-3">
             {filtered.map(order => (
-              <OrderCard key={order.id} order={order} equipment={equipment} onConfirmed={reload} />
+              <OrderCard key={order.id} order={order} equipment={equipment} companyInfo={companyInfo} branchSettings={branchSettings} onConfirmed={reload} />
             ))}
           </div>
         )}

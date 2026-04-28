@@ -317,19 +317,28 @@ export default function AvailabilityManager() {
           rentals={rentals}
           lines={lines}
           onAddItems={(items) => {
-            const newLines = items.map(item => {
-              const eq = equipment.find(e => e.id === item.equipmentId);
-              return {
-                ...newLine(),
-                equipmentId: item.equipmentId,
-                equipmentName: item.equipmentName,
-                quantity: item.quantity || 1,
-                taxable: eq?.taxable !== false,
-                deposit: eq?.depositRequired || 0,
-                rate: eq?.dailyRate || 0,
-              };
-            });
             setLines(prev => {
+              // Inherit dates from last line that has dates
+              const lastWithDates = [...prev].reverse().find(l => l.startDate);
+              const inheritStart = lastWithDates?.startDate || '';
+              const inheritEnd = lastWithDates?.endDate || '';
+              const newLines = items.map(item => {
+                const eq = equipment.find(e => e.id === item.equipmentId);
+                const days = calcDays(inheritStart, inheritEnd);
+                const rate = calcRate(eq, days);
+                return {
+                  ...newLine(),
+                  equipmentId: item.equipmentId,
+                  equipmentName: item.equipmentName,
+                  quantity: item.quantity || 1,
+                  taxable: eq?.taxable !== false,
+                  deposit: eq?.depositRequired || 0,
+                  rate,
+                  baseAmount: Math.round(rate * days * (item.quantity || 1) * 100) / 100,
+                  startDate: inheritStart,
+                  endDate: inheritEnd,
+                };
+              });
               // Remove blank placeholder line if it's the only one
               const filtered = prev.filter(l => l.equipmentId);
               return [...filtered, ...newLines];
