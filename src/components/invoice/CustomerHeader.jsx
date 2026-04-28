@@ -84,20 +84,22 @@ function analyzeCustomerHistory(name, allRentals) {
 }
 
 /**
- * Build upsell nudges by comparing typical basket vs current lines.
+ * Build the full typical basket with status vs current lines.
+ * Returns all typical items, tagged as: 'ok', 'missing', or 'low_qty'.
  */
 function buildNudges(typicalItems, currentLines) {
-  const nudges = [];
-  typicalItems.forEach(item => {
+  return typicalItems.map(item => {
     const onInvoice = currentLines.filter(l => l.equipmentId === item.equipmentId);
     const currentQty = onInvoice.reduce((s, l) => s + (l.quantity || 1), 0);
-    if (onInvoice.length === 0) {
-      nudges.push({ type: 'missing', item, currentQty: 0 });
-    } else if (currentQty < item.avgQty) {
-      nudges.push({ type: 'low_qty', item, currentQty });
-    }
+    if (onInvoice.length === 0) return { type: 'missing', item, currentQty: 0 };
+    if (currentQty < item.avgQty) return { type: 'low_qty', item, currentQty };
+    return { type: 'ok', item, currentQty };
   });
-  return nudges;
+}
+
+/** Items from nudges that still need to be added/topped up */
+function nudgesNeeded(nudges) {
+  return nudges.filter(n => n.type !== 'ok');
 }
 
 /** Top card: customer identity fields (name, phone, email, branch) */
@@ -194,38 +196,49 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
               <Check className="w-4 h-4 text-green-500" />
               Added to order!
             </div>
-          ) : (
-            <>
-              <p className="text-sm text-indigo-900 font-medium mb-3">
-                Hey {customer.name.split(' ')[0]}, I notice you usually rent{' '}
-                {nudges.map((n, i) => (
-                  <span key={i}>
-                    {i > 0 && i === nudges.length - 1 ? ' and ' : i > 0 ? ', ' : ' '}
-                    <strong>{n.item.avgQty > 1 ? `${n.item.avgQty}× ` : ''}{n.item.name}</strong>
-                  </span>
-                ))}. Want that again?
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (onAddItems) {
-                      onAddItems(nudges.map(n => ({ equipmentId: n.item.equipmentId, equipmentName: n.item.name, quantity: n.item.avgQty })));
-                      setAdded(true);
-                    }
-                  }}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5" /> Yes, add to order
-                </button>
-                <button
-                  onClick={() => setNudgeDismissed(true)}
-                  className="text-xs text-indigo-400 hover:text-indigo-600 px-2 py-1.5"
-                >
-                  No thanks
-                </button>
-              </div>
-            </>
-          )}
+          ) : (() => {
+            const needed = nudgesNeeded(nudges);
+            const firstName = customer.name.split(' ')[0];
+            return (
+              <>
+                <p className="text-sm text-indigo-900 font-medium mb-3">
+                  Hey {firstName}, last time you rented{' '}
+                  {nudges.map((n, i) => (
+                    <span key={i}>
+                      {i > 0 && i === nudges.length - 1 ? ' and ' : i > 0 ? ', ' : ''}
+                      <strong className={n.type === 'ok' ? 'text-green-700' : 'text-indigo-900'}>
+                        {n.item.avgQty > 1 ? `${n.item.avgQty}× ` : ''}{n.item.name}
+                      </strong>
+                      {n.type === 'ok' && <span className="text-green-600 text-xs"> ✓</span>}
+                      {n.type === 'low_qty' && <span className="text-amber-600 text-xs"> ({n.currentQty} added)</span>}
+                    </span>
+                  ))}.{' '}
+                  {needed.length > 0 ? 'Want the rest added too?' : 'Looks like you\'re all set!'}
+                </p>
+                {needed.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (onAddItems) {
+                          onAddItems(needed.map(n => ({ equipmentId: n.item.equipmentId, equipmentName: n.item.name, quantity: n.item.avgQty })));
+                          setAdded(true);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5" /> Yes, add the rest
+                    </button>
+                    <button
+                      onClick={() => setNudgeDismissed(true)}
+                      className="text-xs text-indigo-400 hover:text-indigo-600 px-2 py-1.5"
+                    >
+                      No thanks
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
     </div>
