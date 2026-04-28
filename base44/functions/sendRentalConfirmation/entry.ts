@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
     // Fetch rental details
     const rentals = await Promise.all(
-      rentalIds.map(id => base44.entities.Rental.get('Rental', id))
+      rentalIds.map(id => base44.entities.Rental.get(id))
     );
 
     const rental = rentals[0];
