@@ -99,6 +99,12 @@ export default function LupinePlan() {
             >
               📋 Review Catalog →
             </button>
+            <button
+              onClick={() => navigate('/inventory-health')}
+              className="bg-amber-500 hover:bg-amber-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              📊 Inventory Health →
+            </button>
           </div>
         </div>
       </div>
