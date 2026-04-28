@@ -34,7 +34,7 @@ function LineDateInput({ label, value, onChange }) {
             {parsed ? format(parsed, 'MM/dd/yyyy') : <span className="text-gray-400">Pick a date</span>}
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0" align="start" avoidCollisions={false} sideOffset={4}>
           <Calendar
             mode="single"
             selected={parsed || undefined}
