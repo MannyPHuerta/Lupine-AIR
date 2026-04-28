@@ -5,7 +5,7 @@ const fmt = (n) => (n || 0).toFixed(2);
  * @param {object} order - { customer, lines, taxRate, id, createdAt, branchInfo, companyInfo }
  * @param {number} amountPaid
  */
-export function buildInvoiceHTML(order, amountPaid = 0) {
+export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null) {
   // Use passed-in branch/company info, fallback to defaults
   const branch = order.branchInfo || { name: 'Rental World LLC', address: '', phone: '', email: '' };
   const company = order.companyInfo || { companyName: 'Rental World LLC', logoUrl: '', invoiceFooter: '' };
@@ -14,10 +14,11 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
 
   const rentalSubtotal = lines.reduce((s, l) => s + (l.baseAmount || 0), 0);
   const depositTotal = lines.reduce((s, l) => s + (l.deposit || 0) * (l.quantity || 1), 0);
+  const discountAmount = Math.min(Math.max(parseFloat(order.discount) || 0, 0), rentalSubtotal);
   // Default taxable=true unless explicitly false
   const taxableBase = lines.reduce((s, l) => s + (l.taxable !== false ? (l.baseAmount || 0) : 0), 0);
-  const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
-  const grandTotal = rentalSubtotal + taxAmount + depositTotal;
+  const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
+  const grandTotal = rentalSubtotal - discountAmount + taxAmount + depositTotal;
   const paid = parseFloat(amountPaid) || 0;
 
   const dateStr = order.createdAt
@@ -130,6 +131,7 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
   <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
     <div style="width:240px">
       <div class="total-row"><span>Rental Subtotal</span><span>$${fmt(rentalSubtotal)}</span></div>
+      ${discountAmount > 0 ? `<div class="total-row" style="color:#16a34a"><span>Discount</span><span>−$${fmt(discountAmount)}</span></div>` : ''}
       <div class="total-row"><span>Sales Tax (${(taxRateDecimal * 100).toFixed(2)}%)</span><span>$${fmt(taxAmount)}</span></div>
       ${depositTotal > 0 ? `<div class="total-row"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
       <div class="grand-row"><span>Total Due</span><span style="color:#3730a3">$${fmt(grandTotal)}</span></div>
@@ -138,12 +140,19 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
   </div>
 
   <div style="margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px;font-size:12px">
-    <div style="display:flex;justify-content:space-between;gap:40px;margin-bottom:32px">
+    <div style="display:flex;justify-content:space-between;gap:40px;margin-bottom:32px;flex-wrap:wrap">
       <div>
-        <div style="border-bottom:1px solid #111;width:200px;height:40px"></div>
-        <div style="margin-top:4px;font-weight:600;color:#111">Authorized Signature</div>
-        <div style="font-size:10px;color:#666;margin-top:2px">Date: __________________</div>
+        ${signatureDataUrl
+          ? `<img src="${signatureDataUrl}" style="width:220px;height:60px;border-bottom:1px solid #111;object-fit:contain;object-position:left bottom;display:block" />`
+          : `<div style="border-bottom:1px solid #111;width:220px;height:60px"></div>`
+        }
+        <div style="margin-top:4px;font-weight:600;color:#111">Customer Signature</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Date: ${new Date().toLocaleDateString('en-US')}</div>
       </div>
+      ${order.paymentMethod ? `<div style="margin-left:auto;text-align:right">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Payment Method</div>
+        <div style="font-size:15px;font-weight:700;color:#1e1b4b">${order.paymentMethod}</div>
+      </div>` : ''}
     </div>
     
     <div style="font-size:11px;line-height:1.6;color:#333;background:#f9fafb;padding:12px;border-radius:6px;margin-bottom:12px">
@@ -206,16 +215,16 @@ export function openInvoiceWindow() {
   return win;
 }
 
-export function writeInvoiceToWindow(win, order, amountPaid = 0) {
+export function writeInvoiceToWindow(win, order, amountPaid = 0, signatureDataUrl = null) {
   if (!win) return;
-  const html = buildInvoiceHTML(order, amountPaid);
+  const html = buildInvoiceHTML(order, amountPaid, signatureDataUrl);
   win.document.open();
   win.document.write(html);
   win.document.close();
 }
 
 // Legacy convenience wrapper (sync-only use)
-export function openInvoicePopup(order, amountPaid = 0) {
+export function openInvoicePopup(order, amountPaid = 0, signatureDataUrl = null) {
   const win = openInvoiceWindow();
-  writeInvoiceToWindow(win, order, amountPaid);
+  writeInvoiceToWindow(win, order, amountPaid, signatureDataUrl);
 }

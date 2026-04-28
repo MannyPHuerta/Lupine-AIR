@@ -1,6 +1,8 @@
 import { useState } from 'react';
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange }) {
+const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
+
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
 
@@ -104,6 +106,26 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
             <span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span>
           </div>
         )}
+
+        {/* Payment Method */}
+        <div className="flex items-center justify-between text-gray-600 gap-4 border-t pt-3">
+          <span className="shrink-0">Payment Method</span>
+          <div className="flex flex-wrap gap-1.5">
+            {PAYMENT_METHODS.map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onPaymentMethodChange && onPaymentMethodChange(m)}
+                className={`text-xs px-2.5 py-1 rounded-full border font-medium transition
+                  ${paymentMethod === m
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-indigo-50'}`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

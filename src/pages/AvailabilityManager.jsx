@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
+import SignaturePad from '@/components/invoice/SignaturePad';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
@@ -37,6 +38,8 @@ export default function AvailabilityManager() {
   const [discount, setDiscount] = useState('');
   const [taxRate, setTaxRate] = useState('8.25');
   const [amountPaid, setAmountPaid] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const qtyRefs = useRef({});
@@ -109,6 +112,8 @@ export default function AvailabilityManager() {
     id: invNumber || null,
     createdAt: new Date().toISOString(),
     taxRate: parseFloat(taxRate) || 8.25,
+    discount: parseFloat(discount) || 0,
+    paymentMethod: paymentMethod || '',
     customer: {
       name: customer.name,
       phone: customer.phone,
@@ -192,6 +197,8 @@ export default function AvailabilityManager() {
       setDiscount('');
       setTaxRate('8.25');
       setAmountPaid('');
+      setPaymentMethod('');
+      setSignatureDataUrl(null);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -232,7 +239,7 @@ export default function AvailabilityManager() {
     await handleSave('confirmed');
 
     // Write invoice after save completes
-    writeInvoiceToWindow(win, invoiceOrder, paid);
+    writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl);
   };
 
   if (loading) {
@@ -376,15 +383,31 @@ export default function AvailabilityManager() {
 
         {/* Totals */}
         {lines.some(l => l.equipmentId) && (
-          <InvoiceTotals
-            lines={lines}
-            discount={discount}
-            onDiscountChange={setDiscount}
-            taxRate={taxRate}
-            onTaxRateChange={setTaxRate}
-            amountPaid={amountPaid}
-            onAmountPaidChange={setAmountPaid}
-          />
+          <>
+            <InvoiceTotals
+              lines={lines}
+              discount={discount}
+              onDiscountChange={setDiscount}
+              taxRate={taxRate}
+              onTaxRateChange={setTaxRate}
+              amountPaid={amountPaid}
+              onAmountPaidChange={setAmountPaid}
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={setPaymentMethod}
+            />
+            <div className="bg-white rounded-xl border shadow-sm p-6">
+              <SignaturePad
+                onSave={setSignatureDataUrl}
+                onClear={() => setSignatureDataUrl(null)}
+              />
+              {signatureDataUrl && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-green-700 font-medium">
+                  <span>✓ Signature captured</span>
+                  <button onClick={() => setSignatureDataUrl(null)} className="text-gray-400 hover:text-red-500 underline">Remove</button>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Actions */}
