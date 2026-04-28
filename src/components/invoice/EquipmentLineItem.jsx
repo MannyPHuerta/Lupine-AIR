@@ -234,6 +234,8 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
         <AISuggestions
           equipmentId={line.equipmentId}
           equipmentName={line.equipmentName}
+          equipmentItem={equipment.find(e => e.id === line.equipmentId)}
+          equipment={equipment}
           onAddToCart={(sugg) => {
             if (onAddLine) {
               const eq = equipment.find(e => e.id === sugg.id);
