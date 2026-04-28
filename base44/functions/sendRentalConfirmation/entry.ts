@@ -194,29 +194,27 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Render backend using /send-asset-report endpoint (proven working)
-    console.log('[sendRentalConfirmation] Sending via Render to:', customerEmail);
-    const formData = new FormData();
-    formData.append('itemName', `Rental Invoice ${invoiceNumber}`);
-    formData.append('itemType', 'Rental');
-    formData.append('action', 'Email');
-    formData.append('branch', rental.branch || '');
-    formData.append('comments', invoiceHtml);
-    formData.append('sendTo', customerEmail);
-    formData.append('sentBy', 'Rental World LLC');
-
-    const emailResponse = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
+    // Send email via RentalWorldLLC email service
+    console.log('[sendRentalConfirmation] Sending via RentalWorldLLC to:', customerEmail);
+    
+    const emailResponse = await fetch('https://rentalworldllc.onrender.com/send', {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: customerEmail,
+        subject: `Rental Invoice ${invoiceNumber}`,
+        html: invoiceHtml,
+        fromName: 'Rental World LLC',
+      }),
     });
 
     if (!emailResponse.ok) {
       const errorText = await emailResponse.text();
-      console.log('[sendRentalConfirmation] Render error:', emailResponse.status, errorText);
-      return Response.json({ error: `Render returned ${emailResponse.status}` }, { status: 502 });
+      console.log('[sendRentalConfirmation] Email service error:', emailResponse.status, errorText);
+      return Response.json({ error: `Email service returned ${emailResponse.status}` }, { status: 502 });
     }
 
-    console.log('[sendRentalConfirmation] Email sent via Render');
+    console.log('[sendRentalConfirmation] Email sent successfully');
 
     // Also send SMS via Twilio if phone available
     let smsSent = false;
