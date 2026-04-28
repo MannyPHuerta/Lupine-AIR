@@ -146,9 +146,23 @@ export function buildInvoiceHTML(order, amountPaid = 0) {
       </div>
     </div>
     
-    <div style="font-size:11px;line-height:1.6;color:#333;background:#f9fafb;padding:12px;border-radius:6px;margin-bottom:16px">
+    <div style="font-size:11px;line-height:1.6;color:#333;background:#f9fafb;padding:12px;border-radius:6px;margin-bottom:12px">
       <strong>AGREEMENT TO PAY:</strong> The undersigned agrees to pay the amount due as shown on this invoice in full according to the terms specified. Equipment must be returned by the end date listed above in good condition. Customer acknowledges acceptance of all rental terms and conditions.
     </div>
+
+    ${lines.filter(l => l.equipmentId && l.specs && Object.keys(l.specs).filter(k => l.specs[k] && String(l.specs[k]).trim()).length > 0).length > 0 ? `
+    <div style="font-size:11px;line-height:1.7;color:#333;background:#f0f4ff;border:1px solid #c7d2fe;padding:12px;border-radius:6px;margin-bottom:12px">
+      <strong>EQUIPMENT SPECIFICATIONS — CUSTOMER ACKNOWLEDGEMENT:</strong> Customer confirms receipt of the following equipment with the specifications listed and acknowledges that the equipment was inspected and accepted in the condition described at time of rental.
+      <div style="margin-top:8px;border-top:1px solid #c7d2fe;padding-top:8px">
+        ${lines.filter(l => l.equipmentId && l.specs && Object.keys(l.specs).filter(k => l.specs[k] && String(l.specs[k]).trim()).length > 0).map(l => {
+          const specPairs = Object.entries(l.specs).filter(([, v]) => v && String(v).trim()).map(([k, v]) => {
+            const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            return `<span style="margin-right:12px">${label}: <strong>${v}</strong></span>`;
+          }).join('');
+          return `<div style="margin-bottom:6px"><span style="font-weight:600">${l.equipmentName}</span> — <span style="color:#555">${specPairs}</span></div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
   </div>
 
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
