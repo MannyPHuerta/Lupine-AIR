@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import SignaturePad from '@/components/invoice/SignaturePad';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
 import InvoiceTotals from '@/components/invoice/InvoiceTotals';
+import PaymentForm from '@/components/invoice/PaymentForm';
 
 const EMPTY_CUSTOMER = {
   name: '',
@@ -47,6 +48,8 @@ export default function AvailabilityManager() {
   const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [pendingInvoice, setPendingInvoice] = useState(null);
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -251,52 +254,76 @@ export default function AvailabilityManager() {
     const validLines = validate();
     if (!validLines) return;
 
-    // Must open window synchronously (before any await) or browser blocks it
-    const paid = parseFloat(amountPaid) || 0;
-    const win = openInvoiceWindow();
-
-    // Fetch invoice number before saving
+    // Fetch invoice number
     const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
     const bs = branchSettingsList[0];
     const invNumber = bs ? `${bs.invoicePrefix || ''}-${String(bs.nextInvoiceNumber || 1000).padStart(4, '0')}` : '';
 
-    const invoiceOrder = {
-      ...buildOrder(validLines, invNumber),
-      branchInfo: branchSettings[customer.branch] ? {
-        name: branchSettings[customer.branch].branchName || customer.branch,
-        address: branchSettings[customer.branch].address || '',
-        phone: branchSettings[customer.branch].phone || '',
-        email: branchSettings[customer.branch].email || '',
-      } : { name: customer.branch, address: '', phone: '', email: '' },
-      companyInfo: companyInfo ? {
-        companyName: companyInfo.companyName || '',
-        logoUrl: companyInfo.logoUrl || '',
-        invoiceFooter: companyInfo.invoiceFooter || '',
-      } : {},
-      paymentMethod: paymentMethod || '',
-    };
+    // Calculate total amount due
+    const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
+    const subtotal = validLines.reduce((s, l) => s + (l.baseAmount || 0), 0);
+    const taxableBase = validLines.reduce((s, l) => s + (l.taxable !== false ? (l.baseAmount || 0) : 0), 0);
+    const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
+    const depositTotal = validLines.reduce((s, l) => s + ((l.deposit || 0) * (l.quantity || 1)), 0);
+    const discountAmount = parseFloat(discount) || 0;
+    const totalDue = subtotal + taxAmount + depositTotal - discountAmount;
 
-    // Now save async
-    const rentalIds = await handleSave('confirmed');
+    // Store invoice data for post-payment
+    setPendingInvoice({
+      validLines,
+      invNumber,
+      invoiceOrder: {
+        ...buildOrder(validLines, invNumber),
+        branchInfo: branchSettings[customer.branch] ? {
+          name: branchSettings[customer.branch].branchName || customer.branch,
+          address: branchSettings[customer.branch].address || '',
+          phone: branchSettings[customer.branch].phone || '',
+          email: branchSettings[customer.branch].email || '',
+        } : { name: customer.branch, address: '', phone: '', email: '' },
+        companyInfo: companyInfo ? {
+          companyName: companyInfo.companyName || '',
+          logoUrl: companyInfo.logoUrl || '',
+          invoiceFooter: companyInfo.invoiceFooter || '',
+        } : {},
+        paymentMethod: paymentMethod || '',
+      },
+      totalDue,
+    });
 
-    // Write invoice after save completes
-    writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl);
+    setShowPayment(true);
+  };
 
-    // Send email/SMS if enabled
-    if (autoSendCommunications && customer.email) {
-      try {
-        const res = await base44.functions.invoke('sendRentalConfirmation', {
-          rentalIds,
-          customerEmail: customer.email,
-          customerPhone: customer.phone,
-          invoiceNumber: invNumber,
-          autoSendCommunications,
-        });
-        console.log('Confirmation sent:', res.data);
-      } catch (err) {
-        console.error('Failed to send confirmation:', err);
-        alert(`Email send failed: ${err.message || 'Unknown error'}`);
+  const handlePaymentSuccess = async (paymentData) => {
+    if (!pendingInvoice) return;
+
+    try {
+      // Save the rental records
+      const rentalIds = await handleSave('confirmed');
+      
+      // Open invoice window and print
+      const paid = parseFloat(amountPaid) || pendingInvoice.totalDue;
+      const win = openInvoiceWindow();
+      writeInvoiceToWindow(win, pendingInvoice.invoiceOrder, paid, signatureDataUrl);
+
+      // Send email/SMS if enabled
+      if (autoSendCommunications && customer.email) {
+        try {
+          await base44.functions.invoke('sendRentalConfirmation', {
+            rentalIds,
+            customerEmail: customer.email,
+            customerPhone: customer.phone,
+            invoiceNumber: pendingInvoice.invNumber,
+            autoSendCommunications,
+          });
+        } catch (err) {
+          console.error('Failed to send confirmation:', err);
+        }
       }
+
+      setShowPayment(false);
+      setPendingInvoice(null);
+    } catch (err) {
+      alert(`Error completing rental: ${err.message}`);
     }
   };
 
@@ -390,12 +417,36 @@ export default function AvailabilityManager() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
-        {/* Success banner */}
-        {saved && (
-          <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
-            ✓ Rental saved successfully!
-          </div>
-        )}
+         {/* Success banner */}
+         {saved && (
+           <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
+             ✓ Rental saved successfully!
+           </div>
+         )}
+
+         {/* Payment Modal */}
+         {showPayment && pendingInvoice && (
+           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+               <div className="flex items-center justify-between mb-4">
+                 <h2 className="text-lg font-bold text-gray-900">Complete Payment</h2>
+                 <button
+                   onClick={() => { setShowPayment(false); setPendingInvoice(null); }}
+                   className="text-gray-400 hover:text-gray-600"
+                 >
+                   <X className="w-5 h-5" />
+                 </button>
+               </div>
+               <PaymentForm
+                 amount={pendingInvoice.totalDue}
+                 customerEmail={customer.email}
+                 customerName={customer.name}
+                 onSuccess={handlePaymentSuccess}
+                 onCancel={() => { setShowPayment(false); setPendingInvoice(null); }}
+               />
+             </div>
+           </div>
+         )}
 
         {/* Customer identity */}
         <CustomerIdentity
