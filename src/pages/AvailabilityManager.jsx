@@ -43,6 +43,7 @@ export default function AvailabilityManager() {
   const [taxRate, setTaxRate] = useState('8.25');
   const [amountPaid, setAmountPaid] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [autoSendCommunications, setAutoSendCommunications] = useState(true);
   const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -402,6 +403,8 @@ export default function AvailabilityManager() {
               onAmountPaidChange={setAmountPaid}
               paymentMethod={paymentMethod}
               onPaymentMethodChange={setPaymentMethod}
+              autoSendCommunications={autoSendCommunications}
+              onAutoSendChange={setAutoSendCommunications}
             />
             <div className="bg-white rounded-xl border shadow-sm p-6">
               <SignaturePad

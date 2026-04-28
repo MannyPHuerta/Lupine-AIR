@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Mail, Phone } from 'lucide-react';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange }) {
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
 
@@ -108,7 +109,7 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
         )}
 
         {/* Payment Method */}
-        <div className="flex items-center justify-between text-gray-600 gap-4 border-t pt-3">
+        <div className="flex items-center justify-between text-gray-600 gap-4 border-t pt-3 pb-3">
           <span className="shrink-0">Payment Method</span>
           <div className="flex flex-wrap gap-1.5">
             {PAYMENT_METHODS.map(m => (
@@ -124,6 +125,30 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
                 {m}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Auto-send communications */}
+        <div className="border-t pt-3 flex items-center justify-between">
+          <span className="text-gray-600 text-sm">Auto-send communications</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onAutoSendChange && onAutoSendChange(!autoSendCommunications)}
+              className={`relative inline-flex h-6 w-11 rounded-full transition ${
+                autoSendCommunications ? 'bg-indigo-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                  autoSendCommunications ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+                style={{ marginTop: '2px' }}
+              />
+            </button>
+            <span className="text-xs text-gray-500">
+              {autoSendCommunications ? '✓ Email & SMS' : 'Manual'}
+            </span>
           </div>
         </div>
       </div>
