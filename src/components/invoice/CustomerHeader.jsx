@@ -70,7 +70,7 @@ function analyzeCustomerHistory(name, allRentals) {
       avgQty: Math.round(e.quantities.reduce((s, v) => s + v, 0) / e.quantities.length),
       totalRentals: e.quantities.length,
     }))
-    .filter(e => e.totalRentals >= 2) // only items rented at least twice
+    .filter(e => e.totalRentals >= 1) // show items rented at least once
     .sort((a, b) => b.totalRentals - a.totalRentals)
     .slice(0, 5);
 
