@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
         const twilioPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
 
         if (accountSid && authToken && twilioPhone) {
-          const smsBody = `Rental confirmed! Invoice ${invoiceNumber}. Equipment rentals for ${rental.customerName}. Total: $${total.toFixed(2)}. Thank you!`;
+          const smsBody = `Rental confirmed! Invoice ${invoiceNumber}. Equipment rentals for ${rental.customerName}. Total: $${fmt(grandTotal)}. Thank you!`;
 
           await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
             method: 'POST',
