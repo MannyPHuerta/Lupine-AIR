@@ -123,6 +123,10 @@ export default function AvailabilityManager() {
       phone: customer.phone,
       email: customer.email,
       branch: customer.branch,
+      address: customer.address,
+      city: customer.city,
+      state: customer.state,
+      zip: customer.zip,
       notes: customer.notes,
     },
     lines: validLines.map(l => {
