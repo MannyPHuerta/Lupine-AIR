@@ -5,6 +5,7 @@ import { ArrowLeft, Save, Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import PaymentSettingsPanel from '@/components/settings/PaymentSettingsPanel';
 
 export default function CompanySettingsPage() {
   const navigate = useNavigate();
@@ -274,6 +275,9 @@ export default function CompanySettingsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Payment Processing */}
+            <PaymentSettingsPanel />
 
             {/* Save Button */}
             <div className="flex justify-end pb-8">

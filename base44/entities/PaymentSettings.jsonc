@@ -1,0 +1,53 @@
+{
+  "name": "PaymentSettings",
+  "type": "object",
+  "properties": {
+    "activeProcessor": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "quickbooks",
+        "none"
+      ],
+      "default": "none",
+      "description": "Active payment processor"
+    },
+    "stripeApiKey": {
+      "type": "string",
+      "description": "Stripe Secret API Key (encrypted)"
+    },
+    "stripePublishableKey": {
+      "type": "string",
+      "description": "Stripe Publishable Key"
+    },
+    "quickbooksRealmId": {
+      "type": "string",
+      "description": "QuickBooks Realm/Company ID"
+    },
+    "quickbooksAccessToken": {
+      "type": "string",
+      "description": "QuickBooks OAuth Access Token (encrypted)"
+    },
+    "quickbooksRefreshToken": {
+      "type": "string",
+      "description": "QuickBooks OAuth Refresh Token (encrypted)"
+    },
+    "autoCapture": {
+      "type": "boolean",
+      "default": false,
+      "description": "Auto-capture payments (vs. auth-only)"
+    },
+    "sendReceiptEmail": {
+      "type": "boolean",
+      "default": true,
+      "description": "Send payment receipt to customer"
+    },
+    "webhookSecret": {
+      "type": "string",
+      "description": "Webhook signing secret for processor events"
+    }
+  },
+  "required": [
+    "activeProcessor"
+  ]
+}
