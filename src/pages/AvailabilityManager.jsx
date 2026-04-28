@@ -268,8 +268,8 @@ export default function AvailabilityManager() {
     const discountAmount = parseFloat(discount) || 0;
     const totalDue = subtotal + taxAmount + depositTotal - discountAmount;
 
-    // If cash payment, skip payment processor and go straight to confirmation
-    if (paymentMethod === 'Cash') {
+    // If non-card payment method, skip payment processor and go straight to confirmation
+    if (['Cash', 'Checks', 'Net30'].includes(paymentMethod)) {
       const paid = parseFloat(amountPaid) || 0;
       const win = openInvoiceWindow();
       
