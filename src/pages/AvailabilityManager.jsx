@@ -300,7 +300,7 @@ export default function AvailabilityManager() {
         )}
 
         {/* Customer identity */}
-        <CustomerIdentity customer={customer} onChange={setCustomer} />
+        <CustomerIdentity customer={customer} onChange={setCustomer} rentals={rentals} lines={lines} />
 
         {/* Line items */}
         <div className="space-y-3">
