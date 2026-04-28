@@ -284,13 +284,19 @@ export default function AvailabilityManager() {
 
     // Send email/SMS if enabled
     if (autoSendCommunications && customer.email) {
-      base44.functions.invoke('sendRentalConfirmation', {
-        rentalIds,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        invoiceNumber: invNumber,
-        autoSendCommunications,
-      }).catch(err => console.error('Failed to send confirmation:', err));
+      try {
+        const res = await base44.functions.invoke('sendRentalConfirmation', {
+          rentalIds,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          invoiceNumber: invNumber,
+          autoSendCommunications,
+        });
+        console.log('Confirmation sent:', res.data);
+      } catch (err) {
+        console.error('Failed to send confirmation:', err);
+        alert(`Email send failed: ${err.message || 'Unknown error'}`);
+      }
     }
   };
 
