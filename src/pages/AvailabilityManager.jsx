@@ -14,6 +14,10 @@ const EMPTY_CUSTOMER = {
   phone: '',
   email: '',
   branch: '01 McAllen',
+  address: '',
+  city: '',
+  state: 'TX',
+  zip: '',
   notes: '',
 };
 

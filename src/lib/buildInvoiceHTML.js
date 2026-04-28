@@ -107,6 +107,9 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
   <div style="background:#f9fafb;border-radius:8px;padding:16px;margin-bottom:24px">
     <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Bill To</div>
     <div style="font-weight:600">${order.customer.name}</div>
+    ${order.customer.address || order.customer.city || order.customer.state || order.customer.zip
+      ? `<div style="color:#555;margin-top:2px">${[order.customer.address, order.customer.city, order.customer.state, order.customer.zip].filter(Boolean).join(', ')}</div>`
+      : ''}
     ${order.customer.phone ? `<div style="color:#555">${order.customer.phone}</div>` : ''}
     ${order.customer.email ? `<div style="color:#555">${order.customer.email}</div>` : ''}
     ${order.customer.notes ? `<div style="color:#888;font-size:12px;margin-top:6px;font-style:italic">${order.customer.notes}</div>` : ''}

@@ -141,7 +141,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
+        <div className="sm:col-span-2 lg:col-span-2">
           <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name *</label>
           <Input
             autoFocus
@@ -177,6 +177,39 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Branch</label>
           <BranchSelect value={customer.branch} onChange={v => set('branch', v)} />
+        </div>
+        <div className="sm:col-span-2 lg:col-span-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Street Address</label>
+          <Input
+            placeholder="123 Main St"
+            value={customer.address}
+            onChange={e => set('address', e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
+          <Input
+            placeholder="McAllen"
+            value={customer.city}
+            onChange={e => set('city', e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
+          <Input
+            placeholder="TX"
+            maxLength="2"
+            value={customer.state}
+            onChange={e => set('state', e.target.value.toUpperCase())}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Zip</label>
+          <Input
+            placeholder="78501"
+            value={customer.zip}
+            onChange={e => set('zip', e.target.value)}
+          />
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
           <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
