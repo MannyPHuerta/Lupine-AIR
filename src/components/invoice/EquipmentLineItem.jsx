@@ -2,7 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Trash2, AlertTriangle, CheckCircle, WrenchIcon } from 'lucide-react';
+import UnitStatusBadge from '@/components/equipment/UnitStatusBadge';
+
+const UNAVAILABLE_STATUSES = ['in_shop', 'awaiting_parts', 'in_laundry', 'under_inspection', 'retired'];
 import { format, parseISO } from 'date-fns';
 import AISuggestions from './AISuggestions';
 
@@ -116,6 +119,11 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
     onUpdate(recalc({ ...line, [field]: value }, eq));
   };
 
+  // Unit status check — is this item physically rentable right now?
+  const eqRecord = equipment.find(e => e.id === line.equipmentId);
+  const unitStatus = eqRecord?.unitStatus || 'available';
+  const unitUnavailable = UNAVAILABLE_STATUSES.includes(unitStatus);
+
   // Availability check using this line's effective dates
   const conflicts = line.equipmentId && startDate && endDate
     ? rentals.filter(r => {
@@ -201,7 +209,12 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
       {line.equipmentId && (
         <div className="flex items-center justify-between text-xs gap-4 flex-wrap">
           <div className="flex items-center gap-1.5">
-            {!startDate || !endDate ? (
+            {unitUnavailable ? (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
+                <UnitStatusBadge status={unitStatus} note={eqRecord?.statusNote} />
+              </>
+            ) : !startDate || !endDate ? (
               <span className="text-gray-400">Set dates to check availability</span>
             ) : available ? (
               <>

@@ -44,7 +44,34 @@
         "retired"
       ],
       "default": "available",
-      "description": "Current equipment status"
+      "description": "Legacy status field"
+    },
+    "unitStatus": {
+      "type": "string",
+      "enum": [
+        "available",
+        "reserved",
+        "out_on_rental",
+        "in_shop",
+        "awaiting_parts",
+        "in_laundry",
+        "under_inspection",
+        "retired"
+      ],
+      "default": "available",
+      "description": "Current operational status of this unit"
+    },
+    "statusNote": {
+      "type": "string",
+      "description": "ETA or reason for current status (e.g. 'Awaiting belt, ETA Monday')"
+    },
+    "statusUpdatedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last status change"
+    },
+    "statusUpdatedBy": {
+      "type": "string",
+      "description": "Email of staff who last changed status"
     },
     "location": {
       "type": "string",

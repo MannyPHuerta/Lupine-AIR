@@ -30,6 +30,7 @@ import BranchSettingsPage from "./pages/BranchSettingsPage";
 import CompanySettingsPage from "./pages/CompanySettingsPage";
 import InventoryHealth from "./pages/InventoryHealth";
 import DemandPatterns from "./pages/DemandPatterns";
+import EquipmentStatusManager from "./pages/EquipmentStatusManager";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -86,6 +87,7 @@ const AuthenticatedApp = () => {
       <Route path="/company-settings" element={<CompanySettingsPage />} />
       <Route path="/inventory-health" element={<InventoryHealth />} />
       <Route path="/demand-patterns" element={<DemandPatterns />} />
+      <Route path="/equipment-status" element={<EquipmentStatusManager />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -111,6 +111,12 @@ export default function LupinePlan() {
             >
               📈 Demand Patterns →
             </button>
+            <button
+              onClick={() => navigate('/equipment-status')}
+              className="bg-green-700 hover:bg-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              🔧 Equipment Status →
+            </button>
           </div>
         </div>
       </div>
