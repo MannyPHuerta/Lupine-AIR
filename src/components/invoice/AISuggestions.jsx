@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Zap, Plus, Loader2, Link2 } from 'lucide-react';
+import { Zap, Plus, Loader2, Link2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // equipmentItem = the full Equipment record (has .dependencies[])
 // equipment = full catalog list (to resolve dependency names/rates)
-export default function AISuggestions({ equipmentId, equipmentName, equipmentItem, equipment = [], onAddToCart }) {
+// rentals = all rental records to check conflicts
+// startDate, endDate = current line's rental dates
+// branch = customer's branch for multi-branch availability
+export default function AISuggestions({ equipmentId, equipmentName, equipmentItem, equipment = [], onAddToCart, rentals = [], startDate = '', endDate = '', branch = '' }) {
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [reasoning, setReasoning] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,6 +22,19 @@ export default function AISuggestions({ equipmentId, equipmentName, equipmentIte
 
   // IDs already covered by dependencies — don't duplicate in AI section
   const depIds = new Set(dependencies.map(d => d.id));
+
+  // Check availability for a suggestion given current rental dates
+  const getAvailability = (suggestionId) => {
+    if (!startDate || !endDate) return { status: 'unknown', conflicts: [] };
+    const conflicts = rentals.filter(r => {
+      if (r.equipmentId !== suggestionId) return false;
+      if (['cancelled', 'completed'].includes(r.status)) return false;
+      // Only check same branch
+      if (branch && r.branch !== branch) return false;
+      return !(endDate < r.startDate || startDate > r.endDate);
+    });
+    return { status: conflicts.length === 0 ? 'available' : 'booked', conflicts };
+  };
 
   useEffect(() => {
     if (!equipmentId) { setAiSuggestions([]); setReasoning(''); return; }
@@ -93,22 +109,44 @@ export default function AISuggestions({ equipmentId, equipmentName, equipmentIte
           </div>
           {reasoning && <p className="text-xs text-gray-600 mb-2 italic">"{reasoning}"</p>}
           <div className="space-y-1.5">
-            {aiSuggestions.map(sugg => (
-              <div key={sugg.id} className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs">
-                <div>
-                  <div className="font-medium text-gray-900">{sugg.name}</div>
-                  <div className="text-gray-500">${sugg.dailyRate}/day</div>
+            {aiSuggestions.map(sugg => {
+              const avail = getAvailability(sugg.id);
+              const isBooked = avail.status === 'booked';
+              return (
+                <div key={sugg.id} className={`flex items-center justify-between border rounded-lg px-3 py-2 text-xs ${
+                  isBooked ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'
+                }`}>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{sugg.name}</div>
+                    <div className="text-gray-500 flex items-center gap-2 mt-0.5">
+                      <span>${sugg.dailyRate}/day</span>
+                      {!startDate || !endDate ? (
+                        <span className="text-gray-400">Set dates to check availability</span>
+                      ) : isBooked ? (
+                        <span className="flex items-center gap-1 text-red-600 font-medium">
+                          <AlertTriangle className="w-3 h-3" /> Booked {avail.conflicts.length > 0 && `(${avail.conflicts[0].customerName})`}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-green-600 font-medium">
+                          <CheckCircle className="w-3 h-3" /> Available
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAddToCart(sugg)}
+                    disabled={isBooked}
+                    className={`h-7 text-xs gap-1 shrink-0 ml-2 ${
+                      isBooked ? 'opacity-40 cursor-not-allowed' : 'border-amber-300 hover:bg-amber-100'
+                    }`}
+                  >
+                    <Plus className="w-3 h-3" /> Add
+                  </Button>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onAddToCart(sugg)}
-                  className="h-7 text-xs gap-1 border-amber-300 hover:bg-amber-100"
-                >
-                  <Plus className="w-3 h-3" /> Add
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

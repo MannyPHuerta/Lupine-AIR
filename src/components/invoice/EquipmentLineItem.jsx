@@ -255,6 +255,9 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
               onAddLine(sugg, line.startDate, line.endDate, eq);
             }
           }}
+          rentals={rentals}
+          startDate={line.startDate}
+          endDate={line.endDate}
         />
       )}
     </div>
