@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import SignaturePad from '@/components/invoice/SignaturePad';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,33 @@ export default function AvailabilityManager() {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
 
+  // Load persisted form state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('rentalFormState');
+    if (saved) {
+      try {
+        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p } = JSON.parse(saved);
+        setCustomer(c || EMPTY_CUSTOMER);
+        setLines(l || [newLine()]);
+        setDiscount(d || '');
+        setTaxRate(t || '8.25');
+        setAmountPaid(a || '');
+        setPaymentMethod(p || '');
+      } catch (_) {}
+    }
+  }, []);
+
+  // Auto-save form state to localStorage
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem('rentalFormState', JSON.stringify({
+        customer, lines, discount, taxRate, amountPaid, paymentMethod
+      }));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [customer, lines, discount, taxRate, amountPaid, paymentMethod]);
+
+  // Fetch catalog and rental data
   useEffect(() => {
     Promise.all([
       base44.entities.Equipment.list('-created_date', 500),
@@ -272,6 +299,28 @@ export default function AvailabilityManager() {
             <div className="text-indigo-300 text-xs">{equipment.length} items in catalog</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (confirm('Restore last saved form state?')) {
+                  const saved = localStorage.getItem('rentalFormState');
+                  if (saved) {
+                    try {
+                      const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p } = JSON.parse(saved);
+                      setCustomer(c || EMPTY_CUSTOMER);
+                      setLines(l || [newLine()]);
+                      setDiscount(d || '');
+                      setTaxRate(t || '8.25');
+                      setAmountPaid(a || '');
+                      setPaymentMethod(p || '');
+                    } catch (_) {}
+                  }
+                }
+              }}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Restore saved form state"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
             <button
               onClick={() => navigate('/rental-history')}
               className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
