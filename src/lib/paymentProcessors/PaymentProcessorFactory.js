@@ -1,4 +1,9 @@
 import { StripeAdapter } from './StripeAdapter';
+import { SquareAdapter } from './SquareAdapter';
+import { PayPalAdapter } from './PayPalAdapter';
+import { AuthorizeNetAdapter } from './AuthorizeNetAdapter';
+import { AmazonPayAdapter } from './AmazonPayAdapter';
+import { WiseAdapter } from './WiseAdapter';
 import { QuickBooksAdapter } from './QuickBooksAdapter';
 
 /**
@@ -12,6 +17,21 @@ export class PaymentProcessorFactory {
     switch (activeProcessor) {
       case 'stripe':
         processor = new StripeAdapter();
+        break;
+      case 'square':
+        processor = new SquareAdapter();
+        break;
+      case 'paypal':
+        processor = new PayPalAdapter();
+        break;
+      case 'authorize_net':
+        processor = new AuthorizeNetAdapter();
+        break;
+      case 'amazon_pay':
+        processor = new AmazonPayAdapter();
+        break;
+      case 'wise':
+        processor = new WiseAdapter();
         break;
       case 'quickbooks':
         processor = new QuickBooksAdapter();

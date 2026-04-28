@@ -6,6 +6,11 @@
       "type": "string",
       "enum": [
         "stripe",
+        "square",
+        "paypal",
+        "authorize_net",
+        "amazon_pay",
+        "wise",
         "quickbooks",
         "none"
       ],
@@ -19,6 +24,46 @@
     "stripePublishableKey": {
       "type": "string",
       "description": "Stripe Publishable Key"
+    },
+    "squareAccessToken": {
+      "type": "string",
+      "description": "Square OAuth Access Token (encrypted)"
+    },
+    "squareApplicationId": {
+      "type": "string",
+      "description": "Square Application ID"
+    },
+    "paypalClientId": {
+      "type": "string",
+      "description": "PayPal Client ID"
+    },
+    "paypalClientSecret": {
+      "type": "string",
+      "description": "PayPal Client Secret (encrypted)"
+    },
+    "authorizeNetApiKey": {
+      "type": "string",
+      "description": "Authorize.Net API Key (encrypted)"
+    },
+    "authorizeNetApiLoginId": {
+      "type": "string",
+      "description": "Authorize.Net API Login ID"
+    },
+    "amazonPayMerchantId": {
+      "type": "string",
+      "description": "Amazon Pay Merchant ID"
+    },
+    "amazonPayPublicKey": {
+      "type": "string",
+      "description": "Amazon Pay Public Key"
+    },
+    "amazonPayPrivateKey": {
+      "type": "string",
+      "description": "Amazon Pay Private Key (encrypted)"
+    },
+    "wiseApiToken": {
+      "type": "string",
+      "description": "Wise API Token (encrypted)"
     },
     "quickbooksRealmId": {
       "type": "string",

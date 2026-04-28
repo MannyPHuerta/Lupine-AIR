@@ -84,6 +84,11 @@ export default function PaymentSettingsPanel() {
           >
             <option value="none">Disabled</option>
             <option value="stripe">Stripe</option>
+            <option value="square">Square</option>
+            <option value="paypal">PayPal</option>
+            <option value="authorize_net">Authorize.Net</option>
+            <option value="amazon_pay">Amazon Pay</option>
+            <option value="wise">Wise</option>
             <option value="quickbooks">QuickBooks</option>
           </select>
           <p className="text-xs text-gray-400 mt-1">Select which payment processor to use</p>
@@ -118,10 +123,146 @@ export default function PaymentSettingsPanel() {
           </div>
         )}
 
+        {/* Square Settings */}
+        {settings.activeProcessor === 'square' && (
+          <div className="border-t pt-4 space-y-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs text-orange-700">
+              <strong>Square Configuration:</strong> Get your credentials from Square Dashboard.
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Square Application ID</label>
+              <Input
+                value={settings.squareApplicationId}
+                onChange={e => handleChange('squareApplicationId', e.target.value)}
+                placeholder="sq0a..."
+              />
+              <p className="text-xs text-gray-400 mt-1">Your Square Application ID</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Square Access Token</label>
+              <Input
+                type="password"
+                value={settings.squareAccessToken}
+                onChange={e => handleChange('squareAccessToken', e.target.value)}
+                placeholder="sq0atp_..."
+              />
+              <p className="text-xs text-gray-400 mt-1">OAuth token (keep confidential)</p>
+            </div>
+          </div>
+        )}
+
+        {/* PayPal Settings */}
+        {settings.activeProcessor === 'paypal' && (
+          <div className="border-t pt-4 space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+              <strong>PayPal Configuration:</strong> Get credentials from PayPal Developer Console.
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">PayPal Client ID</label>
+              <Input
+                value={settings.paypalClientId}
+                onChange={e => handleChange('paypalClientId', e.target.value)}
+                placeholder="AXx..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">PayPal Client Secret</label>
+              <Input
+                type="password"
+                value={settings.paypalClientSecret}
+                onChange={e => handleChange('paypalClientSecret', e.target.value)}
+                placeholder="EBX..."
+              />
+              <p className="text-xs text-gray-400 mt-1">Keep confidential</p>
+            </div>
+          </div>
+        )}
+
+        {/* Authorize.Net Settings */}
+        {settings.activeProcessor === 'authorize_net' && (
+          <div className="border-t pt-4 space-y-4">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-700">
+              <strong>Authorize.Net Configuration:</strong> Get credentials from your Authorize.Net account.
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">API Login ID</label>
+              <Input
+                value={settings.authorizeNetApiLoginId}
+                onChange={e => handleChange('authorizeNetApiLoginId', e.target.value)}
+                placeholder="123456"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">API Key</label>
+              <Input
+                type="password"
+                value={settings.authorizeNetApiKey}
+                onChange={e => handleChange('authorizeNetApiKey', e.target.value)}
+                placeholder="..."
+              />
+              <p className="text-xs text-gray-400 mt-1">Keep confidential</p>
+            </div>
+          </div>
+        )}
+
+        {/* Amazon Pay Settings */}
+        {settings.activeProcessor === 'amazon_pay' && (
+          <div className="border-t pt-4 space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-700">
+              <strong>Amazon Pay Configuration:</strong> Get credentials from Seller Central.
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Merchant ID</label>
+              <Input
+                value={settings.amazonPayMerchantId}
+                onChange={e => handleChange('amazonPayMerchantId', e.target.value)}
+                placeholder="A123..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Public Key</label>
+              <Input
+                value={settings.amazonPayPublicKey}
+                onChange={e => handleChange('amazonPayPublicKey', e.target.value)}
+                placeholder="..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Private Key</label>
+              <Input
+                type="password"
+                value={settings.amazonPayPrivateKey}
+                onChange={e => handleChange('amazonPayPrivateKey', e.target.value)}
+                placeholder="..."
+              />
+              <p className="text-xs text-gray-400 mt-1">Keep confidential</p>
+            </div>
+          </div>
+        )}
+
+        {/* Wise Settings */}
+        {settings.activeProcessor === 'wise' && (
+          <div className="border-t pt-4 space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-700">
+              <strong>Wise Configuration:</strong> Get API token from Wise Dashboard.
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">API Token</label>
+              <Input
+                type="password"
+                value={settings.wiseApiToken}
+                onChange={e => handleChange('wiseApiToken', e.target.value)}
+                placeholder="..."
+              />
+              <p className="text-xs text-gray-400 mt-1">Keep confidential. For international transfers.</p>
+            </div>
+          </div>
+        )}
+
         {/* QuickBooks Settings */}
         {settings.activeProcessor === 'quickbooks' && (
           <div className="border-t pt-4 space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-700">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
               <strong>QuickBooks Configuration:</strong> Connect your QB account via OAuth.
             </div>
             <div>
