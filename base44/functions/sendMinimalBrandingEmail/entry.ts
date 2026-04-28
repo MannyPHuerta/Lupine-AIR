@@ -19,6 +19,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields: to, subject, contentHtml' }, { status: 400 });
     }
 
+    // Strip wolf silhouette and other images from content
+    const cleanContent = contentHtml.replace(/<img[^>]*>/g, '');
+
     // Wrap content in minimal HTML with no branding—just the invoice table/details
     const minimalHtml = `<!DOCTYPE html>
     <html>
@@ -40,7 +43,7 @@ Deno.serve(async (req) => {
     <body>
     <div class="container">
     <div class="content">
-    ${contentHtml}
+    ${cleanContent}
     </div>
     <div class="footer">
     <p>This is an automated message. Please do not reply directly to this email.</p>
