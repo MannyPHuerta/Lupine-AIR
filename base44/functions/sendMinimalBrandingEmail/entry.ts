@@ -52,15 +52,25 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Forward to Render backend via renderEmailGateway
-    const response = await base44.functions.invoke('renderEmailGateway', {
-      to,
-      subject,
-      htmlBody: minimalHtml,
-      fromName,
+    // Send via RentalWorldLLC email service
+    const emailResponse = await fetch('https://rentalworldllc.onrender.com/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to,
+        subject,
+        html: minimalHtml,
+        fromName,
+      }),
     });
 
-    return Response.json({ success: true, message: 'Email sent', data: response.data });
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      return Response.json({ error: `Email service error: ${errorText}` }, { status: 502 });
+    }
+
+    const result = await emailResponse.json();
+    return Response.json({ success: true, message: 'Email sent', data: result });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
