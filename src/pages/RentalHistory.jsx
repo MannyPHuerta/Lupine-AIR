@@ -116,16 +116,19 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
     }
     setSendingEmail(true);
     try {
-      await base44.functions.invoke('sendRentalConfirmation', {
+      console.log('Sending email with:', { rentalIds: order.rentalIds, emailAddress });
+      const res = await base44.functions.invoke('sendRentalConfirmation', {
         rentalIds: order.rentalIds,
         customerEmail: emailAddress,
         customerPhone: order.customer.phone || '',
         invoiceNumber: order.invoiceNumber || order.id,
         autoSendCommunications: true,
       });
+      console.log('Email response:', res.data);
       alert('Invoice emailed successfully!');
       setEmailMode(false);
     } catch (err) {
+      console.error('Email error:', err);
       alert(`Email failed: ${err.message || 'Unknown error'}`);
     } finally {
       setSendingEmail(false);
