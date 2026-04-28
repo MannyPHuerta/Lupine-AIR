@@ -268,6 +268,46 @@ export default function AvailabilityManager() {
     const discountAmount = parseFloat(discount) || 0;
     const totalDue = subtotal + taxAmount + depositTotal - discountAmount;
 
+    // If cash payment, skip payment processor and go straight to confirmation
+    if (paymentMethod === 'Cash') {
+      const paid = parseFloat(amountPaid) || 0;
+      const win = openInvoiceWindow();
+      
+      const invoiceOrder = {
+        ...buildOrder(validLines, invNumber),
+        branchInfo: branchSettings[customer.branch] ? {
+          name: branchSettings[customer.branch].branchName || customer.branch,
+          address: branchSettings[customer.branch].address || '',
+          phone: branchSettings[customer.branch].phone || '',
+          email: branchSettings[customer.branch].email || '',
+        } : { name: customer.branch, address: '', phone: '', email: '' },
+        companyInfo: companyInfo ? {
+          companyName: companyInfo.companyName || '',
+          logoUrl: companyInfo.logoUrl || '',
+          invoiceFooter: companyInfo.invoiceFooter || '',
+        } : {},
+        paymentMethod,
+      };
+
+      const rentalIds = await handleSave('confirmed');
+      writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl);
+
+      if (autoSendCommunications && customer.email) {
+        try {
+          await base44.functions.invoke('sendRentalConfirmation', {
+            rentalIds,
+            customerEmail: customer.email,
+            customerPhone: customer.phone,
+            invoiceNumber: invNumber,
+            autoSendCommunications,
+          });
+        } catch (err) {
+          console.error('Failed to send confirmation:', err);
+        }
+      }
+      return;
+    }
+
     // Store invoice data for post-payment
     setPendingInvoice({
       validLines,
