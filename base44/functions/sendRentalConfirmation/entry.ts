@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       createdAt: new Date().toISOString(),
     };
 
-    // Send email via Render backend (same as Asset Wolf)
+    // Build invoice HTML
     const fmt = (n) => (n || 0).toFixed(2);
     const taxRateDecimal = (invoiceOrder.taxRate || 8.25) / 100;
     const rentalSubtotal = lineItems.reduce((s, l) => s + (l.baseAmount || 0), 0);
@@ -152,17 +152,20 @@ ${rental.signatureDataUrl ? `<p>Customer Signature Captured</p>` : ''}
 </body>
 </html>`;
 
-    // Send email via Render backend
+    // Send email via Render backend using /send-asset-report endpoint (proven working)
     console.log('[sendRentalConfirmation] Sending via Render to:', customerEmail);
-    const emailResponse = await fetch('https://asset-wolf-backend.onrender.com/send-rental-confirmation', {
+    const formData = new FormData();
+    formData.append('itemName', `Rental Invoice ${invoiceNumber}`);
+    formData.append('itemType', 'Rental');
+    formData.append('action', 'Email');
+    formData.append('branch', rental.branch || '');
+    formData.append('comments', invoiceHtml);
+    formData.append('sendTo', customerEmail);
+    formData.append('sentBy', user.email || 'system');
+
+    const emailResponse = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipientEmail: customerEmail,
-        invoiceNumber,
-        invoiceHtml,
-        customerName: rental.customerName,
-      }),
+      body: formData,
     });
 
     if (!emailResponse.ok) {
