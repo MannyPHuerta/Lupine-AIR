@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertTriangle, TrendingDown, DollarSign, RefreshCw, Zap } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, TrendingDown, DollarSign, RefreshCw, Zap, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useRef } from 'react';
 
 const HEALTH_COLORS = {
   high:   { bar: 'bg-green-500',  badge: 'bg-green-100 text-green-800',  label: 'Healthy' },
@@ -51,11 +52,33 @@ function StatCard({ icon: IconComp, label, value, color = 'text-gray-900' }) {
   );
 }
 
+function handlePrint() { window.print(); }
+
+function handlePDFDownload(title) {
+  const printContents = document.getElementById('printable-area')?.innerHTML;
+  if (!printContents) return;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+    <style>body{font-family:sans-serif;padding:24px;font-size:12px;}
+    h1{font-size:18px;margin-bottom:8px;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e5e7eb;}
+    th{background:#f9fafb;font-weight:600;}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+    @media print{button{display:none;}}
+    </style></head><body>
+    <h1>${title}</h1><p style="color:#6b7280;margin-bottom:16px;">Generated ${new Date().toLocaleDateString()}</p>
+    ${printContents}
+    <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>`);
+  win.document.close();
+}
+
 export default function InventoryHealth() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all | critical | at_risk | healthy
+  const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const load = () => {
@@ -101,18 +124,36 @@ export default function InventoryHealth() {
             <div className="text-lg font-bold">Inventory Health</div>
             <div className="text-indigo-300 text-xs">AI-powered stale asset detection</div>
           </div>
-          <button
-            onClick={load}
-            disabled={loading}
-            className="ml-auto p-2 rounded-lg hover:bg-indigo-800 text-indigo-200"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={handlePrint}
+              disabled={loading || !data}
+              className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 disabled:opacity-40"
+              title="Print"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handlePDFDownload('Inventory Health Report', 'printable-area')}
+              disabled={loading || !data}
+              className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 disabled:opacity-40"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+            <button
+              onClick={load}
+              disabled={loading}
+              className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <div id="printable-area" className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {loading ? (
           <div className="flex justify-center py-24">
             <div className="text-center space-y-3">

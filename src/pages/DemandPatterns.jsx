@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, TrendingUp, DollarSign, Package, Users, Zap } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, TrendingUp, DollarSign, Package, Users, Zap, Printer, Download } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
@@ -40,6 +40,26 @@ function formatMonth(m) {
   return date.toLocaleString('default', { month: 'short', year: '2-digit' });
 }
 
+function handlePDFDownload(title, areaId) {
+  const printContents = document.getElementById(areaId)?.innerHTML;
+  if (!printContents) return;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+    <style>body{font-family:sans-serif;padding:24px;font-size:12px;}
+    h1{font-size:18px;margin-bottom:8px;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e5e7eb;}
+    th{background:#f9fafb;font-weight:600;}
+    img{max-width:100%;}
+    @media print{button{display:none;}}
+    </style></head><body>
+    <h1>${title}</h1><p style="color:#6b7280;margin-bottom:16px;">Generated ${new Date().toLocaleDateString()}</p>
+    ${printContents}
+    <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>`);
+  win.document.close();
+}
+
 export default function DemandPatterns() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -71,17 +91,35 @@ export default function DemandPatterns() {
             <div className="text-lg font-bold">Customer Demand Patterns</div>
             <div className="text-indigo-300 text-xs">AI-powered rental intelligence</div>
           </div>
-          <button
-            onClick={load}
-            disabled={loading}
-            className="ml-auto p-2 rounded-lg hover:bg-indigo-800 text-indigo-200"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={() => window.print()}
+              disabled={loading || !data}
+              className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 disabled:opacity-40"
+              title="Print"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handlePDFDownload('Customer Demand Patterns', 'printable-area')}
+              disabled={loading || !data}
+              className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 disabled:opacity-40"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+            <button
+              onClick={load}
+              disabled={loading}
+              className="ml-auto p-2 rounded-lg hover:bg-indigo-800 text-indigo-200"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div id="printable-area" className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
