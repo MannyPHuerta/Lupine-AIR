@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -65,6 +65,9 @@ function groupIntoOrders(rentals) {
 function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed }) {
   const [expanded, setExpanded] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [emailMode, setEmailMode] = useState(false);
+  const [emailAddress, setEmailAddress] = useState(order.customer.email || '');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const lines = order.lines;
   const taxRateDecimal = (order.taxRate || 8.25) / 100;
@@ -104,6 +107,29 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
     ));
     setPrinting(false);
     onConfirmed();
+  };
+
+  const handleEmailInvoice = async () => {
+    if (!emailAddress) {
+      alert('Please enter an email address');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      await base44.functions.invoke('sendRentalConfirmation', {
+        rentalIds: order.rentalIds,
+        customerEmail: emailAddress,
+        customerPhone: order.customer.phone || '',
+        invoiceNumber: order.invoiceNumber || order.id,
+        autoSendCommunications: true,
+      });
+      alert('Invoice emailed successfully!');
+      setEmailMode(false);
+    } catch (err) {
+      alert(`Email failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   return (
@@ -171,10 +197,33 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
             {amountPaid > 0 && <div className="flex justify-between font-bold border-t pt-1"><span>Balance</span><span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span></div>}
           </div>
 
-          <div className="flex justify-end">
-            <Button size="sm" onClick={handlePrint} disabled={printing} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-              <Printer className="w-4 h-4" /> {printing ? 'Saving…' : 'Print & Confirm'}
-            </Button>
+          <div className="flex justify-end gap-2">
+            {emailMode ? (
+              <div className="flex items-center gap-2 w-full">
+                <Input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={emailAddress}
+                  onChange={e => setEmailAddress(e.target.value)}
+                  className="flex-1"
+                />
+                <Button size="sm" onClick={handleEmailInvoice} disabled={sendingEmail} className="gap-2 bg-green-600 hover:bg-green-700">
+                  <Mail className="w-4 h-4" /> {sendingEmail ? 'Sending…' : 'Send'}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setEmailMode(false); setEmailAddress(order.customer.email || ''); }}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button size="sm" onClick={() => setEmailMode(true)} variant="outline" className="gap-2">
+                  <Mail className="w-4 h-4" /> Email Invoice
+                </Button>
+                <Button size="sm" onClick={handlePrint} disabled={printing} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                  <Printer className="w-4 h-4" /> {printing ? 'Saving…' : 'Print'}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
