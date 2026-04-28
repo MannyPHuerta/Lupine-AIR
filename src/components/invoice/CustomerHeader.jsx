@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import BranchSelect from '@/components/invoice/BranchSelect';
 import { formatPhoneUS } from '@/lib/phoneUtils';
-import { UserCheck, TrendingUp, Plus } from 'lucide-react';
+import { UserCheck, ShoppingCart, Check } from 'lucide-react';
 
 const BRANCHES = [
   '01 McAllen',
@@ -101,9 +101,11 @@ function buildNudges(typicalItems, currentLines) {
 }
 
 /** Top card: customer identity fields (name, phone, email, branch) */
-export function CustomerIdentity({ customer, onChange, rentals = [], lines = [] }) {
+export function CustomerIdentity({ customer, onChange, rentals = [], lines = [], onAddItems }) {
   const set = (field, value) => onChange({ ...customer, [field]: value });
   const [autoFilled, setAutoFilled] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
+  const [added, setAdded] = useState(false);
 
   // Debounced customer history lookup
   const history = useMemo(
@@ -124,9 +126,9 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [] 
     }
   }, [history]);
 
-  // Reset auto-fill flag when name is cleared
+  // Reset flags when name changes
   useEffect(() => {
-    if (!customer.name) setAutoFilled(false);
+    if (!customer.name) { setAutoFilled(false); setNudgeDismissed(false); setAdded(false); }
   }, [customer.name]);
 
   const nudges = useMemo(
@@ -184,24 +186,46 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [] 
         </div>
       </div>
 
-      {/* Upsell nudges */}
-      {nudges.length > 0 && (
-        <div className="border border-indigo-200 bg-indigo-50 rounded-lg px-4 py-3 space-y-2">
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="text-xs font-semibold text-indigo-700">Pattern detected for {customer.name}</span>
-          </div>
-          <div className="space-y-1">
-            {nudges.map((nudge, i) => (
-              <div key={i} className="text-xs text-indigo-800 flex items-start gap-1.5">
-                <Plus className="w-3 h-3 shrink-0 mt-0.5 text-indigo-400" />
-                {nudge.type === 'missing'
-                  ? <>Usually rents <strong>{nudge.item.name}</strong> ({nudge.item.totalRentals}x in history) — not on this order.</>
-                  : <>Usually rents <strong>{nudge.item.avgQty}× {nudge.item.name}</strong> — only {nudge.currentQty} added so far.</>
-                }
+      {/* Conversational upsell prompt */}
+      {nudges.length > 0 && !nudgeDismissed && (
+        <div className="border border-indigo-200 bg-indigo-50 rounded-lg px-4 py-3">
+          {added ? (
+            <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
+              <Check className="w-4 h-4 text-green-500" />
+              Added to order!
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-indigo-900 font-medium mb-3">
+                Hey {customer.name.split(' ')[0]}, I notice you usually rent{' '}
+                {nudges.map((n, i) => (
+                  <span key={i}>
+                    {i > 0 && i === nudges.length - 1 ? ' and ' : i > 0 ? ', ' : ' '}
+                    <strong>{n.item.avgQty > 1 ? `${n.item.avgQty}× ` : ''}{n.item.name}</strong>
+                  </span>
+                ))}. Want that again?
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (onAddItems) {
+                      onAddItems(nudges.map(n => ({ equipmentId: n.item.equipmentId, equipmentName: n.item.name, quantity: n.item.avgQty })));
+                      setAdded(true);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                >
+                  <ShoppingCart className="w-3.5 h-3.5" /> Yes, add to order
+                </button>
+                <button
+                  onClick={() => setNudgeDismissed(true)}
+                  className="text-xs text-indigo-400 hover:text-indigo-600 px-2 py-1.5"
+                >
+                  No thanks
+                </button>
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       )}
     </div>
