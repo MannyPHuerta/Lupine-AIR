@@ -77,6 +77,10 @@
       "default": "pending",
       "description": "Rental lifecycle status"
     },
+    "signatureDataUrl": {
+      "type": "string",
+      "description": "Customer signature as PNG dataUrl"
+    },
     "notes": {
       "type": "string",
       "description": "Special requests, damage notes, etc."

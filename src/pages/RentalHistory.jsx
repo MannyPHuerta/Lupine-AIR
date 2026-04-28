@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { openInvoicePopup } from '@/lib/buildInvoiceHTML';
+
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -35,6 +35,7 @@ function groupIntoOrders(rentals) {
         status: r.status,
         taxRate: 8.25,
         amountPaid: 0,
+        signatureDataUrl: null,
       };
     }
     map[key].rentalIds.push(r.id);
@@ -42,6 +43,7 @@ function groupIntoOrders(rentals) {
     if (map[key].rentalIds.length === 1) {
       map[key].amountPaid = r.amountPaid || 0;
       map[key].invoiceNumber = r.invoiceNumber || '';
+      map[key].signatureDataUrl = r.signatureDataUrl || null;
     }
     map[key].lines.push({
       rentalId: r.id,
@@ -85,13 +87,16 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
 
   const handlePrint = async () => {
     const bs = branchSettings[order.customer.branch];
-    openInvoicePopup({
+    const { openInvoiceWindow, writeInvoiceToWindow } = await import('@/lib/buildInvoiceHTML');
+    const win = openInvoiceWindow();
+    
+    writeInvoiceToWindow(win, {
       ...order,
       id: order.invoiceNumber || order.id,
       lines: enriched,
       branchInfo: bs ? { name: bs.branchName || order.customer.branch, address: bs.address || '', phone: bs.phone || '', email: bs.email || '' } : { name: order.customer.branch, address: '', phone: '', email: '' },
       companyInfo: companyInfo ? { companyName: companyInfo.companyName || '', logoUrl: companyInfo.logoUrl || '', invoiceFooter: companyInfo.invoiceFooter || '' } : {},
-    }, amountPaid);
+    }, amountPaid, order.signatureDataUrl);
 
     setPrinting(true);
     await Promise.all(order.rentalIds.map(id =>

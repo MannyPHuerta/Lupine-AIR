@@ -224,6 +224,7 @@ export default function AvailabilityManager() {
           amountPaid: status === 'confirmed' ? paid : 0,
           invoiceNumber,
           status,
+          signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
           notes: customer.notes,
         });
         createdIds.push(rental.id);
