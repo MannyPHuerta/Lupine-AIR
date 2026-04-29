@@ -44,6 +44,7 @@ export default function AvailabilityManager() {
   const [taxRate, setTaxRate] = useState('8.25');
   const [amountPaid, setAmountPaid] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [returnMethod, setReturnMethod] = useState('customer_return');
   const [autoSendCommunications, setAutoSendCommunications] = useState(true);
   const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -61,13 +62,14 @@ export default function AvailabilityManager() {
     const saved = localStorage.getItem('rentalFormState');
     if (saved) {
       try {
-        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p } = JSON.parse(saved);
+        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p, returnMethod: rm } = JSON.parse(saved);
         setCustomer(c || EMPTY_CUSTOMER);
         setLines(l || [newLine()]);
         setDiscount(d || '');
         setTaxRate(t || '8.25');
         setAmountPaid(a || '');
         setPaymentMethod(p || '');
+        setReturnMethod(rm || 'customer_return');
       } catch (_) {}
     }
   }, []);
@@ -76,11 +78,11 @@ export default function AvailabilityManager() {
   useEffect(() => {
     const timer = setTimeout(() => {
       localStorage.setItem('rentalFormState', JSON.stringify({
-        customer, lines, discount, taxRate, amountPaid, paymentMethod
+        customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod
       }));
     }, 500);
     return () => clearTimeout(timer);
-  }, [customer, lines, discount, taxRate, amountPaid, paymentMethod]);
+  }, [customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod]);
 
   // Fetch catalog and rental data
   useEffect(() => {
@@ -252,6 +254,7 @@ export default function AvailabilityManager() {
           amountPaid: status === 'confirmed' ? paid : 0,
           invoiceNumber,
           status: status === 'confirmed' ? 'contract' : 'quote',
+          returnMethod: returnMethod || 'customer_return',
           signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
           notes: customer.notes,
         });
@@ -265,6 +268,7 @@ export default function AvailabilityManager() {
       setTaxRate('8.25');
       setAmountPaid('');
       setPaymentMethod('');
+      setReturnMethod('customer_return');
       setSignatureDataUrl(null);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -556,6 +560,32 @@ export default function AvailabilityManager() {
           }}
         />
 
+        {/* Return Method */}
+        <div className="bg-white rounded-xl border shadow-sm px-6 py-4">
+          <label className="block text-xs font-medium text-gray-600 mb-2">Return Method</label>
+          <div className="flex gap-3 flex-wrap">
+            {[
+              { value: 'customer_return', label: '🙋 Customer Return', desc: 'Customer brings it back' },
+              { value: 'company_pickup', label: '🚚 Company Pickup', desc: 'We schedule recovery' },
+              { value: 'customer_ships', label: '📦 Customer Ships', desc: 'Remote customer' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setReturnMethod(opt.value)}
+                className={`flex-1 min-w-[160px] text-left px-4 py-3 rounded-lg border-2 transition ${
+                  returnMethod === opt.value
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-medium text-sm text-gray-900">{opt.label}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Line items */}
         <div className="space-y-3">
           {lines.map(line => {
@@ -619,7 +649,7 @@ export default function AvailabilityManager() {
         <div className="flex gap-3 justify-end print:hidden pb-8 flex-wrap">
           <Button
             variant="outline"
-            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); setAmountPaid(''); }}
+            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); setAmountPaid(''); setReturnMethod('customer_return'); }}
           >
             Clear
           </Button>
