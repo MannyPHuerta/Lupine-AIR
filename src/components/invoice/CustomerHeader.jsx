@@ -137,14 +137,24 @@ function nudgesNeeded(nudges) {
   return nudges.filter(n => n.type !== 'ok');
 }
 
-function SuggestionDropdown({ suggestions, onSelect }) {
+function SuggestionDropdown({ suggestions, onSelect, activeIndex }) {
+  const itemRefs = useRef([]);
+  useEffect(() => {
+    if (activeIndex >= 0 && itemRefs.current[activeIndex]) {
+      itemRefs.current[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeIndex]);
+
   return (
-    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
       {suggestions.map((s, i) => (
         <button
           key={i}
+          ref={el => itemRefs.current[i] = el}
           onMouseDown={() => onSelect(s)}
-          className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 border-b last:border-0 border-gray-100"
+          className={`w-full text-left px-3 py-2.5 border-b last:border-0 border-gray-100 ${
+            i === activeIndex ? 'bg-indigo-100' : 'hover:bg-indigo-50'
+          }`}
         >
           <div className="font-medium text-gray-900 text-sm">{s.name}</div>
           <div className="text-xs text-gray-500 flex gap-3 mt-0.5">
@@ -165,6 +175,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const [added, setAdded] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const nameRef = useRef(null);
 
   // Debounced customer history lookup
@@ -175,10 +186,27 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  const suggestions = useMemo(
-    () => buildCustomerSuggestions(searchQuery, rentals),
-    [searchQuery, rentals]
-  );
+  const suggestions = useMemo(() => {
+    setActiveIndex(-1);
+    return buildCustomerSuggestions(searchQuery, rentals);
+  }, [searchQuery, rentals]);
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(i => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      fillFromSuggestion(suggestions[activeIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setActiveIndex(-1);
+    }
+  };
 
   const fillFromSuggestion = (s) => {
     onChange({
@@ -236,6 +264,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             onChange={e => { set('name', toTitleCase(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); setAutoFilled(false); }}
             onFocus={() => { setSearchQuery(customer.name); setShowSuggestions(true); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={handleKeyDown}
           />
           {history && !showSuggestions && (
             <div className="flex items-center gap-1 mt-1">
@@ -244,7 +273,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             </div>
           )}
           {showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} />
+            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
           )}
         </div>
         <div className="relative">
@@ -255,10 +284,11 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); }}
             onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={handleKeyDown}
             inputMode="numeric"
           />
           {showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} />
+            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
           )}
         </div>
         <div className="relative">
@@ -270,9 +300,10 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             onChange={e => { set('email', e.target.value); setSearchQuery(e.target.value); setShowSuggestions(true); }}
             onFocus={() => { setSearchQuery(customer.email); setShowSuggestions(true); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={handleKeyDown}
           />
           {showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} />
+            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
           )}
         </div>
         <div>
