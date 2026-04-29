@@ -11,6 +11,7 @@ const BRANCHES = [
   '03 Harlingen',
   '05 Brownsville',
   '06 Corpus',
+  '99 Warehouse',
 ];
 
 export default function DeliveryMatrixPage() {
