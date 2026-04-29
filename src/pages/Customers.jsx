@@ -1,0 +1,200 @@
+import { useState, useEffect, useMemo } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Search, AlertTriangle, Ban, ShieldCheck, Building2, User, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import CustomerCard from '@/components/customers/CustomerCard';
+import CustomerDetailModal from '@/components/customers/CustomerDetailModal';
+import NewCustomerModal from '@/components/customers/NewCustomerModal';
+
+export default function Customers() {
+  const navigate = useNavigate();
+  const [customers, setCustomers] = useState([]);
+  const [rentals, setRentals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showNew, setShowNew] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      base44.entities.Customer.list('-created_date', 500),
+      base44.entities.Rental.list('-created_date', 2000),
+    ]).then(([c, r]) => {
+      setCustomers(c);
+      setRentals(r);
+      setLoading(false);
+    });
+  }, []);
+
+  const refresh = async () => {
+    const [c, r] = await Promise.all([
+      base44.entities.Customer.list('-created_date', 500),
+      base44.entities.Rental.list('-created_date', 2000),
+    ]);
+    setCustomers(c);
+    setRentals(r);
+  };
+
+  const filtered = useMemo(() => {
+    let list = customers;
+    if (filter === 'credit_hold') list = list.filter(c => c.creditHold);
+    if (filter === 'blacklisted') list = list.filter(c => c.blacklisted);
+    if (filter === 'tax_exempt') list = list.filter(c => c.taxExempt);
+    if (filter === 'business') list = list.filter(c => c.accountType !== 'individual');
+    if (search.trim().length > 1) {
+      const q = search.toLowerCase();
+      list = list.filter(c =>
+        c.fullName?.toLowerCase().includes(q) ||
+        c.companyName?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.phone?.includes(q)
+      );
+    }
+    return list;
+  }, [customers, filter, search]);
+
+  const stats = useMemo(() => ({
+    total: customers.length,
+    creditHold: customers.filter(c => c.creditHold).length,
+    blacklisted: customers.filter(c => c.blacklisted).length,
+    taxExempt: customers.filter(c => c.taxExempt).length,
+  }), [customers]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
+          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <div className="text-lg font-bold">Customer Records</div>
+            <div className="text-indigo-300 text-xs">{customers.length} customers</div>
+          </div>
+          <div className="ml-auto">
+            <Button
+              onClick={() => setShowNew(true)}
+              className="bg-indigo-600 hover:bg-indigo-500 text-sm gap-2"
+            >
+              <Plus className="w-4 h-4" /> New Customer
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Total', value: stats.total, icon: User, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+            { label: 'Credit Hold', value: stats.creditHold, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: 'Blacklisted', value: stats.blacklisted, icon: Ban, color: 'text-red-600', bg: 'bg-red-50' },
+            { label: 'Tax Exempt', value: stats.taxExempt, icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50' },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} rounded-xl p-4 flex items-center gap-3`}>
+              <s.icon className={`w-5 h-5 ${s.color}`} />
+              <div>
+                <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+                <div className="text-xs text-gray-600">{s.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search + Filter */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search name, company, email, phone..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'credit_hold', label: '⚠️ Credit Hold' },
+              { key: 'blacklisted', label: '🚫 Blacklisted' },
+              { key: 'tax_exempt', label: '✓ Tax Exempt' },
+              { key: 'business', label: '🏢 Business/Municipal' },
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                  filter === f.key
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Customer List */}
+        {filtered.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No customers found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filtered.map(c => (
+              <CustomerCard
+                key={c.id}
+                customer={c}
+                rentals={rentals.filter(r => r.customerName === c.fullName || r.customerEmail === c.email)}
+                onClick={() => setSelectedCustomer(c)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedCustomer && (
+        <CustomerDetailModal
+          customer={selectedCustomer}
+          rentals={rentals.filter(r => r.customerName === selectedCustomer.fullName || r.customerEmail === selectedCustomer.email)}
+          onClose={() => setSelectedCustomer(null)}
+          onSave={async (updated) => {
+            await base44.entities.Customer.update(updated.id, updated);
+            await refresh();
+            setSelectedCustomer(null);
+          }}
+          onDelete={async (id) => {
+            await base44.entities.Customer.delete(id);
+            await refresh();
+            setSelectedCustomer(null);
+          }}
+        />
+      )}
+
+      {showNew && (
+        <NewCustomerModal
+          onClose={() => setShowNew(false)}
+          onSave={async (data) => {
+            await base44.entities.Customer.create({ ...data, source: 'manual' });
+            await refresh();
+            setShowNew(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}

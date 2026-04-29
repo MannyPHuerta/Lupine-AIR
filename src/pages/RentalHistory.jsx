@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 
 const STATUS_COLORS = {
+  quote: 'bg-gray-100 text-gray-700',
+  reservation: 'bg-yellow-100 text-yellow-800',
+  contract: 'bg-blue-100 text-blue-800',
+  out: 'bg-green-100 text-green-800',
+  returned: 'bg-purple-100 text-purple-700',
+  completed: 'bg-gray-100 text-gray-600',
+  cancelled: 'bg-red-100 text-red-700',
+  // legacy
   pending: 'bg-yellow-100 text-yellow-800',
   confirmed: 'bg-blue-100 text-blue-800',
   active: 'bg-green-100 text-green-800',
-  completed: 'bg-gray-100 text-gray-700',
-  cancelled: 'bg-red-100 text-red-700',
 };
 
 function groupIntoOrders(rentals) {
@@ -68,6 +74,7 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
   const [emailMode, setEmailMode] = useState(false);
   const [emailAddress, setEmailAddress] = useState(order.customer.email || '');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [advancingStatus, setAdvancingStatus] = useState(false);
 
   const lines = order.lines;
   const taxRateDecimal = (order.taxRate || 8.25) / 100;
@@ -103,9 +110,23 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
 
     setPrinting(true);
     await Promise.all(order.rentalIds.map(id =>
-      base44.entities.Rental.update(id, { status: 'confirmed' })
+      base44.entities.Rental.update(id, { status: 'contract' })
     ));
     setPrinting(false);
+    onConfirmed();
+  };
+
+  const STATUS_FLOW = ['quote', 'reservation', 'contract', 'out', 'returned', 'completed'];
+  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1];
+
+  const handleAdvanceStatus = async () => {
+    if (!nextStatus) return;
+    if (!confirm(`Move this order to "${nextStatus}"?`)) return;
+    setAdvancingStatus(true);
+    await Promise.all(order.rentalIds.map(id =>
+      base44.entities.Rental.update(id, { status: nextStatus })
+    ));
+    setAdvancingStatus(false);
     onConfirmed();
   };
 
@@ -219,6 +240,11 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
               </div>
             ) : (
               <>
+                {nextStatus && (
+                  <Button size="sm" onClick={handleAdvanceStatus} disabled={advancingStatus} variant="outline" className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                    <ArrowRight className="w-4 h-4" /> {advancingStatus ? '...' : `→ ${nextStatus}`}
+                  </Button>
+                )}
                 <Button size="sm" onClick={() => setEmailMode(true)} variant="outline" className="gap-2">
                   <Mail className="w-4 h-4" /> Email Invoice
                 </Button>
@@ -309,9 +335,11 @@ export default function RentalHistory() {
             className="border rounded-md px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="active">Active</option>
+            <option value="quote">Quote</option>
+            <option value="reservation">Reservation</option>
+            <option value="contract">Contract</option>
+            <option value="out">Out on Rental</option>
+            <option value="returned">Returned</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>

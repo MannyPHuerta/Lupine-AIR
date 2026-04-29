@@ -48,6 +48,10 @@
       "type": "string",
       "description": "Customer zip code"
     },
+    "customerId": {
+      "type": "string",
+      "description": "Reference to Customer record (if exists)"
+    },
     "branch": {
       "type": "string",
       "description": "Branch location for this rental"
@@ -84,14 +88,25 @@
     "status": {
       "type": "string",
       "enum": [
-        "pending",
-        "confirmed",
-        "active",
+        "quote",
+        "reservation",
+        "contract",
+        "out",
+        "returned",
         "completed",
         "cancelled"
       ],
-      "default": "pending",
-      "description": "Rental lifecycle status"
+      "default": "quote",
+      "description": "Contract lifecycle status: quote \u2192 reservation \u2192 contract \u2192 out \u2192 returned \u2192 completed"
+    },
+    "returnMethod": {
+      "type": "string",
+      "enum": [
+        "company_pickup",
+        "customer_return",
+        "customer_ships"
+      ],
+      "description": "How the equipment will be returned"
     },
     "signatureDataUrl": {
       "type": "string",
@@ -100,6 +115,27 @@
     "notes": {
       "type": "string",
       "description": "Special requests, damage notes, etc."
+    },
+    "statusHistory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "changedAt": {
+            "type": "string"
+          },
+          "changedBy": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Audit trail of status changes"
     }
   },
   "required": [

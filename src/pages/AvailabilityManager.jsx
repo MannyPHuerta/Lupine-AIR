@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import SignaturePad from '@/components/invoice/SignaturePad';
 import { Button } from '@/components/ui/button';
@@ -207,6 +207,26 @@ export default function AvailabilityManager() {
     setSaving(true);
     const createdIds = [];
     try {
+      // Auto-sync customer record on confirmed rentals
+      let customerId = null;
+      if (status === 'confirmed' || status === 'contract') {
+        try {
+          const res = await base44.functions.invoke('upsertCustomer', {
+            fullName: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+            address: customer.address,
+            city: customer.city,
+            state: customer.state,
+            zip: customer.zip,
+            branch: customer.branch,
+          });
+          customerId = res?.data?.customerId || null;
+        } catch (syncErr) {
+          console.warn('Customer sync failed (non-blocking):', syncErr.message);
+        }
+      }
+
       for (const line of validLines) {
         const taxAmount = line.taxable !== false ? Math.round(line.baseAmount * taxRateDecimal * 100) / 100 : 0;
         const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
@@ -222,6 +242,7 @@ export default function AvailabilityManager() {
           customerCity: customer.city,
           customerState: customer.state,
           customerZip: customer.zip,
+          customerId: customerId || null,
           branch: customer.branch,
           totalDays,
           baseAmount: line.baseAmount,
@@ -230,7 +251,7 @@ export default function AvailabilityManager() {
           deposit: (line.deposit || 0) * line.quantity,
           amountPaid: status === 'confirmed' ? paid : 0,
           invoiceNumber,
-          status,
+          status: status === 'confirmed' ? 'contract' : 'quote',
           signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
           notes: customer.notes,
         });
@@ -455,6 +476,13 @@ export default function AvailabilityManager() {
               title="Equipment status board"
             >
               <Activity className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/customers')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Customer records"
+            >
+              <Users className="w-4 h-4" />
             </button>
           </div>
         </div>

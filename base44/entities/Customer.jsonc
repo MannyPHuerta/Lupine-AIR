@@ -1,0 +1,167 @@
+{
+  "name": "Customer",
+  "type": "object",
+  "properties": {
+    "fullName": {
+      "type": "string",
+      "description": "Customer full name"
+    },
+    "companyName": {
+      "type": "string",
+      "description": "Company or business name (if applicable)"
+    },
+    "accountType": {
+      "type": "string",
+      "enum": [
+        "individual",
+        "business",
+        "municipal",
+        "nonprofit"
+      ],
+      "default": "individual",
+      "description": "Type of customer account"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Primary phone number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Primary email address"
+    },
+    "address": {
+      "type": "string",
+      "description": "Street address"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "type": "string",
+      "description": "State"
+    },
+    "zip": {
+      "type": "string",
+      "description": "Zip code"
+    },
+    "paymentTerms": {
+      "type": "string",
+      "enum": [
+        "due_on_receipt",
+        "net_15",
+        "net_30",
+        "net_60"
+      ],
+      "default": "due_on_receipt",
+      "description": "Payment terms for this account"
+    },
+    "creditHold": {
+      "type": "boolean",
+      "default": false,
+      "description": "Account is on credit hold \u2014 staff must collect payment upfront"
+    },
+    "creditHoldReason": {
+      "type": "string",
+      "description": "Reason for credit hold"
+    },
+    "blacklisted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Account is blacklisted \u2014 do not rent to this customer"
+    },
+    "blacklistReason": {
+      "type": "string",
+      "description": "Reason for blacklist"
+    },
+    "taxExempt": {
+      "type": "boolean",
+      "default": false,
+      "description": "Customer is tax exempt"
+    },
+    "taxExemptCertNumber": {
+      "type": "string",
+      "description": "Tax exemption certificate number"
+    },
+    "taxExemptExpiry": {
+      "type": "string",
+      "format": "date",
+      "description": "Tax exemption certificate expiry date"
+    },
+    "idVerified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Driver's license or ID has been verified"
+    },
+    "idType": {
+      "type": "string",
+      "description": "Type of ID presented (e.g. TX Driver's License)"
+    },
+    "idNumber": {
+      "type": "string",
+      "description": "ID number (last 4 digits only for security)"
+    },
+    "linkedContacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "authorizedToRent": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "description": "Additional authorized contacts for this account"
+    },
+    "preferredBranch": {
+      "type": "string",
+      "description": "Preferred branch location"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes about this customer"
+    },
+    "totalRentals": {
+      "type": "integer",
+      "default": 0,
+      "description": "Total number of rental transactions (denormalized)"
+    },
+    "totalSpend": {
+      "type": "number",
+      "default": 0,
+      "description": "Total lifetime spend (denormalized, USD)"
+    },
+    "lastRentalDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of most recent rental"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "rental_form",
+        "cpro_import",
+        "portal"
+      ],
+      "default": "manual",
+      "description": "How this customer record was created"
+    }
+  },
+  "required": [
+    "fullName"
+  ]
+}
