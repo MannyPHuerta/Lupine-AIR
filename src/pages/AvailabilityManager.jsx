@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import SignaturePad from '@/components/invoice/SignaturePad';
 import { Button } from '@/components/ui/button';
@@ -487,6 +487,13 @@ export default function AvailabilityManager() {
               title="Customer records"
             >
               <Users className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/delivery-matrix')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Delivery matrix & rates"
+            >
+              <Truck className="w-4 h-4" />
             </button>
           </div>
         </div>
