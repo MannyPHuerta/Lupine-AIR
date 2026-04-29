@@ -153,6 +153,8 @@ export default function AvailabilityManager() {
     taxRate: parseFloat(taxRate) || 8.25,
     discount: parseFloat(discount) || 0,
     paymentMethod: paymentMethod || '',
+    deliveryMethod: deliveryMethod || 'customer_pickup',
+    returnMethod: returnMethod || 'customer_return',
     customer: {
       name: customer.name,
       phone: customer.phone,

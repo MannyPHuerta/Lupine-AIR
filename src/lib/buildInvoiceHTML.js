@@ -1,5 +1,17 @@
 const fmt = (n) => (n || 0).toFixed(2);
 
+const DELIVERY_LABELS = {
+  customer_pickup: 'Customer Pickup',
+  company_delivery: 'Company Delivery',
+  shipped: 'Shipped',
+};
+
+const RETURN_LABELS = {
+  customer_return: 'Customer Return',
+  company_pickup: 'Company Pickup',
+  customer_ships: 'Customer Ships',
+};
+
 /**
  * Builds a self-contained invoice HTML string.
  * @param {object} order - { customer, lines, taxRate, id, createdAt, branchInfo, companyInfo }
@@ -114,6 +126,12 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
     ${order.customer.email ? `<div style="color:#555">${order.customer.email}</div>` : ''}
     ${order.customer.notes ? `<div style="color:#888;font-size:12px;margin-top:6px;font-style:italic">${order.customer.notes}</div>` : ''}
   </div>
+
+  ${(order.deliveryMethod || order.returnMethod) ? `
+  <div style="display:flex;gap:24px;margin-bottom:16px;font-size:12px">
+    ${order.deliveryMethod ? `<div><span style="color:#888;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.05em">Delivery</span><br/><span style="font-weight:600">${DELIVERY_LABELS[order.deliveryMethod] || order.deliveryMethod}</span></div>` : ''}
+    ${order.returnMethod ? `<div><span style="color:#888;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.05em">Return</span><br/><span style="font-weight:600">${RETURN_LABELS[order.returnMethod] || order.returnMethod}</span></div>` : ''}
+  </div>` : ''}
 
   <table style="margin-bottom:24px">
     <thead>
