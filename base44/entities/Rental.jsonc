@@ -99,6 +99,16 @@
       "default": "quote",
       "description": "Contract lifecycle status: quote \u2192 reservation \u2192 contract \u2192 out \u2192 returned \u2192 completed"
     },
+    "deliveryMethod": {
+      "type": "string",
+      "enum": [
+        "customer_pickup",
+        "company_delivery",
+        "shipped"
+      ],
+      "default": "customer_pickup",
+      "description": "How the equipment will be delivered to the customer"
+    },
     "returnMethod": {
       "type": "string",
       "enum": [

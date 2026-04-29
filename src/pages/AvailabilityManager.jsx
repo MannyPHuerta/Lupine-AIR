@@ -45,6 +45,7 @@ export default function AvailabilityManager() {
   const [amountPaid, setAmountPaid] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [returnMethod, setReturnMethod] = useState('customer_return');
+  const [deliveryMethod, setDeliveryMethod] = useState('customer_pickup');
   const [autoSendCommunications, setAutoSendCommunications] = useState(true);
   const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -62,7 +63,7 @@ export default function AvailabilityManager() {
     const saved = localStorage.getItem('rentalFormState');
     if (saved) {
       try {
-        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p, returnMethod: rm } = JSON.parse(saved);
+        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p, returnMethod: rm, deliveryMethod: dm } = JSON.parse(saved);
         setCustomer(c || EMPTY_CUSTOMER);
         setLines(l || [newLine()]);
         setDiscount(d || '');
@@ -70,6 +71,7 @@ export default function AvailabilityManager() {
         setAmountPaid(a || '');
         setPaymentMethod(p || '');
         setReturnMethod(rm || 'customer_return');
+        setDeliveryMethod(dm || 'customer_pickup');
       } catch (_) {}
     }
   }, []);
@@ -78,7 +80,7 @@ export default function AvailabilityManager() {
   useEffect(() => {
     const timer = setTimeout(() => {
       localStorage.setItem('rentalFormState', JSON.stringify({
-        customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod
+        customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod, deliveryMethod
       }));
     }, 500);
     return () => clearTimeout(timer);
@@ -255,6 +257,7 @@ export default function AvailabilityManager() {
           invoiceNumber,
           status: status === 'confirmed' ? 'contract' : 'quote',
           returnMethod: returnMethod || 'customer_return',
+          deliveryMethod: deliveryMethod || 'customer_pickup',
           signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
           notes: customer.notes,
         });
@@ -269,6 +272,7 @@ export default function AvailabilityManager() {
       setAmountPaid('');
       setPaymentMethod('');
       setReturnMethod('customer_return');
+      setDeliveryMethod('customer_pickup');
       setSignatureDataUrl(null);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -567,18 +571,32 @@ export default function AvailabilityManager() {
           }}
         />
 
-        {/* Return Method */}
-        <div className="bg-white rounded-xl border shadow-sm px-6 py-4 flex items-center gap-4">
-          <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Return Method</label>
-          <select
-            value={returnMethod}
-            onChange={e => setReturnMethod(e.target.value)}
-            className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          >
-            <option value="customer_return">🙋 Customer Return — Customer brings it back</option>
-            <option value="company_pickup">🚚 Company Pickup — We schedule recovery</option>
-            <option value="customer_ships">📦 Customer Ships — Remote customer</option>
-          </select>
+        {/* Delivery & Return Methods */}
+        <div className="bg-white rounded-xl border shadow-sm px-6 py-4 flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Delivery Method</label>
+            <select
+              value={deliveryMethod}
+              onChange={e => setDeliveryMethod(e.target.value)}
+              className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            >
+              <option value="customer_pickup">🙋 Customer Pickup</option>
+              <option value="company_delivery">🚚 Company Delivery</option>
+              <option value="shipped">📦 Shipped</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Return Method</label>
+            <select
+              value={returnMethod}
+              onChange={e => setReturnMethod(e.target.value)}
+              className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            >
+              <option value="customer_return">🙋 Customer Return</option>
+              <option value="company_pickup">🚚 Company Pickup</option>
+              <option value="customer_ships">📦 Customer Ships</option>
+            </select>
+          </div>
         </div>
 
         {/* Line items */}
