@@ -568,29 +568,17 @@ export default function AvailabilityManager() {
         />
 
         {/* Return Method */}
-        <div className="bg-white rounded-xl border shadow-sm px-6 py-4">
-          <label className="block text-xs font-medium text-gray-600 mb-2">Return Method</label>
-          <div className="flex gap-3 flex-wrap">
-            {[
-              { value: 'customer_return', label: '🙋 Customer Return', desc: 'Customer brings it back' },
-              { value: 'company_pickup', label: '🚚 Company Pickup', desc: 'We schedule recovery' },
-              { value: 'customer_ships', label: '📦 Customer Ships', desc: 'Remote customer' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setReturnMethod(opt.value)}
-                className={`flex-1 min-w-[160px] text-left px-4 py-3 rounded-lg border-2 transition ${
-                  returnMethod === opt.value
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="font-medium text-sm text-gray-900">{opt.label}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
-              </button>
-            ))}
-          </div>
+        <div className="bg-white rounded-xl border shadow-sm px-6 py-4 flex items-center gap-4">
+          <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Return Method</label>
+          <select
+            value={returnMethod}
+            onChange={e => setReturnMethod(e.target.value)}
+            className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          >
+            <option value="customer_return">🙋 Customer Return — Customer brings it back</option>
+            <option value="company_pickup">🚚 Company Pickup — We schedule recovery</option>
+            <option value="customer_ships">📦 Customer Ships — Remote customer</option>
+          </select>
         </div>
 
         {/* Line items */}
