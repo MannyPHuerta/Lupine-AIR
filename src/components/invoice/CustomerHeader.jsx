@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import BranchSelect from '@/components/invoice/BranchSelect';
 import { formatPhoneUS } from '@/lib/phoneUtils';
-import { UserCheck, ShoppingCart, Check } from 'lucide-react';
+import { UserCheck, ShoppingCart, Check, ChevronDown } from 'lucide-react';
 
 const BRANCHES = [
   '01 McAllen',
@@ -40,6 +40,37 @@ function DateInput({ label, value, onChange }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Build unique customer suggestions from rental history matching name/phone/email.
+ */
+function buildCustomerSuggestions(query, allRentals) {
+  if (!query || query.trim().length < 2) return [];
+  const q = query.trim().toLowerCase();
+  const seen = new Set();
+  const suggestions = [];
+  allRentals.forEach(r => {
+    const key = (r.customerName || '').toLowerCase();
+    if (seen.has(key)) return;
+    const nameMatch = r.customerName?.toLowerCase().includes(q);
+    const phoneMatch = r.customerPhone?.includes(q);
+    const emailMatch = r.customerEmail?.toLowerCase().includes(q);
+    if (nameMatch || phoneMatch || emailMatch) {
+      seen.add(key);
+      suggestions.push({
+        name: r.customerName || '',
+        phone: r.customerPhone || '',
+        email: r.customerEmail || '',
+        branch: r.branch || '',
+        address: r.customerAddress || '',
+        city: r.customerCity || '',
+        state: r.customerState || '',
+        zip: r.customerZip || '',
+      });
+    }
+  });
+  return suggestions.slice(0, 8);
 }
 
 /**
@@ -112,12 +143,35 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   const [autoFilled, setAutoFilled] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const [added, setAdded] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const nameRef = useRef(null);
 
   // Debounced customer history lookup
   const history = useMemo(
     () => analyzeCustomerHistory(customer.name, rentals),
     [customer.name, rentals]
   );
+
+  const suggestions = useMemo(
+    () => buildCustomerSuggestions(customer.name, rentals),
+    [customer.name, rentals]
+  );
+
+  const fillFromSuggestion = (s) => {
+    onChange({
+      ...customer,
+      name: s.name,
+      phone: s.phone || customer.phone,
+      email: s.email || customer.email,
+      branch: s.branch || customer.branch,
+      address: s.address || customer.address,
+      city: s.city || customer.city,
+      state: s.state || customer.state,
+      zip: s.zip || customer.zip,
+    });
+    setAutoFilled(true);
+    setShowSuggestions(false);
+  };
 
   // Auto-fill contact info when a known customer is recognized (only if fields are empty)
   useEffect(() => {
@@ -149,18 +203,39 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   return (
     <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="sm:col-span-2 lg:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-2 relative">
           <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name *</label>
           <Input
+            ref={nameRef}
             autoFocus
-            placeholder="John Doe"
+            placeholder="Search by name, phone, or email..."
             value={customer.name}
-            onChange={e => set('name', toTitleCase(e.target.value))}
+            onChange={e => { set('name', toTitleCase(e.target.value)); setShowSuggestions(true); setAutoFilled(false); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
           />
-          {history && (
+          {history && !showSuggestions && (
             <div className="flex items-center gap-1 mt-1">
               <UserCheck className="w-3 h-3 text-green-500" />
               <span className="text-xs text-green-600 font-medium">{history.rentalCount} past rental{history.rentalCount !== 1 ? 's' : ''}</span>
+            </div>
+          )}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onMouseDown={() => fillFromSuggestion(s)}
+                  className="w-full text-left px-3 py-2.5 hover:bg-indigo-50 border-b last:border-0 border-gray-100"
+                >
+                  <div className="font-medium text-gray-900 text-sm">{s.name}</div>
+                  <div className="text-xs text-gray-500 flex gap-3 mt-0.5">
+                    {s.phone && <span>📞 {s.phone}</span>}
+                    {s.email && <span>✉️ {s.email}</span>}
+                    {s.branch && <span className="text-gray-400">{s.branch}</span>}
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </div>
