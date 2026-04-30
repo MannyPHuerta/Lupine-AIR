@@ -2,8 +2,9 @@ import { useRef, useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import BranchSelect from '@/components/invoice/BranchSelect';
 import { formatPhoneUS } from '@/lib/phoneUtils';
-import { UserCheck, ShoppingCart, Check, ChevronDown, ScanLine, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, Ban } from 'lucide-react';
 import { useDLScanner } from '@/hooks/useDLScanner';
+import { base44 } from '@/api/base44Client';
 
 const BRANCHES = [
   '01 McAllen',
@@ -44,34 +45,19 @@ function DateInput({ label, value, onChange }) {
 }
 
 /**
- * Build unique customer suggestions from rental history matching name/phone/email.
+ * Build customer suggestions from Customer entity records.
  */
-function buildCustomerSuggestions(query, allRentals) {
+function buildCustomerSuggestions(query, customers) {
   if (!query || query.trim().length < 2) return [];
-  const q = query.trim().toLowerCase();
-  const seen = new Set();
-  const suggestions = [];
-  allRentals.forEach(r => {
-    const key = (r.customerName || '').toLowerCase();
-    if (seen.has(key)) return;
-    const nameMatch = r.customerName?.toLowerCase().includes(q);
-    const phoneMatch = r.customerPhone?.includes(q);
-    const emailMatch = r.customerEmail?.toLowerCase().includes(q);
-    if (nameMatch || phoneMatch || emailMatch) {
-      seen.add(key);
-      suggestions.push({
-        name: r.customerName || '',
-        phone: r.customerPhone || '',
-        email: r.customerEmail || '',
-        branch: r.branch || '',
-        address: r.customerAddress || '',
-        city: r.customerCity || '',
-        state: r.customerState || '',
-        zip: r.customerZip || '',
-      });
-    }
-  });
-  return suggestions.slice(0, 8);
+  const q = query.trim().toLowerCase().replace(/\D/g, '') || query.trim().toLowerCase();
+  const digits = query.trim().replace(/\D/g, '');
+  return customers.filter(c => {
+    const phoneDigits = (c.phone || '').replace(/\D/g, '');
+    const nameMatch = (c.fullName || '').toLowerCase().includes(query.trim().toLowerCase());
+    const phoneMatch = digits.length >= 3 && phoneDigits.includes(digits);
+    const emailMatch = (c.email || '').toLowerCase().includes(query.trim().toLowerCase());
+    return nameMatch || phoneMatch || emailMatch;
+  }).slice(0, 8);
 }
 
 /**
@@ -157,11 +143,16 @@ function SuggestionDropdown({ suggestions, onSelect, activeIndex }) {
             i === activeIndex ? 'bg-indigo-100' : 'hover:bg-indigo-50'
           }`}
         >
-          <div className="font-medium text-gray-900 text-sm">{s.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-900 text-sm">{s.fullName}</span>
+            {s.blacklisted && <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"><Ban className="w-2.5 h-2.5" />BLACKLISTED</span>}
+            {s.creditHold && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">CREDIT HOLD</span>}
+            {s.companyName && <span className="text-xs text-gray-500">· {s.companyName}</span>}
+          </div>
           <div className="text-xs text-gray-500 flex gap-3 mt-0.5">
             {s.phone && <span>📞 {s.phone}</span>}
             {s.email && <span>✉️ {s.email}</span>}
-            {s.branch && <span className="text-gray-400">{s.branch}</span>}
+            {s.preferredBranch && <span className="text-gray-400">{s.preferredBranch}</span>}
           </div>
         </button>
       ))}
@@ -169,16 +160,23 @@ function SuggestionDropdown({ suggestions, onSelect, activeIndex }) {
   );
 }
 
-/** Top card: customer identity fields (name, phone, email, branch) */
+/** Top card: customer identity fields (phone first, then name, email, branch) */
 export function CustomerIdentity({ customer, onChange, rentals = [], lines = [], onAddItems }) {
   const set = (field, value) => onChange({ ...customer, [field]: value });
   const [autoFilled, setAutoFilled] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const [added, setAdded] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSearchField, setActiveSearchField] = useState(null); // 'phone' | 'name' | 'email'
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [dlScanFlash, setDlScanFlash] = useState(null); // null | 'success' | 'expired'
-  const nameRef = useRef(null);
+  const [dlScanFlash, setDlScanFlash] = useState(null);
+  const [customers, setCustomers] = useState([]);
+  const phoneRef = useRef(null);
+
+  // Load customer records once for lookup
+  useEffect(() => {
+    base44.entities.Customer.list('-created_date', 500).then(setCustomers);
+  }, []);
 
   // DL Scanner — fires when a USB ID scanner reads a driver's license
   useDLScanner((parsed) => {
@@ -189,7 +187,6 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
       city: parsed.city || customer.city,
       state: parsed.state || customer.state,
       zip: parsed.zip || customer.zip,
-      // Store DL metadata for verification
       _dlVerified: true,
       _dlLast4: parsed.dlLast4,
       _dlExpiry: parsed.expiry,
@@ -200,7 +197,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
     setTimeout(() => setDlScanFlash(null), 4000);
   });
 
-  // Debounced customer history lookup
+  // Debounced customer history lookup (for nudges — still based on rental history)
   const history = useMemo(
     () => analyzeCustomerHistory(customer.name, rentals),
     [customer.name, rentals]
@@ -210,8 +207,8 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
 
   const suggestions = useMemo(() => {
     setActiveIndex(-1);
-    return buildCustomerSuggestions(searchQuery, rentals);
-  }, [searchQuery, rentals]);
+    return buildCustomerSuggestions(searchQuery, customers);
+  }, [searchQuery, customers]);
 
   const handleKeyDown = (e) => {
     if (!showSuggestions || suggestions.length === 0) return;
@@ -233,40 +230,29 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   const fillFromSuggestion = (s) => {
     onChange({
       ...customer,
-      name: s.name,
+      name: s.fullName || customer.name,
       phone: s.phone || customer.phone,
       email: s.email || customer.email,
-      branch: s.branch || customer.branch,
+      branch: s.preferredBranch || customer.branch,
       address: s.address || customer.address,
       city: s.city || customer.city,
       state: s.state || customer.state,
       zip: s.zip || customer.zip,
+      customerId: s.id,
+      // Pass through flags so the form can show warnings
+      _blacklisted: s.blacklisted,
+      _creditHold: s.creditHold,
+      _creditHoldReason: s.creditHoldReason,
+      _taxExempt: s.taxExempt,
     });
     setAutoFilled(true);
     setShowSuggestions(false);
   };
 
-  // Auto-fill contact info when a known customer is recognized (only if fields are empty)
+  // Reset flags when name or phone cleared
   useEffect(() => {
-    if (!history || autoFilled) return;
-    const updates = {};
-    if (!customer.phone && history.phone) updates.phone = history.phone;
-    if (!customer.email && history.email) updates.email = history.email;
-    if (!customer.branch && history.branch) updates.branch = history.branch;
-    if (!customer.address && history.address) updates.address = history.address;
-    if (!customer.city && history.city) updates.city = history.city;
-    if (!customer.state && history.state) updates.state = history.state;
-    if (!customer.zip && history.zip) updates.zip = history.zip;
-    if (Object.keys(updates).length > 0) {
-      onChange({ ...customer, ...updates });
-      setAutoFilled(true);
-    }
-  }, [history]);
-
-  // Reset flags when name changes
-  useEffect(() => {
-    if (!customer.name) { setAutoFilled(false); setNudgeDismissed(false); setAdded(false); }
-  }, [customer.name]);
+    if (!customer.name && !customer.phone) { setAutoFilled(false); setNudgeDismissed(false); setAdded(false); }
+  }, [customer.name, customer.phone]);
 
   const nudges = useMemo(
     () => history ? buildNudges(history.typicalItems, lines) : [],
@@ -290,8 +276,43 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
         </div>
       )}
 
+      {/* Flag warnings when a known customer is matched */}
+      {customer._blacklisted && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-300 rounded-lg px-4 py-2.5 text-sm text-red-800 font-bold">
+          <Ban className="w-4 h-4 flex-shrink-0" />
+          ⛔ BLACKLISTED — Do not rent to this customer.
+        </div>
+      )}
+      {customer._creditHold && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5 text-sm text-amber-800 font-semibold">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          ⚠️ CREDIT HOLD — Collect payment upfront.
+          {customer._creditHoldReason && <span className="font-normal">Reason: {customer._creditHoldReason}</span>}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="sm:col-span-2 lg:col-span-2 relative">
+        {/* PHONE FIRST — primary lookup field */}
+        <div className="relative">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Phone *</label>
+          <Input
+            ref={phoneRef}
+            autoFocus
+            placeholder="(956) 123-4567"
+            value={customer.phone}
+            onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); }}
+            onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={handleKeyDown}
+            inputMode="numeric"
+          />
+          {activeSearchField === 'phone' && showSuggestions && suggestions.length > 0 && (
+            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
+          )}
+        </div>
+
+        {/* Name */}
+        <div className="relative">
           <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
             Customer Name *
             <span className="flex items-center gap-1 text-indigo-400 font-normal" title="Scan driver's license to auto-fill">
@@ -299,12 +320,10 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             </span>
           </label>
           <Input
-            ref={nameRef}
-            autoFocus
-            placeholder="Search by name, phone, or email..."
+            placeholder="Search by name..."
             value={customer.name}
-            onChange={e => { set('name', toTitleCase(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); setAutoFilled(false); }}
-            onFocus={() => { setSearchQuery(customer.name); setShowSuggestions(true); }}
+            onChange={e => { set('name', toTitleCase(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('name'); setAutoFilled(false); }}
+            onFocus={() => { setSearchQuery(customer.name); setShowSuggestions(true); setActiveSearchField('name'); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             onKeyDown={handleKeyDown}
           />
@@ -323,46 +342,23 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
               )}
             </div>
           )}
-          {!history && customer._dlVerified && !showSuggestions && (
-            <div className="flex items-center gap-1 mt-1">
-              <span className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
-                <ScanLine className="w-3 h-3 text-indigo-500" />
-                <span className="text-xs text-indigo-700 font-medium">ID Verified · ···{customer._dlLast4}</span>
-                {customer._dlExpiry && <span className="text-xs text-gray-400">exp {customer._dlExpiry}</span>}
-              </span>
-            </div>
-          )}
-          {showSuggestions && suggestions.length > 0 && (
+          {activeSearchField === 'name' && showSuggestions && suggestions.length > 0 && (
             <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
           )}
         </div>
-        <div className="relative">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
-          <Input
-            placeholder="(956) 123-4567"
-            value={customer.phone}
-            onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); }}
-            onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            onKeyDown={handleKeyDown}
-            inputMode="numeric"
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
-          )}
-        </div>
+
         <div className="relative">
           <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
           <Input
             type="email"
             placeholder="john@example.com"
             value={customer.email}
-            onChange={e => { set('email', e.target.value); setSearchQuery(e.target.value); setShowSuggestions(true); }}
-            onFocus={() => { setSearchQuery(customer.email); setShowSuggestions(true); }}
+            onChange={e => { set('email', e.target.value); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('email'); }}
+            onFocus={() => { setSearchQuery(customer.email); setShowSuggestions(true); setActiveSearchField('email'); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             onKeyDown={handleKeyDown}
           />
-          {showSuggestions && suggestions.length > 0 && (
+          {activeSearchField === 'email' && showSuggestions && suggestions.length > 0 && (
             <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
           )}
         </div>
