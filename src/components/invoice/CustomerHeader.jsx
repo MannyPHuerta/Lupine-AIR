@@ -2,7 +2,8 @@ import { useRef, useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import BranchSelect from '@/components/invoice/BranchSelect';
 import { formatPhoneUS } from '@/lib/phoneUtils';
-import { UserCheck, ShoppingCart, Check, ChevronDown } from 'lucide-react';
+import { UserCheck, ShoppingCart, Check, ChevronDown, ScanLine, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useDLScanner } from '@/hooks/useDLScanner';
 
 const BRANCHES = [
   '01 McAllen',
@@ -176,7 +177,28 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   const [added, setAdded] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [dlScanFlash, setDlScanFlash] = useState(null); // null | 'success' | 'expired'
   const nameRef = useRef(null);
+
+  // DL Scanner — fires when a USB ID scanner reads a driver's license
+  useDLScanner((parsed) => {
+    onChange({
+      ...customer,
+      name: parsed.fullName || customer.name,
+      address: parsed.address || customer.address,
+      city: parsed.city || customer.city,
+      state: parsed.state || customer.state,
+      zip: parsed.zip || customer.zip,
+      // Store DL metadata for verification
+      _dlVerified: true,
+      _dlLast4: parsed.dlLast4,
+      _dlExpiry: parsed.expiry,
+      _dlDob: parsed.dob,
+    });
+    setAutoFilled(true);
+    setDlScanFlash(parsed.isExpired ? 'expired' : 'success');
+    setTimeout(() => setDlScanFlash(null), 4000);
+  });
 
   // Debounced customer history lookup
   const history = useMemo(
@@ -252,10 +274,30 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   );
 
   return (
-    <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
+    <div className={`bg-white rounded-xl border shadow-sm p-6 space-y-4 transition-all ${dlScanFlash === 'success' ? 'ring-2 ring-green-400' : dlScanFlash === 'expired' ? 'ring-2 ring-red-400' : ''}`}>
+
+      {/* DL Scan Status Banner */}
+      {dlScanFlash === 'success' && (
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm text-green-800 font-medium">
+          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span>✅ ID Scanned — customer info auto-filled. Please verify with the physical card.</span>
+        </div>
+      )}
+      {dlScanFlash === 'expired' && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-800 font-medium">
+          <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>⚠️ EXPIRED ID — This driver's license is expired. Do not accept.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="sm:col-span-2 lg:col-span-2 relative">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name *</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
+            Customer Name *
+            <span className="flex items-center gap-1 text-indigo-400 font-normal" title="Scan driver's license to auto-fill">
+              <ScanLine className="w-3.5 h-3.5" /> <span className="text-xs">Scan DL</span>
+            </span>
+          </label>
           <Input
             ref={nameRef}
             autoFocus
@@ -267,9 +309,27 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             onKeyDown={handleKeyDown}
           />
           {history && !showSuggestions && (
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="flex items-center gap-1">
+                <UserCheck className="w-3 h-3 text-green-500" />
+                <span className="text-xs text-green-600 font-medium">{history.rentalCount} past rental{history.rentalCount !== 1 ? 's' : ''}</span>
+              </span>
+              {customer._dlVerified && (
+                <span className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+                  <ScanLine className="w-3 h-3 text-indigo-500" />
+                  <span className="text-xs text-indigo-700 font-medium">ID Verified · ···{customer._dlLast4}</span>
+                  {customer._dlExpiry && <span className="text-xs text-gray-400">exp {customer._dlExpiry}</span>}
+                </span>
+              )}
+            </div>
+          )}
+          {!history && customer._dlVerified && !showSuggestions && (
             <div className="flex items-center gap-1 mt-1">
-              <UserCheck className="w-3 h-3 text-green-500" />
-              <span className="text-xs text-green-600 font-medium">{history.rentalCount} past rental{history.rentalCount !== 1 ? 's' : ''}</span>
+              <span className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+                <ScanLine className="w-3 h-3 text-indigo-500" />
+                <span className="text-xs text-indigo-700 font-medium">ID Verified · ···{customer._dlLast4}</span>
+                {customer._dlExpiry && <span className="text-xs text-gray-400">exp {customer._dlExpiry}</span>}
+              </span>
             </div>
           )}
           {showSuggestions && suggestions.length > 0 && (
