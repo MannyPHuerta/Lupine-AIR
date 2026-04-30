@@ -1,9 +1,19 @@
+const DEFAULT_MATRIX = {
+  laborRatePerManHour: 25,
+  truckRatePerHour: 15,
+  defaultCrewSize: 2,
+  defaultTrucks: 1,
+  minimumCharge: 75,
+  zones: [],
+};
+
 /**
  * Calculate delivery or pickup fee from a DeliveryMatrix record and a zip code.
+ * Falls back to DEFAULT_MATRIX if no record exists.
  * Returns the fee amount in USD.
  */
 export function calcDeliveryFee(matrix, customerZip) {
-  if (!matrix) return 0;
+  if (!matrix) matrix = DEFAULT_MATRIX;
 
   const laborRate = matrix.laborRatePerManHour || 0;
   const truckRate = matrix.truckRatePerHour || 0;
