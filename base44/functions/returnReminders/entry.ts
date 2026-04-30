@@ -61,6 +61,13 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'Sunday — no reminders sent', date: today });
     }
 
+    // Check if SMS reminders are enabled in company settings
+    const companySettingsList = await base44.asServiceRole.entities.CompanySettings.list();
+    const companySettings = companySettingsList[0];
+    if (companySettings && companySettings.smsRemindersEnabled === false) {
+      return Response.json({ skipped: true, reason: 'SMS reminders disabled in company settings', date: today });
+    }
+
     // Fetch all active rentals due today or tomorrow
     const allRentals = await base44.asServiceRole.entities.Rental.list('-endDate', 2000);
 

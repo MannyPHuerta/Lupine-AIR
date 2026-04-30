@@ -18,6 +18,7 @@ export default function CompanySettingsPage() {
     certifications: [],
     invoiceTerms: '',
     invoiceFooter: '',
+    smsRemindersEnabled: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,6 +80,7 @@ export default function CompanySettingsPage() {
       certifications: settings.certifications,
       invoiceTerms: settings.invoiceTerms,
       invoiceFooter: settings.invoiceFooter,
+      smsRemindersEnabled: settings.smsRemindersEnabled !== false,
     };
 
     if (settings.id) {
@@ -273,6 +275,33 @@ export default function CompanySettingsPage() {
                     className="h-24"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* SMS Reminders */}
+            <div className="bg-white rounded-xl border shadow-sm p-5">
+              <div className="font-semibold text-gray-900 mb-1">Automated SMS Reminders</div>
+              <p className="text-xs text-gray-500 mb-4">Daily return reminders are sent Mon–Sat at 8am ET to customers with equipment due today or tomorrow.</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Return Reminder SMS</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {settings.smsRemindersEnabled !== false ? '✓ Active — reminders will be sent automatically' : '✗ Paused — no reminders will be sent'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleChange('smsRemindersEnabled', settings.smsRemindersEnabled === false ? true : false)}
+                  className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                    settings.smsRemindersEnabled !== false ? 'bg-indigo-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform mt-0.5 ${
+                      settings.smsRemindersEnabled !== false ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
               </div>
             </div>
 

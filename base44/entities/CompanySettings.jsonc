@@ -36,6 +36,11 @@
     "invoiceFooter": {
       "type": "string",
       "description": "Custom footer text for invoices"
+    },
+    "smsRemindersEnabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable/disable automated SMS return reminders"
     }
   },
   "required": []
