@@ -22,6 +22,15 @@ async function sendSMS(to, body) {
   return res.json();
 }
 
+function toETDate(offsetDays = 0) {
+  // Eastern Time: UTC-4 (EDT) or UTC-5 (EST)
+  // Use UTC-4 (EDT) as primary since TX spring/summer is EDT
+  const d = new Date();
+  d.setUTCHours(d.getUTCHours() - 4);
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().split('T')[0];
+}
+
 function toLocalDate(offsetDays = 0) {
   const d = new Date();
   // Central Time offset: UTC-5 (CDT) or UTC-6 (CST) — use UTC-6 as safe default
@@ -43,8 +52,14 @@ Deno.serve(async (req) => {
       // Called from scheduler — no user token, use service role
     }
 
-    const today = toLocalDate(0);
-    const tomorrow = toLocalDate(1);
+    const today = toETDate(0);
+    const tomorrow = toETDate(1);
+
+    // Skip Sundays — some organizations are closed
+    const dayOfWeek = new Date(today + 'T12:00:00').getDay(); // 0 = Sunday
+    if (dayOfWeek === 0) {
+      return Response.json({ skipped: true, reason: 'Sunday — no reminders sent', date: today });
+    }
 
     // Fetch all active rentals due today or tomorrow
     const allRentals = await base44.asServiceRole.entities.Rental.list('-endDate', 2000);
