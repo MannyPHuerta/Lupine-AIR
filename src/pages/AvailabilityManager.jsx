@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
+import { calcDeliveryFee } from '@/lib/deliveryFee';
 import SignaturePad from '@/components/invoice/SignaturePad';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
@@ -57,6 +58,7 @@ export default function AvailabilityManager() {
 
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
+  const [deliveryMatrices, setDeliveryMatrices] = useState({});
 
   // Load persisted form state on mount
   useEffect(() => {
@@ -93,13 +95,17 @@ export default function AvailabilityManager() {
       base44.entities.Rental.list('-created_date', 1000),
       base44.entities.CompanySettings.list(),
       base44.entities.BranchSettings.list(),
-    ]).then(([eq, rent, company, branches]) => {
+      base44.entities.DeliveryMatrix.list(),
+    ]).then(([eq, rent, company, branches, matrices]) => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setRentals(rent);
       setCompanyInfo(company[0] || null);
       const branchMap = {};
       branches.forEach(b => { branchMap[b.branch] = b; });
       setBranchSettings(branchMap);
+      const matrixMap = {};
+      matrices.forEach(m => { matrixMap[m.branch] = m; });
+      setDeliveryMatrices(matrixMap);
       setLoading(false);
     });
   }, []);
@@ -301,7 +307,10 @@ export default function AvailabilityManager() {
     const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
     const depositTotal = validLines.reduce((s, l) => s + ((l.deposit || 0) * (l.quantity || 1)), 0);
     const discountAmount = parseFloat(discount) || 0;
-    const totalDue = subtotal + taxAmount + depositTotal - discountAmount;
+    const matrix = deliveryMatrices[customer.branch];
+    const dFee = deliveryMethod === 'company_delivery' ? calcDeliveryFee(matrix, customer.zip) : 0;
+    const rFee = returnMethod === 'company_pickup' ? calcDeliveryFee(matrix, customer.zip) : 0;
+    const totalDue = subtotal + taxAmount + depositTotal - discountAmount + dFee + rFee;
 
     // If non-card payment method, skip payment processor and go straight to confirmation
     if (['Cash', 'Check', 'Net 30'].includes(paymentMethod)) {
@@ -644,6 +653,10 @@ export default function AvailabilityManager() {
               onPaymentMethodChange={setPaymentMethod}
               autoSendCommunications={autoSendCommunications}
               onAutoSendChange={setAutoSendCommunications}
+              deliveryMethod={deliveryMethod}
+              returnMethod={returnMethod}
+              deliveryFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
+              returnFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
             />
             <div className="bg-white rounded-xl border shadow-sm p-6">
               <SignaturePad

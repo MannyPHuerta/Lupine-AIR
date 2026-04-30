@@ -3,7 +3,7 @@ import { Mail, Phone } from 'lucide-react';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange }) {
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
 
@@ -12,7 +12,10 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
   const taxRateDecimal = Math.max(0, parseFloat(taxRate) || 8.25) / 100;
   const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
 
-  const grand = rentalSubtotal - discountAmount + taxAmount + depositTotal;
+  const showDeliveryFee = deliveryMethod === 'company_delivery' && deliveryFee > 0;
+  const showReturnFee = returnMethod === 'company_pickup' && returnFee > 0;
+
+  const grand = rentalSubtotal - discountAmount + taxAmount + depositTotal + (showDeliveryFee ? deliveryFee : 0) + (showReturnFee ? returnFee : 0);
   const paid = parseFloat(amountPaid) || 0;
   const balance = grand - paid;
 
@@ -69,6 +72,22 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
             <span className="text-gray-500 ml-2">${taxAmount.toFixed(2)}</span>
           </div>
         </div>
+
+        {/* Delivery Fee */}
+        {showDeliveryFee && (
+          <div className="flex justify-between text-gray-600">
+            <span>🚚 Delivery Fee</span>
+            <span>${deliveryFee.toFixed(2)}</span>
+          </div>
+        )}
+
+        {/* Return/Pickup Fee */}
+        {showReturnFee && (
+          <div className="flex justify-between text-gray-600">
+            <span>🚚 Pickup Fee</span>
+            <span>${returnFee.toFixed(2)}</span>
+          </div>
+        )}
 
         {/* Deposits */}
         {depositTotal > 0 && (
