@@ -331,6 +331,8 @@ export default function AvailabilityManager() {
           invoiceFooter: companyInfo.invoiceFooter || '',
         } : {},
         paymentMethod,
+        deliveryFee: dFee,
+        returnFee: rFee,
       };
 
       const rentalIds = await handleSave('confirmed');
@@ -370,6 +372,8 @@ export default function AvailabilityManager() {
           invoiceFooter: companyInfo.invoiceFooter || '',
         } : {},
         paymentMethod: paymentMethod || '',
+        deliveryFee: dFee,
+        returnFee: rFee,
       },
       totalDue,
     });

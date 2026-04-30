@@ -30,7 +30,9 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
   // Default taxable=true unless explicitly false
   const taxableBase = lines.reduce((s, l) => s + (l.taxable !== false ? (l.baseAmount || 0) : 0), 0);
   const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
-  const grandTotal = rentalSubtotal - discountAmount + taxAmount + depositTotal;
+  const deliveryFee = (order.deliveryMethod === 'company_delivery' && order.deliveryFee > 0) ? (order.deliveryFee || 0) : 0;
+  const returnFee = (order.returnMethod === 'company_pickup' && order.returnFee > 0) ? (order.returnFee || 0) : 0;
+  const grandTotal = rentalSubtotal - discountAmount + taxAmount + depositTotal + deliveryFee + returnFee;
   const paid = parseFloat(amountPaid) || 0;
 
   const dateStr = order.createdAt
@@ -155,6 +157,8 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
       ${discountAmount > 0 ? `<div class="total-row" style="color:#16a34a"><span>Discount</span><span>−$${fmt(discountAmount)}</span></div>` : ''}
       <div class="total-row"><span>Sales Tax (${(taxRateDecimal * 100).toFixed(2)}%)</span><span>$${fmt(taxAmount)}</span></div>
       ${depositTotal > 0 ? `<div class="total-row"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
+      ${deliveryFee > 0 ? `<div class="total-row"><span>🚚 Delivery Fee</span><span>$${fmt(deliveryFee)}</span></div>` : ''}
+      ${returnFee > 0 ? `<div class="total-row"><span>🚚 Pickup Fee</span><span>$${fmt(returnFee)}</span></div>` : ''}
       <div class="grand-row"><span>Total Due</span><span style="color:#3730a3">$${fmt(grandTotal)}</span></div>
       <div id="dynamic-paid"></div>
     </div>
