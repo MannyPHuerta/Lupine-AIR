@@ -210,7 +210,13 @@ export default function CustomerDetailModal({ customer, rentals = [], onClose, o
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <InfoRow label="Account Type" value={(customer.accountType || 'individual').replace('_', ' ')} />
+                  <div>
+                    <div className="text-xs text-gray-500 mb-0.5">Account Type</div>
+                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold capitalize bg-indigo-100 text-indigo-700">
+                      {(customer.accountType || 'individual').replace('_', ' ')}
+                    </span>
+                    <button onClick={() => setEditing(true)} className="ml-2 text-xs text-indigo-500 underline hover:text-indigo-700">change</button>
+                  </div>
                   <InfoRow label="Preferred Branch" value={customer.preferredBranch || '—'} />
                   {customer.phone && (
                     <InfoRow label="Phone" value={customer.phone} icon={<Phone className="w-3 h-3" />} />
@@ -246,13 +252,13 @@ export default function CustomerDetailModal({ customer, rentals = [], onClose, o
           {activeTab === 'contacts' && (
             <div className="space-y-3">
               {/* Company context */}
-              {(customer.accountType === 'individual') && (
+              {(!form.accountType || form.accountType === 'individual') && (
                 <div className="bg-gray-50 border rounded-lg px-4 py-3 text-sm text-gray-500">
-                  Linked contacts are for business/municipal accounts. Switch Account Type in Profile to enable.
+                  Linked contacts are for business/municipal accounts. Switch Account Type in the <button className="underline text-indigo-600" onClick={() => setActiveTab('profile')}>Profile tab</button> to enable.
                 </div>
               )}
 
-              {customer.accountType !== 'individual' && (
+              {form.accountType && form.accountType !== 'individual' && (
                 <>
                   <p className="text-xs text-gray-500">
                     Authorized contacts who can pick up or rent under <strong>{customer.companyName || customer.fullName}</strong>'s account.
