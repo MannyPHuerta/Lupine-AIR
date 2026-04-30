@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {
   X, AlertTriangle, Ban, ShieldCheck, Phone, Mail, MapPin,
-  Edit2, Trash2, ScanLine, CheckCircle2, Clock, CreditCard,
-  FileText, User, Building2, Calendar
+  Edit2, Trash2, ScanLine, CheckCircle2, CreditCard,
+  FileText, User, Building2, Calendar, UserPlus, Users
 } from 'lucide-react';
+import { formatPhoneUS } from '@/lib/phoneUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -26,10 +27,20 @@ const STATUS_COLORS = {
 
 const TABS = [
   { key: 'profile',   label: 'Profile' },
+  { key: 'contacts',  label: 'Contacts' },
   { key: 'id',        label: 'ID / Verification' },
   { key: 'rentals',   label: 'Rental History' },
   { key: 'flags',     label: 'Flags & Terms' },
 ];
+
+const PAYMENT_DEFAULTS = {
+  individual: 'due_on_receipt',
+  business:   'net_30',
+  municipal:  'net_30',
+  nonprofit:  'net_30',
+};
+
+const EMPTY_CONTACT = { name: '', role: '', phone: '', email: '', authorizedToRent: true };
 
 export default function CustomerDetailModal({ customer, rentals = [], onClose, onSave, onDelete }) {
   const [editing, setEditing] = useState(false);
@@ -139,7 +150,9 @@ export default function CustomerDetailModal({ customer, rentals = [], onClose, o
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab.key === 'rentals' ? `Rentals (${rentals.length})` : tab.label}
+              {tab.key === 'rentals' ? `Rentals (${rentals.length})`
+                : tab.key === 'contacts' ? `Contacts (${(form.linkedContacts || []).length})`
+                : tab.label}
               {tab.key === 'flags' && (customer.blacklisted || customer.creditHold) && (
                 <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block" />
               )}
@@ -225,6 +238,145 @@ export default function CustomerDetailModal({ customer, rentals = [], onClose, o
                     <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* ── CONTACTS TAB ── */}
+          {activeTab === 'contacts' && (
+            <div className="space-y-3">
+              {/* Company context */}
+              {(customer.accountType === 'individual') && (
+                <div className="bg-gray-50 border rounded-lg px-4 py-3 text-sm text-gray-500">
+                  Linked contacts are for business/municipal accounts. Switch Account Type in Profile to enable.
+                </div>
+              )}
+
+              {customer.accountType !== 'individual' && (
+                <>
+                  <p className="text-xs text-gray-500">
+                    Authorized contacts who can pick up or rent under <strong>{customer.companyName || customer.fullName}</strong>'s account.
+                  </p>
+
+                  {(form.linkedContacts || []).length === 0 && (
+                    <div className="text-center py-6 text-gray-400 text-sm">
+                      <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      No linked contacts yet
+                    </div>
+                  )}
+
+                  {(form.linkedContacts || []).map((c, idx) => (
+                    <div key={idx} className="border rounded-xl p-4 space-y-2 relative bg-gray-50">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm text-gray-900">{c.name || <span className="text-gray-400 italic">Unnamed</span>}</div>
+                          {c.role && <div className="text-xs text-gray-500">{c.role}</div>}
+                          {c.phone && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
+                              <Phone className="w-3 h-3" /> {c.phone}
+                            </div>
+                          )}
+                          {c.email && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                              <Mail className="w-3 h-3" /> {c.email}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {c.authorizedToRent !== false && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">✓ Authorized</span>
+                          )}
+                          <button onClick={() => {
+                            // expand to edit inline
+                            setForm(prev => {
+                              const contacts = [...(prev.linkedContacts || [])];
+                              contacts[idx] = { ...contacts[idx], _editing: !contacts[idx]._editing };
+                              return { ...prev, linkedContacts: contacts };
+                            });
+                          }} className="text-gray-400 hover:text-indigo-600">
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => {
+                            setForm(prev => ({
+                              ...prev,
+                              linkedContacts: (prev.linkedContacts || []).filter((_, i) => i !== idx)
+                            }));
+                          }} className="text-gray-400 hover:text-red-500">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {c._editing && (
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                            <input className="w-full border rounded-md px-3 py-1.5 text-sm" value={c.name}
+                              onChange={e => setForm(prev => {
+                                const cs = [...(prev.linkedContacts || [])];
+                                cs[idx] = { ...cs[idx], name: e.target.value };
+                                return { ...prev, linkedContacts: cs };
+                              })} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Role / Title</label>
+                            <input className="w-full border rounded-md px-3 py-1.5 text-sm" value={c.role}
+                              onChange={e => setForm(prev => {
+                                const cs = [...(prev.linkedContacts || [])];
+                                cs[idx] = { ...cs[idx], role: e.target.value };
+                                return { ...prev, linkedContacts: cs };
+                              })} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                            <input className="w-full border rounded-md px-3 py-1.5 text-sm" value={c.phone}
+                              onChange={e => setForm(prev => {
+                                const cs = [...(prev.linkedContacts || [])];
+                                cs[idx] = { ...cs[idx], phone: formatPhoneUS(e.target.value) };
+                                return { ...prev, linkedContacts: cs };
+                              })} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                            <input className="w-full border rounded-md px-3 py-1.5 text-sm" type="email" value={c.email}
+                              onChange={e => setForm(prev => {
+                                const cs = [...(prev.linkedContacts || [])];
+                                cs[idx] = { ...cs[idx], email: e.target.value };
+                                return { ...prev, linkedContacts: cs };
+                              })} />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                              <input type="checkbox" checked={c.authorizedToRent !== false}
+                                onChange={e => setForm(prev => {
+                                  const cs = [...(prev.linkedContacts || [])];
+                                  cs[idx] = { ...cs[idx], authorizedToRent: e.target.checked };
+                                  return { ...prev, linkedContacts: cs };
+                                })} className="w-4 h-4 accent-indigo-600" />
+                              Authorized to rent / pick up equipment
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={() => setForm(prev => ({
+                      ...prev,
+                      linkedContacts: [...(prev.linkedContacts || []), { ...EMPTY_CONTACT, _editing: true }]
+                    }))}
+                    className="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2">
+                    <UserPlus className="w-4 h-4" /> Add Authorized Contact
+                  </button>
+
+                  <div className="flex justify-end pt-2">
+                    <button onClick={handleSave} disabled={saving}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50">
+                      {saving ? 'Saving...' : 'Save Contacts'}
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           )}
