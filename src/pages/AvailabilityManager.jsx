@@ -63,24 +63,7 @@ export default function AvailabilityManager() {
   const [branchSettings, setBranchSettings] = useState({});
   const [deliveryMatrices, setDeliveryMatrices] = useState({});
 
-  // Load persisted form state on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('rentalFormState');
-    if (saved) {
-      try {
-        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p, returnMethod: rm, deliveryMethod: dm, appliedPromo: ap } = JSON.parse(saved);
-        setCustomer(c || EMPTY_CUSTOMER);
-        setLines(l || [newLine()]);
-        setDiscount(d || '');
-        setTaxRate(t || '8.25');
-        setAmountPaid(a || '');
-        setPaymentMethod(p || '');
-        setReturnMethod(rm || 'customer_return');
-        setDeliveryMethod(dm || 'customer_pickup');
-        if (ap) setAppliedPromo(ap);
-      } catch (_) {}
-    }
-  }, []);
+  // NOTE: Auto-restore on mount removed — use the Restore button (↺) in the header to intentionally recover a saved form.
 
   // Auto-save form state to localStorage
   useEffect(() => {
