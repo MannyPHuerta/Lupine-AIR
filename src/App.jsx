@@ -42,6 +42,8 @@ import AvailabilityConfigPage from "./pages/AvailabilityConfigPage";
 import RoleManager from "./pages/RoleManager";
 import AuditLogDashboard from "./pages/AuditLogDashboard";
 import BrandingSettings from "./pages/BrandingSettings";
+import Counter from "./pages/Counter";
+import ManagerDashboard from "./pages/ManagerDashboard";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -110,6 +112,8 @@ const AuthenticatedApp = () => {
       <Route path="/roles" element={<RoleManager />} />
       <Route path="/audit-logs" element={<AuditLogDashboard />} />
       <Route path="/branding" element={<BrandingSettings />} />
+      <Route path="/counter" element={<Counter />} />
+      <Route path="/manager" element={<ManagerDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -118,6 +118,18 @@ export default function LupinePlan() {
               🔧 Equipment Status →
             </button>
             <button
+              onClick={() => navigate('/counter')}
+              className="bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              💳 Counter App →
+            </button>
+            <button
+              onClick={() => navigate('/manager')}
+              className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              📊 Manager Dashboard →
+            </button>
+            <button
               onClick={() => navigate('/categories')}
               className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >
