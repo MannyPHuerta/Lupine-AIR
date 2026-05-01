@@ -38,6 +38,7 @@ import DeliveryMatrixPage from "./pages/DeliveryMatrixPage";
 import DiscountManager from "./pages/DiscountManager";
 import DepreciationReport from "./pages/DepreciationReport";
 import CategoryManager from "./pages/CategoryManager";
+import AvailabilityConfigPage from "./pages/AvailabilityConfigPage";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -102,6 +103,7 @@ const AuthenticatedApp = () => {
       <Route path="/discounts" element={<DiscountManager />} />
       <Route path="/depreciation" element={<DepreciationReport />} />
       <Route path="/categories" element={<CategoryManager />} />
+      <Route path="/availability-config" element={<AvailabilityConfigPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

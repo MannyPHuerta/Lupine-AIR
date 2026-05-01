@@ -146,6 +146,31 @@
       "format": "date",
       "description": "Date depreciation begins (defaults to purchaseDate if not set)"
     },
+    "serialized": {
+      "type": "boolean",
+      "default": true,
+      "description": "True = tracked individually with serial numbers (generators). False = bulk items tracked by qty (chairs, tables)"
+    },
+    "bulkQuantity": {
+      "type": "integer",
+      "default": 1,
+      "description": "For bulk items (serialized=false), the quantity of this item available"
+    },
+    "bufferDays": {
+      "type": "integer",
+      "default": 0,
+      "description": "Minimum days between rentals (e.g. 1 = must sit idle 1 day between rentals for cleaning/maintenance)"
+    },
+    "allowOverbook": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this item can be overbooked (reserved beyond available units)"
+    },
+    "maxOverbookPercent": {
+      "type": "number",
+      "default": 0,
+      "description": "Max overbooking allowed as percentage (e.g. 10 = can overbook by 10%)"
+    },
     "dependencies": {
       "type": "array",
       "items": {

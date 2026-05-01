@@ -124,6 +124,12 @@ export default function LupinePlan() {
               📂 Categories →
             </button>
             <button
+              onClick={() => navigate('/availability-config')}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              ⚙️ Availability Rules →
+            </button>
+            <button
               onClick={() => navigate('/customers')}
               className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >

@@ -1,0 +1,42 @@
+{
+  "name": "AvailabilityConfig",
+  "type": "object",
+  "properties": {
+    "branch": {
+      "type": "string",
+      "description": "Branch identifier (e.g. '01 McAllen') \u2014 one config per branch"
+    },
+    "allowOverbookingByDefault": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether overbooking is allowed by default for all equipment at this branch"
+    },
+    "defaultMaxOverbookPercent": {
+      "type": "number",
+      "default": 0,
+      "description": "Default max overbooking percentage (e.g. 10 = allow up to 10% over inventory)"
+    },
+    "requireApprovalAbovePercent": {
+      "type": "number",
+      "default": 5,
+      "description": "Require manager approval if overbooking exceeds this percentage"
+    },
+    "defaultBufferDays": {
+      "type": "integer",
+      "default": 0,
+      "description": "Default number of days required between rentals for all equipment (can be overridden per item)"
+    },
+    "enableCrossBranchReservations": {
+      "type": "boolean",
+      "default": true,
+      "description": "Allow reserving equipment from other branches and transferring for delivery"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes about this branch's availability policies"
+    }
+  },
+  "required": [
+    "branch"
+  ]
+}
