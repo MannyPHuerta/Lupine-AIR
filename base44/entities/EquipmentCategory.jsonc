@@ -1,0 +1,59 @@
+{
+  "name": "EquipmentCategory",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Category name (e.g. Generator, Tent, Chair)"
+    },
+    "parent": {
+      "type": "string",
+      "description": "Parent category name for hierarchy (e.g. 'Power Equipment' for 'Generator')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of what this category contains"
+    },
+    "attributes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Unique attribute identifier (e.g. 'voltage', 'cfm', 'capacity_lbs')"
+          },
+          "label": {
+            "type": "string",
+            "description": "Display label for this attribute (e.g. 'Voltage', 'CFM', 'Capacity (lbs)')"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "number",
+              "select"
+            ],
+            "description": "Input type for the attribute"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Options for select-type attributes (e.g. ['Diesel', 'Gasoline'])"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "type"
+        ]
+      },
+      "description": "Specification fields that apply to all equipment in this category"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

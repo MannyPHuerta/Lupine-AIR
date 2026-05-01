@@ -118,6 +118,12 @@ export default function LupinePlan() {
               🔧 Equipment Status →
             </button>
             <button
+              onClick={() => navigate('/categories')}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              📂 Categories →
+            </button>
+            <button
               onClick={() => navigate('/customers')}
               className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >
