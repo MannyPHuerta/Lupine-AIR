@@ -21,28 +21,70 @@ function calcDays(start, end) {
   return Math.floor((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1;
 }
 
-function LineDateInput({ label, value, onChange }) {
+function LineDateInput({ label, value, onChange, nextFocusRef, triggerRef: externalTriggerRef }) {
+  const [open, setOpen] = useState(false);
+  const internalRef = useRef(null);
+  const triggerRef = externalTriggerRef || internalRef;
   const parsed = value ? parseISO(value) : null;
+
+  const handleSelect = (date) => {
+    onChange(date ? format(date, 'yyyy-MM-dd') : '');
+    setOpen(false);
+    // Focus next field after selection
+    setTimeout(() => {
+      if (nextFocusRef?.current) {
+        nextFocusRef.current.focus();
+      }
+    }, 50);
+  };
+
+  const handleTriggerKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setOpen(true);
+    }
+  };
 
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-gray-500 shrink-0">{label}</span>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
+            ref={triggerRef}
             type="button"
+            onKeyDown={handleTriggerKeyDown}
             className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm cursor-pointer outline-none focus:ring-1 focus:ring-indigo-400 w-36 text-left"
           >
             {parsed ? format(parsed, 'MM/dd/yyyy') : <span className="text-gray-400">Pick a date</span>}
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
+        <PopoverContent
+          className="w-auto p-0"
+          align="start"
+          sideOffset={4}
+          onKeyDown={e => {
+            if (e.key === 'Escape') {
+              setOpen(false);
+              triggerRef.current?.focus();
+            }
+            // Enter on a focused day cell selects it — react-day-picker handles this natively,
+            // but we intercept to also close and advance focus
+            if (e.key === 'Enter') {
+              // Let react-day-picker handle the selection first, then close
+              setTimeout(() => {
+                // If a day was selected the onSelect callback fires synchronously,
+                // so the popover will already be closing. This is a safety fallback.
+                setOpen(false);
+                if (nextFocusRef?.current) nextFocusRef.current.focus();
+              }, 50);
+            }
+          }}
+        >
           <Calendar
             mode="single"
             selected={parsed || undefined}
-            onSelect={date => {
-              onChange(date ? format(date, 'yyyy-MM-dd') : '');
-            }}
+            onSelect={handleSelect}
             initialFocus
           />
         </PopoverContent>
@@ -57,6 +99,8 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const toTriggerRef = useRef(null);  // "To" date button — From calendar advances here
+  const afterToRef = qtyRef;          // after "To" calendar, advance to qty
 
   const startDate = line.startDate || '';
   const endDate = line.endDate || '';
@@ -194,11 +238,14 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
           label="From"
           value={line.startDate || ''}
           onChange={v => handleDateChange('startDate', v)}
+          nextFocusRef={toTriggerRef}
         />
         <LineDateInput
           label="To"
           value={line.endDate || ''}
           onChange={v => handleDateChange('endDate', v)}
+          nextFocusRef={afterToRef}
+          triggerRef={toTriggerRef}
         />
 
       </div>
