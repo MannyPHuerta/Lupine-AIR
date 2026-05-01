@@ -1,0 +1,53 @@
+{
+  "name": "DiscountLog",
+  "type": "object",
+  "properties": {
+    "rentalId": {
+      "type": "string",
+      "description": "Reference to the Rental record"
+    },
+    "invoiceNumber": {
+      "type": "string",
+      "description": "Invoice number for quick lookup"
+    },
+    "customerName": {
+      "type": "string",
+      "description": "Customer name"
+    },
+    "discountType": {
+      "type": "string",
+      "enum": [
+        "promo_code",
+        "volume",
+        "loyalty",
+        "manual",
+        "duration"
+      ],
+      "description": "How the discount was applied"
+    },
+    "discountLabel": {
+      "type": "string",
+      "description": "Human-readable label (e.g. promo code SUMMER10, 50+ chairs, etc.)"
+    },
+    "discountAmount": {
+      "type": "number",
+      "description": "Dollar amount discounted"
+    },
+    "originalAmount": {
+      "type": "number",
+      "description": "Amount before discount"
+    },
+    "appliedBy": {
+      "type": "string",
+      "description": "Email of staff who applied the discount"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch where discount was applied"
+    }
+  },
+  "required": [
+    "discountType",
+    "discountAmount"
+  ]
+}

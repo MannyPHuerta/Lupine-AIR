@@ -1,0 +1,65 @@
+{
+  "name": "PromoCode",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "The promo code string (e.g. SUMMER10)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Internal description of the promo"
+    },
+    "discountType": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "flat"
+      ],
+      "default": "percent",
+      "description": "Percent off or flat dollar amount off"
+    },
+    "discountValue": {
+      "type": "number",
+      "description": "The discount amount (% or $)"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this code is currently active"
+    },
+    "usageLimit": {
+      "type": "integer",
+      "description": "Max number of times this code can be used (null = unlimited)"
+    },
+    "usageCount": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many times this code has been used"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date",
+      "description": "Expiration date (null = no expiry)"
+    },
+    "appliesTo": {
+      "type": "string",
+      "enum": [
+        "all",
+        "category",
+        "item"
+      ],
+      "default": "all",
+      "description": "Scope of discount application"
+    },
+    "appliesToCategory": {
+      "type": "string",
+      "description": "Category name if appliesTo = category"
+    }
+  },
+  "required": [
+    "code",
+    "discountType",
+    "discountValue"
+  ]
+}

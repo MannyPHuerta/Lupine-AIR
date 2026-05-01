@@ -1,0 +1,50 @@
+{
+  "name": "VolumeDiscountRule",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Rule name (e.g. '50+ Chairs')"
+    },
+    "category": {
+      "type": "string",
+      "description": "Equipment category this rule applies to (e.g. 'Chair')"
+    },
+    "equipmentId": {
+      "type": "string",
+      "description": "Specific equipment ID (if rule is item-specific, overrides category)"
+    },
+    "equipmentName": {
+      "type": "string",
+      "description": "Denormalized equipment name"
+    },
+    "minimumQuantity": {
+      "type": "integer",
+      "description": "Minimum quantity to trigger this discount"
+    },
+    "discountType": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "flat"
+      ],
+      "default": "percent",
+      "description": "Percent off or flat dollar amount off per unit"
+    },
+    "discountValue": {
+      "type": "number",
+      "description": "Discount amount (% or $ per unit)"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this rule is active"
+    }
+  },
+  "required": [
+    "name",
+    "minimumQuantity",
+    "discountType",
+    "discountValue"
+  ]
+}

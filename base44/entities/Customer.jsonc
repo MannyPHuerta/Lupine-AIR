@@ -159,6 +159,19 @@
       ],
       "default": "manual",
       "description": "How this customer record was created"
+    },
+    "loyaltyDiscountEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "This account has a standing loyalty discount"
+    },
+    "loyaltyDiscountPercent": {
+      "type": "number",
+      "description": "Loyalty discount percentage (e.g. 5 for 5%)"
+    },
+    "loyaltyDiscountNote": {
+      "type": "string",
+      "description": "Reason/notes for the loyalty discount"
     }
   },
   "required": [

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { calcDeliveryFee } from '@/lib/deliveryFee';
 import SignaturePad from '@/components/invoice/SignaturePad';
@@ -53,6 +53,8 @@ export default function AvailabilityManager() {
   const [saved, setSaved] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [pendingInvoice, setPendingInvoice] = useState(null);
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(null); // percent number or null
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -282,6 +284,10 @@ export default function AvailabilityManager() {
       setReturnMethod('customer_return');
       setDeliveryMethod('customer_pickup');
       setSignatureDataUrl(null);
+      setAppliedPromo(null);
+      setLoyaltyDiscount(null);
+      setAppliedPromo(null);
+      setLoyaltyDiscount(null);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -514,6 +520,13 @@ export default function AvailabilityManager() {
             >
               <Truck className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => navigate('/discounts')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Discount manager"
+            >
+              <Tag className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -553,7 +566,15 @@ export default function AvailabilityManager() {
         {/* Customer identity */}
         <CustomerIdentity
           customer={customer}
-          onChange={setCustomer}
+          onChange={(updated) => {
+            setCustomer(updated);
+            // Auto-apply loyalty discount when customer with loyalty is selected
+            if (updated.loyaltyDiscountEnabled && updated.loyaltyDiscountPercent) {
+              setLoyaltyDiscount(updated.loyaltyDiscountPercent);
+            } else if (!updated.loyaltyDiscountEnabled) {
+              setLoyaltyDiscount(null);
+            }
+          }}
           rentals={rentals}
           lines={lines}
           onAddItems={(items) => {
@@ -661,6 +682,14 @@ export default function AvailabilityManager() {
               returnMethod={returnMethod}
               deliveryFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
               returnFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
+              appliedPromo={appliedPromo}
+              onPromoApply={async (promo) => {
+                setAppliedPromo(promo);
+                // Increment usage count
+                await base44.entities.PromoCode.update(promo.id, { usageCount: (promo.usageCount || 0) + 1 });
+              }}
+              onPromoRemove={() => setAppliedPromo(null)}
+              loyaltyDiscount={loyaltyDiscount}
             />
             <div className="bg-white rounded-xl border shadow-sm p-6">
               <SignaturePad

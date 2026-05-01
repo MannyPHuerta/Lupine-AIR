@@ -573,6 +573,43 @@ export default function CustomerDetailModal({ customer, rentals = [], onClose, o
                 )}
               </div>
 
+              {/* Loyalty Discount */}
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <span className="text-yellow-500">⭐</span> Loyalty Discount
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.loyaltyDiscountEnabled || false}
+                      onChange={e => set('loyaltyDiscountEnabled', e.target.checked)} className="w-4 h-4 accent-yellow-500" />
+                    <span className="text-sm text-gray-700">Active</span>
+                  </label>
+                </div>
+                {form.loyaltyDiscountEnabled && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Discount %</label>
+                      <input type="number" min="0" max="100" step="0.5"
+                        value={form.loyaltyDiscountPercent || ''}
+                        onChange={e => set('loyaltyDiscountPercent', parseFloat(e.target.value) || 0)}
+                        placeholder="5"
+                        className="w-full border rounded-md px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Note</label>
+                      <input type="text"
+                        value={form.loyaltyDiscountNote || ''}
+                        onChange={e => set('loyaltyDiscountNote', e.target.value)}
+                        placeholder="VIP account"
+                        className="w-full border rounded-md px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                )}
+                {!form.loyaltyDiscountEnabled && (
+                  <p className="text-xs text-gray-400">Standing discount auto-applied at checkout for this account.</p>
+                )}
+              </div>
+
               {/* Payment Terms */}
               <div className="border rounded-xl p-4">
                 <div className="flex items-center gap-2 font-semibold text-sm mb-3">

@@ -1,21 +1,34 @@
 import { useState } from 'react';
-import { Mail, Phone } from 'lucide-react';
+import PromoCodeInput from '@/components/invoice/PromoCodeInput';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod }) {
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod, appliedPromo, onPromoApply, onPromoRemove, loyaltyDiscount }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
+
+  // Promo discount
+  const promoDiscount = appliedPromo
+    ? appliedPromo.discountType === 'percent'
+      ? Math.round(rentalSubtotal * (appliedPromo.discountValue / 100) * 100) / 100
+      : Math.min(appliedPromo.discountValue, rentalSubtotal)
+    : 0;
+
+  // Loyalty discount (applied after promo)
+  const loyaltyDisc = loyaltyDiscount
+    ? Math.round((rentalSubtotal - promoDiscount) * (loyaltyDiscount / 100) * 100) / 100
+    : 0;
 
   const discountAmount = Math.min(Math.max(parseFloat(discount) || 0, 0), rentalSubtotal);
   const taxableBase = lines.reduce((acc, line) => acc + (line.taxable !== false ? (line.baseAmount || 0) : 0), 0);
   const taxRateDecimal = Math.max(0, parseFloat(taxRate) || 8.25) / 100;
-  const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
+  const totalAutoDiscount = promoDiscount + loyaltyDisc;
+  const taxAmount = Math.round((taxableBase - discountAmount - totalAutoDiscount) * taxRateDecimal * 100) / 100;
 
   const showDeliveryFee = deliveryMethod === 'company_delivery' && deliveryFee > 0;
   const showReturnFee = returnMethod === 'company_pickup' && returnFee > 0;
 
-  const grand = rentalSubtotal - discountAmount + taxAmount + depositTotal + (showDeliveryFee ? deliveryFee : 0) + (showReturnFee ? returnFee : 0);
+  const grand = rentalSubtotal - discountAmount - totalAutoDiscount + taxAmount + depositTotal + (showDeliveryFee ? deliveryFee : 0) + (showReturnFee ? returnFee : 0);
   const paid = parseFloat(amountPaid) || 0;
   const balance = grand - paid;
 
@@ -30,9 +43,28 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
           <span>${rentalSubtotal.toFixed(2)}</span>
         </div>
 
-        {/* Discount */}
+        {/* Promo Code */}
+        <div className="py-1">
+          <PromoCodeInput appliedPromo={appliedPromo} onApply={onPromoApply} onRemove={onPromoRemove} />
+        </div>
+
+        {promoDiscount > 0 && (
+          <div className="flex justify-between text-purple-700 text-xs font-medium">
+            <span>🏷 Promo Discount ({appliedPromo.code})</span>
+            <span>−${promoDiscount.toFixed(2)}</span>
+          </div>
+        )}
+
+        {loyaltyDisc > 0 && (
+          <div className="flex justify-between text-green-700 text-xs font-medium">
+            <span>⭐ Loyalty Discount ({loyaltyDiscount}%)</span>
+            <span>−${loyaltyDisc.toFixed(2)}</span>
+          </div>
+        )}
+
+        {/* Manual Discount */}
         <div className="flex items-center justify-between text-gray-600 gap-4">
-          <span className="shrink-0">Discount</span>
+          <span className="shrink-0">Manual Discount</span>
           <div className="flex items-center gap-1">
             <span className="text-gray-400">−$</span>
             <input
@@ -47,10 +79,10 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
           </div>
         </div>
 
-        {discountAmount > 0 && (
+        {(discountAmount > 0 || totalAutoDiscount > 0) && (
           <div className="flex justify-between text-green-700 text-xs font-medium">
-            <span>After Discount</span>
-            <span>${(rentalSubtotal - discountAmount).toFixed(2)}</span>
+            <span>After All Discounts</span>
+            <span>${(rentalSubtotal - discountAmount - totalAutoDiscount).toFixed(2)}</span>
           </div>
         )}
 
