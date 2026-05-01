@@ -12,10 +12,10 @@ export default function PromoCodeInput({ onApply, onRemove, appliedPromo }) {
     setLoading(true);
     setError('');
 
-    const allCodes = await base44.entities.PromoCode.filter({ active: true });
+    const allCodes = await base44.entities.PromoCode.list();
     const match = allCodes.find(p => p.code.toUpperCase() === code.trim().toUpperCase());
 
-    if (!match) {
+    if (!match || match.active === false) {
       setError('Code not found or inactive.');
       setLoading(false);
       return;
