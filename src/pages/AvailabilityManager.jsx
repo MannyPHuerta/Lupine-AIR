@@ -55,6 +55,7 @@ export default function AvailabilityManager() {
   const [pendingInvoice, setPendingInvoice] = useState(null);
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [loyaltyDiscount, setLoyaltyDiscount] = useState(null); // percent number or null
+  const [volumeRules, setVolumeRules] = useState([]);
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -98,7 +99,8 @@ export default function AvailabilityManager() {
       base44.entities.CompanySettings.list(),
       base44.entities.BranchSettings.list(),
       base44.entities.DeliveryMatrix.list(),
-    ]).then(([eq, rent, company, branches, matrices]) => {
+      base44.entities.VolumeDiscountRule.filter({ active: true }),
+    ]).then(([eq, rent, company, branches, matrices, volRules]) => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setRentals(rent);
       setCompanyInfo(company[0] || null);
@@ -108,6 +110,7 @@ export default function AvailabilityManager() {
       const matrixMap = {};
       matrices.forEach(m => { matrixMap[m.branch] = m; });
       setDeliveryMatrices(matrixMap);
+      setVolumeRules(volRules);
       setLoading(false);
     });
   }, []);
@@ -685,11 +688,12 @@ export default function AvailabilityManager() {
               appliedPromo={appliedPromo}
               onPromoApply={async (promo) => {
                 setAppliedPromo(promo);
-                // Increment usage count
                 await base44.entities.PromoCode.update(promo.id, { usageCount: (promo.usageCount || 0) + 1 });
               }}
               onPromoRemove={() => setAppliedPromo(null)}
               loyaltyDiscount={loyaltyDiscount}
+              volumeRules={volumeRules}
+              equipment={equipment}
             />
             <div className="bg-white rounded-xl border shadow-sm p-6">
               <SignaturePad

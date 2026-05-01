@@ -3,9 +3,32 @@ import PromoCodeInput from '@/components/invoice/PromoCodeInput';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod, appliedPromo, onPromoApply, onPromoRemove, loyaltyDiscount }) {
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod, appliedPromo, onPromoApply, onPromoRemove, loyaltyDiscount, volumeRules = [], equipment = [] }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
+
+  // Auto-apply volume discounts based on line item quantities + categories
+  const autoVolumeDiscounts = lines
+    .filter(l => l.equipmentId && l.quantity > 0)
+    .flatMap(line => {
+      const eqRecord = equipment.find(e => e.id === line.equipmentId);
+      const lineCategory = eqRecord?.category || '';
+      const matchingRules = volumeRules.filter(rule => {
+        if (!rule.active) return false;
+        const qty = line.quantity || 1;
+        if (qty < rule.minimumQuantity) return false;
+        if (rule.equipmentId && rule.equipmentId !== line.equipmentId) return false;
+        if (!rule.equipmentId && rule.category && rule.category !== lineCategory) return false;
+        return true;
+      });
+      return matchingRules.map(rule => {
+        const amount = rule.discountType === 'percent'
+          ? Math.round(line.baseAmount * (rule.discountValue / 100) * 100) / 100
+          : Math.round(rule.discountValue * (line.quantity || 1) * 100) / 100;
+        return { label: rule.name, amount };
+      });
+    });
+  const volumeDiscountTotal = autoVolumeDiscounts.reduce((s, d) => s + d.amount, 0);
 
   // Promo discount
   const promoDiscount = appliedPromo
@@ -14,15 +37,15 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
       : Math.min(appliedPromo.discountValue, rentalSubtotal)
     : 0;
 
-  // Loyalty discount (applied after promo)
+  // Loyalty discount (applied after promo + volume)
   const loyaltyDisc = loyaltyDiscount
-    ? Math.round((rentalSubtotal - promoDiscount) * (loyaltyDiscount / 100) * 100) / 100
+    ? Math.round((rentalSubtotal - promoDiscount - volumeDiscountTotal) * (loyaltyDiscount / 100) * 100) / 100
     : 0;
 
   const discountAmount = Math.min(Math.max(parseFloat(discount) || 0, 0), rentalSubtotal);
   const taxableBase = lines.reduce((acc, line) => acc + (line.taxable !== false ? (line.baseAmount || 0) : 0), 0);
   const taxRateDecimal = Math.max(0, parseFloat(taxRate) || 8.25) / 100;
-  const totalAutoDiscount = promoDiscount + loyaltyDisc;
+  const totalAutoDiscount = promoDiscount + loyaltyDisc + volumeDiscountTotal;
   const taxAmount = Math.round((taxableBase - discountAmount - totalAutoDiscount) * taxRateDecimal * 100) / 100;
 
   const showDeliveryFee = deliveryMethod === 'company_delivery' && deliveryFee > 0;
@@ -54,6 +77,13 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
             <span>−${promoDiscount.toFixed(2)}</span>
           </div>
         )}
+
+        {autoVolumeDiscounts.map((vd, i) => (
+          <div key={i} className="flex justify-between text-blue-700 text-xs font-medium">
+            <span>📦 Volume: {vd.label}</span>
+            <span>−${vd.amount.toFixed(2)}</span>
+          </div>
+        ))}
 
         {loyaltyDisc > 0 && (
           <div className="flex justify-between text-green-700 text-xs font-medium">
