@@ -1,3 +1,17 @@
+/**
+ * ⚠️ CRITICAL INVOICE COMPONENT
+ * DO NOT MODIFY WITHOUT DISCUSSION
+ * 
+ * This is the main checkout panel that ties together:
+ * - Cart management and item removal
+ * - Promo codes and discounts
+ * - Signature capture and final rental creation
+ * - Communication preferences (email/SMS)
+ * 
+ * This is the final step in the counter app workflow.
+ * Before editing: discuss with the team first.
+ */
+
 import { useState, useMemo, useEffect } from 'react';
 import { Trash2, DollarSign, Loader2, Check, Mail, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';

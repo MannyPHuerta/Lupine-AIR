@@ -1,3 +1,16 @@
+/**
+ * ⚠️ CRITICAL INVOICE COMPONENT
+ * DO NOT MODIFY WITHOUT DISCUSSION
+ * 
+ * This component manages individual rental line items including:
+ * - Equipment selection and quantity
+ * - Date range selection with availability checking
+ * - Rate calculations and tax handling
+ * - AI-powered bundle suggestions
+ * 
+ * Before editing: discuss with the team first.
+ */
+
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

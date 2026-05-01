@@ -1,3 +1,13 @@
+/**
+ * ⚠️ CRITICAL INVOICE COMPONENT
+ * DO NOT MODIFY WITHOUT DISCUSSION
+ * 
+ * This component handles all rental pricing calculations, discounts, and totals.
+ * Any changes here affect the entire checkout workflow and financial accuracy.
+ * 
+ * Before editing: discuss with the team first.
+ */
+
 import { useState } from 'react';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
