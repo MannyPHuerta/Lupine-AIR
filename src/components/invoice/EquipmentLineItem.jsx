@@ -22,13 +22,12 @@ function calcDays(start, end) {
 }
 
 function LineDateInput({ label, value, onChange }) {
-  const [open, setOpen] = useState(false);
   const parsed = value ? parseISO(value) : null;
 
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-gray-500 shrink-0">{label}</span>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover>
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -37,13 +36,12 @@ function LineDateInput({ label, value, onChange }) {
             {parsed ? format(parsed, 'MM/dd/yyyy') : <span className="text-gray-400">Pick a date</span>}
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start" avoidCollisions={false} sideOffset={4}>
+        <PopoverContent className="w-auto p-0" align="start" sideOffset={4}>
           <Calendar
             mode="single"
             selected={parsed || undefined}
             onSelect={date => {
               onChange(date ? format(date, 'yyyy-MM-dd') : '');
-              setOpen(false);
             }}
             initialFocus
           />
