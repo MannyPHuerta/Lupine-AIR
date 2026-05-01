@@ -59,6 +59,7 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
           .filter(l => l.equipmentId)
           .map(l => (equipment.find(e => e.id === l.equipmentId)?.category || '').toLowerCase())
           .filter(Boolean);
+        console.log('[PromoNudge] lineCategories:', lineCategories, 'promoCodes:', promoCodes.map(p => p.code + '/' + p.appliesTo + '/' + p.appliesToCategory));
         const now = new Date();
         return promoCodes.find(p => {
           if (!p.active) return false;
