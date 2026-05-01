@@ -27,12 +27,14 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
   const rentalSubtotal = lines.reduce((s, l) => s + (l.baseAmount || 0), 0);
   const depositTotal = lines.reduce((s, l) => s + (l.deposit || 0) * (l.quantity || 1), 0);
   const discountAmount = Math.min(Math.max(parseFloat(order.discount) || 0, 0), rentalSubtotal);
+  const autoDiscount = parseFloat(order.autoDiscount) || 0; // promo + volume + loyalty
+  const totalDiscount = discountAmount + autoDiscount;
   // Default taxable=true unless explicitly false
   const taxableBase = lines.reduce((s, l) => s + (l.taxable !== false ? (l.baseAmount || 0) : 0), 0);
-  const taxAmount = Math.round((taxableBase - discountAmount) * taxRateDecimal * 100) / 100;
+  const taxAmount = Math.round(Math.max(0, taxableBase - totalDiscount) * taxRateDecimal * 100) / 100;
   const deliveryFee = (order.deliveryMethod === 'company_delivery' && order.deliveryFee > 0) ? (order.deliveryFee || 0) : 0;
   const returnFee = (order.returnMethod === 'company_pickup' && order.returnFee > 0) ? (order.returnFee || 0) : 0;
-  const grandTotal = rentalSubtotal - discountAmount + taxAmount + depositTotal + deliveryFee + returnFee;
+  const grandTotal = rentalSubtotal - totalDiscount + taxAmount + depositTotal + deliveryFee + returnFee;
   const paid = parseFloat(amountPaid) || 0;
 
   const dateStr = order.createdAt
@@ -154,7 +156,7 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
   <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
     <div style="width:240px">
       <div class="total-row"><span>Rental Subtotal</span><span>$${fmt(rentalSubtotal)}</span></div>
-      ${discountAmount > 0 ? `<div class="total-row" style="color:#16a34a"><span>Discount</span><span>−$${fmt(discountAmount)}</span></div>` : ''}
+      ${totalDiscount > 0 ? `<div class="total-row" style="color:#16a34a"><span>Discount</span><span>−$${fmt(totalDiscount)}</span></div>` : ''}
       <div class="total-row"><span>Sales Tax (${(taxRateDecimal * 100).toFixed(2)}%)</span><span>$${fmt(taxAmount)}</span></div>
       ${depositTotal > 0 ? `<div class="total-row"><span>Deposits</span><span>$${fmt(depositTotal)}</span></div>` : ''}
       ${deliveryFee > 0 ? `<div class="total-row"><span>🚚 Delivery Fee</span><span>$${fmt(deliveryFee)}</span></div>` : ''}
@@ -204,7 +206,7 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
   </div>
 
   <script>
-    var GT = ${grandTotal};
+    var GT = ${Math.max(0, grandTotal)};
     function updateTotals() {
       var paidVal = parseFloat(document.getElementById('paid-input').value) || 0;
       var balance = GT - paidVal;

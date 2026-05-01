@@ -145,11 +145,42 @@ export default function AvailabilityManager() {
     return Math.floor((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1;
   };
 
+  const calcAutoDiscount = (validLines) => {
+    const rentalSubtotal = validLines.reduce((s, l) => s + (l.baseAmount || 0), 0);
+    // Volume discounts
+    const volumeTotal = validLines.flatMap(line => {
+      const eqRecord = equipment.find(e => e.id === line.equipmentId);
+      const lineCategory = eqRecord?.category || '';
+      return volumeRules.filter(rule => {
+        if (!rule.active) return false;
+        const qty = line.quantity || 1;
+        if (qty < rule.minimumQuantity) return false;
+        if (rule.equipmentId && rule.equipmentId !== line.equipmentId) return false;
+        if (!rule.equipmentId && rule.category && rule.category !== lineCategory) return false;
+        return true;
+      }).map(rule => rule.discountType === 'percent'
+        ? Math.round(line.baseAmount * (rule.discountValue / 100) * 100) / 100
+        : Math.round(rule.discountValue * (line.quantity || 1) * 100) / 100);
+    }).reduce((s, v) => s + v, 0);
+    // Promo discount
+    const promoDisc = appliedPromo
+      ? appliedPromo.discountType === 'percent'
+        ? Math.round(rentalSubtotal * (appliedPromo.discountValue / 100) * 100) / 100
+        : Math.min(appliedPromo.discountValue, rentalSubtotal)
+      : 0;
+    // Loyalty discount
+    const loyaltyDisc = loyaltyDiscount
+      ? Math.round((rentalSubtotal - promoDisc - volumeTotal) * (loyaltyDiscount / 100) * 100) / 100
+      : 0;
+    return promoDisc + volumeTotal + loyaltyDisc;
+  };
+
   const buildOrder = (validLines, invNumber = '') => ({
     id: invNumber || null,
     createdAt: new Date().toISOString(),
     taxRate: parseFloat(taxRate) || 8.25,
     discount: parseFloat(discount) || 0,
+    autoDiscount: calcAutoDiscount(validLines),
     paymentMethod: paymentMethod || '',
     deliveryMethod: deliveryMethod || 'customer_pickup',
     returnMethod: returnMethod || 'customer_return',
