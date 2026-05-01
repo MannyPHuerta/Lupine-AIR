@@ -185,7 +185,15 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
         {/* Amount Paid */}
         <div className="flex items-center justify-between text-gray-600 gap-4">
           <span className="shrink-0">Amount Paid</span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onAmountPaidChange(grand.toFixed(2))}
+              className="text-xs px-2.5 py-1 rounded-full border border-indigo-300 text-indigo-600 hover:bg-indigo-50 font-medium transition"
+              title="Apply total due"
+            >
+              Apply
+            </button>
             <span className="text-gray-400">$</span>
             <input
               type="number"
