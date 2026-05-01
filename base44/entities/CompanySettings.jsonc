@@ -8,7 +8,7 @@
     },
     "logoUrl": {
       "type": "string",
-      "description": "URL to company logo for invoices"
+      "description": "URL to company logo for branding (uploaded to storage)"
     },
     "taxId": {
       "type": "string",
@@ -41,6 +41,34 @@
       "type": "boolean",
       "default": true,
       "description": "Enable/disable automated SMS return reminders"
+    },
+    "brandingTheme": {
+      "type": "object",
+      "description": "Theme customization for internal staff app",
+      "properties": {
+        "primaryColor": {
+          "type": "string",
+          "description": "Primary brand color (hex, e.g. #1E40AF)"
+        },
+        "secondaryColor": {
+          "type": "string",
+          "description": "Secondary brand color (hex)"
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Accent color (hex)"
+        }
+      }
+    },
+    "authMethod": {
+      "type": "string",
+      "enum": [
+        "magic_link",
+        "password",
+        "sso"
+      ],
+      "default": "magic_link",
+      "description": "Authentication method for this subscriber"
     }
   },
   "required": []

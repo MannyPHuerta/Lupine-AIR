@@ -308,6 +308,18 @@ export default function CompanySettingsPage() {
             {/* Payment Processing */}
             <PaymentSettingsPanel />
 
+            {/* Branding & Theme */}
+            <div className="bg-white rounded-xl border shadow-sm p-5">
+              <div className="font-semibold text-gray-900 mb-2">Branding & Theme</div>
+              <p className="text-xs text-gray-500 mb-4">Customize colors and theme for the internal staff application.</p>
+              <button
+                onClick={() => navigate('/branding')}
+                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+              >
+                🎨 Edit Colors & Theme →
+              </button>
+            </div>
+
             {/* Save Button */}
             <div className="flex justify-end pb-8">
               <Button
