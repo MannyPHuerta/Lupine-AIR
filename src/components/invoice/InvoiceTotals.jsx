@@ -60,6 +60,23 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
       <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Invoice Totals</h3>
       <div className="space-y-3 text-sm">
 
+        {/* Promo / Volume / Loyalty nudge banners */}
+        {appliedPromo && promoDiscount > 0 && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2.5 text-sm text-purple-800 font-medium flex items-center gap-2">
+            🎉 <span>You're saving <strong>${promoDiscount.toFixed(2)}</strong> with code <strong>{appliedPromo.code}</strong>{appliedPromo.description ? ` — ${appliedPromo.description}` : ''}!</span>
+          </div>
+        )}
+        {autoVolumeDiscounts.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-sm text-blue-800 font-medium flex items-center gap-2">
+            📦 <span>Volume pricing applied — saving <strong>${volumeDiscountTotal.toFixed(2)}</strong> on your order!</span>
+          </div>
+        )}
+        {loyaltyDisc > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-sm text-green-800 font-medium flex items-center gap-2">
+            ⭐ <span>Loyalty discount active — saving an extra <strong>${loyaltyDisc.toFixed(2)}</strong> today!</span>
+          </div>
+        )}
+
         {/* Rental Subtotal */}
         <div className="flex justify-between text-gray-600">
           <span>Rental Subtotal</span>
