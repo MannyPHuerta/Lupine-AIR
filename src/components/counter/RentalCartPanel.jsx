@@ -57,7 +57,20 @@ export default function RentalCartPanel({
   }, [cart, days]);
 
   const discountAmount = useMemo(() => {
+    // If promo code entered, use that exclusively
+    if (promoCode) {
+      const promo = promoCodes.find(p => p.code.toLowerCase() === promoCode.toLowerCase() && p.active);
+      if (promo) {
+        return promo.discountType === 'percent'
+          ? (subtotal * promo.discountValue / 100)
+          : promo.discountValue;
+      }
+      return 0;
+    }
+
+    // Otherwise, pick best auto-discount (volume or duration)
     let amount = 0;
+    
     // Volume discount
     volumeRules.forEach(rule => {
       const qty = cart.filter(c => c.category === rule.category || c.id === rule.equipmentId).length;
@@ -68,18 +81,14 @@ export default function RentalCartPanel({
         amount = Math.max(amount, disc);
       }
     });
-    // Duration discount
-    if (days >= 7) amount = Math.max(amount, subtotal * 0.15);
-    // Promo code
-    if (promoCode) {
-      const promo = promoCodes.find(p => p.code.toLowerCase() === promoCode.toLowerCase() && p.active);
-      if (promo) {
-        const promoDisc = promo.discountType === 'percent'
-          ? (subtotal * promo.discountValue / 100)
-          : promo.discountValue;
-        amount = Math.max(amount, promoDisc);
-      }
+
+    // Duration discount (7+ days = 10%, 30+ days = 15%)
+    if (days >= 30) {
+      amount = Math.max(amount, subtotal * 0.15);
+    } else if (days >= 7) {
+      amount = Math.max(amount, subtotal * 0.10);
     }
+
     return amount;
   }, [subtotal, days, cart, promoCode, promoCodes, volumeRules]);
 
