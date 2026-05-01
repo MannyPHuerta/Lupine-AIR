@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import PromoCodeInput from '@/components/invoice/PromoCodeInput';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
 
@@ -122,11 +121,6 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
         <div className="flex justify-between text-gray-600">
           <span>Rental Subtotal</span>
           <span>${rentalSubtotal.toFixed(2)}</span>
-        </div>
-
-        {/* Promo Code */}
-        <div className="py-1">
-          <PromoCodeInput appliedPromo={appliedPromo} onApply={onPromoApply} onRemove={onPromoRemove} />
         </div>
 
         {promoDiscount > 0 && (
