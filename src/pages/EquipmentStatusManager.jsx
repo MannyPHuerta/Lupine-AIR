@@ -59,7 +59,9 @@ function EquipmentRow({ eq, onSave, onDetail }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="font-medium text-gray-900 text-sm truncate">{eq.name}</div>
-          <div className="text-xs text-gray-400 mt-0.5">{eq.category}{eq.location ? ` · ${eq.location}` : ''}</div>
+          <div className="text-xs text-gray-400 mt-0.5">
+            {eq.category}{eq.location ? ` · ${eq.location}` : ''}{eq.assetNumber ? ` · #${eq.assetNumber}` : ''}
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {saved && <CheckCircle className="w-4 h-4 text-green-500" />}
@@ -135,7 +137,10 @@ export default function EquipmentStatusManager() {
   };
 
   const filtered = useMemo(() => equipment.filter(eq => {
-    const matchSearch = !search || eq.name.toLowerCase().includes(search.toLowerCase()) || eq.category?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || 
+      eq.name.toLowerCase().includes(search.toLowerCase()) || 
+      eq.category?.toLowerCase().includes(search.toLowerCase()) ||
+      eq.assetNumber?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === 'all' || (eq.unitStatus || 'available') === filterStatus;
     return matchSearch && matchStatus;
   }), [equipment, search, filterStatus]);
@@ -174,7 +179,7 @@ export default function EquipmentStatusManager() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="Search equipment..."
+              placeholder="Search by name, category, or asset number..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9"
