@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, X, Loader2, AlertCircle, DollarSign } from 'lucide-react';
+import { Search, Plus, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
-import RentalCartPanel from '@/components/counter/RentalCartPanel';
-import QuickAddEquipment from '@/components/counter/QuickAddEquipment';
+import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
+import InvoiceTotals from '@/components/invoice/InvoiceTotals';
+import SignaturePad from '@/components/counter/SignaturePad';
 
 export default function Counter() {
   const navigate = useNavigate();
@@ -15,59 +16,129 @@ export default function Counter() {
   // Data
   const [equipment, setEquipment] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [rentals, setRentals] = useState([]);
   const [branchSettings, setBranchSettings] = useState(null);
   const [companySettings, setCompanySettings] = useState(null);
+  const [promoCodes, setPromoCodes] = useState([]);
+  const [volumeRules, setVolumeRules] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // UI State
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [cart, setCart] = useState([]);
+  const [lines, setLines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [branch, setBranch] = useState('01 McAllen');
+  const [signature, setSignature] = useState(null);
+  const [completing, setCompleting] = useState(false);
+
+  // Invoice state
+  const [discount, setDiscount] = useState(0);
+  const [taxRate, setTaxRate] = useState(8.25);
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [autoSend, setAutoSend] = useState(true);
+  const [appliedPromo, setAppliedPromo] = useState(null);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Equipment.list('-updated_date', 500),
       base44.entities.Customer.list('-updated_date', 500),
+      base44.entities.Rental.list('-created_date', 200),
       base44.entities.BranchSettings.list(),
       base44.entities.CompanySettings.list(),
-    ]).then(([eq, cust, bs, cs]) => {
+      base44.entities.PromoCode.list(),
+      base44.entities.VolumeDiscountRule.list(),
+    ]).then(([eq, cust, rent, bs, cs, pc, vr]) => {
       setEquipment(eq);
       setCustomers(cust);
+      setRentals(rent);
       setBranchSettings(bs[0]);
       setCompanySettings(cs[0]);
+      setPromoCodes(pc);
+      setVolumeRules(vr);
       setLoading(false);
     });
 
-    // Focus search on load for keyboard nav
     setTimeout(() => searchRef.current?.focus(), 100);
   }, []);
 
-  const handleAddToCart = (item) => {
-    setCart(prev => [...prev, { ...item, lineId: Math.random() }]);
+  const handleAddLine = () => {
+    setLines([...lines, { lineId: Math.random() }]);
   };
 
-  const handleRemoveFromCart = (lineId) => {
-    setCart(prev => prev.filter(l => l.lineId !== lineId));
+  const handleUpdateLine = (lineId, updated) => {
+    setLines(lines.map(l => l.lineId === lineId ? { ...updated, lineId } : l));
+  };
+
+  const handleRemoveLine = (lineId) => {
+    setLines(lines.filter(l => l.lineId !== lineId));
   };
 
   const handleClearCart = () => {
-    setCart([]);
+    setLines([]);
     setSelectedCustomer(null);
     setSearchTerm('');
+    setSignature(null);
+    setDiscount(0);
+    setTaxRate(8.25);
+    setAmountPaid(0);
+    setAppliedPromo(null);
     setTimeout(() => searchRef.current?.focus(), 50);
   };
 
+  const handleComplete = async () => {
+    if (!signature) {
+      alert('Signature required');
+      return;
+    }
+
+    setCompleting(true);
+    try {
+      const rental = await base44.functions.invoke('createRental', {
+        customerId: selectedCustomer.id,
+        customerName: selectedCustomer.fullName,
+        customerEmail: selectedCustomer.email,
+        customerPhone: selectedCustomer.phone,
+        customerAddress: selectedCustomer.address,
+        customerCity: selectedCustomer.city,
+        customerState: selectedCustomer.state,
+        customerZip: selectedCustomer.zip,
+        items: lines
+          .filter(l => l.equipmentId)
+          .map(l => ({
+            equipmentId: l.equipmentId,
+            equipmentName: l.equipmentName,
+            quantity: l.quantity || 1,
+            startDate: l.startDate,
+            endDate: l.endDate,
+            baseAmount: l.baseAmount || 0,
+            deposit: l.deposit || 0,
+          })),
+        branch,
+        discount: parseFloat(discount) || 0,
+        taxRate: parseFloat(taxRate) || 8.25,
+        paymentMethod,
+        signatureDataUrl: signature,
+        sendEmail: autoSend,
+        sendSMS: autoSend && selectedCustomer.smsOptIn,
+      });
+
+      alert(`Rental created: ${rental.invoiceNumber}`);
+      handleClearCart();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   const handleKeyDown = (e) => {
-    // Ctrl/Cmd + K: Focus search
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
       searchRef.current?.focus();
     }
-    // Escape: Clear search or close customer selection
-    if (e.key === 'Escape') {
-      if (selectedCustomer) setSelectedCustomer(null);
-      else setSearchTerm('');
+    if (e.key === 'Escape' && selectedCustomer) {
+      setSelectedCustomer(null);
     }
   };
 
@@ -104,8 +175,8 @@ export default function Counter() {
       </div>
 
       <div className="flex h-[calc(100vh-60px)]">
-        {/* Left: Customer Search & Info */}
-        <div className="w-1/2 border-r bg-white overflow-y-auto">
+        {/* Left: Customer */}
+        <div className="w-1/3 border-r bg-white overflow-y-auto">
           {selectedCustomer ? (
             <div className="p-4 space-y-4">
               <div className="flex items-start justify-between">
@@ -119,49 +190,16 @@ export default function Counter() {
                 </div>
                 <button
                   onClick={() => setSelectedCustomer(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
-              {/* Customer flags */}
-              <div className="space-y-1 text-xs">
-                {selectedCustomer.creditHold && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <div><strong>Credit Hold:</strong> {selectedCustomer.creditHoldReason}</div>
-                  </div>
-                )}
-                {selectedCustomer.blacklisted && (
-                  <div className="bg-red-100 border border-red-400 text-red-800 px-3 py-2 rounded font-bold">
-                    ⛔ BLACKLISTED: {selectedCustomer.blacklistReason}
-                  </div>
-                )}
-                {selectedCustomer.taxExempt && (
-                  <div className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded">
-                    ✓ Tax Exempt
-                  </div>
-                )}
-              </div>
-
-              {/* Payment terms */}
-              <div className="text-xs bg-gray-50 p-2 rounded border border-gray-200">
-                <div className="font-medium text-gray-700 mb-1">Payment Terms</div>
-                <div className="text-gray-600">{selectedCustomer.paymentTerms || 'Due on Receipt'}</div>
-              </div>
-
-              {/* Quick stats */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-blue-50 p-2 rounded border border-blue-200">
-                  <div className="text-gray-600 font-medium">Total Rentals</div>
-                  <div className="text-lg font-bold text-blue-700">{selectedCustomer.totalRentals || 0}</div>
+              {selectedCustomer.creditHold && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-xs">
+                  <strong>Credit Hold:</strong> {selectedCustomer.creditHoldReason}
                 </div>
-                <div className="bg-green-50 p-2 rounded border border-green-200">
-                  <div className="text-gray-600 font-medium">Lifetime Spend</div>
-                  <div className="text-lg font-bold text-green-700">${(selectedCustomer.totalSpend || 0).toFixed(0)}</div>
-                </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="p-4 space-y-4">
@@ -188,52 +226,95 @@ export default function Counter() {
           )}
         </div>
 
-        {/* Right: Order Building */}
-        <div className="w-1/2 bg-gray-50 overflow-y-auto flex flex-col">
-          {!selectedCustomer ? (
-            <div className="flex-1 flex items-center justify-center text-gray-500 text-center p-4">
-              <div>
-                <div className="text-lg font-medium mb-2">Select a customer to start</div>
-                <div className="text-sm text-gray-400">Search on the left or create a new customer</div>
-              </div>
+        {/* Right: Invoice */}
+        {!selectedCustomer ? (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-center p-4">
+            <div>
+              <div className="text-lg font-medium mb-2">Select a customer to start</div>
+              <div className="text-sm text-gray-400">Search on the left or create a new customer</div>
             </div>
-          ) : (
-            <>
-              {/* Quick add equipment */}
-              <div className="border-b p-4 bg-white">
-                <QuickAddEquipment
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Line Items */}
+            <div className="space-y-2">
+              {lines.map((line, idx) => (
+                <EquipmentLineItem
+                  key={line.lineId}
+                  line={line}
                   equipment={equipment}
-                  onAdd={handleAddToCart}
+                  rentals={rentals}
+                  onUpdate={(updated) => handleUpdateLine(line.lineId, updated)}
+                  onRemove={() => handleRemoveLine(line.lineId)}
+                  qtyRef={useRef()}
+                  onAddLine={handleAddLine}
                 />
-              </div>
+              ))}
+            </div>
 
-              {/* Cart */}
-              <RentalCartPanel
-                cart={cart}
-                customer={selectedCustomer}
-                branch={branch}
-                branchSettings={branchSettings}
-                companySettings={companySettings}
-                allEquipment={equipment}
-                onRemoveItem={handleRemoveFromCart}
-                onCompleteRental={handleClearCart}
-              />
+            {/* Add Line Button */}
+            <Button
+              onClick={handleAddLine}
+              variant="outline"
+              className="w-full gap-2"
+            >
+              <Plus className="w-4 h-4" /> Add Equipment
+            </Button>
 
-              {/* Clear button */}
-              {cart.length > 0 && (
-                <div className="border-t p-4 bg-white">
-                  <Button
-                    onClick={handleClearCart}
-                    variant="outline"
-                    className="w-full text-red-600 hover:text-red-700"
-                  >
-                    Clear Order
-                  </Button>
+            {/* Pricing & Details */}
+            {lines.length > 0 && (
+              <div className="space-y-4">
+                <InvoiceTotals
+                  lines={lines.filter(l => l.equipmentId)}
+                  discount={discount}
+                  onDiscountChange={setDiscount}
+                  taxRate={taxRate}
+                  onTaxRateChange={setTaxRate}
+                  amountPaid={amountPaid}
+                  onAmountPaidChange={setAmountPaid}
+                  paymentMethod={paymentMethod}
+                  onPaymentMethodChange={setPaymentMethod}
+                  autoSendCommunications={autoSend}
+                  onAutoSendChange={setAutoSend}
+                  appliedPromo={appliedPromo}
+                  onPromoApply={setAppliedPromo}
+                  onPromoRemove={() => setAppliedPromo(null)}
+                  equipment={equipment}
+                  promoCodes={promoCodes}
+                  volumeRules={volumeRules}
+                />
+
+                {/* Signature */}
+                <div className="bg-white rounded-xl border shadow-sm p-6">
+                  <SignaturePad onSignatureCapture={setSignature} />
                 </div>
-              )}
-            </>
-          )}
-        </div>
+
+                {/* Complete Button */}
+                <Button
+                  onClick={handleComplete}
+                  disabled={completing || !signature}
+                  className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
+                >
+                  {completing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Creating…
+                    </>
+                  ) : (
+                    '✓ Complete Rental'
+                  )}
+                </Button>
+
+                <Button
+                  onClick={handleClearCart}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
