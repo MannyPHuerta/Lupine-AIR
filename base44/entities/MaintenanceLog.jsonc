@@ -1,0 +1,103 @@
+{
+  "name": "MaintenanceLog",
+  "type": "object",
+  "properties": {
+    "equipmentId": {
+      "type": "string",
+      "description": "Reference to Equipment record"
+    },
+    "equipmentName": {
+      "type": "string",
+      "description": "Denormalized equipment name"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch where maintenance was performed"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "preventive",
+        "repair",
+        "inspection",
+        "cleaning",
+        "parts_replacement",
+        "other"
+      ],
+      "description": "Type of maintenance performed"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "completed",
+      "description": "Current status of this maintenance event"
+    },
+    "description": {
+      "type": "string",
+      "description": "What was done or needs to be done"
+    },
+    "performedBy": {
+      "type": "string",
+      "description": "Technician name or vendor"
+    },
+    "cost": {
+      "type": "number",
+      "description": "Cost of parts + labor (USD)"
+    },
+    "scheduledDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When maintenance is/was scheduled"
+    },
+    "completedDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When maintenance was completed"
+    },
+    "nextServiceDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Recommended next service date"
+    },
+    "conditionBefore": {
+      "type": "string",
+      "enum": [
+        "New",
+        "Good",
+        "Fair",
+        "Needs Repair",
+        "Retired"
+      ],
+      "description": "Equipment condition before this service"
+    },
+    "conditionAfter": {
+      "type": "string",
+      "enum": [
+        "New",
+        "Good",
+        "Fair",
+        "Needs Repair",
+        "Retired"
+      ],
+      "description": "Equipment condition after this service"
+    },
+    "partsUsed": {
+      "type": "string",
+      "description": "Parts replaced or consumed"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or findings"
+    }
+  },
+  "required": [
+    "equipmentId",
+    "type",
+    "scheduledDate"
+  ]
+}

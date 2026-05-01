@@ -5,6 +5,7 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getSpecsTemplate } from '@/lib/equipmentSpecs';
+import MaintenanceLogPanel from '@/components/maintenance/MaintenanceLogPanel';
 
 const CONDITIONS = ['New', 'Good', 'Fair', 'Needs Repair', 'Retired'];
 
@@ -153,6 +154,15 @@ export default function EquipmentDetail() {
             }
             <AddCustomSpec onAdd={(k, v) => setSpecs(s => ({ ...s, [k]: v }))} />
           </div>
+        </section>
+
+        {/* Maintenance Log */}
+        <section className="bg-white rounded-xl border shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+            🔧 Maintenance Log
+          </h2>
+          <p className="text-xs text-gray-400 mb-4">Service history, repairs, and scheduled maintenance for this unit.</p>
+          <MaintenanceLogPanel equipmentId={id} equipmentName={eq.name} />
         </section>
 
         <div className="flex justify-end pb-8">
