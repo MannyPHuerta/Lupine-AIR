@@ -71,11 +71,23 @@ Deno.serve(async (req) => {
     // Fetch all active rentals due today or tomorrow
     const allRentals = await base44.asServiceRole.entities.Rental.list('-endDate', 2000);
 
-    const dueTodayOrTomorrow = allRentals.filter(r =>
-      (r.endDate === today || r.endDate === tomorrow) &&
-      ['out', 'contract'].includes(r.status) &&
-      r.customerPhone
-    );
+    // Fetch customers to check SMS opt-in
+    const allCustomers = await base44.asServiceRole.entities.Customer.list();
+    const customerMap = Object.fromEntries(allCustomers.map(c => [c.id, c]));
+
+    const dueTodayOrTomorrow = allRentals.filter(r => {
+      if ((r.endDate !== today && r.endDate !== tomorrow) ||
+          !['out', 'contract'].includes(r.status) ||
+          !r.customerPhone) {
+        return false;
+      }
+      // Check if customer has opted in to SMS
+      if (r.customerId && customerMap[r.customerId]) {
+        return customerMap[r.customerId].smsOptIn === true;
+      }
+      // If no customer ID, allow sending (legacy support)
+      return true;
+    });
 
     const results = [];
     for (const rental of dueTodayOrTomorrow) {

@@ -101,6 +101,15 @@
       "type": "string",
       "description": "ID number (last 4 digits only for security)"
     },
+    "smsOptIn": {
+      "type": "boolean",
+      "default": false,
+      "description": "Customer has opted in to receive SMS notifications (10DLC compliance)"
+    },
+    "smsOptInDate": {
+      "type": "string",
+      "description": "ISO timestamp when customer opted in to SMS"
+    },
     "linkedContacts": {
       "type": "array",
       "items": {
