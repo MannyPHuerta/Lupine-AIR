@@ -68,7 +68,7 @@ export default function AvailabilityManager() {
     const saved = localStorage.getItem('rentalFormState');
     if (saved) {
       try {
-        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p, returnMethod: rm, deliveryMethod: dm } = JSON.parse(saved);
+        const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p, returnMethod: rm, deliveryMethod: dm, appliedPromo: ap } = JSON.parse(saved);
         setCustomer(c || EMPTY_CUSTOMER);
         setLines(l || [newLine()]);
         setDiscount(d || '');
@@ -77,6 +77,7 @@ export default function AvailabilityManager() {
         setPaymentMethod(p || '');
         setReturnMethod(rm || 'customer_return');
         setDeliveryMethod(dm || 'customer_pickup');
+        if (ap) setAppliedPromo(ap);
       } catch (_) {}
     }
   }, []);
@@ -85,11 +86,11 @@ export default function AvailabilityManager() {
   useEffect(() => {
     const timer = setTimeout(() => {
       localStorage.setItem('rentalFormState', JSON.stringify({
-        customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod, deliveryMethod
+        customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod, deliveryMethod, appliedPromo
       }));
     }, 500);
     return () => clearTimeout(timer);
-  }, [customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod]);
+  }, [customer, lines, discount, taxRate, amountPaid, paymentMethod, returnMethod, deliveryMethod, appliedPromo]);
 
   // Fetch catalog and rental data
   useEffect(() => {
@@ -686,9 +687,10 @@ export default function AvailabilityManager() {
               deliveryFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
               returnFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
               appliedPromo={appliedPromo}
-              onPromoApply={async (promo) => {
+              onPromoApply={(promo) => {
                 setAppliedPromo(promo);
-                await base44.entities.PromoCode.update(promo.id, { usageCount: (promo.usageCount || 0) + 1 });
+                // Increment usage count non-blocking
+                base44.entities.PromoCode.update(promo.id, { usageCount: (promo.usageCount || 0) + 1 }).catch(() => {});
               }}
               onPromoRemove={() => setAppliedPromo(null)}
               loyaltyDiscount={loyaltyDiscount}
@@ -714,7 +716,7 @@ export default function AvailabilityManager() {
         <div className="flex gap-3 justify-end print:hidden pb-8 flex-wrap">
           <Button
             variant="outline"
-            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); setAmountPaid(''); setReturnMethod('customer_return'); }}
+            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); setAmountPaid(''); setReturnMethod('customer_return'); setAppliedPromo(null); setLoyaltyDiscount(null); }}
           >
             Clear
           </Button>

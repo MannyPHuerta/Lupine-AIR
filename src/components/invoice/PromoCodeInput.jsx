@@ -12,32 +12,37 @@ export default function PromoCodeInput({ onApply, onRemove, appliedPromo }) {
     setLoading(true);
     setError('');
 
-    const allCodes = await base44.entities.PromoCode.list('-created_date', 500);
-    const match = allCodes.find(p => p.code.toUpperCase() === code.trim().toUpperCase());
+    try {
+      const allCodes = await base44.entities.PromoCode.list('-created_date', 500);
+      const match = allCodes.find(p => p.code.toUpperCase() === code.trim().toUpperCase());
 
-    if (!match) {
-      setError('Code not found or inactive.');
+      if (!match || !match.active) {
+        setError('Code not found or inactive.');
+        setLoading(false);
+        return;
+      }
+
+      // Check expiry
+      if (match.expiresAt && new Date(match.expiresAt) < new Date()) {
+        setError('This promo code has expired.');
+        setLoading(false);
+        return;
+      }
+
+      // Check usage limit
+      if (match.usageLimit && match.usageCount >= match.usageLimit) {
+        setError('This code has reached its usage limit.');
+        setLoading(false);
+        return;
+      }
+
+      onApply(match);
+      setCode('');
+    } catch (err) {
+      setError('Failed to validate code. Please try again.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Check expiry
-    if (match.expiresAt && new Date(match.expiresAt) < new Date()) {
-      setError('This promo code has expired.');
-      setLoading(false);
-      return;
-    }
-
-    // Check usage limit
-    if (match.usageLimit && match.usageCount >= match.usageLimit) {
-      setError('This code has reached its usage limit.');
-      setLoading(false);
-      return;
-    }
-
-    onApply(match);
-    setCode('');
-    setLoading(false);
   };
 
   if (appliedPromo) {
