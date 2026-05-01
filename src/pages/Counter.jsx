@@ -12,6 +12,7 @@ import SignaturePad from '@/components/counter/SignaturePad';
 export default function Counter() {
   const navigate = useNavigate();
   const searchRef = useRef(null);
+  const qtyRefs = useRef({});
 
   // Data
   const [equipment, setEquipment] = useState([]);
@@ -238,18 +239,23 @@ export default function Counter() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Line Items */}
             <div className="space-y-2">
-              {lines.map((line, idx) => (
-                <EquipmentLineItem
-                  key={line.lineId}
-                  line={line}
-                  equipment={equipment}
-                  rentals={rentals}
-                  onUpdate={(updated) => handleUpdateLine(line.lineId, updated)}
-                  onRemove={() => handleRemoveLine(line.lineId)}
-                  qtyRef={useRef()}
-                  onAddLine={handleAddLine}
-                />
-              ))}
+              {lines.map((line, idx) => {
+                if (!qtyRefs.current[line.lineId]) {
+                  qtyRefs.current[line.lineId] = { current: null };
+                }
+                return (
+                  <EquipmentLineItem
+                    key={line.lineId}
+                    line={line}
+                    equipment={equipment}
+                    rentals={rentals}
+                    onUpdate={(updated) => handleUpdateLine(line.lineId, updated)}
+                    onRemove={() => handleRemoveLine(line.lineId)}
+                    qtyRef={qtyRefs.current[line.lineId]}
+                    onAddLine={handleAddLine}
+                  />
+                );
+              })}
             </div>
 
             {/* Add Line Button */}
