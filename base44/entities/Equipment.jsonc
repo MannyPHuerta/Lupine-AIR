@@ -123,6 +123,29 @@
       "type": "number",
       "description": "Original purchase cost (USD)"
     },
+    "depreciationMethod": {
+      "type": "string",
+      "enum": [
+        "straight_line",
+        "declining_balance"
+      ],
+      "default": "straight_line",
+      "description": "Depreciation calculation method"
+    },
+    "usefulLifeYears": {
+      "type": "number",
+      "description": "Expected useful life in years (for depreciation calculation)"
+    },
+    "salvageValue": {
+      "type": "number",
+      "default": 0,
+      "description": "Expected salvage/residual value after useful life (USD)"
+    },
+    "depreciationStartDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date depreciation begins (defaults to purchaseDate if not set)"
+    },
     "dependencies": {
       "type": "array",
       "items": {

@@ -36,6 +36,7 @@ import AvailabilityCalendar from "./pages/AvailabilityCalendar";
 import Customers from "./pages/Customers";
 import DeliveryMatrixPage from "./pages/DeliveryMatrixPage";
 import DiscountManager from "./pages/DiscountManager";
+import DepreciationReport from "./pages/DepreciationReport";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -98,6 +99,7 @@ const AuthenticatedApp = () => {
       <Route path="/customers" element={<Customers />} />
       <Route path="/delivery-matrix" element={<DeliveryMatrixPage />} />
       <Route path="/discounts" element={<DiscountManager />} />
+      <Route path="/depreciation" element={<DepreciationReport />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

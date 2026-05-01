@@ -33,6 +33,10 @@ export default function EquipmentDetail() {
           modelNumber: found.modelNumber || '',
           purchaseDate: found.purchaseDate || '',
           purchaseCost: found.purchaseCost || '',
+          depreciationMethod: found.depreciationMethod || 'straight_line',
+          usefulLifeYears: found.usefulLifeYears || '',
+          salvageValue: found.salvageValue || 0,
+          depreciationStartDate: found.depreciationStartDate || '',
           location: found.location || '',
           notes: found.notes || '',
         });
@@ -42,7 +46,13 @@ export default function EquipmentDetail() {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Equipment.update(id, { ...form, specs, purchaseCost: form.purchaseCost ? parseFloat(form.purchaseCost) : undefined });
+    await base44.entities.Equipment.update(id, {
+      ...form,
+      specs,
+      purchaseCost: form.purchaseCost ? parseFloat(form.purchaseCost) : undefined,
+      usefulLifeYears: form.usefulLifeYears ? parseFloat(form.usefulLifeYears) : undefined,
+      salvageValue: form.salvageValue ? parseFloat(form.salvageValue) : 0,
+    });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -85,6 +95,33 @@ export default function EquipmentDetail() {
         <section className="bg-white rounded-xl border shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-4">📦 Asset Barcode</h2>
           <BarcodeDisplay assetNumber={form.assetNumber} equipmentId={id} equipmentName={eq.name} />
+        </section>
+
+        {/* Depreciation */}
+        <section className="bg-white rounded-xl border shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-1">💰 Depreciation Schedule</h2>
+          <p className="text-xs text-gray-400 mb-4">Configure how this asset depreciates over time for accounting & reporting.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Depreciation Method">
+              <select
+                value={form.depreciationMethod || 'straight_line'}
+                onChange={e => setForm(f => ({ ...f, depreciationMethod: e.target.value }))}
+                className="w-full h-9 border border-input rounded-md px-3 text-sm bg-transparent shadow-sm"
+              >
+                <option value="straight_line">Straight-Line</option>
+                <option value="declining_balance">Double Declining Balance</option>
+              </select>
+            </Field>
+            <Field label="Useful Life (Years)">
+              <Input type="number" min="1" max="50" value={form.usefulLifeYears || ''} onChange={e => setForm(f => ({ ...f, usefulLifeYears: parseFloat(e.target.value) || undefined }))} placeholder="e.g. 5" />
+            </Field>
+            <Field label="Salvage Value ($)">
+              <Input type="number" min="0" value={form.salvageValue || ''} onChange={e => setForm(f => ({ ...f, salvageValue: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+            </Field>
+            <Field label="Depreciation Start Date">
+              <Input type="date" value={form.depreciationStartDate || ''} onChange={e => setForm(f => ({ ...f, depreciationStartDate: e.target.value }))} />
+            </Field>
+          </div>
         </section>
 
         {/* Basic Info */}
