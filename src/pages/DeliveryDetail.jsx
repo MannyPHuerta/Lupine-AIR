@@ -13,22 +13,39 @@ export default function DeliveryDetail() {
   const [delivery, setDelivery] = useState(null);
   const [rental, setRental] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [signature, setSignature] = useState(null);
 
   useEffect(() => {
-    Promise.all([
-      base44.entities.Delivery.filter({ id }),
-      base44.entities.Rental.list('-created_date', 100),
-    ]).then(([dels, rentals]) => {
-      const delivery = dels[0];
-      const rental = rentals.find(r => r.id === delivery.rentalId);
-      setDelivery(delivery);
-      setRental(rental);
-      setPhotos(delivery.photos || []);
+    if (!id || id === ':id') {
+      setError('Invalid delivery ID');
       setLoading(false);
-    });
+      return;
+    }
+
+    Promise.all([
+      base44.entities.Delivery.list('-created_date', 100),
+      base44.entities.Rental.list('-created_date', 100),
+    ])
+      .then(([dels, rentals]) => {
+        const delivery = dels.find(d => d.id === id);
+        if (!delivery) {
+          setError('Delivery not found');
+          setLoading(false);
+          return;
+        }
+        const rental = rentals.find(r => r.id === delivery.rentalId);
+        setDelivery(delivery);
+        setRental(rental);
+        setPhotos(delivery.photos || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, [id]);
 
   const handleStatusUpdate = async (newStatus) => {
@@ -62,6 +79,23 @@ export default function DeliveryDetail() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen gap-4">
+        <AlertCircle className="w-8 h-8 text-red-600" />
+        <div className="text-gray-700 text-center">
+          <div className="font-medium">{error}</div>
+          <button
+            onClick={() => navigate('/driver')}
+            className="text-indigo-600 hover:underline text-sm mt-2"
+          >
+            Back to driver dashboard
+          </button>
+        </div>
       </div>
     );
   }
