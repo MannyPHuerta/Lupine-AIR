@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { getSpecsTemplate } from '@/lib/equipmentSpecs';
 import MaintenanceLogPanel from '@/components/maintenance/MaintenanceLogPanel';
 import TentSpecsPanel from '@/components/tent/TentSpecsPanel';
+import BarcodeDisplay from '@/components/equipment/BarcodeDisplay';
 
 const CONDITIONS = ['New', 'Good', 'Fair', 'Needs Repair', 'Retired'];
 
@@ -79,6 +80,12 @@ export default function EquipmentDetail() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+        {/* Barcode */}
+        <section className="bg-white rounded-xl border shadow-sm p-5">
+          <h2 className="font-semibold text-gray-800 mb-4">📦 Asset Barcode</h2>
+          <BarcodeDisplay assetNumber={form.assetNumber} equipmentId={id} equipmentName={eq.name} />
+        </section>
 
         {/* Basic Info */}
         <section className="bg-white rounded-xl border shadow-sm p-5">
