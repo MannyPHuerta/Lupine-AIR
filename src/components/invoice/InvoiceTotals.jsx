@@ -3,7 +3,7 @@ import PromoCodeInput from '@/components/invoice/PromoCodeInput';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod, appliedPromo, onPromoApply, onPromoRemove, loyaltyDiscount, volumeRules = [], equipment = [] }) {
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod, appliedPromo, onPromoApply, onPromoRemove, loyaltyDiscount, volumeRules = [], equipment = [], promoCodes = [] }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
 
@@ -52,6 +52,27 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
   const showDeliveryFee = deliveryMethod === 'company_delivery' && deliveryFee > 0;
   const showReturnFee = returnMethod === 'company_pickup' && returnFee > 0;
 
+  // Auto-detect category-matching promo codes not yet applied
+  const suggestedPromo = !appliedPromo
+    ? (() => {
+        const lineCategories = lines
+          .filter(l => l.equipmentId)
+          .map(l => equipment.find(e => e.id === l.equipmentId)?.category)
+          .filter(Boolean);
+        const now = new Date();
+        return promoCodes.find(p => {
+          if (!p.active) return false;
+          if (p.expiresAt && new Date(p.expiresAt) < now) return false;
+          if (p.usageLimit && p.usageCount >= p.usageLimit) return false;
+          if (p.appliesTo === 'all') return lineCategories.length > 0;
+          if (p.appliesTo === 'category' && p.appliesToCategory) {
+            return lineCategories.includes(p.appliesToCategory);
+          }
+          return false;
+        }) || null;
+      })()
+    : null;
+
   const grand = Math.max(0, rentalSubtotal - discountAmount - totalAutoDiscount + taxAmount + depositTotal + (showDeliveryFee ? deliveryFee : 0) + (showReturnFee ? returnFee : 0));
   const paid = parseFloat(amountPaid) || 0;
   const balance = grand - paid;
@@ -60,6 +81,24 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
     <div className="bg-white rounded-xl border shadow-sm p-6">
       <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Invoice Totals</h3>
       <div className="space-y-3 text-sm">
+
+        {/* Category-matched promo suggestion */}
+        {suggestedPromo && (
+          <div className="bg-yellow-50 border border-yellow-300 rounded-lg px-3 py-2.5 text-sm text-yellow-900 flex items-center justify-between gap-3">
+            <span>
+              🏷 <strong>{suggestedPromo.code}</strong> applies to this order
+              {suggestedPromo.appliesTo === 'category' ? ` (${suggestedPromo.appliesToCategory})` : ''} —{' '}
+              {suggestedPromo.discountType === 'percent' ? `${suggestedPromo.discountValue}% off` : `$${suggestedPromo.discountValue} off`}
+              {suggestedPromo.description ? ` · ${suggestedPromo.description}` : ''}
+            </span>
+            <button
+              onClick={() => onPromoApply(suggestedPromo)}
+              className="shrink-0 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+            >
+              Apply
+            </button>
+          </div>
+        )}
 
         {/* Promo / Volume / Loyalty nudge banners */}
         {appliedPromo && promoDiscount > 0 && (

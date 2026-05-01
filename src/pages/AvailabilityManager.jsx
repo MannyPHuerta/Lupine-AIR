@@ -56,6 +56,7 @@ export default function AvailabilityManager() {
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [loyaltyDiscount, setLoyaltyDiscount] = useState(null); // percent number or null
   const [volumeRules, setVolumeRules] = useState([]);
+  const [promoCodes, setPromoCodes] = useState([]);
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -84,7 +85,8 @@ export default function AvailabilityManager() {
       base44.entities.BranchSettings.list(),
       base44.entities.DeliveryMatrix.list(),
       base44.entities.VolumeDiscountRule.filter({ active: true }),
-    ]).then(([eq, rent, company, branches, matrices, volRules]) => {
+      base44.entities.PromoCode.filter({ active: true }),
+    ]).then(([eq, rent, company, branches, matrices, volRules, promoCodes]) => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setRentals(rent);
       setCompanyInfo(company[0] || null);
@@ -95,6 +97,7 @@ export default function AvailabilityManager() {
       matrices.forEach(m => { matrixMap[m.branch] = m; });
       setDeliveryMatrices(matrixMap);
       setVolumeRules(volRules);
+      setPromoCodes(promoCodes);
       setLoading(false);
     });
   }, []);
@@ -679,6 +682,7 @@ export default function AvailabilityManager() {
               loyaltyDiscount={loyaltyDiscount}
               volumeRules={volumeRules}
               equipment={equipment}
+              promoCodes={promoCodes}
             />
             <div className="bg-white rounded-xl border shadow-sm p-6">
               <SignaturePad
