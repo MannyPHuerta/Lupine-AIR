@@ -13,6 +13,20 @@ export default function SignaturePad({ onSave, onClear }) {
   const [isEmpty, setIsEmpty] = useState(true);
   const lastPos = useRef(null);
 
+  // Auto-click canvas when it mounts so Topaz SigWeb targets it without requiring a manual click
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        canvas.click();
+        observer.disconnect();
+      }
+    }, { threshold: 0.5 });
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, []);
+
   // Resize canvas to match its CSS size
   useEffect(() => {
     const canvas = canvasRef.current;
