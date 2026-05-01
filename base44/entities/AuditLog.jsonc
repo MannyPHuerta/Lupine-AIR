@@ -1,0 +1,56 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Action taken (e.g. 'create', 'update', 'delete', 'view', 'export')"
+    },
+    "entityName": {
+      "type": "string",
+      "description": "Entity type affected (e.g. 'Equipment', 'Rental', 'Customer')"
+    },
+    "entityId": {
+      "type": "string",
+      "description": "ID of the record that was affected"
+    },
+    "entityLabel": {
+      "type": "string",
+      "description": "Denormalized entity label for quick lookup (e.g. equipment name)"
+    },
+    "performedBy": {
+      "type": "string",
+      "description": "Email of the user who performed the action"
+    },
+    "performedAt": {
+      "type": "string",
+      "description": "ISO timestamp when the action was performed"
+    },
+    "changes": {
+      "type": "object",
+      "description": "Object showing before/after for each changed field",
+      "additionalProperties": true
+    },
+    "ipAddress": {
+      "type": "string",
+      "description": "IP address from which action was performed"
+    },
+    "userAgent": {
+      "type": "string",
+      "description": "Browser user agent string"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch context (if applicable)"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason provided by user (e.g. for sensitive actions)"
+    }
+  },
+  "required": [
+    "action",
+    "entityName",
+    "performedBy"
+  ]
+}

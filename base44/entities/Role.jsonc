@@ -1,0 +1,44 @@
+{
+  "name": "Role",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Role name (e.g. Platform Admin, Branch Manager, Counter Staff)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable role description"
+    },
+    "level": {
+      "type": "integer",
+      "description": "Permission hierarchy level (higher = more access)"
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of permission codes (e.g. 'equipment.read', 'rental.create', 'customer.delete')"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "subscriber",
+        "branch"
+      ],
+      "description": "Scope level: platform-wide, subscriber-scoped, or branch-scoped"
+    },
+    "isBuiltIn": {
+      "type": "boolean",
+      "default": false,
+      "description": "Built-in roles cannot be deleted"
+    }
+  },
+  "required": [
+    "name",
+    "level",
+    "scope"
+  ]
+}
