@@ -28,7 +28,7 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
         return { label: rule.name, amount };
       });
     });
-  const volumeDiscountTotal = autoVolumeDiscounts.reduce((s, d) => s + d.amount, 0);
+  const volumeDiscountTotal = autoVolumeDiscounts.reduce((s, d) => s + (d.amount || 0), 0);
 
   // Promo discount
   const promoDiscount = appliedPromo
@@ -46,12 +46,13 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
   const taxableBase = lines.reduce((acc, line) => acc + (line.taxable !== false ? (line.baseAmount || 0) : 0), 0);
   const taxRateDecimal = Math.max(0, parseFloat(taxRate) || 8.25) / 100;
   const totalAutoDiscount = promoDiscount + loyaltyDisc + volumeDiscountTotal;
-  const taxAmount = Math.round((taxableBase - discountAmount - totalAutoDiscount) * taxRateDecimal * 100) / 100;
+  const taxableAfterDiscounts = Math.max(0, taxableBase - discountAmount - totalAutoDiscount);
+  const taxAmount = Math.round(taxableAfterDiscounts * taxRateDecimal * 100) / 100;
 
   const showDeliveryFee = deliveryMethod === 'company_delivery' && deliveryFee > 0;
   const showReturnFee = returnMethod === 'company_pickup' && returnFee > 0;
 
-  const grand = rentalSubtotal - discountAmount - totalAutoDiscount + taxAmount + depositTotal + (showDeliveryFee ? deliveryFee : 0) + (showReturnFee ? returnFee : 0);
+  const grand = Math.max(0, rentalSubtotal - discountAmount - totalAutoDiscount + taxAmount + depositTotal + (showDeliveryFee ? deliveryFee : 0) + (showReturnFee ? returnFee : 0));
   const paid = parseFloat(amountPaid) || 0;
   const balance = grand - paid;
 

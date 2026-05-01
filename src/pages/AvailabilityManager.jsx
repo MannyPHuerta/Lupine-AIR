@@ -313,13 +313,13 @@ export default function AvailabilityManager() {
     const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
     const subtotal = validLines.reduce((s, l) => s + (l.baseAmount || 0), 0);
     const taxableBase = validLines.reduce((s, l) => s + (l.taxable !== false ? (l.baseAmount || 0) : 0), 0);
-    const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
+    const taxAmount = Math.round(Math.max(0, taxableBase) * taxRateDecimal * 100) / 100;
     const depositTotal = validLines.reduce((s, l) => s + ((l.deposit || 0) * (l.quantity || 1)), 0);
     const discountAmount = parseFloat(discount) || 0;
     const matrix = deliveryMatrices[customer.branch];
     const dFee = deliveryMethod === 'company_delivery' ? calcDeliveryFee(matrix, customer.zip) : 0;
     const rFee = returnMethod === 'company_pickup' ? calcDeliveryFee(matrix, customer.zip) : 0;
-    const totalDue = subtotal + taxAmount + depositTotal - discountAmount + dFee + rFee;
+    const totalDue = Math.max(0, subtotal + taxAmount + depositTotal - discountAmount + dFee + rFee);
 
     // If non-card payment method, skip payment processor and go straight to confirmation
     if (['Cash', 'Check', 'Net 30'].includes(paymentMethod)) {
