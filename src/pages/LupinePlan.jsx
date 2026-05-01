@@ -135,6 +135,18 @@ export default function LupinePlan() {
             >
               👥 Customers →
             </button>
+            <button
+              onClick={() => navigate('/roles')}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              🔐 Roles →
+            </button>
+            <button
+              onClick={() => navigate('/audit-logs')}
+              className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              📋 Audit Logs →
+            </button>
           </div>
         </div>
       </div>
