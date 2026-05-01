@@ -1,0 +1,177 @@
+{
+  "name": "Delivery",
+  "type": "object",
+  "properties": {
+    "rentalId": {
+      "type": "string",
+      "description": "Reference to Rental record"
+    },
+    "customerId": {
+      "type": "string",
+      "description": "Reference to Customer record"
+    },
+    "customerName": {
+      "type": "string",
+      "description": "Customer name (denormalized)"
+    },
+    "customerPhone": {
+      "type": "string",
+      "description": "Customer phone for SMS notifications"
+    },
+    "customerAddress": {
+      "type": "string",
+      "description": "Delivery address"
+    },
+    "customerCity": {
+      "type": "string",
+      "description": "City"
+    },
+    "customerState": {
+      "type": "string",
+      "description": "State"
+    },
+    "customerZip": {
+      "type": "string",
+      "description": "Zip code"
+    },
+    "driverId": {
+      "type": "string",
+      "description": "Email/ID of assigned driver"
+    },
+    "driverName": {
+      "type": "string",
+      "description": "Driver name (denormalized)"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch location"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "departed",
+        "arrived",
+        "setup_complete",
+        "signed",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled",
+      "description": "Current delivery status"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "equipmentId": {
+            "type": "string"
+          },
+          "equipmentName": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "default": 1
+          },
+          "checked": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "description": "Equipment being delivered"
+    },
+    "scheduledDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled delivery date"
+    },
+    "scheduledTime": {
+      "type": "string",
+      "description": "Scheduled delivery time window (e.g. 10am-12pm)"
+    },
+    "departedAt": {
+      "type": "string",
+      "description": "ISO timestamp when driver departed branch"
+    },
+    "arrivedAt": {
+      "type": "string",
+      "description": "ISO timestamp when driver arrived at location (geofence-triggered)"
+    },
+    "completedAt": {
+      "type": "string",
+      "description": "ISO timestamp when delivery marked complete"
+    },
+    "gpsCoordinates": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "description": "GPS location when delivery completed"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "gps": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            }
+          },
+          "equipmentId": {
+            "type": "string"
+          },
+          "equipmentName": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Delivery condition photos"
+    },
+    "signatureDataUrl": {
+      "type": "string",
+      "description": "Customer signature as PNG dataUrl"
+    },
+    "signedAt": {
+      "type": "string",
+      "description": "ISO timestamp when customer signed"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Delivery notes or special instructions"
+    },
+    "damageNotes": {
+      "type": "string",
+      "description": "Noted damage at time of delivery"
+    }
+  },
+  "required": [
+    "rentalId",
+    "customerId",
+    "customerName",
+    "scheduledDate"
+  ]
+}

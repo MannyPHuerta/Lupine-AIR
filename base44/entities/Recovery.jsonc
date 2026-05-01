@@ -1,0 +1,200 @@
+{
+  "name": "Recovery",
+  "type": "object",
+  "properties": {
+    "rentalId": {
+      "type": "string",
+      "description": "Reference to Rental record"
+    },
+    "deliveryId": {
+      "type": "string",
+      "description": "Reference to Delivery record (if applicable)"
+    },
+    "customerId": {
+      "type": "string",
+      "description": "Reference to Customer record"
+    },
+    "customerName": {
+      "type": "string",
+      "description": "Customer name (denormalized)"
+    },
+    "driverId": {
+      "type": "string",
+      "description": "Email/ID of assigned recovery driver"
+    },
+    "driverName": {
+      "type": "string",
+      "description": "Driver name (denormalized)"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch location"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "departed",
+        "arrived",
+        "photos_captured",
+        "loaded",
+        "returned_to_branch",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled",
+      "description": "Current recovery status"
+    },
+    "returnRoute": {
+      "type": "string",
+      "enum": [
+        "company_pickup",
+        "customer_return",
+        "customer_ships"
+      ],
+      "default": "company_pickup",
+      "description": "How equipment is being returned"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "equipmentId": {
+            "type": "string"
+          },
+          "equipmentName": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "default": 1
+          }
+        }
+      },
+      "description": "Equipment being recovered"
+    },
+    "scheduledDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled recovery date"
+    },
+    "departedAt": {
+      "type": "string",
+      "description": "ISO timestamp when driver departed branch"
+    },
+    "arrivedAt": {
+      "type": "string",
+      "description": "ISO timestamp when driver arrived at location"
+    },
+    "completedAt": {
+      "type": "string",
+      "description": "ISO timestamp when recovery marked complete"
+    },
+    "returnedToBranchAt": {
+      "type": "string",
+      "description": "ISO timestamp when equipment back at branch"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "gps": {
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            }
+          },
+          "equipmentId": {
+            "type": "string"
+          },
+          "equipmentName": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Recovery condition photos"
+    },
+    "detectedDamages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "equipmentId": {
+            "type": "string"
+          },
+          "equipmentName": {
+            "type": "string"
+          },
+          "damageType": {
+            "type": "string",
+            "enum": [
+              "dent",
+              "crack",
+              "tear",
+              "missing_parts",
+              "stain",
+              "rust",
+              "other"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "minor",
+              "moderate",
+              "severe"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "estimatedRepairCost": {
+            "type": "number"
+          },
+          "photosUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Damage detected on recovery"
+    },
+    "route": {
+      "type": "string",
+      "enum": [
+        "shop",
+        "laundry"
+      ],
+      "description": "Where equipment goes after branch intake"
+    },
+    "workOrderId": {
+      "type": "string",
+      "description": "Reference to WorkOrder if routed to shop"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Recovery notes"
+    }
+  },
+  "required": [
+    "rentalId",
+    "customerId",
+    "customerName",
+    "scheduledDate"
+  ]
+}

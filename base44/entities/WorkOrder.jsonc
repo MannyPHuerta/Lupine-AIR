@@ -1,0 +1,148 @@
+{
+  "name": "WorkOrder",
+  "type": "object",
+  "properties": {
+    "recoveryId": {
+      "type": "string",
+      "description": "Reference to Recovery record"
+    },
+    "rentalId": {
+      "type": "string",
+      "description": "Reference to Rental record"
+    },
+    "equipmentId": {
+      "type": "string",
+      "description": "Reference to Equipment being serviced"
+    },
+    "equipmentName": {
+      "type": "string",
+      "description": "Equipment name (denormalized)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "repair",
+        "inspection",
+        "cleaning",
+        "preventive_maintenance"
+      ],
+      "description": "Type of work order"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "awaiting_parts",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled",
+      "description": "Current status"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch where work is being done"
+    },
+    "assignedTo": {
+      "type": "string",
+      "description": "Name/email of technician or vendor"
+    },
+    "createdAt": {
+      "type": "string",
+      "description": "When work order was created"
+    },
+    "scheduledDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When work is scheduled"
+    },
+    "completedDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When work was completed"
+    },
+    "description": {
+      "type": "string",
+      "description": "What needs to be done"
+    },
+    "partsRequired": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "partName": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "cost": {
+            "type": "number"
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "eta": {
+            "type": "string",
+            "format": "date"
+          },
+          "received": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "description": "Parts needed for repair"
+    },
+    "cost": {
+      "type": "number",
+      "description": "Total cost of work (labor + parts)"
+    },
+    "laborCost": {
+      "type": "number",
+      "description": "Labor cost only"
+    },
+    "partsCost": {
+      "type": "number",
+      "description": "Total parts cost"
+    },
+    "conditionBefore": {
+      "type": "string",
+      "enum": [
+        "New",
+        "Good",
+        "Fair",
+        "Needs Repair",
+        "Retired"
+      ],
+      "description": "Equipment condition before work"
+    },
+    "conditionAfter": {
+      "type": "string",
+      "enum": [
+        "New",
+        "Good",
+        "Fair",
+        "Needs Repair",
+        "Retired"
+      ],
+      "description": "Equipment condition after work"
+    },
+    "eta": {
+      "type": "string",
+      "format": "date",
+      "description": "Expected completion date"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Work notes or findings"
+    }
+  },
+  "required": [
+    "recoveryId",
+    "equipmentId",
+    "type",
+    "branch"
+  ]
+}
