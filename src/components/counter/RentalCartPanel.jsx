@@ -7,6 +7,7 @@ import AvailabilityCheck from './AvailabilityCheck';
 import BundleNudges from './BundleNudges';
 import DiscountCalc from './DiscountCalc';
 import SignaturePad from './SignaturePad';
+import PromoNudge from './PromoNudge';
 
 export default function RentalCartPanel({
   cart,
@@ -197,6 +198,14 @@ export default function RentalCartPanel({
 
         {/* Bundle Suggestions */}
         {<BundleNudges cart={cart} startDate={startDate} endDate={endDate} onAddBundle={(item) => console.log('Bundle not implemented yet')} />}
+
+        {/* Promo Nudge */}
+        <PromoNudge
+          allPromoCodes={promoCodes}
+          currentPromo={promoCode}
+          onApplyPromo={setPromoCode}
+          subtotal={subtotal}
+        />
 
         {/* Discounts */}
         <DiscountCalc
