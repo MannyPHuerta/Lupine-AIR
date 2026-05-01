@@ -102,6 +102,10 @@
       "default": "Good",
       "description": "Physical condition of the unit"
     },
+    "assetNumber": {
+      "type": "string",
+      "description": "Internal asset tracking number"
+    },
     "serialNumber": {
       "type": "string",
       "description": "Manufacturer serial number"

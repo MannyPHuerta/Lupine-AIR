@@ -27,6 +27,7 @@ export default function EquipmentDetail() {
         setSpecs(found.specs || {});
         setForm({
           condition: found.condition || 'Good',
+          assetNumber: found.assetNumber || '',
           serialNumber: found.serialNumber || '',
           modelNumber: found.modelNumber || '',
           purchaseDate: found.purchaseDate || '',
@@ -83,6 +84,9 @@ export default function EquipmentDetail() {
         <section className="bg-white rounded-xl border shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-4">Unit Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Asset Number">
+              <Input value={form.assetNumber} onChange={e => setForm(f => ({ ...f, assetNumber: e.target.value }))} placeholder="e.g. AST-2024-001" />
+            </Field>
             <Field label="Serial Number">
               <Input value={form.serialNumber} onChange={e => setForm(f => ({ ...f, serialNumber: e.target.value }))} placeholder="e.g. SN-2043881" />
             </Field>
