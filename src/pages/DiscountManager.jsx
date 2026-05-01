@@ -60,7 +60,7 @@ export default function DiscountManager() {
       const updated = await base44.entities.PromoCode.update(editingPromo.id, payload);
       setPromos(prev => prev.map(p => p.id === editingPromo.id ? { ...p, ...payload } : p));
     } else {
-      const created = await base44.entities.PromoCode.create({ ...payload, usageCount: 0 });
+      const created = await base44.entities.PromoCode.create({ ...payload, usageCount: 0, active: payload.active !== false });
       setPromos(prev => [created, ...prev]);
     }
     setShowPromoForm(false);
