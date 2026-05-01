@@ -214,6 +214,7 @@ export default function Counter() {
                 branch={branch}
                 branchSettings={branchSettings}
                 companySettings={companySettings}
+                allEquipment={equipment}
                 onRemoveItem={handleRemoveFromCart}
                 onCompleteRental={handleClearCart}
               />
