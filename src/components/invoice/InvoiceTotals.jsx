@@ -57,17 +57,17 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
     ? (() => {
         const lineCategories = lines
           .filter(l => l.equipmentId)
-          .map(l => equipment.find(e => e.id === l.equipmentId)?.category)
+          .map(l => (equipment.find(e => e.id === l.equipmentId)?.category || '').toLowerCase())
           .filter(Boolean);
         const now = new Date();
         return promoCodes.find(p => {
           if (!p.active) return false;
           if (p.expiresAt && new Date(p.expiresAt) < now) return false;
           if (p.usageLimit && p.usageCount >= p.usageLimit) return false;
-          if (p.appliesTo === 'all') return lineCategories.length > 0;
           if (p.appliesTo === 'category' && p.appliesToCategory) {
-            return lineCategories.includes(p.appliesToCategory);
+            return lineCategories.includes(p.appliesToCategory.toLowerCase());
           }
+          if (p.appliesTo === 'all') return lineCategories.length > 0;
           return false;
         }) || null;
       })()

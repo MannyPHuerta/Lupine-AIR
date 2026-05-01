@@ -85,7 +85,7 @@ export default function AvailabilityManager() {
       base44.entities.BranchSettings.list(),
       base44.entities.DeliveryMatrix.list(),
       base44.entities.VolumeDiscountRule.filter({ active: true }),
-      base44.entities.PromoCode.filter({ active: true }),
+      base44.entities.PromoCode.list('-created_date', 200),
     ]).then(([eq, rent, company, branches, matrices, volRules, promoCodes]) => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setRentals(rent);
