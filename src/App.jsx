@@ -46,6 +46,7 @@ import Counter from "./pages/Counter";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
 import DeliveryDetail from "./pages/DeliveryDetail";
+import DeliveryAssignment from "./pages/DeliveryAssignment";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -118,6 +119,7 @@ const AuthenticatedApp = () => {
       <Route path="/manager" element={<ManagerDashboard />} />
       <Route path="/driver" element={<DriverDashboard />} />
       <Route path="/delivery/:id" element={<DeliveryDetail />} />
+      <Route path="/assign-deliveries" element={<DeliveryAssignment />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
