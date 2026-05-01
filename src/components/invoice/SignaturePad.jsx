@@ -121,6 +121,8 @@ export default function SignaturePad({ onSave, onClear }) {
           onTouchStart={startDraw}
           onTouchMove={draw}
           onTouchEnd={stopDraw}
+          tabIndex={0}
+          onFocus={() => canvasRef.current?.click()}
         />
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
