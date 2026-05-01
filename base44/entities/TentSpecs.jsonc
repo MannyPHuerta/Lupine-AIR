@@ -1,0 +1,229 @@
+{
+  "name": "TentSpecs",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Tent model/spec name (e.g., '20x40 Frame Tent')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Internal description of tent type and features"
+    },
+    "footprint": {
+      "type": "object",
+      "description": "Tent footprint dimensions",
+      "properties": {
+        "lengthFeet": {
+          "type": "number",
+          "description": "Length in feet"
+        },
+        "widthFeet": {
+          "type": "number",
+          "description": "Width in feet"
+        },
+        "lengthMeters": {
+          "type": "number",
+          "description": "Length in meters (optional)"
+        },
+        "widthMeters": {
+          "type": "number",
+          "description": "Width in meters (optional)"
+        }
+      }
+    },
+    "height": {
+      "type": "object",
+      "description": "Tent height dimensions",
+      "properties": {
+        "peakHeightFeet": {
+          "type": "number",
+          "description": "Peak height in feet"
+        },
+        "eaveHeightFeet": {
+          "type": "number",
+          "description": "Eave/side wall height in feet"
+        },
+        "peakHeightMeters": {
+          "type": "number",
+          "description": "Peak height in meters (optional)"
+        },
+        "eaveHeightMeters": {
+          "type": "number",
+          "description": "Eave height in meters (optional)"
+        }
+      }
+    },
+    "weight": {
+      "type": "object",
+      "description": "Tent weight",
+      "properties": {
+        "poundsAssembled": {
+          "type": "number",
+          "description": "Weight when assembled in pounds"
+        },
+        "kilogramsAssembled": {
+          "type": "number",
+          "description": "Weight when assembled in kg (optional)"
+        }
+      }
+    },
+    "setupClearance": {
+      "type": "object",
+      "description": "Required clearance around tent perimeter",
+      "properties": {
+        "clearanceFeet": {
+          "type": "number",
+          "description": "Minimum clearance on all sides in feet"
+        },
+        "clearanceMeters": {
+          "type": "number",
+          "description": "Minimum clearance on all sides in meters (optional)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Special clearance notes (e.g., door swing, ventilation)"
+        }
+      }
+    },
+    "anchoringPoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "Location on tent (e.g., 'corner', 'side', 'peak')"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ground_spike",
+              "weighted_base",
+              "ratchet_strap",
+              "cable",
+              "deadman",
+              "other"
+            ],
+            "description": "Anchoring method type"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Number of anchor points of this type at this location"
+          },
+          "loadCapacityPounds": {
+            "type": "number",
+            "description": "Load capacity per anchor point in pounds"
+          }
+        }
+      },
+      "description": "Anchor points and methods for securing tent"
+    },
+    "groundRequirements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "grass",
+          "dirt",
+          "concrete",
+          "asphalt",
+          "patio",
+          "deck",
+          "other"
+        ]
+      },
+      "description": "Acceptable ground surface types"
+    },
+    "windRating": {
+      "type": "object",
+      "description": "Wind resistance rating",
+      "properties": {
+        "maxWindMph": {
+          "type": "number",
+          "description": "Maximum safe wind speed in mph"
+        },
+        "maxWindKmh": {
+          "type": "number",
+          "description": "Maximum safe wind speed in km/h (optional)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Wind rating notes or conditions"
+        }
+      }
+    },
+    "capacity": {
+      "type": "object",
+      "description": "Tent capacity",
+      "properties": {
+        "maxPersons": {
+          "type": "integer",
+          "description": "Maximum number of persons (standing/dancing)"
+        },
+        "seatedCapacity": {
+          "type": "integer",
+          "description": "Capacity for seated banquet"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Capacity calculation notes"
+        }
+      }
+    },
+    "storageFootprint": {
+      "type": "object",
+      "description": "Storage/transport dimensions",
+      "properties": {
+        "lengthFeet": {
+          "type": "number"
+        },
+        "widthFeet": {
+          "type": "number"
+        },
+        "heightFeet": {
+          "type": "number"
+        },
+        "storagePounds": {
+          "type": "number",
+          "description": "Total weight in storage (tent + poles + stakes)"
+        }
+      }
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Primary materials (e.g., 'Vinyl', 'Polyester', 'Aluminum frame')"
+    },
+    "setup": {
+      "type": "object",
+      "description": "Setup and operational notes",
+      "properties": {
+        "estimatedSetupMinutes": {
+          "type": "integer",
+          "description": "Estimated setup time in minutes with standard crew"
+        },
+        "crewRequired": {
+          "type": "integer",
+          "description": "Minimum crew members for setup"
+        },
+        "specialRequirements": {
+          "type": "string",
+          "description": "Special tools, equipment, or skills needed"
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or specifications"
+    }
+  },
+  "required": [
+    "name",
+    "footprint",
+    "height",
+    "groundRequirements"
+  ]
+}

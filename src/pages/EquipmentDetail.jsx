@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getSpecsTemplate } from '@/lib/equipmentSpecs';
 import MaintenanceLogPanel from '@/components/maintenance/MaintenanceLogPanel';
+import TentSpecsPanel from '@/components/tent/TentSpecsPanel';
 
 const CONDITIONS = ['New', 'Good', 'Fair', 'Needs Repair', 'Retired'];
 
@@ -155,6 +156,20 @@ export default function EquipmentDetail() {
             <AddCustomSpec onAdd={(k, v) => setSpecs(s => ({ ...s, [k]: v }))} />
           </div>
         </section>
+
+        {/* Tent Specs */}
+        {eq.category === 'Tent' && (
+          <section className="bg-white rounded-xl border shadow-sm p-5">
+            <h2 className="font-semibold text-gray-800 mb-1">🏕 Tent Specifications</h2>
+            <p className="text-xs text-gray-400 mb-4">Physical dimensions, anchoring, and ground requirements for sandbox designer.</p>
+            <TentSpecsPanel
+              equipmentId={id}
+              equipmentName={eq.name}
+              category={eq.category}
+              tentSpecsId={eq.tentSpecsId}
+            />
+          </section>
+        )}
 
         {/* Maintenance Log */}
         <section className="bg-white rounded-xl border shadow-sm p-5">

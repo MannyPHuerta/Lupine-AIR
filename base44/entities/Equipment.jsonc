@@ -81,6 +81,10 @@
       "type": "string",
       "description": "Condition, special handling, restrictions"
     },
+    "tentSpecsId": {
+      "type": "string",
+      "description": "Reference to TentSpecs record (for tent category only)"
+    },
     "specs": {
       "type": "object",
       "description": "Per-unit technical specifications (key-value pairs, varies by category)",
