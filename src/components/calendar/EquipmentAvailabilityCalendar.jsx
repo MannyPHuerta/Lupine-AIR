@@ -73,9 +73,10 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
     return equipment.filter(eq => {
       const matchesSearch = !search || eq.name.toLowerCase().includes(search.toLowerCase());
       const matchesCat = categoryFilter === 'All' || eq.category === categoryFilter;
-      return matchesSearch && matchesCat;
+      const hasActiveRental = activeRentals.some(r => r.equipmentId === eq.id);
+      return matchesSearch && matchesCat && hasActiveRental;
     });
-  }, [equipment, search, categoryFilter]);
+  }, [equipment, search, categoryFilter, activeRentals]);
 
   // For each equipment, get rentals in this month
   const getRentalsForEquipment = (eqId) =>
