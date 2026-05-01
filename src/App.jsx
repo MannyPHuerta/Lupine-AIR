@@ -38,7 +38,7 @@ import DeliveryMatrixPage from "./pages/DeliveryMatrixPage";
 import DiscountManager from "./pages/DiscountManager";
 import DepreciationReport from "./pages/DepreciationReport";
 import CategoryManager from "./pages/CategoryManager";
-import AvailabilityConfigPage from "./pages/AvailabilityConfigPage";
+import AvailabilityConfigPage from "./pages/AvailabilityConfigPage.jsx";
 import RoleManager from "./pages/RoleManager";
 import AuditLogDashboard from "./pages/AuditLogDashboard";
 import BrandingSettings from "./pages/BrandingSettings";
