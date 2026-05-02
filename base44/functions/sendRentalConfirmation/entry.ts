@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: company.senderEmail || 'noreply@rentalworld.com',
+        from: 'Rental World <onboarding@resend.dev>',
         to: customerEmail,
         subject: `Rental Invoice ${invoiceNumber || 'Quote'}`,
         html: invoiceHtml,
@@ -219,8 +219,9 @@ Deno.serve(async (req) => {
 
     if (!resendRes.ok) {
       const err = await resendRes.text();
-      console.error('[sendRentalConfirmation] Resend error:', err);
-      return Response.json({ error: 'Failed to send email via Resend', emailSent: false }, { status: 500 });
+      console.error('[sendRentalConfirmation] Resend error status:', resendRes.status);
+      console.error('[sendRentalConfirmation] Resend error body:', err);
+      return Response.json({ error: `Resend error: ${err}`, emailSent: false }, { status: 500 });
     }
 
     console.log('[sendRentalConfirmation] Email sent successfully via Resend');
