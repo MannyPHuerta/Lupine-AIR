@@ -111,6 +111,7 @@ Deno.serve(async (req) => {
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #2c3e50; line-height: 1.6; margin: 0; padding: 0; }
     .container { max-width: 650px; margin: 0 auto; background: #fff; }
     .header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 40px 30px; text-align: center; }
+    .logo { max-height: 60px; margin-bottom: 15px; }
     .company-name { font-size: 28px; font-weight: bold; margin: 0 0 10px 0; }
     .invoice-label { font-size: 12px; opacity: 0.9; letter-spacing: 1px; }
     .content { padding: 30px; }
@@ -134,7 +135,8 @@ Deno.serve(async (req) => {
     <body>
     <div class="container">
     <div class="header">
-    <div class="company-name">Rental World LLC</div>
+    ${invoiceOrder.companyInfo.logoUrl ? `<img src="${invoiceOrder.companyInfo.logoUrl}" alt="Company Logo" class="logo" />` : ''}
+    <div class="company-name">${invoiceOrder.companyInfo.companyName || 'Rental World LLC'}</div>
     <div class="invoice-label">RENTAL INVOICE</div>
     </div>
 
@@ -184,7 +186,7 @@ Deno.serve(async (req) => {
 
     ${rental.signatureDataUrl ? `<div class="signature-note">✓ Signature captured at rental confirmation</div>` : ''}
 
-    <div class="thank-you">Thank you for choosing Rental World LLC! We appreciate your business.</div>
+    <div class="thank-you">Thank you for choosing ${invoiceOrder.companyInfo.companyName || 'Rental World LLC'}! We appreciate your business.</div>
     </div>
 
     <div class="footer">
