@@ -48,7 +48,7 @@ export default function RouteOptimizer({ items, driverLocation, onSelectItem, ty
                 </div>
                 {stop._distFromPrev !== undefined && (
                   <span className="text-xs text-indigo-400 flex-shrink-0">
-                    +{stop._distFromPrev} km
+                    +{stop._distFromPrev} mi
                   </span>
                 )}
               </button>
