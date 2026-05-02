@@ -23,11 +23,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No rental IDs provided' }, { status: 400 });
     }
 
-    // Fetch rental details using service role
+    // Fetch rental details using service role — fetch each individually
     console.log('[sendRentalConfirmation] Fetching rentals:', rentalIds);
-    const rentals = await base44.asServiceRole.entities.Rental.filter(
-      { id: { $in: rentalIds } }
-    );
+    const rentals = (await Promise.all(
+      rentalIds.map(id => base44.asServiceRole.entities.Rental.filter({ id }).catch(() => []))
+    )).flat();
     console.log('[sendRentalConfirmation] Fetched rentals:', rentals.length);
 
     if (!rentals || rentals.length === 0) {
