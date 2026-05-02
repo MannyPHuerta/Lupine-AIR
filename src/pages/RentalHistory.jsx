@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import EditRentalPanel from '@/components/rentals/EditRentalPanel';
+import QuickQuoteModal from '@/components/rentals/QuickQuoteModal';
 
 
 const STATUS_COLORS = {
@@ -74,7 +76,7 @@ function groupIntoOrders(rentals) {
   return Object.values(map).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
 
-function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed }) {
+function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed, onEdit }) {
   const [expanded, setExpanded] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [emailMode, setEmailMode] = useState(false);
@@ -228,6 +230,9 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed 
           </div>
 
           <div className="flex justify-end gap-2">
+            <Button size="sm" variant="outline" onClick={() => onEdit(order)} className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50">
+              <Pencil className="w-3.5 h-3.5" /> Edit
+            </Button>
             {emailMode ? (
               <div className="flex items-center gap-2 w-full">
                 <Input
@@ -275,6 +280,8 @@ export default function RentalHistory() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
 
   const reload = () => {
     base44.entities.Rental.list('-created_date', 2000).then(setRentals);
@@ -317,10 +324,17 @@ export default function RentalHistory() {
           <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
+          <div className="flex-1">
             <div className="text-lg font-bold">Rental History</div>
             <div className="text-indigo-300 text-xs">{orders.length} orders</div>
           </div>
+          <Button
+            size="sm"
+            onClick={() => setShowQuoteModal(true)}
+            className="bg-white text-indigo-900 hover:bg-indigo-50 gap-1.5 font-semibold"
+          >
+            <Plus className="w-4 h-4" /> Quick Quote
+          </Button>
         </div>
       </div>
 
@@ -360,11 +374,29 @@ export default function RentalHistory() {
         ) : (
           <div className="space-y-3">
             {filtered.map(order => (
-              <OrderCard key={order.id} order={order} equipment={equipment} companyInfo={companyInfo} branchSettings={branchSettings} onConfirmed={reload} />
+              <OrderCard key={order.id} order={order} equipment={equipment} companyInfo={companyInfo} branchSettings={branchSettings} onConfirmed={reload} onEdit={setEditingOrder} />
             ))}
           </div>
         )}
       </div>
+
+      {editingOrder && (
+        <EditRentalPanel
+          order={editingOrder}
+          equipment={equipment}
+          onClose={() => setEditingOrder(null)}
+          onSaved={() => { reload(); setEditingOrder(null); }}
+        />
+      )}
+
+      {showQuoteModal && (
+        <QuickQuoteModal
+          onClose={() => setShowQuoteModal(false)}
+          onSaved={reload}
+          companyInfo={companyInfo}
+          branchSettings={branchSettings}
+        />
+      )}
     </div>
   );
 }
