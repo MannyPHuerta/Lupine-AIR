@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import EditRentalPanel from '@/components/rentals/EditRentalPanel';
+import SignaturePad from '@/components/invoice/SignaturePad';
 
 
 const STATUS_COLORS = {
@@ -82,6 +83,8 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
   const [emailAddress, setEmailAddress] = useState(order.customer.email || '');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [advancingStatus, setAdvancingStatus] = useState(false);
+  const [showSignature, setShowSignature] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState(order.signatureDataUrl || null);
 
   const lines = order.lines;
   const taxRateDecimal = (order.taxRate || 8.25) / 100;
@@ -140,7 +143,7 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
       lines: enriched,
       branchInfo: bs ? { name: bs.branchName || order.customer.branch, address: bs.address || '', phone: bs.phone || '', email: bs.email || '' } : { name: order.customer.branch, address: '', phone: '', email: '' },
       companyInfo: companyInfo ? { companyName: companyInfo.companyName || '', logoUrl: companyInfo.logoUrl || '', invoiceFooter: companyInfo.invoiceFooter || '' } : {},
-    }, amountPaid, order.signatureDataUrl);
+    }, amountPaid, signatureDataUrl);
 
     // Update rental status + mark equipment as reserved
     await Promise.all(order.rentalIds.map(id =>
@@ -266,6 +269,22 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
             {amountPaid > 0 && <div className="flex justify-between font-bold border-t pt-1"><span>Balance</span><span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span></div>}
           </div>
 
+          {/* Inline signature pad — shown when ready to print */}
+          {showSignature && (
+            <div className="border rounded-lg p-4 bg-gray-50 space-y-2">
+              <SignaturePad
+                onSave={(url) => { setSignatureDataUrl(url); }}
+                onClear={() => setSignatureDataUrl(null)}
+              />
+              {signatureDataUrl && (
+                <div className="text-xs text-green-700 font-medium flex items-center gap-2">
+                  <span>✓ Signature captured</span>
+                  <button onClick={() => setSignatureDataUrl(null)} className="text-gray-400 hover:text-red-500 underline">Remove</button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button size="sm" variant="outline" onClick={() => onEdit(order)} className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50">
               <Pencil className="w-3.5 h-3.5" /> Edit
@@ -296,9 +315,20 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
                 <Button size="sm" onClick={() => setEmailMode(true)} variant="outline" className="gap-2">
                   <Mail className="w-4 h-4" /> Email Invoice
                 </Button>
-                <Button size="sm" onClick={handlePrint} disabled={printing} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-                  <Printer className="w-4 h-4" /> {printing ? 'Saving…' : 'Print'}
-                </Button>
+                {!showSignature ? (
+                  <Button size="sm" onClick={() => setShowSignature(true)} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                    <Printer className="w-4 h-4" /> Print
+                  </Button>
+                ) : (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setShowSignature(false)} className="text-gray-500">
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handlePrint} disabled={printing} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                      <Printer className="w-4 h-4" /> {printing ? 'Saving…' : 'Confirm & Print'}
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>
