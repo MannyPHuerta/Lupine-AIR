@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import EditRentalPanel from '@/components/rentals/EditRentalPanel';
-import QuickQuoteModal from '@/components/rentals/QuickQuoteModal';
 
 
 const STATUS_COLORS = {
@@ -281,7 +280,6 @@ export default function RentalHistory() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingOrder, setEditingOrder] = useState(null);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
 
   const reload = () => {
     base44.entities.Rental.list('-created_date', 2000).then(setRentals);
@@ -328,13 +326,7 @@ export default function RentalHistory() {
             <div className="text-lg font-bold">Rental History</div>
             <div className="text-indigo-300 text-xs">{orders.length} orders</div>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setShowQuoteModal(true)}
-            className="bg-white text-indigo-900 hover:bg-indigo-50 gap-1.5 font-semibold flex-shrink-0"
-          >
-            <Plus className="w-4 h-4" /> Quick Quote
-          </Button>
+
         </div>
       </div>
 
@@ -389,14 +381,7 @@ export default function RentalHistory() {
         />
       )}
 
-      {showQuoteModal && (
-        <QuickQuoteModal
-          onClose={() => setShowQuoteModal(false)}
-          onSaved={reload}
-          companyInfo={companyInfo}
-          branchSettings={branchSettings}
-        />
-      )}
+
     </div>
   );
 }

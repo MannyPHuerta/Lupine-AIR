@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, FileText } from 'lucide-react';
-import QuickQuoteModal from '@/components/rentals/QuickQuoteModal';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { calcDeliveryFee } from '@/lib/deliveryFee';
 import SignaturePad from '@/components/invoice/SignaturePad';
@@ -56,7 +55,6 @@ export default function AvailabilityManager() {
   const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [showQuickQuote, setShowQuickQuote] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [pendingInvoice, setPendingInvoice] = useState(null);
   const [appliedPromo, setAppliedPromo] = useState(null);
@@ -510,13 +508,7 @@ export default function AvailabilityManager() {
             >
               <History className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setShowQuickQuote(true)}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Quick Quote (no inventory check)"
-            >
-              <FileText className="w-4 h-4" />
-            </button>
+
             <button
               onClick={() => navigate('/pricing-editor')}
               className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
@@ -804,7 +796,7 @@ export default function AvailabilityManager() {
             variant="outline"
             className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save as Draft'}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save as Quote'}
           </Button>
           <Button
             onClick={handlePrintAndConfirm}
@@ -816,14 +808,6 @@ export default function AvailabilityManager() {
         </div>
       </div>
 
-      {showQuickQuote && (
-        <QuickQuoteModal
-          onClose={() => setShowQuickQuote(false)}
-          onSaved={() => {}}
-          companyInfo={companyInfo}
-          branchSettings={branchSettings}
-        />
-      )}
     </div>
   );
 }
