@@ -7,6 +7,10 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
+import LandingHero from "./pages/LandingHero";
+import AIRental from "./pages/AIRental";
+import AIREvents from "./pages/AIREvents";
+import AIRfq from "./pages/AIRfq";
 import ReportForm from "./pages/ReportForm";
 import PendingReports from "./pages/PendingReports";
 import ReportHistory from "./pages/ReportHistory";
@@ -137,7 +141,11 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <Routes>
-            {/* Public route - no auth required */}
+            {/* Public routes - no auth required */}
+            <Route path="/" element={<LandingHero />} />
+            <Route path="/airental" element={<AIRental />} />
+            <Route path="/airevents" element={<AIREvents />} />
+            <Route path="/airfq" element={<AIRfq />} />
             <Route path="/report/:id" element={<ReportView />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
