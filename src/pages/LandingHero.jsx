@@ -33,6 +33,7 @@ export default function LandingHero() {
             className="space-y-2"
           >
             <p className="text-xl text-blue-300 font-light tracking-wide">It's time for a breath of fresh</p>
+            <p className="text-sm text-cyan-200/70 font-medium">The FIRST rental equipment cloud software to harness the power of AI</p>
           </motion.div>
         )}
 
