@@ -34,19 +34,35 @@
     },
     "customerAddress": {
       "type": "string",
-      "description": "Customer street address"
+      "description": "Customer billing street address"
     },
     "customerCity": {
       "type": "string",
-      "description": "Customer city"
+      "description": "Customer billing city"
     },
     "customerState": {
       "type": "string",
-      "description": "Customer state"
+      "description": "Customer billing state"
     },
     "customerZip": {
       "type": "string",
-      "description": "Customer zip code"
+      "description": "Customer billing zip code"
+    },
+    "worksiteAddress": {
+      "type": "string",
+      "description": "Delivery / worksite street address (if different from billing)"
+    },
+    "worksiteCity": {
+      "type": "string",
+      "description": "Worksite city"
+    },
+    "worksiteState": {
+      "type": "string",
+      "description": "Worksite state"
+    },
+    "worksiteZip": {
+      "type": "string",
+      "description": "Worksite zip code"
     },
     "customerId": {
       "type": "string",
@@ -97,7 +113,7 @@
         "cancelled"
       ],
       "default": "quote",
-      "description": "Contract lifecycle status: quote \u2192 reservation \u2192 contract \u2192 out \u2192 returned \u2192 completed"
+      "description": "Contract lifecycle status"
     },
     "deliveryMethod": {
       "type": "string",

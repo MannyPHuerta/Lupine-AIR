@@ -297,6 +297,10 @@ export default function AvailabilityManager() {
           status: status === 'confirmed' ? 'contract' : 'quote',
           returnMethod: returnMethod || 'customer_return',
           deliveryMethod: deliveryMethod || 'customer_pickup',
+          worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
+          worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
+          worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
+          worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
           signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
           notes: customer.notes,
         });

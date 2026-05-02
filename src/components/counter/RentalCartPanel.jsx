@@ -125,36 +125,69 @@ export default function RentalCartPanel({
 
     setCompleting(true);
     try {
-      // Use worksite address for company deliveries, otherwise use customer's home address
-      const useWorksite = deliveryMethod === 'company_delivery' && worksiteAddress;
-      const invoice = await base44.functions.invoke('createRental', {
-        customerId: customer.id,
-        customerName: customer.fullName,
-        customerEmail: customer.email,
-        customerPhone: customer.phone,
-        customerAddress: useWorksite ? worksiteAddress : customer.address,
-        customerCity: useWorksite ? worksiteCity : customer.city,
-        customerState: useWorksite ? worksiteState : customer.state,
-        customerZip: useWorksite ? worksiteZip : customer.zip,
-        items: cart.map(item => ({
+      // Fetch and increment invoice number
+      const branchSettingsList = await base44.entities.BranchSettings.filter({ branch });
+      const bs = branchSettingsList[0];
+      let invoiceNumber = '';
+      if (bs) {
+        const num = bs.nextInvoiceNumber || 1000;
+        invoiceNumber = `${bs.invoicePrefix || ''}-${String(num).padStart(4, '0')}`;
+        await base44.entities.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
+      }
+
+      const taxRateDecimal = 0.0825;
+      const totalDays = days;
+
+      // Create one rental record per cart item — billing address always stays as customer's home address
+      const createdIds = [];
+      for (const item of cart) {
+        const itemBase = item.dailyRate * days;
+        const itemTax = itemBase * taxRateDecimal;
+        const rental = await base44.entities.Rental.create({
           equipmentId: item.id,
           equipmentName: item.name,
-        })),
-        startDate,
-        endDate,
-        totalDays: days,
-        baseAmount: subtotal,
-        discountAmount,
-        taxAmount: tax,
-        deposit,
-        branch,
-        paymentMethod,
-        signatureDataUrl: signature,
-        sendEmail,
-        sendSMS,
-        deliveryMethod,
-        returnMethod,
-      });
+          startDate,
+          endDate,
+          totalDays,
+          customerName: customer.fullName,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          // Billing address — always the customer's home address
+          customerAddress: customer.address,
+          customerCity: customer.city,
+          customerState: customer.state,
+          customerZip: customer.zip,
+          customerId: customer.id,
+          branch,
+          baseAmount: itemBase,
+          taxRate: taxRateDecimal,
+          taxAmount: itemTax,
+          deposit: item.depositRequired || 0,
+          amountPaid: itemBase + itemTax,
+          invoiceNumber,
+          status: 'contract',
+          deliveryMethod,
+          returnMethod,
+          // Worksite address — where equipment is actually delivered (may differ from billing)
+          worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
+          worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
+          worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
+          worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
+          signatureDataUrl: signature,
+        });
+        createdIds.push(rental.id);
+      }
+
+      // Optionally send confirmation
+      if ((sendEmail && customer.email) || sendSMS) {
+        base44.functions.invoke('sendRentalConfirmation', {
+          rentalIds: createdIds,
+          customerEmail: customer.email,
+          customerPhone: customer.phone,
+          invoiceNumber,
+          autoSendCommunications: sendEmail,
+        }).catch(() => {});
+      }
 
       setCompleted(true);
       setTimeout(() => {

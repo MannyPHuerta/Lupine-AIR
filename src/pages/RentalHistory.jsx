@@ -50,6 +50,12 @@ function groupIntoOrders(rentals) {
       map[key].amountPaid = r.amountPaid || 0;
       map[key].invoiceNumber = r.invoiceNumber || '';
       map[key].signatureDataUrl = r.signatureDataUrl || null;
+      map[key].deliveryMethod = r.deliveryMethod || 'customer_pickup';
+      map[key].returnMethod = r.returnMethod || 'customer_return';
+      map[key].worksiteAddress = r.worksiteAddress || '';
+      map[key].worksiteCity = r.worksiteCity || '';
+      map[key].worksiteState = r.worksiteState || '';
+      map[key].worksiteZip = r.worksiteZip || '';
     }
     map[key].lines.push({
       rentalId: r.id,
