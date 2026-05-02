@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map } from 'lucide-react';
+import DispatchMap from '@/components/dispatch/DispatchMap';
 
 const DELIVERY_STATUS_COLORS = {
   scheduled: 'bg-blue-100 text-blue-800',
@@ -31,7 +31,7 @@ export default function DispatchBoard() {
   const [recoveries, setRecoveries] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('deliveries');
+  const [tab, setTab] = useState('map');
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
 
   const load = () => {
@@ -117,13 +117,28 @@ export default function DispatchBoard() {
           >
             🔄 Recoveries ({filteredRecoveries.length})
           </button>
+          <button
+            onClick={() => setTab('map')}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition flex items-center gap-1 ${tab === 'map' ? 'bg-white text-indigo-900' : 'text-indigo-300 hover:text-white'}`}
+          >
+            <Map className="w-3 h-3" /> Map
+          </button>
         </div>
       </div>
+
+      {tab === 'map' && !loading && (
+        <DispatchMap
+          deliveries={filteredDeliveries}
+          recoveries={filteredRecoveries}
+          onSelectDelivery={(id) => navigate(`/delivery/${id}`)}
+          onSelectRecovery={(id) => navigate(`/recovery/${id}`)}
+        />
+      )}
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
-        ) : (
+        ) : tab === 'map' ? null : (
           <div className="space-y-6">
             {tab === 'deliveries' && (
               Object.keys(deliveryGroups).length === 0 ? (

@@ -1,0 +1,190 @@
+import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix default marker icons broken by Vite bundling
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const STATUS_DOT_COLORS = {
+  // Deliveries
+  scheduled: '#3b82f6',
+  departed: '#6366f1',
+  arrived: '#f59e0b',
+  setup_complete: '#a855f7',
+  signed: '#14b8a6',
+  completed: '#22c55e',
+  // Recoveries
+  photos_captured: '#a855f7',
+  loaded: '#6366f1',
+  returned_to_branch: '#14b8a6',
+  cancelled: '#9ca3af',
+};
+
+function makeIcon(color, label) {
+  return L.divIcon({
+    className: '',
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    html: `
+      <div style="
+        background:${color};
+        border:2px solid white;
+        border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        width:28px;height:28px;
+        box-shadow:0 2px 6px rgba(0,0,0,0.35);
+        display:flex;align-items:center;justify-content:center;
+      ">
+        <span style="transform:rotate(45deg);font-size:11px;color:white;font-weight:700;">${label}</span>
+      </div>`,
+  });
+}
+
+// Geocode address via Nominatim (free, no key required)
+async function geocode(address, city, state, zip) {
+  const q = encodeURIComponent(`${address}, ${city}, ${state} ${zip}`);
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
+    headers: { 'Accept-Language': 'en' },
+  });
+  const data = await res.json();
+  if (data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  return null;
+}
+
+// Auto-fit bounds when pins change
+function FitBounds({ positions }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length > 0) {
+      const bounds = L.latLngBounds(positions.map(p => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [48, 48] });
+    }
+  }, [positions, map]);
+  return null;
+}
+
+export default function DispatchMap({ deliveries, recoveries, onSelectDelivery, onSelectRecovery }) {
+  const [pins, setPins] = useState([]);
+  const [geocoding, setGeocoding] = useState(false);
+
+  useEffect(() => {
+    const items = [
+      ...deliveries.filter(d => d.customerAddress).map(d => ({ ...d, _type: 'delivery' })),
+      ...recoveries.filter(r => r.customerAddress).map(r => ({ ...r, _type: 'recovery' })),
+    ];
+
+    if (items.length === 0) return;
+
+    setGeocoding(true);
+    let cancelled = false;
+
+    (async () => {
+      const results = [];
+      for (const item of items) {
+        // Throttle: Nominatim requires ≤1 req/sec
+        await new Promise(r => setTimeout(r, 250));
+        if (cancelled) break;
+        const coords = await geocode(
+          item.customerAddress,
+          item.customerCity,
+          item.customerState,
+          item.customerZip
+        );
+        if (coords) results.push({ ...item, ...coords });
+      }
+      if (!cancelled) {
+        setPins(results);
+        setGeocoding(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [deliveries, recoveries]);
+
+  // Default center: McAllen, TX
+  const defaultCenter = [26.2034, -98.2300];
+
+  return (
+    <div className="relative" style={{ height: 'calc(100vh - 120px)' }}>
+      {geocoding && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-white border border-gray-200 shadow-md rounded-full px-4 py-1.5 text-xs text-gray-600 flex items-center gap-2">
+          <span className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin inline-block" />
+          Geocoding addresses…
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="absolute bottom-6 left-3 z-[1000] bg-white border border-gray-200 rounded-lg shadow-md px-3 py-2 text-xs space-y-1">
+        <div className="font-semibold text-gray-700 mb-1">Legend</div>
+        {[['Delivery', '#3b82f6'], ['Recovery', '#f43f5e'], ['Completed', '#22c55e']].map(([label, color]) => (
+          <div key={label} className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full inline-block flex-shrink-0" style={{ background: color }} />
+            {label}
+          </div>
+        ))}
+      </div>
+
+      <MapContainer
+        center={defaultCenter}
+        zoom={10}
+        style={{ height: '100%', width: '100%' }}
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        <FitBounds positions={pins} />
+
+        {pins.map(pin => {
+          const isDelivery = pin._type === 'delivery';
+          const color = pin.status === 'completed'
+            ? '#22c55e'
+            : isDelivery
+              ? (STATUS_DOT_COLORS[pin.status] || '#3b82f6')
+              : '#f43f5e';
+          const label = isDelivery ? 'D' : 'R';
+
+          return (
+            <Marker
+              key={pin.id}
+              position={[pin.lat, pin.lng]}
+              icon={makeIcon(color, label)}
+            >
+              <Popup>
+                <div className="text-sm space-y-1 min-w-[160px]">
+                  <div className="font-semibold">{pin.customerName}</div>
+                  <div className="text-gray-600 text-xs">{pin.customerAddress}</div>
+                  <div className="text-gray-600 text-xs">{pin.customerCity}, {pin.customerState}</div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span
+                      className="inline-block px-2 py-0.5 rounded-full text-white text-xs font-medium"
+                      style={{ background: color }}
+                    >
+                      {pin.status.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-gray-400 text-xs">{isDelivery ? '🚚 Delivery' : '🔄 Recovery'}</span>
+                  </div>
+                  {pin.scheduledTime && <div className="text-xs text-gray-500">⏰ {pin.scheduledTime}</div>}
+                  <button
+                    onClick={() => isDelivery ? onSelectDelivery(pin.id) : onSelectRecovery(pin.id)}
+                    className="mt-2 w-full text-center text-xs text-indigo-600 hover:text-indigo-800 font-medium underline"
+                  >
+                    Open details →
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+    </div>
+  );
+}
