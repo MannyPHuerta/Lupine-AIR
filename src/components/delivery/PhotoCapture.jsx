@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, Trash2, Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function PhotoCapture({ photos, onAddPhoto }) {
+export default function PhotoCapture({ photos, onAddPhoto, onRemovePhoto }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -74,10 +74,7 @@ export default function PhotoCapture({ photos, onAddPhoto }) {
                 className="w-full h-full object-cover"
               />
               <button
-                onClick={() => {
-                  const updated = photos.filter((_, i) => i !== idx);
-                  // Trigger re-render by removing photo
-                }}
+                onClick={() => onRemovePhoto(idx)}
                 className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full"
               >
                 <Trash2 className="w-3 h-3" />

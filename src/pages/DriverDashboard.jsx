@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Loader2, MapPin, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw } from 'lucide-react';
 
 const STATUS_COLORS = {
   scheduled: 'bg-blue-50 border-blue-200 text-blue-900',
@@ -16,16 +16,18 @@ export default function DriverDashboard() {
   const navigate = useNavigate();
   const [driver, setDriver] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
+  const [recoveries, setRecoveries] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       base44.auth.me(),
       base44.entities.Delivery.list('-created_date', 50),
-    ]).then(([user, dels]) => {
+      base44.entities.Recovery.list('-created_date', 50),
+    ]).then(([user, dels, recs]) => {
       setDriver(user);
-      // Filter for deliveries assigned to this driver
       setDeliveries(dels.filter(d => d.driverId === user.email));
+      setRecoveries(recs.filter(r => r.driverId === user.email));
       setLoading(false);
     });
   }, []);
@@ -42,6 +44,8 @@ export default function DriverDashboard() {
   const todaysDeliveries = deliveries.filter(d => d.scheduledDate === today);
   const upcomingDeliveries = deliveries.filter(d => d.scheduledDate > today);
   const completedDeliveries = deliveries.filter(d => d.status === 'completed');
+  const todaysRecoveries = recoveries.filter(r => r.scheduledDate === today && r.status !== 'completed');
+  const upcomingRecoveries = recoveries.filter(r => r.scheduledDate > today);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,7 +55,7 @@ export default function DriverDashboard() {
           <div className="text-lg font-bold">🚚 Driver Dashboard</div>
           <div className="text-indigo-300 text-xs mt-1">{driver?.full_name} • {driver?.email}</div>
           <div className="mt-2 text-sm text-indigo-200">
-            {todaysDeliveries.length} deliveries today | {upcomingDeliveries.length} upcoming
+            {todaysDeliveries.length} deliveries · {todaysRecoveries.length} recoveries today
           </div>
         </div>
       </div>
@@ -93,9 +97,37 @@ export default function DriverDashboard() {
           </section>
         )}
 
-        {todaysDeliveries.length === 0 && upcomingDeliveries.length === 0 && (
+        {/* Today's Recoveries */}
+        {todaysRecoveries.length > 0 && (
+          <section>
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-rose-600" /> Today's Recoveries
+            </h2>
+            <div className="space-y-3">
+              {todaysRecoveries.map(r => (
+                <RecoveryCard key={r.id} recovery={r} onSelect={() => navigate(`/recovery/${r.id}`)} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Upcoming Recoveries */}
+        {upcomingRecoveries.length > 0 && (
+          <section>
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-rose-400" /> Upcoming Recoveries
+            </h2>
+            <div className="space-y-3">
+              {upcomingRecoveries.map(r => (
+                <RecoveryCard key={r.id} recovery={r} onSelect={() => navigate(`/recovery/${r.id}`)} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {todaysDeliveries.length === 0 && upcomingDeliveries.length === 0 && todaysRecoveries.length === 0 && upcomingRecoveries.length === 0 && (
           <div className="text-center text-gray-500 py-12">
-            <div className="text-lg font-medium">No deliveries assigned</div>
+            <div className="text-lg font-medium">No assignments for today</div>
           </div>
         )}
       </div>
@@ -130,6 +162,36 @@ function DeliveryCard({ delivery, onSelect }) {
           {delivery.status === 'completed' && <CheckCircle className="w-5 h-5" />}
           {delivery.status === 'scheduled' && <AlertCircle className="w-5 h-5 opacity-50" />}
         </div>
+      </div>
+    </button>
+  );
+}
+
+function RecoveryCard({ recovery, onSelect }) {
+  return (
+    <button
+      onClick={onSelect}
+      className="w-full border rounded-lg p-4 text-left transition-all hover:shadow-md bg-rose-50 border-rose-200 text-rose-900"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-base flex items-center gap-2">
+            <RotateCcw className="w-4 h-4 text-rose-600" />
+            {recovery.customerName}
+          </div>
+          <div className="text-xs opacity-75 mt-1 flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {recovery.customerCity}, {recovery.customerState}
+          </div>
+          <div className="text-xs opacity-75 mt-1 flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {recovery.scheduledDate}
+          </div>
+          <div className="text-xs opacity-75 mt-2">{recovery.items?.length || 0} item(s) to recover</div>
+        </div>
+        <span className="text-xs font-medium bg-white bg-opacity-60 px-2 py-1 rounded flex-shrink-0">
+          {recovery.status.replace(/_/g, ' ')}
+        </span>
       </div>
     </button>
   );

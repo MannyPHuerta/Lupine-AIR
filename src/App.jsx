@@ -47,6 +47,8 @@ import ManagerDashboard from "./pages/ManagerDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
 import DeliveryDetail from "./pages/DeliveryDetail";
 import DeliveryAssignment from "./pages/DeliveryAssignment";
+import RecoveryDetail from "./pages/RecoveryDetail";
+import DispatchBoard from "./pages/DispatchBoard";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -120,6 +122,8 @@ const AuthenticatedApp = () => {
       <Route path="/driver" element={<DriverDashboard />} />
       <Route path="/delivery/:id" element={<DeliveryDetail />} />
       <Route path="/assign-deliveries" element={<DeliveryAssignment />} />
+      <Route path="/recovery/:id" element={<RecoveryDetail />} />
+      <Route path="/dispatch" element={<DispatchBoard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

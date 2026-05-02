@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, Check, MapPin, Phone, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, MapPin, Phone, AlertCircle, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ManifestChecklist from '@/components/delivery/ManifestChecklist';
 import PhotoCapture from '@/components/delivery/PhotoCapture';
@@ -17,6 +17,7 @@ export default function DeliveryDetail() {
   const [updating, setUpdating] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [signature, setSignature] = useState(null);
+  const [sendingSMS, setSendingSMS] = useState(false);
 
   useEffect(() => {
     if (!id || id === ':id') {
@@ -108,6 +109,18 @@ export default function DeliveryDetail() {
     );
   }
 
+  const sendSMS = async (messageType) => {
+    setSendingSMS(true);
+    try {
+      await base44.functions.invoke('driverSMS', { deliveryId: id, messageType });
+      alert('SMS sent to customer');
+    } catch (err) {
+      alert(`SMS failed: ${err.message}`);
+    } finally {
+      setSendingSMS(false);
+    }
+  };
+
   const canProceed = {
     departed: delivery.items?.every(i => i.checked) || false,
     arrived: delivery.status === 'departed',
@@ -148,6 +161,24 @@ export default function DeliveryDetail() {
               {delivery.customerPhone}
             </a>
           </div>
+          {delivery.customerPhone && (
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => sendSMS('on_my_way')}
+                disabled={sendingSMS}
+                className="flex items-center gap-1 text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100 disabled:opacity-50"
+              >
+                <MessageSquare className="w-3 h-3" /> On My Way
+              </button>
+              <button
+                onClick={() => sendSMS('arrived')}
+                disabled={sendingSMS}
+                className="flex items-center gap-1 text-xs bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-100 disabled:opacity-50"
+              >
+                <MessageSquare className="w-3 h-3" /> Arrived
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Manifest Checklist */}
@@ -164,7 +195,11 @@ export default function DeliveryDetail() {
 
         {/* Photos */}
         {(delivery.status === 'arrived' || delivery.status === 'setup_complete' || delivery.status === 'signed') && (
-          <PhotoCapture photos={photos} onAddPhoto={(photo) => setPhotos([...photos, photo])} />
+          <PhotoCapture
+            photos={photos}
+            onAddPhoto={(photo) => setPhotos([...photos, photo])}
+            onRemovePhoto={(idx) => setPhotos(photos.filter((_, i) => i !== idx))}
+          />
         )}
 
         {/* Signature */}

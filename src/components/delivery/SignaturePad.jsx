@@ -10,20 +10,12 @@ export default function SignaturePad({ onSignatureCapture, existingSignature }) 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth * window.devicePixelRatio;
     canvas.height = canvas.offsetHeight * window.devicePixelRatio;
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-    // Draw white background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-
-    // Draw border
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
     if (existingSignature) {
       const img = new Image();
@@ -37,13 +29,17 @@ export default function SignaturePad({ onSignatureCapture, existingSignature }) 
     }
   }, [existingSignature]);
 
-  const handleMouseDown = (e) => {
+  const getPos = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  };
+
+  const startDraw = (e) => {
+    e.preventDefault();
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+    const { x, y } = getPos(e, canvas);
     setIsDrawing(true);
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -53,25 +49,22 @@ export default function SignaturePad({ onSignatureCapture, existingSignature }) 
     ctx.lineJoin = 'round';
   };
 
-  const handleMouseMove = (e) => {
+  const draw = (e) => {
+    e.preventDefault();
     if (!isDrawing) return;
-
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+    const { x, y } = getPos(e, canvas);
     ctx.lineTo(x, y);
     ctx.stroke();
     setHasSignature(true);
   };
 
-  const handleMouseUp = () => {
+  const endDraw = (e) => {
+    e.preventDefault();
     setIsDrawing(false);
     const canvas = canvasRef.current;
-    const dataUrl = canvas.toDataURL('image/png');
-    onSignatureCapture(dataUrl);
+    onSignatureCapture(canvas.toDataURL('image/png'));
   };
 
   const handleClear = () => {
@@ -79,9 +72,6 @@ export default function SignaturePad({ onSignatureCapture, existingSignature }) 
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#e5e7eb';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
     setHasSignature(false);
     onSignatureCapture(null);
   };
@@ -95,19 +85,18 @@ export default function SignaturePad({ onSignatureCapture, existingSignature }) 
 
       <canvas
         ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-crosshair bg-white"
+        onMouseDown={startDraw}
+        onMouseMove={draw}
+        onMouseUp={endDraw}
+        onMouseLeave={endDraw}
+        onTouchStart={startDraw}
+        onTouchMove={draw}
+        onTouchEnd={endDraw}
+        className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-crosshair bg-white touch-none"
       />
 
       <div className="flex gap-2">
-        <Button
-          onClick={handleClear}
-          variant="outline"
-          className="flex-1"
-        >
+        <Button onClick={handleClear} variant="outline" className="flex-1">
           <RotateCcw className="w-4 h-4 mr-2" />
           Clear
         </Button>

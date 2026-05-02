@@ -38,6 +38,14 @@ export default function DeliveryAssignment() {
   const handleCreateDelivery = async (rental, driverId, driverName) => {
     setCreating(true);
     try {
+      // Build items list from rental — one line per rental record (each rental = one equipment item)
+      const items = [{
+        equipmentId: rental.equipmentId,
+        equipmentName: rental.equipmentName,
+        quantity: 1,
+        checked: false,
+      }];
+
       await base44.entities.Delivery.create({
         rentalId: rental.id,
         customerId: rental.customerId,
@@ -51,10 +59,9 @@ export default function DeliveryAssignment() {
         driverName,
         branch: rental.branch || '01 McAllen',
         status: 'scheduled',
-        items: [], // Will be populated from rental items
-        scheduledDate: new Date().toISOString().split('T')[0],
-        deliveryMethod: 'company_delivery',
-        returnMethod: rental.returnMethod || 'company_pickup',
+        items,
+        scheduledDate: rental.startDate || new Date().toISOString().split('T')[0],
+        notes: rental.notes || '',
       });
 
       // Refresh deliveries

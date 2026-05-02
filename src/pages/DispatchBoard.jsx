@@ -1,0 +1,206 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
+import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+const DELIVERY_STATUS_COLORS = {
+  scheduled: 'bg-blue-100 text-blue-800',
+  departed: 'bg-indigo-100 text-indigo-800',
+  arrived: 'bg-amber-100 text-amber-800',
+  setup_complete: 'bg-purple-100 text-purple-800',
+  signed: 'bg-teal-100 text-teal-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-gray-100 text-gray-500',
+};
+
+const RECOVERY_STATUS_COLORS = {
+  scheduled: 'bg-orange-100 text-orange-800',
+  departed: 'bg-rose-100 text-rose-800',
+  arrived: 'bg-amber-100 text-amber-800',
+  photos_captured: 'bg-purple-100 text-purple-800',
+  loaded: 'bg-indigo-100 text-indigo-800',
+  returned_to_branch: 'bg-teal-100 text-teal-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-gray-100 text-gray-500',
+};
+
+export default function DispatchBoard() {
+  const navigate = useNavigate();
+  const [deliveries, setDeliveries] = useState([]);
+  const [recoveries, setRecoveries] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('deliveries');
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      base44.entities.Delivery.list('-scheduledDate', 200),
+      base44.entities.Recovery.list('-scheduledDate', 200),
+      base44.entities.User.list(),
+    ]).then(([dels, recs, usrs]) => {
+      setDeliveries(dels);
+      setRecoveries(recs);
+      setUsers(usrs);
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const driverName = (driverId) => {
+    const u = users.find(u => u.email === driverId || u.id === driverId);
+    return u ? u.full_name : driverId;
+  };
+
+  const filteredDeliveries = deliveries.filter(d =>
+    !dateFilter || d.scheduledDate === dateFilter
+  );
+  const filteredRecoveries = recoveries.filter(r =>
+    !dateFilter || r.scheduledDate === dateFilter
+  );
+
+  // Group by driver
+  const groupByDriver = (items) => {
+    const map = {};
+    items.forEach(item => {
+      const key = item.driverId || 'Unassigned';
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
+    });
+    return map;
+  };
+
+  const deliveryGroups = groupByDriver(filteredDeliveries);
+  const recoveryGroups = groupByDriver(filteredRecoveries);
+
+  const activeItems = tab === 'deliveries' ? filteredDeliveries : filteredRecoveries;
+  const inProgress = activeItems.filter(i => !['completed', 'cancelled'].includes(i.status)).length;
+  const completed = activeItems.filter(i => i.status === 'completed').length;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
+          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-indigo-800">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1">
+            <div className="text-lg font-bold">Dispatch Board</div>
+            <div className="text-indigo-300 text-xs">{inProgress} in progress · {completed} completed</div>
+          </div>
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
+            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
+          />
+          <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="px-4 pb-2 flex gap-2 max-w-6xl mx-auto">
+          <button
+            onClick={() => setTab('deliveries')}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${tab === 'deliveries' ? 'bg-white text-indigo-900' : 'text-indigo-300 hover:text-white'}`}
+          >
+            🚚 Deliveries ({filteredDeliveries.length})
+          </button>
+          <button
+            onClick={() => setTab('recoveries')}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${tab === 'recoveries' ? 'bg-white text-indigo-900' : 'text-indigo-300 hover:text-white'}`}
+          >
+            🔄 Recoveries ({filteredRecoveries.length})
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {loading ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
+        ) : (
+          <div className="space-y-6">
+            {tab === 'deliveries' && (
+              Object.keys(deliveryGroups).length === 0 ? (
+                <EmptyState label="No deliveries" />
+              ) : (
+                Object.entries(deliveryGroups).map(([driverId, items]) => (
+                  <DriverGroup
+                    key={driverId}
+                    driverName={driverId === 'Unassigned' ? 'Unassigned' : driverName(driverId)}
+                    items={items}
+                    type="delivery"
+                    onSelect={(item) => navigate(`/delivery/${item.id}`)}
+                    statusColors={DELIVERY_STATUS_COLORS}
+                  />
+                ))
+              )
+            )}
+            {tab === 'recoveries' && (
+              Object.keys(recoveryGroups).length === 0 ? (
+                <EmptyState label="No recoveries" />
+              ) : (
+                Object.entries(recoveryGroups).map(([driverId, items]) => (
+                  <DriverGroup
+                    key={driverId}
+                    driverName={driverId === 'Unassigned' ? 'Unassigned' : driverName(driverId)}
+                    items={items}
+                    type="recovery"
+                    onSelect={(item) => navigate(`/recovery/${item.id}`)}
+                    statusColors={RECOVERY_STATUS_COLORS}
+                  />
+                ))
+              )
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DriverGroup({ driverName, items, type, onSelect, statusColors }) {
+  const completed = items.filter(i => i.status === 'completed').length;
+  return (
+    <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+      <div className="bg-gray-50 border-b px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {type === 'delivery' ? <Truck className="w-4 h-4 text-indigo-600" /> : <RotateCcw className="w-4 h-4 text-rose-600" />}
+          <span className="font-semibold text-gray-900">{driverName}</span>
+        </div>
+        <span className="text-xs text-gray-500">{completed}/{items.length} done</span>
+      </div>
+      <div className="divide-y">
+        {items.map(item => (
+          <button
+            key={item.id}
+            onClick={() => onSelect(item)}
+            className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center justify-between gap-3"
+          >
+            <div className="min-w-0">
+              <div className="font-medium text-sm text-gray-900">{item.customerName}</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {item.customerCity}, {item.customerState}
+                {item.scheduledTime ? ` · ${item.scheduledTime}` : ''}
+              </div>
+            </div>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${statusColors[item.status] || 'bg-gray-100 text-gray-600'}`}>
+              {item.status.replace(/_/g, ' ')}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ label }) {
+  return (
+    <div className="text-center text-gray-400 py-16 text-sm">{label} scheduled for this date</div>
+  );
+}
