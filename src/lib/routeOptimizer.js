@@ -42,7 +42,7 @@ export function optimizeRoute(stops, origin = null) {
     });
 
     const next = remaining.splice(nearestIdx, 1)[0];
-    next._distFromPrev = Math.round(nearestDist * 10) / 10; // km, 1 decimal
+    next._distFromPrev = Math.round(nearestDist * 10) / 10; // miles, 1 decimal
     ordered.push(next);
     current = { lat: next.lat, lng: next.lng };
   }

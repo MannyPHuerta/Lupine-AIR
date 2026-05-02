@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map } from 'lucide-react';
 import DispatchMap from '@/components/dispatch/DispatchMap';
 import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
+import { getCached, setCached } from '@/lib/geocodeCache';
 
 const DELIVERY_STATUS_COLORS = {
   scheduled: 'bg-blue-100 text-blue-800',
@@ -26,15 +27,22 @@ const RECOVERY_STATUS_COLORS = {
   cancelled: 'bg-gray-100 text-gray-500',
 };
 
-// Geocode a single address via Nominatim (free, no key)
+// Geocode a single address via Nominatim, with localStorage caching
 async function geocode(address, city, state, zip) {
+  const cached = getCached(address, city, state, zip);
+  if (cached) return cached;
+
   const q = encodeURIComponent(`${address}, ${city}, ${state} ${zip}`);
   const res = await fetch(
     `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
     { headers: { 'Accept-Language': 'en' } }
   );
   const data = await res.json();
-  if (data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  if (data[0]) {
+    const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    setCached(address, city, state, zip, coords);
+    return coords;
+  }
   return null;
 }
 
@@ -87,8 +95,10 @@ export default function DispatchBoard() {
     (async () => {
       const results = [];
       for (const item of items) {
-        await new Promise(r => setTimeout(r, 250)); // Nominatim rate limit
         if (cancelled) break;
+        // Only throttle uncached requests to respect Nominatim rate limit
+        const isCached = !!getCached(item.customerAddress, item.customerCity, item.customerState, item.customerZip);
+        if (!isCached) await new Promise(r => setTimeout(r, 250));
         const coords = await geocode(item.customerAddress, item.customerCity, item.customerState, item.customerZip);
         if (coords) results.push({ ...item, lat: coords.lat, lng: coords.lng, _lat: coords.lat, _lng: coords.lng });
       }
