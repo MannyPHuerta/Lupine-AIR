@@ -194,17 +194,36 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Base44 built-in integration
-    console.log('[sendRentalConfirmation] Sending email via Base44 to:', customerEmail);
+    // Send email via Resend
+    console.log('[sendRentalConfirmation] Sending email via Resend to:', customerEmail);
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: customerEmail,
-      subject: `Rental Invoice ${invoiceNumber || 'Quote'}`,
-      body: invoiceHtml,
-      from_name: 'Rental World LLC',
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('[sendRentalConfirmation] RESEND_API_KEY not configured');
+      return Response.json({ error: 'Email service not configured', emailSent: false }, { status: 500 });
+    }
+
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: company.senderEmail || 'noreply@rentalworld.com',
+        to: customerEmail,
+        subject: `Rental Invoice ${invoiceNumber || 'Quote'}`,
+        html: invoiceHtml,
+      }),
     });
 
-    console.log('[sendRentalConfirmation] Email sent successfully');
+    if (!resendRes.ok) {
+      const err = await resendRes.text();
+      console.error('[sendRentalConfirmation] Resend error:', err);
+      return Response.json({ error: 'Failed to send email via Resend', emailSent: false }, { status: 500 });
+    }
+
+    console.log('[sendRentalConfirmation] Email sent successfully via Resend');
 
     // Also send SMS via Twilio if phone available
     let smsSent = false;
