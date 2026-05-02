@@ -94,9 +94,11 @@ Deno.serve(async (req) => {
     const taxRateDecimal = (invoiceOrder.taxRate || 8.25) / 100;
     const rentalSubtotal = lineItems.reduce((s, l) => s + (l.baseAmount || 0), 0);
     const depositTotal = lineItems.reduce((s, l) => s + (l.deposit || 0), 0);
+    const deliveryFee = rental.deliveryFee || 0;
+    const returnFee = rental.returnFee || 0;
     const taxableBase = lineItems.reduce((s, l) => s + (l.taxable !== false ? (l.baseAmount || 0) : 0), 0);
     const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
-    const grandTotal = rentalSubtotal + taxAmount + depositTotal;
+    const grandTotal = rentalSubtotal + taxAmount + depositTotal + deliveryFee + returnFee;
 
     const lineRows = lineItems.map(l => {
       const itemTax = l.taxable ? Math.round(l.baseAmount * taxRateDecimal * 100) / 100 : 0;
@@ -181,6 +183,8 @@ Deno.serve(async (req) => {
      <div class="total-row"><span>Subtotal:</span><span>$${fmt(rentalSubtotal)}</span></div>
      <div class="total-row"><span>Tax (${(taxRateDecimal * 100).toFixed(2)}%):</span><span>$${fmt(taxAmount)}</span></div>
      ${depositTotal > 0 ? `<div class="total-row"><span>Deposits:</span><span>$${fmt(depositTotal)}</span></div>` : ''}
+     ${deliveryFee > 0 ? `<div class="total-row"><span>🚚 Delivery Fee:</span><span>$${fmt(deliveryFee)}</span></div>` : ''}
+     ${returnFee > 0 ? `<div class="total-row"><span>🚚 Return/Pickup Fee:</span><span>$${fmt(returnFee)}</span></div>` : ''}
      <div class="total-row grand"><span>TOTAL DUE:</span><span>$${fmt(grandTotal)}</span></div>
     </div>
 

@@ -271,40 +271,47 @@ export default function AvailabilityManager() {
       }
 
       for (const line of validLines) {
-        const taxAmount = line.taxable !== false ? Math.round(line.baseAmount * taxRateDecimal * 100) / 100 : 0;
-        const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
-        const rental = await base44.entities.Rental.create({
-          equipmentId: line.equipmentId,
-          equipmentName: line.equipmentName,
-          startDate: line.startDate,
-          endDate: line.endDate,
-          customerName: customer.name,
-          customerEmail: customer.email,
-          customerPhone: customer.phone,
-          customerAddress: customer.address,
-          customerCity: customer.city,
-          customerState: customer.state,
-          customerZip: customer.zip,
-          customerId: customerId || null,
-          branch: customer.branch,
-          totalDays,
-          baseAmount: line.baseAmount,
-          taxRate: taxRateDecimal,
-          taxAmount,
-          deposit: (line.deposit || 0) * line.quantity,
-          amountPaid: status === 'confirmed' ? paid : 0,
-          invoiceNumber,
-          status: status === 'confirmed' ? 'contract' : 'quote',
-          returnMethod: returnMethod || 'customer_return',
-          deliveryMethod: deliveryMethod || 'customer_pickup',
-          worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
-          worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
-          worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
-          worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
-          signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
-          notes: customer.notes,
-        });
-        createdIds.push(rental.id);
+      const taxAmount = line.taxable !== false ? Math.round(line.baseAmount * taxRateDecimal * 100) / 100 : 0;
+      const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
+
+      // Calculate delivery/return fees — only charge once per order, not per line
+      const dFee = createdIds.length === 0 && deliveryMethod === 'company_delivery' ? calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip) : 0;
+      const rFee = createdIds.length === 0 && returnMethod === 'company_pickup' ? calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip) : 0;
+
+      const rental = await base44.entities.Rental.create({
+        equipmentId: line.equipmentId,
+        equipmentName: line.equipmentName,
+        startDate: line.startDate,
+        endDate: line.endDate,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        customerAddress: customer.address,
+        customerCity: customer.city,
+        customerState: customer.state,
+        customerZip: customer.zip,
+        customerId: customerId || null,
+        branch: customer.branch,
+        totalDays,
+        baseAmount: line.baseAmount,
+        taxRate: taxRateDecimal,
+        taxAmount,
+        deposit: (line.deposit || 0) * line.quantity,
+        deliveryFee: dFee,
+        returnFee: rFee,
+        amountPaid: status === 'confirmed' ? paid : 0,
+        invoiceNumber,
+        status: status === 'confirmed' ? 'contract' : 'quote',
+        returnMethod: returnMethod || 'customer_return',
+        deliveryMethod: deliveryMethod || 'customer_pickup',
+        worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
+        worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
+        worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
+        worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
+        signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
+        notes: customer.notes,
+      });
+      createdIds.push(rental.id);
       }
       setSaved(true);
       base44.entities.Rental.list('-created_date', 1000).then(setRentals);

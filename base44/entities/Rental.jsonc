@@ -92,6 +92,16 @@
       "type": "number",
       "description": "Security deposit charged (USD)"
     },
+    "deliveryFee": {
+      "type": "number",
+      "default": 0,
+      "description": "Delivery fee (USD)"
+    },
+    "returnFee": {
+      "type": "number",
+      "default": 0,
+      "description": "Return/pickup fee (USD)"
+    },
     "amountPaid": {
       "type": "number",
       "default": 0,

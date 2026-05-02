@@ -92,7 +92,9 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
   const taxableBase = lines.reduce((s, l) => s + (l.taxable !== false ? (l.baseAmount || 0) : 0), 0);
   const taxAmount = Math.round(taxableBase * taxRateDecimal * 100) / 100;
   const depositTotal = lines.reduce((s, l) => s + (l.deposit || 0), 0);
-  const grandTotal = rentalTotal + taxAmount + depositTotal;
+  const deliveryFee = order.rentalIds && order.rentalIds.length > 0 ? (order.lines[0]?.deliveryFee || 0) : 0;
+  const returnFee = order.rentalIds && order.rentalIds.length > 0 ? (order.lines[0]?.returnFee || 0) : 0;
+  const grandTotal = rentalTotal + taxAmount + depositTotal + deliveryFee + returnFee;
   const amountPaid = order.amountPaid || 0;
   const balance = grandTotal - amountPaid;
 
@@ -269,6 +271,8 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
             <div className="flex justify-between"><span>Rental Subtotal</span><span>${rentalTotal.toFixed(2)}</span></div>
             <div className="flex justify-between"><span>Sales Tax ({(taxRateDecimal * 100).toFixed(2)}%)</span><span>${taxAmount.toFixed(2)}</span></div>
             {depositTotal > 0 && <div className="flex justify-between"><span>Deposits</span><span>${depositTotal.toFixed(2)}</span></div>}
+            {deliveryFee > 0 && <div className="flex justify-between"><span>🚚 Delivery Fee</span><span>${deliveryFee.toFixed(2)}</span></div>}
+            {returnFee > 0 && <div className="flex justify-between"><span>🚚 Return/Pickup Fee</span><span>${returnFee.toFixed(2)}</span></div>}
             <div className="flex justify-between font-bold text-gray-900 border-t pt-1 mt-1"><span>Total Due</span><span className="text-indigo-700">${grandTotal.toFixed(2)}</span></div>
             {amountPaid > 0 && <div className="flex justify-between text-green-700 font-semibold"><span>Paid</span><span>${amountPaid.toFixed(2)}</span></div>}
             {amountPaid > 0 && <div className="flex justify-between font-bold border-t pt-1"><span>Balance</span><span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span></div>}
