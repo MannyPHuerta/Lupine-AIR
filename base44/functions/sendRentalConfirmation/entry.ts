@@ -194,25 +194,15 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via RentalWorldLLC email service
-    console.log('[sendRentalConfirmation] Sending via RentalWorldLLC to:', customerEmail);
-    
-    const emailResponse = await fetch('https://rentalworldllc.onrender.com/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: customerEmail,
-        subject: `Rental Invoice ${invoiceNumber}`,
-        html: invoiceHtml,
-        fromName: 'Rental World LLC',
-      }),
-    });
+    // Send email via Base44 built-in integration
+    console.log('[sendRentalConfirmation] Sending email via Base44 to:', customerEmail);
 
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.log('[sendRentalConfirmation] Email service error:', emailResponse.status, errorText);
-      return Response.json({ error: `Email service returned ${emailResponse.status}` }, { status: 502 });
-    }
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: customerEmail,
+      subject: `Rental Invoice ${invoiceNumber || 'Quote'}`,
+      body: invoiceHtml,
+      from_name: 'Rental World LLC',
+    });
 
     console.log('[sendRentalConfirmation] Email sent successfully');
 

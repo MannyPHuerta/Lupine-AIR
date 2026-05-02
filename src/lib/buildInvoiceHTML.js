@@ -222,11 +222,17 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
         document.getElementById('balance-display').textContent = 'Balance: $' + balance.toFixed(2);
         document.getElementById('balance-display').style.color = balance <= 0 ? '#16a34a' : '#dc2626';
       } else {
-        document.getElementById('balance-display').textContent = '';
+        document.getElementById('balance-display').textContent = 'Total Due: $' + GT.toFixed(2);
+        document.getElementById('balance-display').style.color = '#3730a3';
+        document.getElementById('balance-display').style.fontWeight = '700';
       }
       document.getElementById('dynamic-paid').innerHTML = html;
     }
     updateTotals();
+    // Also show total due in toolbar on load
+    document.getElementById('balance-display').textContent = 'Total Due: $' + GT.toFixed(2);
+    document.getElementById('balance-display').style.color = '#3730a3';
+    document.getElementById('balance-display').style.fontWeight = '700';
   </script>
 </body>
 </html>`;
