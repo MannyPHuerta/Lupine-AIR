@@ -24,34 +24,35 @@ export default function LandingHero() {
       </div>
 
       <div className="relative z-10 text-center space-y-12">
-        {/* Tagline */}
+        {/* Tagline + AIR + Subtitle */}
         {(stage === 'tagline' || stage === 'air' || stage === 'icons') && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-2"
+            className="space-y-4"
           >
             <p className="text-xl text-blue-300 font-light tracking-wide">It's time for a breath of fresh</p>
+            
+            {/* AIR Text */}
+            {(stage === 'air' || stage === 'icons') && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative"
+              >
+                <motion.h1
+                  className="text-8xl md:text-9xl font-black text-white drop-shadow-lg"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  AIR
+                </motion.h1>
+              </motion.div>
+            )}
+            
             <p className="text-sm text-cyan-200/70 font-medium">The FIRST rental equipment cloud software to harness the power of AI</p>
-          </motion.div>
-        )}
-
-        {/* AIR Text */}
-        {(stage === 'air' || stage === 'icons') && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
-          >
-            <motion.h1
-              className="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 drop-shadow-lg"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              AIR
-            </motion.h1>
           </motion.div>
         )}
 
