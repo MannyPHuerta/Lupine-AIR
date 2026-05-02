@@ -320,18 +320,18 @@ export default function RentalHistory() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-          <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto w-full">
+          <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800 flex-shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="text-lg font-bold">Rental History</div>
             <div className="text-indigo-300 text-xs">{orders.length} orders</div>
           </div>
           <Button
             size="sm"
             onClick={() => setShowQuoteModal(true)}
-            className="bg-white text-indigo-900 hover:bg-indigo-50 gap-1.5 font-semibold"
+            className="bg-white text-indigo-900 hover:bg-indigo-50 gap-1.5 font-semibold flex-shrink-0"
           >
             <Plus className="w-4 h-4" /> Quick Quote
           </Button>
