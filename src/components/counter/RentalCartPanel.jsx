@@ -44,6 +44,12 @@ export default function RentalCartPanel({
   const [sendSMS, setSendSMS] = useState(customer?.smsOptIn || false);
   const [promoCodes, setPromoCodes] = useState([]);
   const [volumeRules, setVolumeRules] = useState([]);
+  const [deliveryMethod, setDeliveryMethod] = useState('customer_pickup');
+  const [returnMethod, setReturnMethod] = useState('customer_return');
+  const [worksiteAddress, setWorksiteAddress] = useState('');
+  const [worksiteCity, setWorksiteCity] = useState('');
+  const [worksiteState, setWorksiteState] = useState('TX');
+  const [worksiteZip, setWorksiteZip] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -119,15 +125,17 @@ export default function RentalCartPanel({
 
     setCompleting(true);
     try {
+      // Use worksite address for company deliveries, otherwise use customer's home address
+      const useWorksite = deliveryMethod === 'company_delivery' && worksiteAddress;
       const invoice = await base44.functions.invoke('createRental', {
         customerId: customer.id,
         customerName: customer.fullName,
         customerEmail: customer.email,
         customerPhone: customer.phone,
-        customerAddress: customer.address,
-        customerCity: customer.city,
-        customerState: customer.state,
-        customerZip: customer.zip,
+        customerAddress: useWorksite ? worksiteAddress : customer.address,
+        customerCity: useWorksite ? worksiteCity : customer.city,
+        customerState: useWorksite ? worksiteState : customer.state,
+        customerZip: useWorksite ? worksiteZip : customer.zip,
         items: cart.map(item => ({
           equipmentId: item.id,
           equipmentName: item.name,
@@ -144,8 +152,8 @@ export default function RentalCartPanel({
         signatureDataUrl: signature,
         sendEmail,
         sendSMS,
-        deliveryMethod: 'customer_pickup',
-        returnMethod: 'company_pickup',
+        deliveryMethod,
+        returnMethod,
       });
 
       setCompleted(true);
@@ -193,6 +201,69 @@ export default function RentalCartPanel({
             </div>
           ))}
         </div>
+
+        {/* Delivery & Return Method */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">Delivery</label>
+            <select
+              value={deliveryMethod}
+              onChange={e => setDeliveryMethod(e.target.value)}
+              className="w-full h-8 border border-input rounded px-2 text-xs bg-white"
+            >
+              <option value="customer_pickup">Customer Pickup</option>
+              <option value="company_delivery">Company Delivery</option>
+              <option value="shipped">Shipped</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">Return</label>
+            <select
+              value={returnMethod}
+              onChange={e => setReturnMethod(e.target.value)}
+              className="w-full h-8 border border-input rounded px-2 text-xs bg-white"
+            >
+              <option value="customer_return">Customer Return</option>
+              <option value="company_pickup">Company Pickup</option>
+              <option value="customer_ships">Customer Ships</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Worksite Address (only when company delivery selected) */}
+        {deliveryMethod === 'company_delivery' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+            <div className="text-xs font-semibold text-amber-800">📍 Delivery / Worksite Address</div>
+            <div className="text-xs text-amber-700 mb-1">Leave blank to use customer's home address on file.</div>
+            <Input
+              placeholder="Street address"
+              value={worksiteAddress}
+              onChange={e => setWorksiteAddress(e.target.value)}
+              className="text-xs h-8"
+            />
+            <div className="grid grid-cols-3 gap-1">
+              <Input
+                placeholder="City"
+                value={worksiteCity}
+                onChange={e => setWorksiteCity(e.target.value)}
+                className="text-xs h-8 col-span-1"
+              />
+              <Input
+                placeholder="ST"
+                value={worksiteState}
+                onChange={e => setWorksiteState(e.target.value)}
+                className="text-xs h-8"
+                maxLength={2}
+              />
+              <Input
+                placeholder="ZIP"
+                value={worksiteZip}
+                onChange={e => setWorksiteZip(e.target.value)}
+                className="text-xs h-8"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Dates */}
         <div className="grid grid-cols-2 gap-2">
