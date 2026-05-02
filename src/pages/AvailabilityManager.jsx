@@ -47,6 +47,10 @@ export default function AvailabilityManager() {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [returnMethod, setReturnMethod] = useState('customer_return');
   const [deliveryMethod, setDeliveryMethod] = useState('customer_pickup');
+  const [worksiteAddress, setWorksiteAddress] = useState('');
+  const [worksiteCity, setWorksiteCity] = useState('');
+  const [worksiteState, setWorksiteState] = useState('TX');
+  const [worksiteZip, setWorksiteZip] = useState('');
   const [autoSendCommunications, setAutoSendCommunications] = useState(true);
   const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -184,6 +188,10 @@ export default function AvailabilityManager() {
     paymentMethod: paymentMethod || '',
     deliveryMethod: deliveryMethod || 'customer_pickup',
     returnMethod: returnMethod || 'customer_return',
+    worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
+    worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
+    worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
+    worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
     customer: {
       name: customer.name,
       phone: customer.phone,
@@ -304,6 +312,10 @@ export default function AvailabilityManager() {
       setPaymentMethod('');
       setReturnMethod('customer_return');
       setDeliveryMethod('customer_pickup');
+      setWorksiteAddress('');
+      setWorksiteCity('');
+      setWorksiteState('TX');
+      setWorksiteZip('');
       setSignatureDataUrl(null);
       setAppliedPromo(null);
       setLoyaltyDiscount(null);
@@ -629,31 +641,66 @@ export default function AvailabilityManager() {
         />
 
         {/* Delivery & Return Methods */}
-        <div className="bg-white rounded-xl border shadow-sm px-6 py-4 flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Delivery Method</label>
-            <select
-              value={deliveryMethod}
-              onChange={e => setDeliveryMethod(e.target.value)}
-              className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            >
-              <option value="customer_pickup">🙋 Customer Pickup</option>
-              <option value="company_delivery">🚚 Company Delivery</option>
-              <option value="shipped">📦 Shipped</option>
-            </select>
+        <div className="bg-white rounded-xl border shadow-sm px-6 py-4 space-y-4">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Delivery Method</label>
+              <select
+                value={deliveryMethod}
+                onChange={e => setDeliveryMethod(e.target.value)}
+                className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              >
+                <option value="customer_pickup">🙋 Customer Pickup</option>
+                <option value="company_delivery">🚚 Company Delivery</option>
+                <option value="shipped">📦 Shipped</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Return Method</label>
+              <select
+                value={returnMethod}
+                onChange={e => setReturnMethod(e.target.value)}
+                className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              >
+                <option value="customer_return">🙋 Customer Return</option>
+                <option value="company_pickup">🚚 Company Pickup</option>
+                <option value="customer_ships">📦 Customer Ships</option>
+              </select>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Return Method</label>
-            <select
-              value={returnMethod}
-              onChange={e => setReturnMethod(e.target.value)}
-              className="border border-input rounded-md px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            >
-              <option value="customer_return">🙋 Customer Return</option>
-              <option value="company_pickup">🚚 Company Pickup</option>
-              <option value="customer_ships">📦 Customer Ships</option>
-            </select>
-          </div>
+          {deliveryMethod === 'company_delivery' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+              <div className="text-xs font-semibold text-amber-800">📍 Delivery / Worksite Address</div>
+              <div className="text-xs text-amber-700">Leave blank to use the customer's home address on file.</div>
+              <input
+                className="w-full h-9 border border-input rounded-md px-3 text-sm bg-white"
+                placeholder="Street address"
+                value={worksiteAddress}
+                onChange={e => setWorksiteAddress(e.target.value)}
+              />
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  className="col-span-1 h-9 border border-input rounded-md px-3 text-sm bg-white"
+                  placeholder="City"
+                  value={worksiteCity}
+                  onChange={e => setWorksiteCity(e.target.value)}
+                />
+                <input
+                  className="h-9 border border-input rounded-md px-3 text-sm bg-white"
+                  placeholder="ST"
+                  maxLength={2}
+                  value={worksiteState}
+                  onChange={e => setWorksiteState(e.target.value)}
+                />
+                <input
+                  className="h-9 border border-input rounded-md px-3 text-sm bg-white"
+                  placeholder="ZIP"
+                  value={worksiteZip}
+                  onChange={e => setWorksiteZip(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Line items */}

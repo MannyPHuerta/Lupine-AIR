@@ -132,9 +132,14 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
   </div>
 
   ${(order.deliveryMethod || order.returnMethod) ? `
-  <div style="display:flex;gap:24px;margin-bottom:16px;font-size:12px">
+  <div style="display:flex;gap:24px;margin-bottom:${order.worksiteAddress ? '8px' : '16px'};font-size:12px;flex-wrap:wrap;align-items:flex-start">
     ${order.deliveryMethod ? `<div><span style="color:#888;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.05em">Delivery</span><br/><span style="font-weight:600">${DELIVERY_LABELS[order.deliveryMethod] || order.deliveryMethod}</span></div>` : ''}
     ${order.returnMethod ? `<div><span style="color:#888;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.05em">Return</span><br/><span style="font-weight:600">${RETURN_LABELS[order.returnMethod] || order.returnMethod}</span></div>` : ''}
+    ${order.worksiteAddress ? `<div style="margin-left:auto;text-align:right;background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;">
+      <span style="color:#92400e;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.05em">📍 Delivery / Worksite Address</span><br/>
+      <span style="font-weight:600;color:#78350f">${order.worksiteAddress}</span><br/>
+      <span style="color:#92400e">${[order.worksiteCity, order.worksiteState, order.worksiteZip].filter(Boolean).join(', ')}</span>
+    </div>` : ''}
   </div>` : ''}
 
   <table style="margin-bottom:24px">
