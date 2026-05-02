@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map } from 'lucide-react';
 import DispatchMap from '@/components/dispatch/DispatchMap';
+import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
 
 const DELIVERY_STATUS_COLORS = {
   scheduled: 'bg-blue-100 text-blue-800',
@@ -25,6 +26,18 @@ const RECOVERY_STATUS_COLORS = {
   cancelled: 'bg-gray-100 text-gray-500',
 };
 
+// Geocode a single address via Nominatim (free, no key)
+async function geocode(address, city, state, zip) {
+  const q = encodeURIComponent(`${address}, ${city}, ${state} ${zip}`);
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
+    { headers: { 'Accept-Language': 'en' } }
+  );
+  const data = await res.json();
+  if (data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  return null;
+}
+
 export default function DispatchBoard() {
   const navigate = useNavigate();
   const [deliveries, setDeliveries] = useState([]);
@@ -34,6 +47,10 @@ export default function DispatchBoard() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('map');
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+
+  // Geocoded pins shared between map and list
+  const [pins, setPins] = useState([]);
+  const [geocoding, setGeocoding] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -53,19 +70,46 @@ export default function DispatchBoard() {
 
   useEffect(() => { load(); }, []);
 
+  const filteredDeliveries = deliveries.filter(d => !dateFilter || d.scheduledDate === dateFilter);
+  const filteredRecoveries = recoveries.filter(r => !dateFilter || r.scheduledDate === dateFilter);
+
+  // Geocode filtered items whenever date filter or data changes
+  useEffect(() => {
+    const items = [
+      ...filteredDeliveries.filter(d => d.customerAddress).map(d => ({ ...d, _type: 'delivery' })),
+      ...filteredRecoveries.filter(r => r.customerAddress).map(r => ({ ...r, _type: 'recovery' })),
+    ];
+    if (items.length === 0) { setPins([]); return; }
+
+    setGeocoding(true);
+    let cancelled = false;
+
+    (async () => {
+      const results = [];
+      for (const item of items) {
+        await new Promise(r => setTimeout(r, 250)); // Nominatim rate limit
+        if (cancelled) break;
+        const coords = await geocode(item.customerAddress, item.customerCity, item.customerState, item.customerZip);
+        if (coords) results.push({ ...item, lat: coords.lat, lng: coords.lng, _lat: coords.lat, _lng: coords.lng });
+      }
+      if (!cancelled) { setPins(results); setGeocoding(false); }
+    })();
+
+    return () => { cancelled = true; };
+  }, [filteredDeliveries.length, filteredRecoveries.length, dateFilter]);
+
   const driverName = (driverId) => {
     const u = users.find(u => u.email === driverId || u.id === driverId);
     return u ? u.full_name : driverId;
   };
 
-  const filteredDeliveries = deliveries.filter(d =>
-    !dateFilter || d.scheduledDate === dateFilter
-  );
-  const filteredRecoveries = recoveries.filter(r =>
-    !dateFilter || r.scheduledDate === dateFilter
-  );
+  // Enrich items with geocoded coords so RouteOptimizer can use them
+  const enrichWithCoords = (items) =>
+    items.map(item => {
+      const pin = pins.find(p => p.id === item.id);
+      return pin ? { ...item, _lat: pin._lat, _lng: pin._lng } : item;
+    });
 
-  // Group by driver
   const groupByDriver = (items) => {
     const map = {};
     items.forEach(item => {
@@ -76,8 +120,8 @@ export default function DispatchBoard() {
     return map;
   };
 
-  const deliveryGroups = groupByDriver(filteredDeliveries);
-  const recoveryGroups = groupByDriver(filteredRecoveries);
+  const deliveryGroups = groupByDriver(enrichWithCoords(filteredDeliveries));
+  const recoveryGroups = groupByDriver(enrichWithCoords(filteredRecoveries));
 
   const activeItems = tab === 'deliveries' ? filteredDeliveries : filteredRecoveries;
   const inProgress = activeItems.filter(i => !['completed', 'cancelled'].includes(i.status)).length;
@@ -131,6 +175,8 @@ export default function DispatchBoard() {
 
       {tab === 'map' && !loading && (
         <DispatchMap
+          pins={pins}
+          geocoding={geocoding}
           deliveries={filteredDeliveries}
           recoveries={filteredRecoveries}
           driverLocations={driverLocations}
@@ -152,8 +198,10 @@ export default function DispatchBoard() {
                   <DriverGroup
                     key={driverId}
                     driverName={driverId === 'Unassigned' ? 'Unassigned' : driverName(driverId)}
+                    driverId={driverId}
                     items={items}
                     type="delivery"
+                    driverLocations={driverLocations}
                     onSelect={(item) => navigate(`/delivery/${item.id}`)}
                     statusColors={DELIVERY_STATUS_COLORS}
                   />
@@ -168,8 +216,10 @@ export default function DispatchBoard() {
                   <DriverGroup
                     key={driverId}
                     driverName={driverId === 'Unassigned' ? 'Unassigned' : driverName(driverId)}
+                    driverId={driverId}
                     items={items}
                     type="recovery"
+                    driverLocations={driverLocations}
                     onSelect={(item) => navigate(`/recovery/${item.id}`)}
                     statusColors={RECOVERY_STATUS_COLORS}
                   />
@@ -183,14 +233,19 @@ export default function DispatchBoard() {
   );
 }
 
-function DriverGroup({ driverName, items, type, onSelect, statusColors }) {
+function DriverGroup({ driverName, driverId, items, type, driverLocations, onSelect, statusColors }) {
   const completed = items.filter(i => i.status === 'completed').length;
+  const driverLoc = driverLocations.find(d => d.driverEmail === driverId);
+
   return (
     <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
       <div className="bg-gray-50 border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {type === 'delivery' ? <Truck className="w-4 h-4 text-indigo-600" /> : <RotateCcw className="w-4 h-4 text-rose-600" />}
           <span className="font-semibold text-gray-900">{driverName}</span>
+          {driverLoc && (
+            <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">📍 Live</span>
+          )}
         </div>
         <span className="text-xs text-gray-500">{completed}/{items.length} done</span>
       </div>
@@ -214,6 +269,13 @@ function DriverGroup({ driverName, items, type, onSelect, statusColors }) {
           </button>
         ))}
       </div>
+      {/* Route optimizer — only shows if ≥2 stops have geocoded coords */}
+      <RouteOptimizer
+        items={items}
+        driverLocation={driverLoc}
+        onSelectItem={onSelect}
+        type={type}
+      />
     </div>
   );
 }
