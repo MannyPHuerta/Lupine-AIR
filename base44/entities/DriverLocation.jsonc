@@ -1,0 +1,41 @@
+{
+  "name": "DriverLocation",
+  "type": "object",
+  "properties": {
+    "driverEmail": {
+      "type": "string",
+      "description": "Driver's email address"
+    },
+    "driverName": {
+      "type": "string",
+      "description": "Driver's full name"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "GPS latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "GPS longitude"
+    },
+    "accuracy": {
+      "type": "number",
+      "description": "GPS accuracy in meters"
+    },
+    "updatedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last location update"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Driver's branch"
+    },
+    "currentStatus": {
+      "type": "string",
+      "description": "What the driver is currently doing (e.g. 'En route', 'At stop')"
+    }
+  },
+  "required": [
+    "driverEmail"
+  ]
+}

@@ -29,6 +29,34 @@ export default function DriverDashboard() {
       setDeliveries(dels.filter(d => d.driverId === user.email));
       setRecoveries(recs.filter(r => r.driverId === user.email));
       setLoading(false);
+
+      // Auto-track location every 60 seconds while page is open
+      if (!navigator.geolocation) return;
+
+      const updateLocation = (position) => {
+        base44.entities.DriverLocation.filter({ driverEmail: user.email }).then(existing => {
+          const payload = {
+            driverEmail: user.email,
+            driverName: user.full_name,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            updatedAt: new Date().toISOString(),
+          };
+          if (existing.length > 0) {
+            base44.entities.DriverLocation.update(existing[0].id, payload);
+          } else {
+            base44.entities.DriverLocation.create(payload);
+          }
+        });
+      };
+
+      navigator.geolocation.getCurrentPosition(updateLocation);
+      const interval = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(updateLocation);
+      }, 60000);
+
+      return () => clearInterval(interval);
     });
   }, []);
 

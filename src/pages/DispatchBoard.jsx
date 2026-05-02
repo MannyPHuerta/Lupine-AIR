@@ -30,6 +30,7 @@ export default function DispatchBoard() {
   const [deliveries, setDeliveries] = useState([]);
   const [recoveries, setRecoveries] = useState([]);
   const [users, setUsers] = useState([]);
+  const [driverLocations, setDriverLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('map');
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
@@ -40,10 +41,12 @@ export default function DispatchBoard() {
       base44.entities.Delivery.list('-scheduledDate', 200),
       base44.entities.Recovery.list('-scheduledDate', 200),
       base44.entities.User.list(),
-    ]).then(([dels, recs, usrs]) => {
+      base44.entities.DriverLocation.list('-updatedAt', 50),
+    ]).then(([dels, recs, usrs, locs]) => {
       setDeliveries(dels);
       setRecoveries(recs);
       setUsers(usrs);
+      setDriverLocations(locs);
       setLoading(false);
     });
   };
@@ -130,6 +133,7 @@ export default function DispatchBoard() {
         <DispatchMap
           deliveries={filteredDeliveries}
           recoveries={filteredRecoveries}
+          driverLocations={driverLocations}
           onSelectDelivery={(id) => navigate(`/delivery/${id}`)}
           onSelectRecovery={(id) => navigate(`/recovery/${id}`)}
         />

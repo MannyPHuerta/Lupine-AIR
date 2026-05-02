@@ -69,7 +69,32 @@ function FitBounds({ positions }) {
   return null;
 }
 
-export default function DispatchMap({ deliveries, recoveries, onSelectDelivery, onSelectRecovery }) {
+function makeDriverIcon(initials) {
+  return L.divIcon({
+    className: '',
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -20],
+    html: `
+      <div style="
+        background:#1e3a8a;
+        border:3px solid white;
+        border-radius:50%;
+        width:36px;height:36px;
+        box-shadow:0 2px 8px rgba(0,0,0,0.5);
+        display:flex;align-items:center;justify-content:center;
+        font-size:12px;color:white;font-weight:700;
+      ">${initials}</div>
+      <div style="
+        position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
+        width:0;height:0;
+        border-left:5px solid transparent;
+        border-right:5px solid transparent;
+        border-top:6px solid #1e3a8a;
+      "></div>`,
+  });
+}
+
+export default function DispatchMap({ deliveries, recoveries, driverLocations = [], onSelectDelivery, onSelectRecovery }) {
   const [pins, setPins] = useState([]);
   const [geocoding, setGeocoding] = useState(false);
 
@@ -122,7 +147,7 @@ export default function DispatchMap({ deliveries, recoveries, onSelectDelivery, 
       {/* Legend */}
       <div className="absolute bottom-6 left-3 z-[1000] bg-white border border-gray-200 rounded-lg shadow-md px-3 py-2 text-xs space-y-1">
         <div className="font-semibold text-gray-700 mb-1">Legend</div>
-        {[['Delivery', '#3b82f6'], ['Recovery', '#f43f5e'], ['Completed', '#22c55e']].map(([label, color]) => (
+        {[['Delivery', '#3b82f6'], ['Recovery', '#f43f5e'], ['Completed', '#22c55e'], ['Driver', '#1e3a8a']].map(([label, color]) => (
           <div key={label} className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full inline-block flex-shrink-0" style={{ background: color }} />
             {label}
@@ -141,7 +166,38 @@ export default function DispatchMap({ deliveries, recoveries, onSelectDelivery, 
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <FitBounds positions={pins} />
+        <FitBounds positions={[...pins, ...driverLocations.filter(d => d.latitude && d.longitude).map(d => ({ lat: d.latitude, lng: d.longitude }))]} />
+
+        {/* Driver location dots */}
+        {driverLocations.filter(d => d.latitude && d.longitude).map(driver => {
+          const initials = (driver.driverName || driver.driverEmail || '?')
+            .split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+          const ageMinutes = driver.updatedAt
+            ? Math.round((Date.now() - new Date(driver.updatedAt).getTime()) / 60000)
+            : null;
+          return (
+            <Marker
+              key={`driver-${driver.driverEmail}`}
+              position={[driver.latitude, driver.longitude]}
+              icon={makeDriverIcon(initials)}
+              zIndexOffset={1000}
+            >
+              <Popup>
+                <div className="text-sm space-y-1 min-w-[140px]">
+                  <div className="font-semibold">🚗 {driver.driverName || driver.driverEmail}</div>
+                  {ageMinutes !== null && (
+                    <div className="text-xs text-gray-500">
+                      Updated {ageMinutes < 1 ? 'just now' : `${ageMinutes}m ago`}
+                    </div>
+                  )}
+                  {driver.accuracy && (
+                    <div className="text-xs text-gray-400">±{Math.round(driver.accuracy)}m accuracy</div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {pins.map(pin => {
           const isDelivery = pin._type === 'delivery';
