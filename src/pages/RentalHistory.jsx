@@ -194,11 +194,16 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
         autoSendCommunications: true,
       });
       console.log('Email response:', res.data);
-      alert('Invoice emailed successfully!');
-      setEmailMode(false);
+      if (res.data?.error && !res.data?.emailSent) {
+        alert(`Email failed: ${res.data.error}`);
+      } else {
+        alert('Invoice emailed successfully!');
+        setEmailMode(false);
+      }
     } catch (err) {
       console.error('Email error:', err);
-      alert(`Email failed: ${err.message || 'Unknown error'}`);
+      // Email may have still sent — check logs
+      alert(`Note: Email may have sent but got an unexpected response. Check the customer's inbox. (${err.message || 'Unknown error'})`);
     } finally {
       setSendingEmail(false);
     }
