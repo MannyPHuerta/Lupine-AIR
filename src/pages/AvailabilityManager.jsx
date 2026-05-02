@@ -338,6 +338,12 @@ export default function AvailabilityManager() {
     const validLines = validate();
     if (!validLines) return;
 
+    // Verify email before proceeding if auto-send is enabled
+    if (autoSendCommunications && !customer.email) {
+      alert('Please enter a customer email address to enable automatic confirmation emails.');
+      return;
+    }
+
     // Fetch invoice number
     const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
     const bs = branchSettingsList[0];
@@ -381,7 +387,7 @@ export default function AvailabilityManager() {
       const rentalIds = await handleSave('confirmed');
       writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl);
 
-      if (autoSendCommunications && customer.email) {
+      if (autoSendCommunications && customer.email && rentalIds.length > 0) {
         try {
           await base44.functions.invoke('sendRentalConfirmation', {
             rentalIds,
@@ -437,7 +443,7 @@ export default function AvailabilityManager() {
       writeInvoiceToWindow(win, pendingInvoice.invoiceOrder, paid, signatureDataUrl);
 
       // Send email/SMS if enabled
-      if (autoSendCommunications && customer.email) {
+      if (autoSendCommunications && customer.email && rentalIds.length > 0) {
         try {
           await base44.functions.invoke('sendRentalConfirmation', {
             rentalIds,
