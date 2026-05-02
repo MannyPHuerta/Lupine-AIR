@@ -13,7 +13,7 @@ export default function LandingHero() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center overflow-hidden">
+    <div className="min-h-screen bg-black flex items-center justify-center overflow-hidden">
       {/* Animated background glow */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -65,9 +65,9 @@ export default function LandingHero() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 max-w-4xl mx-auto"
           >
             {[
-              { name: 'AIRental', icon: '🚀', desc: 'Equipment Rental Platform', route: '/airental' },
-              { name: 'AIREvents', icon: '🎯', desc: 'Event Management Suite', route: '/airevents' },
-              { name: 'AIRfq', icon: '📋', desc: 'RFQ & Bid Management', route: '/airfq' },
+              { name: 'AIRental', desc: 'Equipment Rental Platform', route: '/airental' },
+              { name: 'AIREvents', desc: 'Event Management Suite', route: '/airevents' },
+              { name: 'AIRfq', desc: 'RFQ & Bid Management', route: '/airfq' },
             ].map((item, i) => (
               <motion.button
                 key={item.name}
@@ -80,8 +80,9 @@ export default function LandingHero() {
                 className="group relative"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur-lg opacity-0 group-hover:opacity-75 transition-all duration-300" />
-                <div className="relative bg-slate-800/80 backdrop-blur-sm border border-cyan-400/20 hover:border-cyan-400/50 rounded-2xl p-8 transition-all duration-300">
-                  <div className="text-5xl mb-4">{item.icon}</div>
+                <div className="relative bg-slate-900/80 backdrop-blur-sm border border-cyan-400/20 hover:border-cyan-400/50 rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center h-64">
+                  {/* Icon placeholder - will be replaced with actual icon image */}
+                  <div className="h-20 mb-4 flex items-center justify-center" />
                   <h3 className="text-xl font-bold text-cyan-300 mb-2">{item.name}</h3>
                   <p className="text-sm text-blue-200">{item.desc}</p>
                   <p className="text-xs text-blue-300/60 mt-4">Click to explore →</p>
