@@ -103,10 +103,37 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
   });
 
   const handlePrint = async () => {
+    // --- Availability check ---
+    setPrinting(true);
+    try {
+      const allRentals = await base44.entities.Rental.list('-created_date', 2000);
+      const conflicts = [];
+      for (const line of enriched) {
+        if (!line.equipmentId || line.equipmentId === 'quote-item') continue;
+        const conflicting = allRentals.filter(r =>
+          r.equipmentId === line.equipmentId &&
+          !order.rentalIds.includes(r.id) &&
+          ['contract', 'out', 'reservation'].includes(r.status) &&
+          r.startDate && r.endDate && line.startDate && line.endDate &&
+          new Date(r.startDate) <= new Date(line.endDate) &&
+          new Date(r.endDate) >= new Date(line.startDate)
+        );
+        if (conflicting.length > 0) {
+          conflicts.push(`${line.equipmentName}: already booked ${conflicting[0].startDate}–${conflicting[0].endDate} (${conflicting[0].invoiceNumber || conflicting[0].id})`);
+        }
+      }
+      if (conflicts.length > 0) {
+        const proceed = confirm(`⚠️ Availability conflict:\n\n${conflicts.join('\n')}\n\nProceed anyway?`);
+        if (!proceed) { setPrinting(false); return; }
+      }
+    } catch (e) {
+      console.warn('Availability check failed:', e.message);
+    }
+
     const bs = branchSettings[order.customer.branch];
     const { openInvoiceWindow, writeInvoiceToWindow } = await import('@/lib/buildInvoiceHTML');
     const win = openInvoiceWindow();
-    
+
     writeInvoiceToWindow(win, {
       ...order,
       id: order.invoiceNumber || order.id,
@@ -115,10 +142,21 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
       companyInfo: companyInfo ? { companyName: companyInfo.companyName || '', logoUrl: companyInfo.logoUrl || '', invoiceFooter: companyInfo.invoiceFooter || '' } : {},
     }, amountPaid, order.signatureDataUrl);
 
-    setPrinting(true);
+    // Update rental status + mark equipment as reserved
     await Promise.all(order.rentalIds.map(id =>
       base44.entities.Rental.update(id, { status: 'contract' })
     ));
+
+    // Mark each equipment unit as reserved
+    for (const line of enriched) {
+      if (!line.equipmentId || line.equipmentId === 'quote-item') continue;
+      try {
+        await base44.entities.Equipment.update(line.equipmentId, { unitStatus: 'reserved' });
+      } catch (e) {
+        console.warn('Could not update equipment status:', e.message);
+      }
+    }
+
     setPrinting(false);
     onConfirmed();
   };

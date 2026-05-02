@@ -3,11 +3,12 @@
  * Editable: customer info, addresses, dates, line items (add/remove), status, notes.
  * Does NOT re-do signature or payment — those stay as-is.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
+import SignaturePad from '@/components/invoice/SignaturePad';
 
 const STATUSES = ['quote', 'reservation', 'contract', 'out', 'returned', 'completed', 'cancelled'];
 
@@ -45,6 +46,7 @@ export default function EditRentalPanel({ order, equipment, onClose, onSaved }) 
   );
 
   const [saving, setSaving] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState(order.signatureDataUrl || null);
 
   const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
 
@@ -134,6 +136,15 @@ export default function EditRentalPanel({ order, equipment, onClose, onSaved }) 
       for (const origId of order.rentalIds) {
         if (!keptIds.has(origId)) {
           await base44.entities.Rental.delete(origId);
+        }
+      }
+
+      // Save signature to all rental records if captured
+      if (signatureDataUrl) {
+        const allIds = [...lines.filter(l => !l.isNew).map(l => l.rentalId), ...order.rentalIds.filter(id => keptIds.has(id))];
+        const uniqueIds = [...new Set([...order.rentalIds.filter(id => keptIds.has(id))])];
+        for (const id of uniqueIds) {
+          await base44.entities.Rental.update(id, { signatureDataUrl });
         }
       }
 
@@ -282,6 +293,21 @@ export default function EditRentalPanel({ order, equipment, onClose, onSaved }) 
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Signature */}
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Customer Signature</label>
+            <SignaturePad
+              onSave={setSignatureDataUrl}
+              onClear={() => setSignatureDataUrl(null)}
+            />
+            {signatureDataUrl && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-green-700 font-medium">
+                <span>✓ Signature captured</span>
+                <button onClick={() => setSignatureDataUrl(null)} className="text-gray-400 hover:text-red-500 underline">Remove</button>
+              </div>
+            )}
           </div>
         </div>
 
