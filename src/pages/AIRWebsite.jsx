@@ -142,7 +142,7 @@ function Hero() {
           ].map((p, i) => (
             <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
               className="px-5 py-2 rounded-full bg-slate-800 border border-cyan-400/20 hover:border-cyan-400/60 text-cyan-300 text-sm font-semibold transition flex items-center gap-2">
-              {p.icon && <img src={p.icon} alt={p.name} className="h-5 w-auto" />}
+              {p.icon && <img src={p.icon} alt={p.name} className="h-10 w-auto" />}
               <span>{p.name}</span> <ChevronRight className="w-3.5 h-3.5" />
             </button>
           ))}
