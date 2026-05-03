@@ -47,7 +47,7 @@ function Nav({ activeSection }) {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2">
-          <span className="text-2xl font-black text-white tracking-tight">AIR</span>
+          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/fb2e7daf1_AIR.png" alt="AIR" className="h-8 w-8 rounded-lg" />
           <span className="text-xs text-cyan-400 font-medium tracking-widest uppercase">by Lupine</span>
         </button>
         <div className="hidden md:flex items-center gap-6">
@@ -109,11 +109,12 @@ function Hero() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
           <p className="text-blue-300 text-xl md:text-2xl font-light mb-4">It's time for a breath of fresh</p>
-          <motion.h1 className="text-9xl md:text-[180px] font-black text-white leading-none tracking-tighter"
+          <motion.div
             animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}>
-            AIR
-          </motion.h1>
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className="flex justify-center">
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/fb2e7daf1_AIR.png" alt="AIR" className="w-48 h-48 md:w-64 md:h-64 rounded-3xl" />
+          </motion.div>
           <p className="text-lg md:text-xl text-blue-200/70 mt-6 max-w-2xl mx-auto">
             The first rental equipment cloud platform to harness the full power of AI —
             from instant invoices to AI-drafted government bids.
@@ -136,9 +137,9 @@ function Hero() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           className="flex flex-wrap justify-center gap-6 pt-4">
           {[
-            { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/airental_icon.png', anchor: '#airental' },
-            { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/airevents_icon.png', anchor: '#airevents' },
-            { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/9b576feaf_airfq_icon_transparent.png', anchor: '#airfq' },
+            { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png', anchor: '#airental' },
+            { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png', anchor: '#airevents' },
+            { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png', anchor: '#airfq' },
           ].map((p) => (
             <button key={p.name} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="flex flex-col items-center gap-2 group">
@@ -496,16 +497,22 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <div>
-            <div className="text-2xl font-black text-white mb-2">AIR</div>
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/fb2e7daf1_AIR.png" alt="AIR" className="h-12 w-12 rounded-xl mb-2" />
             <div className="text-xs text-cyan-400 font-medium tracking-widest uppercase mb-3">by Lupine</div>
             <p className="text-white/40 text-sm">The rental equipment platform built for the Rio Grande Valley — and beyond.</p>
           </div>
           <div>
             <div className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Products</div>
-            <div className="space-y-2">
-              {['AIRental', 'AIREvents', 'AIRfq'].map(p => (
-                <button key={p} onClick={() => document.querySelector(`#${p.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
-                  className="block text-white/50 hover:text-white text-sm transition">{p}</button>
+            <div className="space-y-3">
+              {[
+                { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png' },
+                { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png' },
+                { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png' },
+              ].map(p => (
+                <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
+                  className="flex items-center gap-2 text-white/50 hover:text-white text-sm transition">
+                  <img src={p.icon} alt={p.name} className="h-5 w-5 rounded-md" />{p.name}
+                </button>
               ))}
             </div>
           </div>
@@ -550,8 +557,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airental"
-        tag="AIRental"
-        title="AIRental"
+        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png" alt="AIRental" className="h-6 w-6 rounded-md" />AIRental</span>}
+        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png" alt="AIRental" className="h-14 w-14 rounded-2xl" />AIRental</span>}
         tagline="Rental management, reinvented."
         description="From quote to signed contract in under 3 minutes. Multi-branch, multi-item, with dynamic pricing, delivery matrix, customer management, and a dispatch board that puts your drivers on the map."
         color="cyan"
@@ -568,8 +575,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airevents"
-        tag="AIREvents"
-        title="AIREvents"
+        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png" alt="AIREvents" className="h-6 w-6 rounded-md" />AIREvents</span>}
+        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png" alt="AIREvents" className="h-14 w-14 rounded-2xl" />AIREvents</span>}
         tagline="The floor plan IS the order."
         description="Drag equipment onto a live-inventory canvas — every item auto-checks availability, soft-reserves the unit, and adds to the quote. ADA compliance engine, permit tracker, surface & anchoring system built in. PartyCad, replaced."
         color="purple"
@@ -586,8 +593,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airfq"
-        tag="AIRfq · Premium"
-        title={<div className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/9b576feaf_airfq_icon_transparent.png" alt="AIRfq" className="h-16 w-auto" />AIRfq</div>}
+        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png" alt="AIRfq" className="h-6 w-6 rounded-md" />AIRfq · Premium</span>}
+        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png" alt="AIRfq" className="h-14 w-14 rounded-2xl" />AIRfq</span>}
         tagline="Upload the RFQ. Walk away with a bid."
         description="AI reads the government RFQ, matches every line item to your catalog, drafts the full bid response, flags every missing certification, and won't let you submit until it's complete. What used to take a day takes an hour."
         color="blue"
