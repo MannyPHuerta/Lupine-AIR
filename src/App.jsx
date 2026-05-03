@@ -142,7 +142,7 @@ function App() {
         <Router>
           <Routes>
             {/* Public routes - no auth required */}
-            <Route path="/" element={<LandingHero />} />
+            <Route path="/air" element={<LandingHero />} />
             <Route path="/airental" element={<AIRental />} />
             <Route path="/airevents" element={<AIREvents />} />
             <Route path="/airfq" element={<AIRfq />} />
