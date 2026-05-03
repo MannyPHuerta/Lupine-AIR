@@ -199,4 +199,12 @@ The goal is to eventually incorporate Asset Wolf's functionality into the AIR pl
 
 ---
 
+---
+
+## Glossary
+
+**AImnesia** *(n.)* — The condition where an AI forgets everything it previously built with you and starts making questionable decisions. Coined 2026-05-03. The existence of this file is the cure.
+
+---
+
 *Last updated: 2026-05-03*
