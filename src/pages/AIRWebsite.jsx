@@ -132,18 +132,23 @@ function Hero() {
           </button>
         </motion.div>
 
-        {/* Product pills */}
+        {/* Product icon buttons */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
-          className="flex flex-wrap justify-center gap-3 pt-4">
+          className="flex flex-wrap justify-center gap-6 pt-4">
           {[
             { name: 'AIRental', icon: null },
             { name: 'AIREvents', icon: null },
             { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/9b576feaf_airfq_icon_transparent.png' },
           ].map((p, i) => (
             <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-5 py-2 rounded-full bg-slate-800 border border-cyan-400/20 hover:border-cyan-400/60 text-cyan-300 text-sm font-semibold transition flex items-center gap-2">
-              {p.icon && <img src={p.icon} alt={p.name} className="h-10 w-auto" />}
-              <span>{p.name}</span> <ChevronRight className="w-3.5 h-3.5" />
+              className="flex flex-col items-center gap-2 group">
+              <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-cyan-400/20 group-hover:border-cyan-400/60 transition flex items-center justify-center overflow-hidden">
+                {p.icon
+                  ? <img src={p.icon} alt={p.name} className="w-16 h-16 object-contain" />
+                  : <span className="text-cyan-300 font-black text-lg">{p.name.replace('AIR', '')}</span>
+                }
+              </div>
+              <span className="text-cyan-300/70 text-xs font-medium group-hover:text-cyan-300 transition">{p.name}</span>
             </button>
           ))}
         </motion.div>
