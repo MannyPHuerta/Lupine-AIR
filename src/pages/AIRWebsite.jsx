@@ -136,19 +136,15 @@ function Hero() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           className="flex flex-wrap justify-center gap-6 pt-4">
           {[
-            { name: 'AIRental', icon: null },
-            { name: 'AIREvents', icon: null },
-            { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/9b576feaf_airfq_icon_transparent.png' },
-          ].map((p, i) => (
-            <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
+            { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/airental_icon.png', anchor: '#airental' },
+            { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/airevents_icon.png', anchor: '#airevents' },
+            { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/9b576feaf_airfq_icon_transparent.png', anchor: '#airfq' },
+          ].map((p) => (
+            <button key={p.name} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="flex flex-col items-center gap-2 group">
-              <div className="w-20 h-20 rounded-2xl bg-slate-800 border border-cyan-400/20 group-hover:border-cyan-400/60 transition flex items-center justify-center overflow-hidden">
-                {p.icon
-                  ? <img src={p.icon} alt={p.name} className="w-16 h-16 object-contain" />
-                  : <span className="text-cyan-300 font-black text-lg">{p.name.replace('AIR', '')}</span>
-                }
-              </div>
-              <span className="text-cyan-300/70 text-xs font-medium group-hover:text-cyan-300 transition">{p.name}</span>
+              <img src={p.icon} alt={p.name}
+                className="w-24 h-24 rounded-2xl object-cover shadow-lg group-hover:scale-105 group-hover:shadow-cyan-500/30 transition-all duration-200" />
+              <span className="text-white/50 text-xs font-medium group-hover:text-white/80 transition">{p.name}</span>
             </button>
           ))}
         </motion.div>
