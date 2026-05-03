@@ -142,10 +142,9 @@ function Hero() {
             { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png', anchor: '#airfq' },
           ].map((p) => (
             <button key={p.name} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
-              className="flex flex-col items-center gap-2 group">
+              className="group">
               <img src={p.icon} alt={p.name}
                 className="w-24 h-24 rounded-2xl object-cover shadow-lg group-hover:scale-105 group-hover:shadow-cyan-500/30 transition-all duration-200" />
-              <span className="text-white/50 text-xs font-medium group-hover:text-white/80 transition">{p.name}</span>
             </button>
           ))}
         </motion.div>
