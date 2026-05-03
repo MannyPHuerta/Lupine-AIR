@@ -581,7 +581,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="airfq"
         tag="AIRfq · Premium"
-        title="AIRfq"
+        title={<div className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/9b576feaf_airfq_icon_transparent.png" alt="AIRfq" className="h-16 w-auto" />AIRfq</div>}
         tagline="Upload the RFQ. Walk away with a bid."
         description="AI reads the government RFQ, matches every line item to your catalog, drafts the full bid response, flags every missing certification, and won't let you submit until it's complete. What used to take a day takes an hour."
         color="blue"
