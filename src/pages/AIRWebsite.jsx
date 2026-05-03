@@ -548,7 +548,7 @@ function Footer() {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function AIRWebsite() {
   return (
-    <div className="bg-black min-h-screen">
+    <div className="min-h-screen" style={{ backgroundColor: '#000000' }}>
       <Nav />
       <Hero />
 
