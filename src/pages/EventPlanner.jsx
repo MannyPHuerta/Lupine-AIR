@@ -348,6 +348,7 @@ export default function EventPlanner() {
           <EventCanvas
             items={canvasItems}
             scale={scale}
+            onScaleChange={setScale}
             showGrid={showGrid}
             venueWidth={venueDimensions.width}
             venueLength={venueDimensions.length}

@@ -18,6 +18,7 @@ const GRID_MAJOR_COLOR = 'rgba(255,255,255,0.12)';
 export default function EventCanvas({
   items,
   scale,
+  onScaleChange,
   showGrid,
   venueWidth,
   venueLength,
@@ -36,6 +37,9 @@ export default function EventCanvas({
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
   const bgImage = useRef(null);
+
+  // Touch state refs (avoid re-renders during gesture)
+  const touchState = useRef(null); // { type: 'drag'|'pan'|'pinch', ... }
 
   // Load background image
   useEffect(() => {
@@ -264,10 +268,90 @@ export default function EventCanvas({
     if (e.key === 'r' || e.key === 'R') onRotate(selectedId, 90);
   };
 
+  // ── Touch handlers ──────────────────────────────────────────────
+  const getTouchPoint = (touch) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: touch.clientX - rect.left - pan.x,
+      y: touch.clientY - rect.top - pan.y,
+    };
+  };
+
+  const getPinchDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    const touches = e.touches;
+
+    if (touches.length === 1) {
+      const pt = getTouchPoint(touches[0]);
+      const hit = hitTest(pt);
+      if (hit) {
+        onSelect(hit.id);
+        touchState.current = {
+          type: 'drag',
+          id: hit.id,
+          offsetX: pt.x - hit.x,
+          offsetY: pt.y - hit.y,
+        };
+      } else {
+        onSelect(null);
+        touchState.current = {
+          type: 'pan',
+          startX: touches[0].clientX - pan.x,
+          startY: touches[0].clientY - pan.y,
+        };
+      }
+    } else if (touches.length === 2) {
+      touchState.current = {
+        type: 'pinch',
+        startDist: getPinchDistance(touches),
+        startScale: scale,
+        midX: (touches[0].clientX + touches[1].clientX) / 2,
+        midY: (touches[0].clientY + touches[1].clientY) / 2,
+        startPan: { ...pan },
+      };
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const touches = e.touches;
+    const ts = touchState.current;
+    if (!ts) return;
+
+    if (ts.type === 'drag' && touches.length === 1) {
+      const pt = getTouchPoint(touches[0]);
+      onMove(ts.id, pt.x - ts.offsetX, pt.y - ts.offsetY);
+    } else if (ts.type === 'pan' && touches.length === 1) {
+      setPan({
+        x: touches[0].clientX - ts.startX,
+        y: touches[0].clientY - ts.startY,
+      });
+    } else if (ts.type === 'pinch' && touches.length === 2) {
+      const dist = getPinchDistance(touches);
+      const ratio = dist / ts.startDist;
+      const newScale = Math.min(30, Math.max(4, Math.round(ts.startScale * ratio)));
+      // Optionally propagate scale — only if it actually changed to avoid loop
+      if (newScale !== scale) {
+        onScaleChange?.(newScale);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    touchState.current = null;
+  };
+
   return (
     <canvas
       ref={canvasRef}
-      className="flex-1 w-full h-full cursor-crosshair outline-none"
+      className="flex-1 w-full h-full cursor-crosshair outline-none touch-none"
       tabIndex={0}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -276,6 +360,10 @@ export default function EventCanvas({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onKeyDown={handleKeyDown}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     />
   );
 }
