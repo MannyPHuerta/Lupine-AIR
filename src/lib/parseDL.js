@@ -146,24 +146,10 @@ export function parseDLBarcode(raw) {
     
     let cleaned = val.trim();
     
-    // For name fields, strip any known 3-letter field codes that appear at word boundaries
+    // For name fields, strip any AAMVA field codes (all start with D followed by 2+ uppercase/digits)
     if (isNameField) {
-      const knownCodes = new Set(Object.keys(FIELD_MAP));
-      // Iteratively strip known codes from the end (handles concatenated codes like "MANUELDDFN" → "MANUEL")
-      let changed = true;
-      while (changed) {
-        changed = false;
-        // Try to match and strip a known code at the end of a word or string
-        for (const code of knownCodes) {
-          // Match: code at end OR code followed by space/other code
-          const regex = new RegExp(`(${code})(?=\\s|$)$`);
-          if (regex.test(cleaned)) {
-            cleaned = cleaned.replace(regex, '').trim();
-            changed = true;
-            break;
-          }
-        }
-      }
+      // Remove D[A-Z0-9]{2,} patterns (e.g., "MANUELDDFN" → "MANUEL")
+      cleaned = cleaned.replace(/D[A-Z0-9]{2,}/g, '').trim();
     }
     
     return cleaned.trim();
