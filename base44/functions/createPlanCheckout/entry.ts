@@ -13,9 +13,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'planId is required' }, { status: 400 });
     }
 
-    const origin = 'https://app.base44.com';
-    const successUrl = origin + '/event-planner/' + planId + '?unlocked=1';
-    const cancelUrl = origin + '/event-planner/' + planId;
+    const origin = String('https://app.base44.com');
+    const successUrl = String(origin + '/event-planner/' + String(planId) + '?unlocked=1');
+    const cancelUrl = String(origin + '/event-planner/' + String(planId));
+    console.log('[checkout] typeof successUrl:', typeof successUrl, 'value:', successUrl);
 
     console.log('[checkout] planId:', planId, 'successUrl:', successUrl);
 
