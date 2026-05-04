@@ -34,12 +34,15 @@ export default function EventCanvas({
   const canvasRef = useRef(null);
   const [dragging, setDragging] = useState(null); // { id, offsetX, offsetY }
   const [pan, setPan] = useState({ x: 40, y: 40 });
+  // Keep panRef in sync so touch handlers always read the latest pan
+  useEffect(() => { panRef.current = pan; }, [pan]);
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
   const bgImage = useRef(null);
 
   // Touch state refs (avoid re-renders during gesture)
   const touchState = useRef(null); // { type: 'drag'|'pan'|'pinch', ... }
+  const panRef = useRef(pan);
 
   // Load background image
   useEffect(() => {
@@ -271,9 +274,10 @@ export default function EventCanvas({
   // ── Touch handlers ──────────────────────────────────────────────
   const getTouchPoint = (touch) => {
     const rect = canvasRef.current.getBoundingClientRect();
+    const p = panRef.current;
     return {
-      x: touch.clientX - rect.left - pan.x,
-      y: touch.clientY - rect.top - pan.y,
+      x: touch.clientX - rect.left - p.x,
+      y: touch.clientY - rect.top - p.y,
     };
   };
 
@@ -302,8 +306,8 @@ export default function EventCanvas({
         onSelect(null);
         touchState.current = {
           type: 'pan',
-          startX: touches[0].clientX - pan.x,
-          startY: touches[0].clientY - pan.y,
+          startX: touches[0].clientX - panRef.current.x,
+          startY: touches[0].clientY - panRef.current.y,
         };
       }
     } else if (touches.length === 2) {
@@ -328,10 +332,12 @@ export default function EventCanvas({
       const pt = getTouchPoint(touches[0]);
       onMove(ts.id, pt.x - ts.offsetX, pt.y - ts.offsetY);
     } else if (ts.type === 'pan' && touches.length === 1) {
-      setPan({
+      const newPan = {
         x: touches[0].clientX - ts.startX,
         y: touches[0].clientY - ts.startY,
-      });
+      };
+      panRef.current = newPan;
+      setPan(newPan);
     } else if (ts.type === 'pinch' && touches.length === 2) {
       const dist = getPinchDistance(touches);
       const ratio = dist / ts.startDist;
