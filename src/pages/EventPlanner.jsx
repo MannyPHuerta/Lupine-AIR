@@ -66,7 +66,7 @@ export default function EventPlanner() {
         setShowWizard(true);
       }
 
-      if (planId) {
+      if (planId && planId !== ':planId') {
         const existing = await base44.entities.EventPlan.filter({ id: planId });
         const p = existing[0];
         if (p) {
