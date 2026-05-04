@@ -146,12 +146,24 @@ export function parseDLBarcode(raw) {
     
     let cleaned = val.trim();
     
-    // For name fields, aggressively remove any embedded 3-letter patterns
-    // that look like field codes (uppercase letter + 2 uppercase/digit)
+    // For name fields, strip any known 3-letter field codes that appear at word boundaries
     if (isNameField) {
-      // Remove any occurrence of patterns like "DDFN", "DDG", etc. 
-      // Pattern: [A-Z][A-Z0-9]{2,} followed by another capital or digit
-      cleaned = cleaned.replace(/\s+[A-Z][A-Z0-9]{2,}(?=[A-Z]|\s|$)/g, '');
+      const knownCodes = new Set(Object.keys(FIELD_MAP));
+      // Iteratively strip known codes from the end (handles concatenated codes like "MANUELDDFN" → "MANUEL")
+      let changed = true;
+      while (changed) {
+        changed = false;
+        // Try to match and strip a known code at the end of a word or string
+        for (const code of knownCodes) {
+          // Match: code at end OR code followed by space/other code
+          const regex = new RegExp(`(${code})(?=\\s|$)$`);
+          if (regex.test(cleaned)) {
+            cleaned = cleaned.replace(regex, '').trim();
+            changed = true;
+            break;
+          }
+        }
+      }
     }
     
     return cleaned.trim();
