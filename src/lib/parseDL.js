@@ -86,13 +86,14 @@ function extractFields(raw) {
   console.log('[parseDL] newline parse weak (' + keyCount + ' key fields), trying concatenated fallback');
 
   // --- Pass 2: concatenated format (TX and others) ---
-  // Strip everything before the "DL" subfile marker
-  const dlIdx = raw.indexOf('\nDL');
-  const workStr = dlIdx >= 0 ? raw.slice(dlIdx + 3) : raw;
+  // Strip everything before the first valid code marker (DL, DA, DB, DC, ZT, etc.)
+  const codeStart = raw.search(/[A-Z]{3}(?=[A-Z0-9])/);
+  const workStr = codeStart >= 0 ? raw.slice(codeStart) : raw;
 
-  // Match pattern: 3 uppercase letters followed by value up to next 3-letter code
-  // Values can contain spaces, digits, slashes, dashes, periods — but NOT newlines
-  const codePattern = /([A-Z]{3})([^\r\n]{1,40}?)(?=[A-Z]{3}[A-Z0-9]|\r|\n|$)/g;
+  // Match pattern: 3 uppercase letters followed by alphanumeric value
+  // Stop at the next 3-letter code (lookahead) or end of string
+  // More permissive: allow digits, spaces, special chars in values until next code
+  const codePattern = /([A-Z]{3})([A-Z0-9\s\-\/.]{1,50}?)(?=[A-Z]{3}[A-Z0-9]|$)/g;
   let match;
   while ((match = codePattern.exec(workStr)) !== null) {
     const code = match[1];
