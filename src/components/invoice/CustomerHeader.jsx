@@ -180,8 +180,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
 
   // DL Scanner — fires when a USB ID scanner reads a driver's license
   useDLScanner((parsed) => {
-    onChange({
-      ...customer,
+    const dlFields = {
       name: parsed.fullName || customer.name,
       address: parsed.address || customer.address,
       city: parsed.city || customer.city,
@@ -191,7 +190,43 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
       _dlLast4: parsed.dlLast4,
       _dlExpiry: parsed.expiry,
       _dlDob: parsed.dob,
-    });
+    };
+
+    // Try to find an existing customer record by last name match
+    const lastName = parsed.lastName?.toLowerCase();
+    const firstName = parsed.firstName?.toLowerCase();
+    const matchedCustomer = lastName ? customers.find(c => {
+      const nameLower = (c.fullName || '').toLowerCase();
+      return nameLower.includes(lastName) && (!firstName || nameLower.includes(firstName.slice(0, 3)));
+    }) : null;
+
+    if (matchedCustomer) {
+      // Merge DL address with customer record (DL address is authoritative)
+      onChange({
+        ...customer,
+        name: matchedCustomer.fullName,
+        phone: matchedCustomer.phone || customer.phone,
+        email: matchedCustomer.email || customer.email,
+        branch: matchedCustomer.preferredBranch || customer.branch,
+        address: parsed.address || matchedCustomer.address || customer.address,
+        city: parsed.city || matchedCustomer.city || customer.city,
+        state: parsed.state || matchedCustomer.state || customer.state,
+        zip: parsed.zip || matchedCustomer.zip || customer.zip,
+        customerId: matchedCustomer.id,
+        _blacklisted: matchedCustomer.blacklisted,
+        _creditHold: matchedCustomer.creditHold,
+        _creditHoldReason: matchedCustomer.creditHoldReason,
+        _taxExempt: matchedCustomer.taxExempt,
+        _dlVerified: true,
+        _dlLast4: parsed.dlLast4,
+        _dlExpiry: parsed.expiry,
+        _dlDob: parsed.dob,
+      });
+    } else {
+      // No match — fill from DL only
+      onChange({ ...customer, ...dlFields });
+    }
+
     setAutoFilled(true);
     setDlScanFlash(parsed.isExpired ? 'expired' : 'success');
     setTimeout(() => setDlScanFlash(null), 4000);
