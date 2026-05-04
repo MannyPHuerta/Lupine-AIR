@@ -17,7 +17,7 @@ import { parseDLBarcode } from '@/lib/parseDL';
 // Honeywell/Zebra USB HID scanners emit ~1 char per 5-20ms
 const SCANNER_SPEED_THRESHOLD_MS = 80;
 // Wait this long after last char before parsing
-const SCAN_END_DEBOUNCE_MS = 300;
+const SCAN_END_DEBOUNCE_MS = 500;
 // Minimum buffer length for a real DL barcode
 const MIN_SCAN_LENGTH = 60;
 
@@ -77,13 +77,17 @@ export function useDLScanner(onScan) {
       const isAamvaStart = char === '@';
 
       if (isAamvaStart) {
-        // New scan starting — clear any stale buffer
-        dlLog('[DLScanner] AAMVA @ detected — starting new buffer');
-        if (timerRef.current) clearTimeout(timerRef.current);
-        bufferRef.current = '@';
-        isScanningRef.current = true;
-        timerRef.current = setTimeout(flush, SCAN_END_DEBOUNCE_MS);
-        return;
+        // Start of a new AAMVA scan — but only reset if we're NOT already mid-scan
+        // (some barcodes contain @ in the middle of the data)
+        if (!isScanningRef.current) {
+          dlLog('[DLScanner] AAMVA @ detected — starting new buffer');
+          if (timerRef.current) clearTimeout(timerRef.current);
+          bufferRef.current = '@';
+          isScanningRef.current = true;
+          timerRef.current = setTimeout(flush, SCAN_END_DEBOUNCE_MS);
+          return;
+        }
+        // Already scanning — treat @ as a regular character (part of AAMVA data)
       }
 
       if (isScanner || isScanningRef.current) {
