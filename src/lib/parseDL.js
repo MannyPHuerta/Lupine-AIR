@@ -2,6 +2,8 @@
  * AAMVA PDF417 Driver's License Parser
  * Parses the raw string output from a 2D barcode scanner reading a US/Canada DL.
  * AAMVA standard: https://www.aamva.org/identity/aamva-dl-id-card-design-standard/
+ *
+ * Handles both newline-delimited AND concatenated field formats (e.g. TX).
  */
 
 const FIELD_MAP = {
@@ -26,7 +28,22 @@ const FIELD_MAP = {
   DBC: 'sex',            // 1=Male, 2=Female
   DAU: 'height',
   DAY: 'eyeColor',
+  DCA: 'vehicleClass',
+  DCB: 'restrictions',
+  DCD: 'endorsements',
+  DDK: 'organDonor',
+  DDF: 'complianceType',
+  DDG: 'placeOfBirth',
 };
+
+// All known 3-letter AAMVA field codes (used to split concatenated strings)
+const ALL_CODES = Object.keys(FIELD_MAP).concat([
+  'DDA','DDB','DDC','DDD','DDE','DDH','DDI','DDJ','DDL','DDM','DDN','DDO','DDP',
+  'DCH','DCI','DCJ','DCK','DCL','DCM','DCN','DCO','DCP','DCQ','DCR','DCU','DCV','DCW','DCX','DCY','DCZ',
+  'DAB','DAE','DAF','DAH','DAL','DAM','DAN','DAO','DAP','DAR','DAS','DAT','DAV','DAW','DAX',
+  'DBB','DBC','DBD','DBE','DBF','DBG','DBH','DBI','DBJ','DBK','DBL','DBM','DBN','DBO','DBP','DBQ','DBR','DBS',
+  'ZT','ZTA','ZTB','ZTC','ZTD','ZTE',
+]);
 
 function parseDate(raw) {
   if (!raw || raw.length < 8) return '';
@@ -44,24 +61,58 @@ function parseZip(raw) {
   return clean.slice(0, 5);
 }
 
-export function parseDLBarcode(raw) {
-  if (!raw) return null;
-
-  // Detect AAMVA header
-  if (!raw.includes('@') && !raw.includes('ANSI')) return null;
-
+/**
+ * Extract fields from a raw AAMVA string.
+ * Supports both:
+ *   (a) newline-delimited: "DCS HUERTA\nDAC MANUEL\n..."
+ *   (b) concatenated: "DCSHUERTADDACMANUEL..."
+ */
+function extractFields(raw) {
   const result = {};
 
-  // Split on newlines or carriage returns
+  // First try newline-delimited parsing
   const lines = raw.split(/[\r\n]+/);
-
   for (const line of lines) {
-    const code = line.slice(0, 3);
-    const value = line.slice(3).trim();
+    const trimmed = line.trim();
+    if (trimmed.length < 4) continue;
+    const code = trimmed.slice(0, 3);
+    const value = trimmed.slice(3).trim();
     if (FIELD_MAP[code] && value) {
       result[FIELD_MAP[code]] = value;
     }
   }
+
+  // If we got some fields from line parsing, return (covers most states)
+  if (Object.keys(result).length > 1) return result;
+
+  // Fallback: parse concatenated format (TX and others)
+  // Find the DL subfile start — look for "DL" header marker
+  const dlStart = raw.indexOf('DL');
+  const ztStart = raw.indexOf('ZT'); // state-specific subfile
+  const workStr = dlStart >= 0 ? raw.slice(dlStart + 2) : raw;
+
+  // Build a regex that matches any known 3-letter code followed by its value
+  // Value ends at next 3-letter code boundary
+  const codePattern = /([A-Z]{3})([A-Z0-9 \/\-\.]+?)(?=[A-Z]{3}[A-Z0-9]|$)/g;
+  let match;
+  while ((match = codePattern.exec(workStr)) !== null) {
+    const code = match[1];
+    const value = match[2].trim();
+    if (FIELD_MAP[code] && value && value !== 'NONE' && value !== 'ANSI') {
+      result[FIELD_MAP[code]] = value;
+    }
+  }
+
+  return result;
+}
+
+export function parseDLBarcode(raw) {
+  if (!raw) return null;
+
+  // Detect AAMVA header
+  if (!raw.includes('@') && !raw.includes('ANSI') && !raw.includes('AAMVA')) return null;
+
+  const result = extractFields(raw);
 
   if (Object.keys(result).length === 0) return null;
 
@@ -101,12 +152,12 @@ export function parseDLBarcode(raw) {
     address: result.address || '',
     city: result.city || '',
     state: result.state || '',
-    zip: parseZip(result.zip),
+    zip: parseZip(result.zip || ''),
     dob,
     expiry,
     isExpired,
     dlLast4,
-    dlNumber,         // full number — only store last4 in DB
+    dlNumber,
     country: result.country || 'USA',
     sex: result.sex === '1' ? 'M' : result.sex === '2' ? 'F' : '',
     height: result.height || '',

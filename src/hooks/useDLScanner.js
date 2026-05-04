@@ -14,9 +14,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { parseDLBarcode } from '@/lib/parseDL';
 
-const SCANNER_SPEED_THRESHOLD_MS = 50; // scanners type faster than this per char
-const SCAN_END_DEBOUNCE_MS = 150;       // wait this long after last char to parse
-const MIN_SCAN_LENGTH = 100;            // real DL barcodes are long
+const SCANNER_SPEED_THRESHOLD_MS = 80; // Honeywell USB scanners can be ~50-80ms per char
+const SCAN_END_DEBOUNCE_MS = 300;       // wait this long after last char to parse
+const MIN_SCAN_LENGTH = 80;             // real DL barcodes are long
 
 export function useDLScanner(onScan) {
   const bufferRef = useRef('');
@@ -38,7 +38,7 @@ export function useDLScanner(onScan) {
   }, [onScan]);
 
   useEffect(() => {
-    const handleKeyPress = (e) => {
+    const handleKey = (e) => {
       const now = Date.now();
       const timeSinceLast = now - lastKeyTimeRef.current;
       lastKeyTimeRef.current = now;
@@ -57,9 +57,12 @@ export function useDLScanner(onScan) {
       }
     };
 
-    document.addEventListener('keypress', handleKeyPress);
+    // Listen on both keydown AND keypress — Honeywell USB scanners may only fire keydown
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('keypress', handleKey);
     return () => {
-      document.removeEventListener('keypress', handleKeyPress);
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('keypress', handleKey);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [flush]);
