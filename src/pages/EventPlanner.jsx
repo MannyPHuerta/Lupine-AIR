@@ -52,13 +52,19 @@ export default function EventPlanner() {
   useEffect(() => {
     const init = async () => {
       const [eq, cats, me] = await Promise.all([
-        base44.entities.Equipment.list('-created_date', 500),
+        base44.entities.Equipment.list('-name', 2000),
         base44.entities.EquipmentCategory.list(),
         base44.auth.me().catch(() => null),
       ]);
       setEquipment(eq);
       setCategories(cats);
       setUser(me);
+
+      // Auto-show wizard for customers on a new (empty) plan
+      const isCustomer = me?.role !== 'admin' && me?.role !== 'staff';
+      if (!planId && isCustomer) {
+        setShowWizard(true);
+      }
 
       if (planId) {
         const existing = await base44.entities.EventPlan.filter({ id: planId });
@@ -265,19 +271,20 @@ export default function EventPlanner() {
         <CustomerWizard
           equipment={equipment}
           onComplete={async (wizardData) => {
-            const { canvasItems: wizItems, ...planData } = wizardData;
-            setCanvasItems(wizItems);
-            setTitle(planData.title || title);
-            setEventDate(planData.eventDate || eventDate);
-            setEventTime(planData.eventTime || eventTime);
-            setEventType(planData.eventType || eventType);
-            setGuestCount(planData.guestCount || guestCount);
-            setVenueSurface(planData.venueSurface || venueSurface);
+            const { canvasItems: wizItems, skipReview, ...planData } = wizardData;
+            if (wizItems?.length) setCanvasItems(wizItems);
+            if (planData.title) setTitle(planData.title);
+            if (planData.eventDate) setEventDate(planData.eventDate);
+            if (planData.eventTime) setEventTime(planData.eventTime);
+            if (planData.eventType) setEventType(planData.eventType);
+            if (planData.guestCount) setGuestCount(planData.guestCount);
+            if (planData.venueSurface) setVenueSurface(planData.venueSurface);
             if (planData.venueWidthFt || planData.venueLengthFt) {
               setVenueDimensions({ width: planData.venueWidthFt || 0, length: planData.venueLengthFt || 0 });
             }
             setShowWizard(false);
-            setTimeout(handleSave, 200);
+            // Save in background
+            setTimeout(handleSave, 300);
           }}
           onCancel={() => setShowWizard(false)}
         />
