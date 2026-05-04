@@ -54,6 +54,7 @@ import DeliveryDetail from "./pages/DeliveryDetail";
 import DeliveryAssignment from "./pages/DeliveryAssignment";
 import RecoveryDetail from "./pages/RecoveryDetail";
 import DispatchBoard from "./pages/DispatchBoard";
+import AIReports from "./pages/AIReports";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -129,6 +130,7 @@ const AuthenticatedApp = () => {
       <Route path="/assign-deliveries" element={<DeliveryAssignment />} />
       <Route path="/recovery/:id" element={<RecoveryDetail />} />
       <Route path="/dispatch" element={<DispatchBoard />} />
+      <Route path="/aireports" element={<AIReports />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

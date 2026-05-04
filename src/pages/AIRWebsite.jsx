@@ -4,7 +4,7 @@ import { motion, useInView } from 'framer-motion';
 import {
   Zap, BarChart3, MapPin, Clock, Users, Calendar, FileText,
   DollarSign, CheckCircle, ChevronRight, ArrowRight, Menu, X,
-  Truck, Shield, Brain, Star, Play, Building2
+  Truck, Shield, Brain, Star, Play, Building2, TrendingUp, Package, AlertTriangle
 } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
@@ -36,6 +36,7 @@ function Nav({ activeSection }) {
     { label: 'AIRental', href: '#airental' },
     { label: 'AIREvents', href: '#airevents' },
     { label: 'AIRfq', href: '#airfq' },
+    { label: 'AIReports', href: '#aireports' },
     { label: 'Platform', href: '#platform' },
     { label: 'Pricing', href: '#pricing' },
   ];
@@ -140,11 +141,18 @@ function Hero() {
             { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png', anchor: '#airental' },
             { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png', anchor: '#airevents' },
             { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png', anchor: '#airfq' },
+            { name: 'AIReports', icon: null, anchor: '#aireports' },
           ].map((p) => (
             <button key={p.name} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
-              <img src={p.icon} alt={p.name}
-                className="w-24 h-24 rounded-2xl object-cover shadow-lg group-hover:scale-105 group-hover:shadow-cyan-500/30 transition-all duration-200" />
+              {p.icon ? (
+                <img src={p.icon} alt={p.name}
+                  className="w-24 h-24 rounded-2xl object-cover shadow-lg group-hover:scale-105 group-hover:shadow-cyan-500/30 transition-all duration-200" />
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400/20 to-teal-600/20 border border-emerald-500/30 shadow-lg group-hover:scale-105 group-hover:shadow-emerald-500/20 transition-all duration-200 flex items-center justify-center">
+                  <span className="text-emerald-400 text-xs font-bold text-center leading-tight px-1">AIR<br/>Reports</span>
+                </div>
+              )}
             </button>
           ))}
         </motion.div>
@@ -167,6 +175,7 @@ function ProductSection({ id, tag, title, tagline, description, color, features,
     cyan: { pill: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30', accent: 'text-cyan-400', btn: 'bg-cyan-500 hover:bg-cyan-400', card: 'border-cyan-500/20 hover:border-cyan-400/50 bg-cyan-500/5' },
     purple: { pill: 'bg-purple-500/10 text-purple-400 border-purple-500/30', accent: 'text-purple-400', btn: 'bg-purple-500 hover:bg-purple-400', card: 'border-purple-500/20 hover:border-purple-400/50 bg-purple-500/5' },
     blue: { pill: 'bg-blue-500/10 text-blue-400 border-blue-500/30', accent: 'text-blue-400', btn: 'bg-blue-500 hover:bg-blue-400', card: 'border-blue-500/20 hover:border-blue-400/50 bg-blue-500/5' },
+    green: { pill: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', accent: 'text-emerald-400', btn: 'bg-emerald-500 hover:bg-emerald-400', card: 'border-emerald-500/20 hover:border-emerald-400/50 bg-emerald-500/5' },
   };
   const c = colorMap[color] || colorMap.cyan;
 
@@ -349,6 +358,53 @@ function AIRfqPreview() {
   );
 }
 
+// ─── AIReports Preview ───────────────────────────────────────────────────────
+function AIReportsPreview() {
+  const bars = [
+    { label: 'Generator', val: 82, color: '#22d3ee' },
+    { label: 'Tent', val: 67, color: '#a78bfa' },
+    { label: 'Chair', val: 54, color: '#34d399' },
+    { label: 'Table', val: 48, color: '#fb923c' },
+    { label: 'Lift', val: 31, color: '#f472b6' },
+  ];
+  return (
+    <div className="bg-slate-900 rounded-2xl border border-emerald-500/20 p-6 space-y-4 shadow-2xl shadow-emerald-500/5">
+      <div className="flex items-center justify-between">
+        <div className="text-white font-bold text-sm">Fleet Utilization — May 2026</div>
+        <div className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">📊 Live</div>
+      </div>
+      <div className="space-y-2.5">
+        {bars.map((b, i) => (
+          <div key={i}>
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-white/60">{b.label}</span>
+              <span className="font-bold" style={{ color: b.color }}>{b.val}%</span>
+            </div>
+            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all" style={{ width: `${b.val}%`, backgroundColor: b.color }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2 pt-2">
+        {[
+          { label: 'Revenue', val: '$48.2k', color: 'text-emerald-400' },
+          { label: 'Aging Alert', val: '3 units', color: 'text-amber-400' },
+          { label: 'In Shop', val: '2 units', color: 'text-red-400' },
+        ].map((s, i) => (
+          <div key={i} className="bg-slate-800 rounded-lg py-2 text-center">
+            <div className={`font-bold text-sm ${s.color}`}>{s.val}</div>
+            <div className="text-white/40 text-xs">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 text-xs text-emerald-300">
+        📈 Generator demand up 18% vs last May — consider adding 2 units before summer
+      </div>
+    </div>
+  );
+}
+
 // ─── Platform Section ────────────────────────────────────────────────────────
 function PlatformSection() {
   const pillars = [
@@ -507,10 +563,15 @@ function Footer() {
                 { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png' },
                 { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png' },
                 { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png' },
+                { name: 'AIReports', icon: null },
               ].map(p => (
                 <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
                   className="flex items-center gap-2 text-white/50 hover:text-white text-sm transition">
-                  <img src={p.icon} alt={p.name} className="h-5 w-5 rounded-md" />{p.name}
+                  {p.icon
+                    ? <img src={p.icon} alt={p.name} className="h-5 w-5 rounded-md" />
+                    : <div className="h-5 w-5 rounded-md bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center"><BarChart3 className="w-3 h-3 text-black" /></div>
+                  }
+                  {p.name}
                 </button>
               ))}
             </div>
@@ -606,6 +667,24 @@ export default function AIRWebsite() {
         cta="Learn About AIRfq"
         ctaRoute="/airfq"
         preview={<AIRfqPreview />}
+      />
+
+      <ProductSection
+        id="aireports"
+        tag={<span className="flex items-center gap-2"><span className="text-emerald-400">📊</span>AIReports</span>}
+        title={<span className="flex items-center gap-4"><div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center flex-shrink-0"><BarChart3 className="w-7 h-7 text-black" /></div>AIReports</span>}
+        tagline="Know your numbers. Grow your operation."
+        description="Live dashboards built on your real rental data — equipment utilization by category, seasonal demand curves, asset aging, fleet health, and branch revenue side by side. No spreadsheets, no exports, no waiting."
+        color="green"
+        features={[
+          { icon: <BarChart3 className="w-5 h-5" />, title: 'Utilization Analytics', desc: 'See which categories earn the most and sit the most.' },
+          { icon: <TrendingUp className="w-5 h-5" />, title: 'Seasonal Trends', desc: '18-month demand curves to plan purchasing and staffing.' },
+          { icon: <Package className="w-5 h-5" />, title: 'Asset Aging', desc: 'Know what\'s aging out before it becomes a breakdown.' },
+          { icon: <AlertTriangle className="w-5 h-5" />, title: 'Fleet Health', desc: 'Units in shop, awaiting parts, and due for inspection — all flagged.' },
+        ]}
+        cta="Open AIReports"
+        ctaRoute="/aireports"
+        preview={<AIReportsPreview />}
       />
 
       <PlatformSection />
