@@ -138,30 +138,29 @@ export function parseDLBarcode(raw) {
 
   if (Object.keys(result).length === 0) return null;
 
-  // Clean up extracted fields — strip trailing field-code-like noise
-  const cleanValue = (val) => {
+  // Clean up extracted fields — strip embedded and trailing field-code noise
+  const cleanValue = (val, isNameField = false) => {
     if (!val) return '';
     // Strip "NONE" placeholder
     if (val === 'NONE' || val.startsWith('NONE ')) return '';
-    // Strip ONLY known 3-letter field codes that appear at the end as separate tokens
-    // (e.g., "MANUEL DDFN" → "MANUEL", but keep "HUERTADDEN")
-    const knownCodes = new Set(Object.keys(FIELD_MAP));
-    const words = val.trim().split(/\s+/);
-    while (words.length > 1) {
-      const lastWord = words[words.length - 1];
-      // Only strip if it's exactly 3 letters AND a known field code
-      if (lastWord.length === 3 && knownCodes.has(lastWord)) {
-        words.pop();
-      } else {
-        break;
-      }
+    
+    let cleaned = val.trim();
+    
+    // For name fields, aggressively remove any embedded 3-letter patterns
+    // that look like field codes (uppercase letter + 2 uppercase/digit)
+    if (isNameField) {
+      // Remove any occurrence of patterns like "DDFN", "DDG", etc. 
+      // Pattern: [A-Z][A-Z0-9]{2,} followed by another capital or digit
+      cleaned = cleaned.replace(/\s+[A-Z][A-Z0-9]{2,}(?=[A-Z]|\s|$)/g, '');
     }
-    return words.join(' ').trim();
+    
+    return cleaned.trim();
   };
 
   Object.keys(result).forEach(key => {
     if (typeof result[key] === 'string') {
-      result[key] = cleanValue(result[key]);
+      const isName = ['firstName', 'lastName', 'middleName', 'fullName'].includes(key);
+      result[key] = cleanValue(result[key], isName);
     }
   });
 
