@@ -12,11 +12,10 @@ function QuickAddField({ equipment, onAdd }) {
   const [open, setOpen] = useState(false);
 
   const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
+    const q = query.toLowerCase().trim();
     return equipment
-      .filter(e => e.unitStatus === 'available' && (e.name?.toLowerCase().includes(q) || e.category?.toLowerCase().includes(q)))
-      .slice(0, 8);
+      .filter(e => e.unitStatus === 'available' && (!q || e.name?.toLowerCase().includes(q) || e.category?.toLowerCase().includes(q)))
+      .slice(0, 10);
   }, [equipment, query]);
 
   const handleSelect = (eq) => {
@@ -31,19 +30,19 @@ function QuickAddField({ equipment, onAdd }) {
         <Search className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
         <input
           className="bg-transparent flex-1 text-xs text-white placeholder-white/30 outline-none"
-          placeholder="Add equipment…"
+          placeholder="Search & add equipment…"
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
         />
       </div>
       {open && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden max-h-56 overflow-y-auto">
           {results.map(eq => (
             <button
               key={eq.id}
-              onMouseDown={() => handleSelect(eq)}
+              onMouseDown={(e) => { e.preventDefault(); handleSelect(eq); }}
               className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition text-left"
             >
               <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: CATEGORY_COLORS[eq.category] || CATEGORY_COLORS.default }} />

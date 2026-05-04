@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ArrowRight, ArrowLeft, Sparkles, Loader2, CheckCircle2, Upload, Eye } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Sparkles, Loader2, CheckCircle2, Upload, Eye, Minus, Plus, Trash2 } from 'lucide-react';
 
 const STEPS = [
   { id: 'event', label: 'Your Event' },
@@ -20,6 +20,67 @@ const DEFAULT_FOOTPRINTS = {
   Generator: { w: 4, l: 6 }, Inflatable: { w: 15, l: 15 }, Staging: { w: 16, l: 8 },
   'Dance Floor': { w: 12, l: 12 }, 'Light Tower': { w: 4, l: 4 },
 };
+
+// Convert HH:MM (24h) to 12h AM/PM display
+function to12h(time24) {
+  if (!time24) return '';
+  const [hStr, mStr] = time24.split(':');
+  let h = parseInt(hStr, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${mStr} ${ampm}`;
+}
+
+// AM/PM time picker component
+function TimePicker({ value, onChange }) {
+  const [h, setH] = useState(() => {
+    if (!value) return '12';
+    const hh = parseInt(value.split(':')[0], 10);
+    return String(hh % 12 || 12);
+  });
+  const [m, setM] = useState(() => value ? value.split(':')[1] : '00');
+  const [ampm, setAmpm] = useState(() => {
+    if (!value) return 'AM';
+    return parseInt(value.split(':')[0], 10) >= 12 ? 'PM' : 'AM';
+  });
+
+  const emit = (hVal, mVal, apVal) => {
+    let hh = parseInt(hVal, 10);
+    if (apVal === 'PM' && hh !== 12) hh += 12;
+    if (apVal === 'AM' && hh === 12) hh = 0;
+    onChange(`${String(hh).padStart(2, '0')}:${mVal}`);
+  };
+
+  return (
+    <div className="flex gap-1.5 items-center">
+      <select
+        value={h}
+        onChange={e => { setH(e.target.value); emit(e.target.value, m, ampm); }}
+        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500 flex-1"
+      >
+        {Array.from({ length: 12 }, (_, i) => String(i + 1)).map(v => (
+          <option key={v} value={v}>{v}</option>
+        ))}
+      </select>
+      <span className="text-white/40 font-bold">:</span>
+      <select
+        value={m}
+        onChange={e => { setM(e.target.value); emit(h, e.target.value, ampm); }}
+        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500 flex-1"
+      >
+        {['00', '15', '30', '45'].map(v => <option key={v} value={v}>{v}</option>)}
+      </select>
+      <select
+        value={ampm}
+        onChange={e => { setAmpm(e.target.value); emit(h, m, e.target.value); }}
+        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500 flex-1"
+      >
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+}
 
 function StepIndicator({ current, onGoTo }) {
   return (
@@ -80,6 +141,18 @@ function StepEvent({ data, onChange, onNext }) {
             </select>
           </div>
           <div>
+            <label className="text-xs text-white/50 block mb-1.5">Number of guests</label>
+            <input
+              type="number"
+              placeholder="150"
+              value={data.guestCount || ''}
+              onChange={e => onChange({ guestCount: parseInt(e.target.value) || 0 })}
+              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
             <label className="text-xs text-white/50 block mb-1.5">Start date</label>
             <input
               type="date"
@@ -88,8 +161,6 @@ function StepEvent({ data, onChange, onNext }) {
               className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-white/50 block mb-1.5">End date</label>
             <input
@@ -100,27 +171,10 @@ function StepEvent({ data, onChange, onNext }) {
               className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
-          <div>
-            <label className="text-xs text-white/50 block mb-1.5">Start time</label>
-            <input
-              type="time"
-              value={data.eventTime || ''}
-              onChange={e => onChange({ eventTime: e.target.value })}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-white/50 block mb-1.5">Number of guests</label>
-            <input
-              type="number"
-              placeholder="150"
-              value={data.guestCount || ''}
-              onChange={e => onChange({ guestCount: parseInt(e.target.value) || 0 })}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
+        <div>
+          <label className="text-xs text-white/50 block mb-1.5">Start time</label>
+          <TimePicker value={data.eventTime || ''} onChange={val => onChange({ eventTime: val })} />
         </div>
         <div>
           <label className="text-xs text-white/50 block mb-1.5">Venue name or address (optional)</label>
@@ -162,12 +216,14 @@ function StepVenue({ data, onChange, onNext, onBack }) {
         <p className="text-white/50 text-sm">This helps us fit everything perfectly.</p>
       </div>
       <div className="space-y-4">
+        {/* Available Space FIRST */}
         <div>
           <label className="text-xs text-white/50 block mb-1.5">Available space (approximate)</label>
           <div className="grid grid-cols-2 gap-3">
             <div className="relative">
               <input
                 type="number" placeholder="100" value={data.venueWidthFt || ''}
+                autoFocus
                 onChange={e => onChange({ venueWidthFt: parseFloat(e.target.value) || 0 })}
                 className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
               />
@@ -257,7 +313,7 @@ function StepVenue({ data, onChange, onNext, onBack }) {
           onClick={onNext}
           className="flex-1 flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl py-3 transition"
         >
-          <Sparkles className="w-4 h-4" /> Generate My Layout <ArrowRight className="w-4 h-4" />
+          <Sparkles className="w-4 h-4" /> Get AI Recommendations <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -267,6 +323,27 @@ function StepVenue({ data, onChange, onNext, onBack }) {
 function StepAI({ data, equipment, generatedItems, aiSummary, onGenerated, onBack, onViewCanvas }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [localItems, setLocalItems] = useState(generatedItems || []);
+
+  // Keep localItems in sync when generatedItems changes from outside (e.g. regenerate)
+  const handleGenerated = (items, summary) => {
+    setLocalItems(items);
+    onGenerated(items, summary);
+  };
+
+  const updateQty = (id, delta) => {
+    const updated = localItems.map(item =>
+      item.id === id ? { ...item, quantity: Math.max(1, (item.quantity || 1) + delta) } : item
+    ).filter(Boolean);
+    setLocalItems(updated);
+    onGenerated(updated, aiSummary);
+  };
+
+  const removeItem = (id) => {
+    const updated = localItems.filter(item => item.id !== id);
+    setLocalItems(updated);
+    onGenerated(updated, aiSummary);
+  };
 
   const generate = async () => {
     setLoading(true);
@@ -291,12 +368,23 @@ function StepAI({ data, equipment, generatedItems, aiSummary, onGenerated, onBac
         footprintL: e.footprintLength || DEFAULT_FOOTPRINTS[e.category]?.l || 10,
       }));
 
-    const prompt = `You are an expert event layout planner for Rental World Equipment in the Rio Grande Valley, TX.
+    const eventTypeGuide = {
+      birthday: 'casual party setup: round tables, chairs, a bounce house or inflatable if kids event, canopy/tent if outdoor',
+      quinceañera: 'elegant banquet: round tables with chairs for all guests, head table/staging, dance floor, tent if outdoor, lighting',
+      wedding: 'formal reception: round banquet tables, chairs for all, dance floor, staging/altar area, tent if outdoor, elegant lighting',
+      corporate: 'professional setup: rectangular tables, chairs, staging/podium, projector area, tent if outdoor',
+      municipal: 'large public event: multiple tents/canopies, many chairs, staging, generators, barricade areas, food service tables',
+      festival: 'large outdoor event: multiple tents, lots of tables and chairs, staging, generators, light towers for evening',
+      other: 'general event: tables and chairs proportional to guest count, tent if outdoor',
+    };
+
+    const prompt = `You are an expert event equipment planner for Rental World Equipment in the Rio Grande Valley, TX.
 
 EVENT DETAILS:
-- Type: ${data.eventType}
+- Type: ${data.eventType} — ${eventTypeGuide[data.eventType] || 'general event'}
 - Guests: ${data.guestCount}
-- Date: ${data.eventDate}
+- Date: ${data.eventDate}${data.eventEndDate ? ' to ' + data.eventEndDate : ''}
+- Start time: ${data.eventTime || 'not specified'}
 - Setting: ${data.isIndoor ? 'Indoor' : 'Outdoor'}
 - Surface: ${data.venueSurface || 'unknown'}
 - Space: ${data.venueWidthFt || 80} ft wide × ${data.venueLengthFt || 100} ft long
@@ -305,14 +393,15 @@ EVENT DETAILS:
 AVAILABLE EQUIPMENT CATALOG (id, name, category, dailyRate, footprintW ft, footprintL ft):
 ${JSON.stringify(catalogSummary)}
 
-Create a practical, realistic equipment layout. Rules:
+INSTRUCTIONS:
+- Recommend equipment appropriate for a ${data.eventType} event with ${data.guestCount} guests
 - Use ONLY equipment IDs from the catalog above
 - Place items within ${(data.venueWidthFt || 80) * 10}px wide × ${(data.venueLengthFt || 100) * 10}px tall canvas (10px = 1ft)
 - Items must not overlap (account for footprint sizes)
-- Include chairs for all guests, tables (1 per 8 guests), tent if outdoor
-- If outdoor with powered items, add a generator
-- Return 4–12 line items
-- Write a friendly 1-sentence summary for the customer`;
+- Chairs: provide 1 per guest. Tables: 1 per 8 guests (round) or 1 per 10 (banquet)
+- If outdoor and any powered equipment, include a generator
+- Return 4–12 distinct line items (group same items by quantity, do NOT repeat same equipmentId)
+- Write a friendly 1-sentence summary explaining what you included and why`;
 
     try {
       const response = await base44.integrations.Core.InvokeLLM({
@@ -364,7 +453,7 @@ Create a practical, realistic equipment layout. Rules:
         };
       }).filter(Boolean);
 
-      onGenerated(canvasItems, response.summary || '');
+      handleGenerated(canvasItems, response.summary || '');
     } catch (err) {
       setError('Something went wrong generating the layout. Please try again.');
     }
@@ -372,25 +461,45 @@ Create a practical, realistic equipment layout. Rules:
   };
 
   // Show results if we already have them
-  if (generatedItems && generatedItems.length > 0) {
-    const total = generatedItems.reduce((s, i) => s + (i.dailyRate || 0) * (i.quantity || 1), 0);
+  if (localItems.length > 0) {
+    const total = localItems.reduce((s, i) => s + (i.dailyRate || 0) * (i.quantity || 1), 0);
     return (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-black text-white mb-1">Your layout is ready! 🎉</h2>
-          <p className="text-white/50 text-sm">{aiSummary || "Here's your suggested event setup."}</p>
+          <h2 className="text-2xl font-black text-white mb-1">AI Equipment Suggestions 🎉</h2>
+          <p className="text-white/50 text-sm">{aiSummary || "Here's a suggested setup based on your event."}</p>
         </div>
 
-        <div className="space-y-2 max-h-56 overflow-y-auto">
-          {generatedItems.map((item, i) => (
-            <div key={i} className="flex items-center gap-3 bg-slate-800 rounded-xl px-4 py-3">
-              <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-amber-200 text-xs">
+          ⚠️ These are <strong>suggestions only</strong> — not a confirmed order. Adjust quantities or remove items as needed. A Rental World team member will review everything with you before any charges are made.
+        </div>
+
+        <div className="space-y-2 max-h-52 overflow-y-auto">
+          {localItems.map((item) => (
+            <div key={item.id} className="flex items-center gap-3 bg-slate-800 rounded-xl px-3 py-2.5">
+              <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-white font-medium truncate">{item.equipmentName}</div>
-                {item.notes && <div className="text-xs text-white/40 truncate">{item.notes}</div>}
+                <div className="text-xs text-white font-medium truncate">{item.equipmentName}</div>
+                {item.dailyRate > 0 && <div className="text-cyan-400 text-[10px]">${item.dailyRate}/day each</div>}
               </div>
-              {item.quantity > 1 && <span className="text-xs text-white/50 flex-shrink-0">×{item.quantity}</span>}
-              {item.dailyRate > 0 && <span className="text-cyan-400 text-xs font-bold flex-shrink-0">${(item.dailyRate * item.quantity).toFixed(0)}/day</span>}
+              {/* Quantity stepper */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="text-white text-xs w-6 text-center font-bold">{item.quantity || 1}</span>
+                <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+              {item.dailyRate > 0 && (
+                <span className="text-cyan-400 text-xs font-bold flex-shrink-0 w-16 text-right">
+                  ${(item.dailyRate * (item.quantity || 1)).toFixed(0)}/day
+                </span>
+              )}
+              <button onClick={() => removeItem(item.id)} className="p-1 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 flex-shrink-0">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))}
         </div>
@@ -425,7 +534,7 @@ Create a practical, realistic equipment layout. Rules:
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-black text-white mb-1">Ready to generate your layout</h2>
-        <p className="text-white/50 text-sm">Our AI will build a custom floor plan based on your event details.</p>
+        <p className="text-white/50 text-sm">Our AI will recommend equipment based on your <strong className="text-white">{data.eventType}</strong> event for <strong className="text-white">{data.guestCount} guests</strong>.</p>
       </div>
 
       <div className="bg-slate-800 rounded-2xl p-5 space-y-2.5">
@@ -435,6 +544,7 @@ Create a practical, realistic equipment layout. Rules:
           ['Guests', data.guestCount],
           ['Start Date', data.eventDate],
           ['End Date', data.eventEndDate],
+          ['Start Time', data.eventTime ? to12h(data.eventTime) : null],
           ['Setting', data.isIndoor ? 'Indoor' : 'Outdoor'],
           ['Surface', data.venueSurface],
           ['Space', data.venueWidthFt && data.venueLengthFt ? `${data.venueWidthFt} × ${data.venueLengthFt} ft` : 'Not specified'],
@@ -444,6 +554,10 @@ Create a practical, realistic equipment layout. Rules:
             <span className="text-white font-medium capitalize">{String(val)}</span>
           </div>
         ) : null)}
+      </div>
+
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-blue-200 text-xs">
+        💡 The AI will suggest equipment appropriate for your event type. You can adjust quantities or remove items before submitting — nothing is charged until you confirm with our team.
       </div>
 
       {error && (
@@ -496,7 +610,7 @@ function StepReview({ canvasItems, onSubmit, onBack, submitting }) {
       )}
 
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-300">
-        💬 A Rental World team member will review your plan and contact you to confirm details and pricing.
+        💬 A Rental World team member will review your plan and contact you to confirm details and pricing. <strong>No charges are made until you approve.</strong>
       </div>
 
       <div className="flex gap-3">
@@ -528,7 +642,7 @@ export default function CustomerWizard({ equipment, onComplete, onCancel }) {
 
   const handleGenerated = (items, summary) => {
     setGeneratedItems(items);
-    setAiSummary(summary);
+    if (summary !== undefined) setAiSummary(summary);
   };
 
   const handleViewCanvas = () => {
