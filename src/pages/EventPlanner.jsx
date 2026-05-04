@@ -47,7 +47,8 @@ export default function EventPlanner() {
   const [venueDimensions, setVenueDimensions] = useState({ width: 0, length: 0 });
   const [venuePhotoUrl, setVenuePhotoUrl] = useState('');
   const [venueRotation, setVenueRotation] = useState(0);
-  const [showWizard, setShowWizard] = useState(false);
+  const forceWizard = new URLSearchParams(window.location.search).get('wizard') === '1';
+  const [showWizard, setShowWizard] = useState(forceWizard);
 
   useEffect(() => {
     const init = async () => {
@@ -60,10 +61,9 @@ export default function EventPlanner() {
       setCategories(cats);
       setUser(me);
 
-      // Auto-show wizard for customers on a new (empty) plan, or anyone with ?wizard=1
+      // Auto-show wizard for customers on a new (empty) plan
       const isCustomer = me?.role !== 'admin' && me?.role !== 'staff';
-      const forceWizard = new URLSearchParams(window.location.search).get('wizard') === '1';
-      if (!planId && (isCustomer || forceWizard)) {
+      if (!planId && isCustomer) {
         setShowWizard(true);
       }
 
