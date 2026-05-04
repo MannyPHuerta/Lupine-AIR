@@ -1,22 +1,25 @@
 /**
- * useDLScanner — detects USB ID scanner input (AAMVA PDF417)
+ * useDLScanner — detects USB HID barcode scanner input (AAMVA PDF417)
  *
- * USB HID scanners present as keyboards and "type" the barcode data
- * extremely fast (entire payload in <100ms). We detect this by:
- *   1. Watching for rapid keystrokes on the document
- *   2. Accumulating the buffer
- *   3. Parsing when input stops (debounced ~150ms)
+ * USB scanners appear as keyboards and fire an entire barcode in <150ms.
+ * We capture all rapid keystrokes into a buffer, then parse when input stops.
  *
- * The hook fires onScan(parsedData) when a valid DL is detected.
- * It does NOT interfere with normal keyboard input.
+ * Key fixes vs previous version:
+ *  - isScanningRef resets cleanly after each flush so the NEXT scan starts fresh.
+ *  - The VERY FIRST character of a scan (often `@`) sets isScanningRef=true
+ *    immediately, rather than being dropped as a "slow human key".
+ *  - We detect scan start by: (a) speed, OR (b) the char is `@` (AAMVA SOF).
  */
 
 import { useEffect, useRef, useCallback } from 'react';
 import { parseDLBarcode } from '@/lib/parseDL';
 
-const SCANNER_SPEED_THRESHOLD_MS = 80; // Honeywell USB scanners can be ~50-80ms per char
-const SCAN_END_DEBOUNCE_MS = 300;       // wait this long after last char to parse
-const MIN_SCAN_LENGTH = 80;             // real DL barcodes are long
+// Honeywell/Zebra USB HID scanners emit ~1 char per 5-20ms
+const SCANNER_SPEED_THRESHOLD_MS = 80;
+// Wait this long after last char before parsing
+const SCAN_END_DEBOUNCE_MS = 300;
+// Minimum buffer length for a real DL barcode
+const MIN_SCAN_LENGTH = 60;
 
 export function useDLScanner(onScan) {
   const bufferRef = useRef('');
@@ -28,11 +31,12 @@ export function useDLScanner(onScan) {
     const raw = bufferRef.current;
     bufferRef.current = '';
     isScanningRef.current = false;
+    lastKeyTimeRef.current = 0; // reset so next scan starts clean
 
-    console.log('[DLScanner] flush — buffer length:', raw.length, '| preview:', raw.slice(0, 60));
+    console.log('[DLScanner] flush | len:', raw.length, '| preview:', JSON.stringify(raw.slice(0, 80)));
 
     if (raw.length < MIN_SCAN_LENGTH) {
-      console.log('[DLScanner] too short, ignoring');
+      console.log('[DLScanner] too short, skipping');
       return;
     }
 
@@ -45,30 +49,40 @@ export function useDLScanner(onScan) {
 
   useEffect(() => {
     const handleKey = (e) => {
+      // Skip non-printable keys (arrows, F-keys, etc.) except Enter/Tab which act as \n
+      if (e.key.length !== 1 && e.key !== 'Enter' && e.key !== 'Tab') return;
+
       const now = Date.now();
       const timeSinceLast = now - lastKeyTimeRef.current;
       lastKeyTimeRef.current = now;
 
-      // Only accumulate printable keys, Enter, and Tab
-      if (e.key.length !== 1 && e.key !== 'Enter' && e.key !== 'Tab') return;
+      const char = (e.key === 'Enter' || e.key === 'Tab') ? '\n' : e.key;
 
-      const char = e.key === 'Enter' || e.key === 'Tab' ? '\n' : e.key;
+      // Start scanning if:
+      //   (a) keystroke came very fast (scanner speed), OR
+      //   (b) char is @ (AAMVA start-of-format byte) — always begin a new scan
+      const isScanner = timeSinceLast < SCANNER_SPEED_THRESHOLD_MS;
+      const isAamvaStart = char === '@';
 
-      if (timeSinceLast < SCANNER_SPEED_THRESHOLD_MS || isScanningRef.current) {
-        // Fast keystrokes — scanner input
+      if (isAamvaStart) {
+        // New scan starting — clear any stale buffer
+        if (timerRef.current) clearTimeout(timerRef.current);
+        bufferRef.current = '@';
+        isScanningRef.current = true;
+        timerRef.current = setTimeout(flush, SCAN_END_DEBOUNCE_MS);
+        return;
+      }
+
+      if (isScanner || isScanningRef.current) {
         isScanningRef.current = true;
         bufferRef.current += char;
 
-        // Reset debounce timer
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(flush, SCAN_END_DEBOUNCE_MS);
-      } else if (!isScanningRef.current) {
-        // Slow (human) keystroke — seed the buffer; if next comes fast, we'll catch it
-        bufferRef.current = char;
       }
+      // Slow human keystrokes while NOT scanning are completely ignored
     };
 
-    // Use keydown — works with both modern browsers and Honeywell USB scanners
     document.addEventListener('keydown', handleKey);
     return () => {
       document.removeEventListener('keydown', handleKey);
