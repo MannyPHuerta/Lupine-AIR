@@ -187,7 +187,7 @@ export function parseDLBarcode(raw) {
 
   // Build display name
   const first = result.firstName || '';
-  const middle = result.middleName ? ` ${result.middleName}` : '';
+  const middle = (result.middleName && result.middleName !== 'NONE') ? ` ${result.middleName}` : '';
   const last = result.lastName || '';
   const fullName = last ? `${first}${middle} ${last}`.trim() : result.fullName || '';
 
