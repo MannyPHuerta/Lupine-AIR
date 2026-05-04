@@ -57,12 +57,10 @@ export function useDLScanner(onScan) {
       }
     };
 
-    // Listen on both keydown AND keypress — Honeywell USB scanners may only fire keydown
+    // Use keydown — works with both modern browsers and Honeywell USB scanners
     document.addEventListener('keydown', handleKey);
-    document.addEventListener('keypress', handleKey);
     return () => {
       document.removeEventListener('keydown', handleKey);
-      document.removeEventListener('keypress', handleKey);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [flush]);
