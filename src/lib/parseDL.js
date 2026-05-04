@@ -138,6 +138,21 @@ export function parseDLBarcode(raw) {
 
   if (Object.keys(result).length === 0) return null;
 
+  // Clean up extracted fields — strip trailing field-code-like noise
+  const cleanValue = (val) => {
+    if (!val) return '';
+    // Strip "NONE" placeholder
+    if (val === 'NONE' || val.startsWith('NONE ')) return '';
+    // Strip trailing uppercase sequences that look like leaked field codes (e.g., "DDFN", "DDG")
+    return val.replace(/\s*[A-Z]{2,3}[A-Z0-9]*$/, '').trim();
+  };
+
+  Object.keys(result).forEach(key => {
+    if (typeof result[key] === 'string') {
+      result[key] = cleanValue(result[key]);
+    }
+  });
+
   // Normalize name — some states put full name in DAA as "LAST,FIRST MIDDLE"
   if (result.fullName && !result.lastName) {
     const commaIdx = result.fullName.indexOf(',');
