@@ -109,8 +109,10 @@ function extractFields(raw) {
 export function parseDLBarcode(raw) {
   if (!raw) return null;
 
-  // Detect AAMVA header
-  if (!raw.includes('@') && !raw.includes('ANSI') && !raw.includes('AAMVA')) return null;
+  // Detect AAMVA header — must contain @ (start), ANSI, or AAMVA
+  // Also accept if it contains common AAMVA field codes near the start
+  const looksLikeDL = raw.includes('@') || raw.includes('ANSI') || raw.includes('AAMVA') || /D[ABCRS][A-Z]/.test(raw.slice(0, 50));
+  if (!looksLikeDL) return null;
 
   const result = extractFields(raw);
 

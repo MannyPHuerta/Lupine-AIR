@@ -29,9 +29,15 @@ export function useDLScanner(onScan) {
     bufferRef.current = '';
     isScanningRef.current = false;
 
-    if (raw.length < MIN_SCAN_LENGTH) return;
+    console.log('[DLScanner] flush — buffer length:', raw.length, '| preview:', raw.slice(0, 60));
+
+    if (raw.length < MIN_SCAN_LENGTH) {
+      console.log('[DLScanner] too short, ignoring');
+      return;
+    }
 
     const parsed = parseDLBarcode(raw);
+    console.log('[DLScanner] parsed:', parsed);
     if (parsed && onScan) {
       onScan(parsed);
     }
@@ -43,17 +49,22 @@ export function useDLScanner(onScan) {
       const timeSinceLast = now - lastKeyTimeRef.current;
       lastKeyTimeRef.current = now;
 
-      // If this keystroke came in very fast, it's likely a scanner
-      if (timeSinceLast < SCANNER_SPEED_THRESHOLD_MS || isScanningRef.current) {
-        // Don't accumulate if it's a normal modifier key
-        if (e.key.length === 1 || e.key === 'Enter' || e.key === 'Tab') {
-          isScanningRef.current = true;
-          bufferRef.current += e.key === 'Enter' || e.key === 'Tab' ? '\n' : e.key;
+      // Only accumulate printable keys, Enter, and Tab
+      if (e.key.length !== 1 && e.key !== 'Enter' && e.key !== 'Tab') return;
 
-          // Reset debounce timer
-          if (timerRef.current) clearTimeout(timerRef.current);
-          timerRef.current = setTimeout(flush, SCAN_END_DEBOUNCE_MS);
-        }
+      const char = e.key === 'Enter' || e.key === 'Tab' ? '\n' : e.key;
+
+      if (timeSinceLast < SCANNER_SPEED_THRESHOLD_MS || isScanningRef.current) {
+        // Fast keystrokes — scanner input
+        isScanningRef.current = true;
+        bufferRef.current += char;
+
+        // Reset debounce timer
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(flush, SCAN_END_DEBOUNCE_MS);
+      } else if (!isScanningRef.current) {
+        // Slow (human) keystroke — seed the buffer; if next comes fast, we'll catch it
+        bufferRef.current = char;
       }
     };
 

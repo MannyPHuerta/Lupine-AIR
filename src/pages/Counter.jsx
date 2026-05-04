@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X } from 'lucide-react';
+import { Search, Loader2, X, ScanLine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
+import { useDLScanner } from '@/hooks/useDLScanner';
 
 export default function Counter() {
   const navigate = useNavigate();
@@ -21,6 +22,17 @@ export default function Counter() {
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [branch, setBranch] = useState('01 McAllen');
+  const [dlScanResult, setDlScanResult] = useState(null); // last scanned DL data
+
+  const handleDLScan = useCallback((parsed) => {
+    setDlScanResult(parsed);
+    // Pre-fill search with scanned name to find or create customer
+    if (parsed?.fullName) {
+      setSearchTerm(parsed.lastName || parsed.fullName);
+    }
+  }, []);
+
+  useDLScanner(handleDLScan);
 
   useEffect(() => {
     Promise.all([
@@ -149,14 +161,23 @@ export default function Counter() {
                   autoFocus
                 />
               </div>
-              <CustomerSearchPanel
-                searchTerm={searchTerm}
-                customers={customers}
-                onSelect={(c) => {
-                  setSelectedCustomer(c);
-                  setSearchTerm('');
-                }}
-              />
+              {dlScanResult && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                <ScanLine className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>DL scanned: <strong>{dlScanResult.fullName}</strong> — select or create below</span>
+                <button onClick={() => setDlScanResult(null)} className="ml-auto text-green-600 hover:text-green-900"><X className="w-3 h-3" /></button>
+              </div>
+            )}
+            <CustomerSearchPanel
+              searchTerm={searchTerm}
+              customers={customers}
+              scannedDL={dlScanResult}
+              onSelect={(c) => {
+                setSelectedCustomer(c);
+                setSearchTerm('');
+                setDlScanResult(null);
+              }}
+            />
             </div>
           )}
         </div>
