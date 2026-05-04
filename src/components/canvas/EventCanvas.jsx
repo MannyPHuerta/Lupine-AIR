@@ -22,6 +22,7 @@ export default function EventCanvas({
   venueWidth,
   venueLength,
   venuePhotoUrl,
+  venueRotation,
   selectedId,
   onSelect,
   onMove,
@@ -67,7 +68,12 @@ export default function EventCanvas({
 
       // Venue photo or fill
       if (bgImage.current) {
-        ctx.drawImage(bgImage.current, 0, 0, vw, vl);
+        const rot = ((venueRotation || 0) * Math.PI) / 180;
+        ctx.save();
+        ctx.translate(vw / 2, vl / 2);
+        ctx.rotate(rot);
+        ctx.drawImage(bgImage.current, -vw / 2, -vl / 2, vw, vl);
+        ctx.restore();
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.fillRect(0, 0, vw, vl);
       } else {

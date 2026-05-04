@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Calendar, Users, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, MapPin, Loader2 } from 'lucide-react';
 import EventCanvas from '@/components/canvas/EventCanvas';
 import ItemPalette from '@/components/canvas/ItemPalette';
 import NudgePanel from '@/components/canvas/NudgePanel';
@@ -39,11 +39,13 @@ export default function EventPlanner() {
   // Plan metadata
   const [title, setTitle] = useState('New Event Plan');
   const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
   const [eventType, setEventType] = useState('other');
   const [guestCount, setGuestCount] = useState(0);
   const [venueSurface, setVenueSurface] = useState('unknown');
   const [venueDimensions, setVenueDimensions] = useState({ width: 0, length: 0 });
   const [venuePhotoUrl, setVenuePhotoUrl] = useState('');
+  const [venueRotation, setVenueRotation] = useState(0);
 
   useEffect(() => {
     const init = async () => {
@@ -63,6 +65,7 @@ export default function EventPlanner() {
           setPlan(p);
           setTitle(p.title || 'Event Plan');
           setEventDate(p.eventDate || '');
+          setEventTime(p.eventTime || '');
           setEventType(p.eventType || 'other');
           setGuestCount(p.guestCount || 0);
           setVenueSurface(p.venueSurface || 'unknown');
@@ -156,6 +159,7 @@ export default function EventPlanner() {
   const buildPlanData = () => ({
     title,
     eventDate,
+    eventTime,
     eventType,
     guestCount: parseInt(guestCount) || 0,
     venueSurface,
@@ -228,47 +232,74 @@ export default function EventPlanner() {
         />
 
         {/* Meta fields */}
-        <div className="flex items-center gap-3 ml-2">
-          <div className="flex items-center gap-1.5 text-white/40 text-xs">
-            <Calendar className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 ml-2 flex-wrap">
+
+          {/* Event Date */}
+          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
+            <Calendar className="w-3.5 h-3.5 text-white/40" />
+            <span className="text-white/30 text-xs">Date</span>
             <input
               type="date"
-              className="bg-transparent border-none outline-none text-white/60 text-xs"
+              className="bg-transparent border-none outline-none text-white/70 text-xs"
               value={eventDate}
               onChange={e => setEventDate(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-1.5 text-white/40 text-xs">
-            <Users className="w-3.5 h-3.5" />
+
+          {/* Event Time */}
+          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
+            <Clock className="w-3.5 h-3.5 text-white/40" />
+            <span className="text-white/30 text-xs">Time</span>
+            <input
+              type="time"
+              className="bg-transparent border-none outline-none text-white/70 text-xs"
+              value={eventTime}
+              onChange={e => setEventTime(e.target.value)}
+            />
+          </div>
+
+          {/* Guest Count */}
+          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
+            <Users className="w-3.5 h-3.5 text-white/40" />
+            <span className="text-white/30 text-xs">Guests</span>
             <input
               type="number"
-              placeholder="Guests"
-              className="bg-transparent border-none outline-none text-white/60 text-xs w-16"
+              placeholder="0"
+              className="bg-transparent border-none outline-none text-white/70 text-xs w-12"
               value={guestCount || ''}
               onChange={e => setGuestCount(e.target.value)}
             />
           </div>
-          <select
-            value={eventType}
-            onChange={e => setEventType(e.target.value)}
-            className="bg-slate-800 border border-white/10 text-white/60 text-xs rounded px-2 py-1"
-          >
-            {['birthday', 'quinceañera', 'wedding', 'corporate', 'municipal', 'festival', 'other'].map(t => (
-              <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-            ))}
-          </select>
-          <div className="flex items-center gap-1.5 text-white/40 text-xs">
-            <MapPin className="w-3.5 h-3.5" />
+
+          {/* Event Type */}
+          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
+            <span className="text-white/30 text-xs">Event Type</span>
+            <select
+              value={eventType}
+              onChange={e => setEventType(e.target.value)}
+              className="bg-transparent border-none outline-none text-white/70 text-xs"
+            >
+              {['birthday', 'quinceañera', 'wedding', 'corporate', 'municipal', 'festival', 'other'].map(t => (
+                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Venue Surface */}
+          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
+            <MapPin className="w-3.5 h-3.5 text-white/40" />
+            <span className="text-white/30 text-xs">Surface</span>
             <select
               value={venueSurface}
               onChange={e => setVenueSurface(e.target.value)}
-              className="bg-slate-800 border border-white/10 text-white/60 text-xs rounded px-2 py-1"
+              className="bg-transparent border-none outline-none text-white/70 text-xs"
             >
               {['unknown', 'grass', 'asphalt', 'concrete', 'pavers', 'sand', 'mixed'].map(s => (
                 <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
               ))}
             </select>
           </div>
+
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -290,6 +321,15 @@ export default function EventPlanner() {
         onClearCanvas={() => { setCanvasItems([]); setSelectedId(null); }}
         venueDimensions={venueDimensions}
         onDimensionsChange={setVenueDimensions}
+        venueRotation={venueRotation}
+        onVenueRotate={() => {
+          const newRot = (venueRotation + 90) % 360;
+          setVenueRotation(newRot);
+          // Swap width/length on 90/270 degree rotations
+          if (newRot % 180 !== 0) {
+            setVenueDimensions(d => ({ width: d.length, length: d.width }));
+          }
+        }}
       />
 
       {/* Main layout */}
@@ -306,6 +346,7 @@ export default function EventPlanner() {
             venueWidth={venueDimensions.width}
             venueLength={venueDimensions.length}
             venuePhotoUrl={venuePhotoUrl}
+            venueRotation={venueRotation}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onMove={handleMove}

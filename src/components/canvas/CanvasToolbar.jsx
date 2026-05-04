@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Upload, Grid3X3, Trash2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Upload, Grid3X3, Trash2, RotateCw } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
-export default function CanvasToolbar({ scale, onScaleChange, showGrid, onToggleGrid, onUploadPhoto, onClearCanvas, venueDimensions, onDimensionsChange }) {
+export default function CanvasToolbar({ scale, onScaleChange, showGrid, onToggleGrid, onUploadPhoto, onClearCanvas, venueDimensions, onDimensionsChange, venueRotation, onVenueRotate }) {
   const [uploading, setUploading] = useState(false);
   const [editingDims, setEditingDims] = useState(false);
   const [w, setW] = useState(venueDimensions.width || '');
@@ -102,6 +102,18 @@ export default function CanvasToolbar({ scale, onScaleChange, showGrid, onToggle
           {uploading ? 'Uploading…' : 'Venue photo'}
           <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
         </label>
+      </div>
+
+      {/* Venue/canvas rotate */}
+      <div className="border-l border-white/10 pl-3 ml-1">
+        <button
+          onClick={onVenueRotate}
+          className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition flex items-center gap-1.5 text-xs"
+          title="Rotate venue 90°"
+        >
+          <RotateCw className="w-4 h-4" />
+          Rotate venue
+        </button>
       </div>
 
       {/* Clear canvas */}
