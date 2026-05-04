@@ -82,7 +82,7 @@ export default function SuggestionPanel({ canvasItems, eventData, equipment, onA
             <div className="text-xs text-amber-800 mb-2">{anchoringReqs.method}</div>
             <div className="space-y-1">
               {anchoringReqs.autoAdd.map((item, i) => {
-                const eq = equipment.find(e => e.name === item.name);
+                const eq = equipment.find(e => e.name?.toLowerCase() === item.name.toLowerCase());
                 return (
                   <div key={i} className="flex items-center justify-between bg-white rounded p-2 border border-amber-100">
                     <div>
@@ -91,10 +91,11 @@ export default function SuggestionPanel({ canvasItems, eventData, equipment, onA
                     </div>
                     <button
                       onClick={() => {
-                        if (onAnchoringAdd) onAnchoringAdd(eq, item.quantity);
-                        if (onAddItem && eq) onAddItem(eq.id, eq.name, item.quantity);
+                        if (eq && onAddItem) onAddItem(eq.id, eq.name, item.quantity);
                       }}
-                      className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-2 py-1 rounded transition"
+                      className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-2 py-1 rounded transition disabled:opacity-50"
+                      disabled={!eq}
+                      title={eq ? 'Add to canvas' : 'Equipment not found in catalog'}
                     >
                       <Plus className="w-3 h-3" />
                     </button>
