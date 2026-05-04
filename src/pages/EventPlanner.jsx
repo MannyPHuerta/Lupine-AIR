@@ -60,9 +60,10 @@ export default function EventPlanner() {
       setCategories(cats);
       setUser(me);
 
-      // Auto-show wizard for customers on a new (empty) plan
+      // Auto-show wizard for customers on a new (empty) plan, or anyone with ?wizard=1
       const isCustomer = me?.role !== 'admin' && me?.role !== 'staff';
-      if (!planId && isCustomer) {
+      const forceWizard = new URLSearchParams(window.location.search).get('wizard') === '1';
+      if (!planId && (isCustomer || forceWizard)) {
         setShowWizard(true);
       }
 
