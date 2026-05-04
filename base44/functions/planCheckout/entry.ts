@@ -7,17 +7,15 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const planId = body.planId;
     const customerEmail = body.customerEmail;
-    const appUrl = body.appUrl;
 
     if (!planId) {
       return Response.json({ error: 'planId is required' }, { status: 400 });
     }
 
-    const origin = 'https://app.base44.com';
-    const successUrl = origin + '/event-planner/' + planId + '?unlocked=1';
-    const cancelUrl = origin + '/event-planner/' + planId;
+    const successUrl = 'https://app.base44.com/event-planner/' + planId + '?unlocked=1';
+    const cancelUrl = 'https://app.base44.com/event-planner/' + planId;
 
-    console.log('[checkout] planId:', planId, 'successUrl:', successUrl);
+    console.log('[planCheckout] planId:', planId, 'successUrl:', successUrl);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -44,10 +42,10 @@ Deno.serve(async (req) => {
       },
     });
 
-    console.log('[checkout] session:', session.id);
+    console.log('[planCheckout] session created:', session.id);
     return Response.json({ url: session.url });
   } catch (error) {
-    console.error('[checkout] error:', error.message);
+    console.error('[planCheckout] error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

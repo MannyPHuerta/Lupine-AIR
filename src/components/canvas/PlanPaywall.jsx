@@ -17,8 +17,7 @@ export default function PlanPaywall({ planId, customerEmail, onClose }) {
     setError(null);
 
     try {
-      const appUrl = `${window.location.protocol}//${window.location.host}`;
-      const res = await base44.functions.invoke('createPlanCheckout', { planId, customerEmail, appUrl });
+      const res = await base44.functions.invoke('planCheckout', { planId, customerEmail });
       if (res.data?.url) {
         window.location.href = res.data.url;
       } else {
