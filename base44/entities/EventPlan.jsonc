@@ -1,0 +1,206 @@
+{
+  "name": "EventPlan",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Event plan title (e.g. Rodriguez Quincea\u00f1era)"
+    },
+    "eventDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the event"
+    },
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "birthday",
+        "quincea\u00f1era",
+        "wedding",
+        "corporate",
+        "municipal",
+        "festival",
+        "other"
+      ],
+      "default": "other",
+      "description": "Type of event"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "customer_review",
+        "planner_review",
+        "finalized",
+        "converted",
+        "cancelled"
+      ],
+      "default": "draft",
+      "description": "Workflow status"
+    },
+    "ownerEmail": {
+      "type": "string",
+      "description": "Email of the user who created the plan"
+    },
+    "ownerRole": {
+      "type": "string",
+      "enum": [
+        "staff",
+        "customer"
+      ],
+      "default": "staff",
+      "description": "Whether plan was created by staff or customer"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch this plan is associated with"
+    },
+    "customerName": {
+      "type": "string",
+      "description": "Customer name"
+    },
+    "customerEmail": {
+      "type": "string",
+      "description": "Customer email"
+    },
+    "customerPhone": {
+      "type": "string",
+      "description": "Customer phone"
+    },
+    "guestCount": {
+      "type": "integer",
+      "description": "Expected number of guests"
+    },
+    "venueType": {
+      "type": "string",
+      "enum": [
+        "dimensions",
+        "photo",
+        "address"
+      ],
+      "default": "dimensions",
+      "description": "How the venue background is defined"
+    },
+    "venueName": {
+      "type": "string",
+      "description": "Venue name or address"
+    },
+    "venueWidthFt": {
+      "type": "number",
+      "description": "Venue width in feet"
+    },
+    "venueLengthFt": {
+      "type": "number",
+      "description": "Venue length in feet"
+    },
+    "venuePhotoUrl": {
+      "type": "string",
+      "description": "Uploaded venue photo URL"
+    },
+    "venueSurface": {
+      "type": "string",
+      "enum": [
+        "grass",
+        "asphalt",
+        "concrete",
+        "pavers",
+        "sand",
+        "mixed",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "Primary ground surface"
+    },
+    "canvasItems": {
+      "type": "array",
+      "description": "All items placed on the canvas",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "equipmentId": {
+            "type": "string"
+          },
+          "equipmentName": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "widthFt": {
+            "type": "number"
+          },
+          "lengthFt": {
+            "type": "number"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "rotation": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "color": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "dailyRate": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "canvasScale": {
+      "type": "number",
+      "default": 10,
+      "description": "Pixels per foot on the canvas"
+    },
+    "quotedTotal": {
+      "type": "number",
+      "description": "Auto-calculated quoted total from canvas items"
+    },
+    "rentalId": {
+      "type": "string",
+      "description": "Reference to Rental record once converted"
+    },
+    "plannerNotes": {
+      "type": "string",
+      "description": "Internal notes from the planner"
+    },
+    "customerNotes": {
+      "type": "string",
+      "description": "Notes from the customer"
+    },
+    "nudgesAcknowledged": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of nudge IDs the user has acknowledged"
+    },
+    "lastEditedBy": {
+      "type": "string",
+      "description": "Email of last person to edit"
+    },
+    "lastEditedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last edit"
+    }
+  },
+  "required": [
+    "title",
+    "eventDate"
+  ]
+}

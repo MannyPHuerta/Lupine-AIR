@@ -35,6 +35,14 @@
       "default": true,
       "description": "Whether this equipment is subject to sales tax"
     },
+    "footprintWidth": {
+      "type": "number",
+      "description": "Width of equipment footprint in feet (overrides category default)"
+    },
+    "footprintLength": {
+      "type": "number",
+      "description": "Length of equipment footprint in feet (overrides category default)"
+    },
     "status": {
       "type": "string",
       "enum": [

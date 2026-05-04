@@ -55,6 +55,7 @@ import DeliveryAssignment from "./pages/DeliveryAssignment";
 import RecoveryDetail from "./pages/RecoveryDetail";
 import DispatchBoard from "./pages/DispatchBoard";
 import AIReports from "./pages/AIReports";
+import EventPlanner from "./pages/EventPlanner";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -131,6 +132,8 @@ const AuthenticatedApp = () => {
       <Route path="/recovery/:id" element={<RecoveryDetail />} />
       <Route path="/dispatch" element={<DispatchBoard />} />
       <Route path="/aireports" element={<AIReports />} />
+      <Route path="/event-planner" element={<EventPlanner />} />
+      <Route path="/event-planner/:planId" element={<EventPlanner />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
