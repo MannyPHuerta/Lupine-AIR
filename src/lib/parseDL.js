@@ -86,7 +86,12 @@ function extractFields(raw) {
   console.log('[parseDL] newline parse weak (' + keyCount + ' key fields), trying concatenated fallback');
 
   // --- Pass 2: concatenated format (TX and others) ---
-  // Find the first KNOWN field code (not just any 3 letters)
+  // Build a list of all known field codes for lookahead
+  const knownCodes = Object.keys(FIELD_MAP);
+  // Create a regex to match any known code
+  const knownCodePattern = `(?:${knownCodes.join('|')})`;
+
+  // Find the first KNOWN field code in the raw string
   let workStr = raw;
   for (let i = 0; i < raw.length - 2; i++) {
     const potentialCode = raw.slice(i, i + 3);
@@ -96,13 +101,12 @@ function extractFields(raw) {
     }
   }
 
-  // Match pattern: 3 uppercase letters (from FIELD_MAP) followed by value until next known code
-  // Greedy match of value characters: letters, digits, spaces, dashes, slashes, periods
-  const codePattern = /([A-Z]{3})([A-Z0-9\s\-\/.,]*?)(?=[A-Z]{3}(?:[A-Z0-9]|$)|$)/g;
+  // Match pattern: exactly 3 uppercase letters + value until next known field code
+  // Use a dynamically built regex that only stops at known codes
+  const codePattern = new RegExp(`(${knownCodePattern})([A-Z0-9\\s\\-\\/.,]*?)(?=${knownCodePattern}|$)`, 'g');
   let match;
   while ((match = codePattern.exec(workStr)) !== null) {
     const code = match[1];
-    if (!(code in FIELD_MAP)) continue;
     const value = match[2].trim();
     if (value && value !== 'NONE' && value !== 'ANSI') {
       // Don't overwrite a field already found by newline parse
