@@ -23,16 +23,19 @@ export default function Counter() {
   const [searchTerm, setSearchTerm] = useState('');
   const [branch, setBranch] = useState('01 McAllen');
   const [dlScanResult, setDlScanResult] = useState(null); // last scanned DL data
+  const [dlScanFlash, setDlScanFlash] = useState(null); // 'success' | 'expired' | null
   const [debugLog, setDebugLog] = useState([]);
   const [hookListening, setHookListening] = useState(false);
 
   const handleDLScan = useCallback((parsed) => {
     console.log('[Counter] handleDLScan called with:', parsed);
     setDlScanResult(parsed);
+    setDlScanFlash(parsed?.isExpired ? 'expired' : 'success');
     setDebugLog(prev => [...prev.slice(-4), `✅ Parsed: ${parsed?.fullName} | ${parsed?.address}, ${parsed?.city} ${parsed?.state}`]);
     if (parsed?.fullName) {
       setSearchTerm(parsed.lastName || parsed.fullName);
     }
+    setTimeout(() => setDlScanFlash(null), 4000);
   }, []);
 
   // Set flag to confirm hook is running
