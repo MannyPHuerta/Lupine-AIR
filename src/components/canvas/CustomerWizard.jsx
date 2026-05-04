@@ -80,11 +80,32 @@ function StepEvent({ data, onChange, onNext }) {
             </select>
           </div>
           <div>
-            <label className="text-xs text-white/50 block mb-1.5">Event date</label>
+            <label className="text-xs text-white/50 block mb-1.5">Start date</label>
             <input
               type="date"
               value={data.eventDate || ''}
               onChange={e => onChange({ eventDate: e.target.value })}
+              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-white/50 block mb-1.5">End date</label>
+            <input
+              type="date"
+              value={data.eventEndDate || ''}
+              min={data.eventDate || ''}
+              onChange={e => onChange({ eventEndDate: e.target.value })}
+              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-white/50 block mb-1.5">Start time</label>
+            <input
+              type="time"
+              value={data.eventTime || ''}
+              onChange={e => onChange({ eventTime: e.target.value })}
               className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
@@ -98,15 +119,6 @@ function StepEvent({ data, onChange, onNext }) {
               value={data.guestCount || ''}
               onChange={e => onChange({ guestCount: parseInt(e.target.value) || 0 })}
               className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-white/50 block mb-1.5">Start time</label>
-            <input
-              type="time"
-              value={data.eventTime || ''}
-              onChange={e => onChange({ eventTime: e.target.value })}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
         </div>
@@ -421,7 +433,8 @@ Create a practical, realistic equipment layout. Rules:
         {[
           ['Type', data.eventType],
           ['Guests', data.guestCount],
-          ['Date', data.eventDate],
+          ['Start Date', data.eventDate],
+          ['End Date', data.eventEndDate],
           ['Setting', data.isIndoor ? 'Indoor' : 'Outdoor'],
           ['Surface', data.venueSurface],
           ['Space', data.venueWidthFt && data.venueLengthFt ? `${data.venueWidthFt} × ${data.venueLengthFt} ft` : 'Not specified'],
