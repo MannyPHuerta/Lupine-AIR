@@ -11,12 +11,12 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'planId is required' }, { status: 400 });
   }
 
-  // Use the app's published domain
   const appDomain = 'https://lupine-one.base44.app';
   const successUrl = appDomain + '/event-planner/' + planId + '?unlocked=1';
   const cancelUrl = appDomain + '/event-planner/' + planId;
 
-  console.log('[createPlanCheckout] successUrl:', successUrl);
+  console.log('[unlockEventPlan] creating session for planId:', planId);
+  console.log('[unlockEventPlan] successUrl:', successUrl);
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -43,6 +43,6 @@ Deno.serve(async (req) => {
     },
   });
 
-  console.log('[createPlanCheckout] session:', session.id);
+  console.log('[unlockEventPlan] session created:', session.id);
   return Response.json({ url: session.url });
 });
