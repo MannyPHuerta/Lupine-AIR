@@ -23,10 +23,11 @@ export default function Counter() {
   const [searchTerm, setSearchTerm] = useState('');
   const [branch, setBranch] = useState('01 McAllen');
   const [dlScanResult, setDlScanResult] = useState(null); // last scanned DL data
+  const [debugLog, setDebugLog] = useState([]);
 
   const handleDLScan = useCallback((parsed) => {
     setDlScanResult(parsed);
-    // Pre-fill search with scanned name to find or create customer
+    setDebugLog(prev => [...prev.slice(-4), `✅ Parsed: ${parsed?.fullName} | ${parsed?.address}, ${parsed?.city} ${parsed?.state}`]);
     if (parsed?.fullName) {
       setSearchTerm(parsed.lastName || parsed.fullName);
     }
@@ -88,7 +89,7 @@ export default function Counter() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" onKeyDown={handleKeyDown}>
+    <div className="min-h-screen bg-gray-50" onKeyDown={handleKeyDown} tabIndex={-1}>
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-20 shadow-lg">
         <div className="px-4 py-2 flex items-center gap-3">
@@ -110,6 +111,13 @@ export default function Counter() {
           </select>
         </div>
       </div>
+
+      {/* Temporary DL debug panel — remove after testing */}
+      {debugLog.length > 0 && (
+        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 text-xs font-mono text-yellow-900 space-y-0.5">
+          {debugLog.map((l, i) => <div key={i}>{l}</div>)}
+        </div>
+      )}
 
       <div className="flex h-[calc(100vh-60px)]">
         {/* Left: Customer & Equipment Search */}

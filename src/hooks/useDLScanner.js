@@ -21,6 +21,18 @@ const SCAN_END_DEBOUNCE_MS = 300;
 // Minimum buffer length for a real DL barcode
 const MIN_SCAN_LENGTH = 60;
 
+// Global debug log accessible from browser console as window.__dlDebug
+if (typeof window !== 'undefined') {
+  window.__dlDebug = [];
+}
+function dlLog(...args) {
+  console.log(...args);
+  if (typeof window !== 'undefined') {
+    window.__dlDebug.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+    if (window.__dlDebug.length > 50) window.__dlDebug.shift();
+  }
+}
+
 export function useDLScanner(onScan) {
   const bufferRef = useRef('');
   const lastKeyTimeRef = useRef(0);
@@ -33,15 +45,15 @@ export function useDLScanner(onScan) {
     isScanningRef.current = false;
     lastKeyTimeRef.current = 0; // reset so next scan starts clean
 
-    console.log('[DLScanner] flush | len:', raw.length, '| preview:', JSON.stringify(raw.slice(0, 80)));
+    dlLog('[DLScanner] flush | len:', raw.length, '| preview:', JSON.stringify(raw.slice(0, 80)));
 
     if (raw.length < MIN_SCAN_LENGTH) {
-      console.log('[DLScanner] too short, skipping');
+      dlLog('[DLScanner] too short, skipping');
       return;
     }
 
     const parsed = parseDLBarcode(raw);
-    console.log('[DLScanner] parsed:', parsed);
+    dlLog('[DLScanner] parsed:', parsed);
     if (parsed && onScan) {
       onScan(parsed);
     }
@@ -66,6 +78,7 @@ export function useDLScanner(onScan) {
 
       if (isAamvaStart) {
         // New scan starting — clear any stale buffer
+        dlLog('[DLScanner] AAMVA @ detected — starting new buffer');
         if (timerRef.current) clearTimeout(timerRef.current);
         bufferRef.current = '@';
         isScanningRef.current = true;
