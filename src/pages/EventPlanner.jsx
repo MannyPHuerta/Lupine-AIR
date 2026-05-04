@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Calendar, Clock, Users, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Wand2 } from 'lucide-react';
 import EventCanvas from '@/components/canvas/EventCanvas';
-import ItemPalette from '@/components/canvas/ItemPalette';
-import NudgePanel from '@/components/canvas/NudgePanel';
 import CanvasToolbar from '@/components/canvas/CanvasToolbar';
 import CanvasItemDetail from '@/components/canvas/CanvasItemDetail';
 import QuoteSummary from '@/components/canvas/QuoteSummary';
+import EventSpecsPanel from '@/components/canvas/EventSpecsPanel';
+import SmartChecklist from '@/components/canvas/SmartChecklist';
+import CustomerWizard from '@/components/canvas/CustomerWizard';
 
 const CATEGORY_COLORS = {
   Tent: '#6366f1', Chair: '#f59e0b', Table: '#10b981', Generator: '#ef4444',
@@ -46,6 +47,7 @@ export default function EventPlanner() {
   const [venueDimensions, setVenueDimensions] = useState({ width: 0, length: 0 });
   const [venuePhotoUrl, setVenuePhotoUrl] = useState('');
   const [venueRotation, setVenueRotation] = useState(0);
+  const [showWizard, setShowWizard] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -65,7 +67,7 @@ export default function EventPlanner() {
           setPlan(p);
           setTitle(p.title || 'Event Plan');
           setEventDate(p.eventDate || '');
-          setEventTime(p.eventTime || '');
+          setEventTime(p.eventTime || p.eventTime || '');
           setEventType(p.eventType || 'other');
           setGuestCount(p.guestCount || 0);
           setVenueSurface(p.venueSurface || 'unknown');
@@ -214,100 +216,26 @@ export default function EventPlanner() {
   return (
     <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
       {/* Header */}
-      <div className="h-14 bg-black border-b border-white/10 flex items-center gap-3 px-4 flex-shrink-0">
+      <div className="h-12 bg-black border-b border-white/10 flex items-center gap-3 px-4 flex-shrink-0">
         <button onClick={() => navigate('/lupine')} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
           <ArrowLeft className="w-5 h-5" />
         </button>
-
-        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
+        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
           <span className="text-white text-xs font-bold">AE</span>
         </div>
-
-        {/* Plan title */}
-        <input
-          className="bg-transparent text-white font-bold text-sm border-none outline-none hover:bg-white/5 px-2 py-1 rounded"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          onBlur={handleSave}
-        />
-
-        {/* Meta fields */}
-        <div className="flex items-center gap-2 ml-2 flex-wrap">
-
-          {/* Event Date */}
-          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
-            <Calendar className="w-3.5 h-3.5 text-white/40" />
-            <span className="text-white/30 text-xs">Date</span>
-            <input
-              type="date"
-              className="bg-transparent border-none outline-none text-white/70 text-xs"
-              value={eventDate}
-              onChange={e => setEventDate(e.target.value)}
-            />
-          </div>
-
-          {/* Event Time */}
-          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
-            <Clock className="w-3.5 h-3.5 text-white/40" />
-            <span className="text-white/30 text-xs">Time</span>
-            <input
-              type="time"
-              className="bg-transparent border-none outline-none text-white/70 text-xs"
-              value={eventTime}
-              onChange={e => setEventTime(e.target.value)}
-            />
-          </div>
-
-          {/* Guest Count */}
-          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
-            <Users className="w-3.5 h-3.5 text-white/40" />
-            <span className="text-white/30 text-xs">Guests</span>
-            <input
-              type="number"
-              placeholder="0"
-              className="bg-transparent border-none outline-none text-white/70 text-xs w-12"
-              value={guestCount || ''}
-              onChange={e => setGuestCount(e.target.value)}
-            />
-          </div>
-
-          {/* Event Type */}
-          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
-            <span className="text-white/30 text-xs">Event Type</span>
-            <select
-              value={eventType}
-              onChange={e => setEventType(e.target.value)}
-              className="bg-transparent border-none outline-none text-white/70 text-xs"
-            >
-              {['birthday', 'quinceañera', 'wedding', 'corporate', 'municipal', 'festival', 'other'].map(t => (
-                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Venue Surface */}
-          <div className="flex items-center gap-1.5 bg-slate-800 border border-white/10 rounded px-2 py-1">
-            <MapPin className="w-3.5 h-3.5 text-white/40" />
-            <span className="text-white/30 text-xs">Surface</span>
-            <select
-              value={venueSurface}
-              onChange={e => setVenueSurface(e.target.value)}
-              className="bg-transparent border-none outline-none text-white/70 text-xs"
-            >
-              {['unknown', 'grass', 'asphalt', 'concrete', 'pavers', 'sand', 'mixed'].map(s => (
-                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-              ))}
-            </select>
-          </div>
-
-        </div>
-
+        <span className="text-white/60 font-semibold text-sm truncate max-w-48">{title || 'New Event Plan'}</span>
+        {plan?.status && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50 capitalize">
+            {plan.status.replace('_', ' ')}
+          </span>
+        )}
         <div className="ml-auto flex items-center gap-2">
-          {plan?.status && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50 capitalize">
-              {plan.status.replace('_', ' ')}
-            </span>
-          )}
+          <button
+            onClick={() => setShowWizard(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-medium transition"
+          >
+            <Wand2 className="w-3.5 h-3.5" /> Customer Wizard
+          </button>
         </div>
       </div>
 
@@ -332,10 +260,45 @@ export default function EventPlanner() {
         }}
       />
 
+      {/* Customer Wizard */}
+      {showWizard && (
+        <CustomerWizard
+          equipment={equipment}
+          onComplete={async (wizardData) => {
+            const { canvasItems: wizItems, ...planData } = wizardData;
+            setCanvasItems(wizItems);
+            setTitle(planData.title || title);
+            setEventDate(planData.eventDate || eventDate);
+            setEventTime(planData.eventTime || eventTime);
+            setEventType(planData.eventType || eventType);
+            setGuestCount(planData.guestCount || guestCount);
+            setVenueSurface(planData.venueSurface || venueSurface);
+            if (planData.venueWidthFt || planData.venueLengthFt) {
+              setVenueDimensions({ width: planData.venueWidthFt || 0, length: planData.venueLengthFt || 0 });
+            }
+            setShowWizard(false);
+            setTimeout(handleSave, 200);
+          }}
+          onCancel={() => setShowWizard(false)}
+        />
+      )}
+
       {/* Main layout */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Left: item palette */}
-        <ItemPalette equipment={equipment} onDragStart={handleDragStart} />
+        {/* Left: event specs + quick-add */}
+        <EventSpecsPanel
+          equipment={equipment}
+          onDragStart={handleDragStart}
+          onAdd={(eq, x, y) => handleDrop(eq, x || 80, y || 80)}
+          title={title} setTitle={setTitle}
+          eventDate={eventDate} setEventDate={setEventDate}
+          eventTime={eventTime} setEventTime={setEventTime}
+          eventType={eventType} setEventType={setEventType}
+          guestCount={guestCount} setGuestCount={setGuestCount}
+          venueSurface={venueSurface} setVenueSurface={setVenueSurface}
+          venueDimensions={venueDimensions} setVenueDimensions={setVenueDimensions}
+          onSave={handleSave}
+        />
 
         {/* Center: canvas */}
         <div className="flex-1 relative overflow-hidden">
@@ -383,8 +346,8 @@ export default function EventPlanner() {
           )}
         </div>
 
-        {/* Right: nudge panel */}
-        <NudgePanel
+        {/* Right: smart checklist */}
+        <SmartChecklist
           canvasItems={canvasItems}
           guestCount={parseInt(guestCount) || 0}
           venueSurface={venueSurface}
