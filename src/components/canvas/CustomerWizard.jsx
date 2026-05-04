@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ArrowRight, ArrowLeft, Sparkles, Loader2, CheckCircle2, Upload, Eye, Minus, Plus, Trash2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Sparkles, Loader2, CheckCircle2, Upload, Eye, Minus, Plus, Trash2, Search } from 'lucide-react';
 
 const STEPS = [
   { id: 'event', label: 'Your Event' },
@@ -320,6 +320,59 @@ function StepVenue({ data, onChange, onNext, onBack }) {
   );
 }
 
+// Inline equipment search + add for the wizard
+function EquipmentSearch({ equipment, onAdd }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+
+  const results = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    return equipment
+      .filter(e => !q || e.name?.toLowerCase().includes(q) || e.category?.toLowerCase().includes(q))
+      .slice(0, 10);
+  }, [equipment, query]);
+
+  const handleSelect = (eq) => {
+    onAdd(eq);
+    setQuery('');
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-2 bg-slate-800 border border-white/20 rounded-xl px-3 py-2.5 focus-within:border-cyan-500/60 transition">
+        <Search className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
+        <input
+          className="bg-transparent flex-1 text-xs text-white placeholder-white/30 outline-none"
+          placeholder="Search catalog to add more equipment…"
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+          {results.map(eq => (
+            <button
+              key={eq.id}
+              onMouseDown={e => { e.preventDefault(); handleSelect(eq); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/10 transition text-left"
+            >
+              <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: CATEGORY_COLORS[eq.category] || CATEGORY_COLORS.default }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-white font-medium truncate">{eq.name}</div>
+                <div className="text-white/40 text-[10px]">{eq.category}{eq.dailyRate ? ` · $${eq.dailyRate}/day` : ''}</div>
+              </div>
+              <Plus className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StepAI({ data, equipment, generatedItems, aiSummary, onGenerated, onBack, onViewCanvas }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -341,6 +394,32 @@ function StepAI({ data, equipment, generatedItems, aiSummary, onGenerated, onBac
 
   const removeItem = (id) => {
     const updated = localItems.filter(item => item.id !== id);
+    setLocalItems(updated);
+    onGenerated(updated, aiSummary);
+  };
+
+  const addFromSearch = (eq) => {
+    const fp = {
+      w: eq.footprintWidth || DEFAULT_FOOTPRINTS[eq.category]?.w || 10,
+      l: eq.footprintLength || DEFAULT_FOOTPRINTS[eq.category]?.l || 10,
+    };
+    const newItem = {
+      id: crypto.randomUUID(),
+      equipmentId: eq.id,
+      equipmentName: eq.name,
+      category: eq.category,
+      widthFt: fp.w,
+      lengthFt: fp.l,
+      x: 20,
+      y: 20,
+      rotation: 0,
+      quantity: 1,
+      color: CATEGORY_COLORS[eq.category] || CATEGORY_COLORS.default,
+      label: eq.name,
+      dailyRate: eq.dailyRate || 0,
+      notes: '',
+    };
+    const updated = [...localItems, newItem];
     setLocalItems(updated);
     onGenerated(updated, aiSummary);
   };
@@ -503,6 +582,9 @@ INSTRUCTIONS:
             </div>
           ))}
         </div>
+
+        {/* Add more equipment from catalog */}
+        <EquipmentSearch equipment={equipment} onAdd={addFromSearch} />
 
         {total > 0 && (
           <div className="bg-slate-800 rounded-xl px-4 py-2 flex justify-between">
