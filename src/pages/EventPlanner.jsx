@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Wand2, Lock } from 'lucide-react';
 import EventCanvas from '@/components/canvas/EventCanvas';
 import CanvasToolbar from '@/components/canvas/CanvasToolbar';
 import CanvasItemDetail from '@/components/canvas/CanvasItemDetail';
@@ -9,6 +9,7 @@ import QuoteSummary from '@/components/canvas/QuoteSummary';
 import EventSpecsPanel from '@/components/canvas/EventSpecsPanel';
 import SmartChecklist from '@/components/canvas/SmartChecklist';
 import CustomerWizard from '@/components/canvas/CustomerWizard';
+import PlanPaywall from '@/components/canvas/PlanPaywall.jsx';
 
 const CATEGORY_COLORS = {
   Tent: '#6366f1', Chair: '#f59e0b', Table: '#10b981', Generator: '#ef4444',
@@ -48,7 +49,20 @@ export default function EventPlanner() {
   const [venuePhotoUrl, setVenuePhotoUrl] = useState('');
   const [venueRotation, setVenueRotation] = useState(0);
   const forceWizard = new URLSearchParams(window.location.search).get('wizard') === '1';
+  const urlUnlocked = new URLSearchParams(window.location.search).get('unlocked') === '1';
   const [showWizard, setShowWizard] = useState(forceWizard);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(urlUnlocked);
+
+  // Mark plan as unlocked when returning from Stripe success
+  useEffect(() => {
+    if (urlUnlocked && plan?.id) {
+      base44.entities.EventPlan.update(plan.id, { status: plan.status === 'draft' ? 'customer_review' : plan.status });
+      setIsUnlocked(true);
+      // Clean up URL
+      window.history.replaceState({}, '', `/event-planner/${plan.id}`);
+    }
+  }, [urlUnlocked, plan?.id]);
 
   useEffect(() => {
     const init = async () => {
@@ -184,6 +198,10 @@ export default function EventPlanner() {
   });
 
   const handleSave = async () => {
+    if (!isUnlocked) {
+      setShowPaywall(true);
+      return;
+    }
     setSaving(true);
     const data = buildPlanData();
     if (plan?.id) {
@@ -237,6 +255,14 @@ export default function EventPlanner() {
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
+          {!isUnlocked && (
+            <button
+              onClick={() => setShowPaywall(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-xs font-medium transition"
+            >
+              <Lock className="w-3.5 h-3.5" /> Unlock Plan · $20
+            </button>
+          )}
           <button
             onClick={() => setShowWizard(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-medium transition"
@@ -266,6 +292,15 @@ export default function EventPlanner() {
           }
         }}
       />
+
+      {/* Paywall */}
+      {showPaywall && (
+        <PlanPaywall
+          planId={plan?.id || 'new'}
+          customerEmail={user?.email}
+          onClose={() => setShowPaywall(false)}
+        />
+      )}
 
       {/* Customer Wizard */}
       {showWizard && (
