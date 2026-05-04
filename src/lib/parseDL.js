@@ -143,8 +143,20 @@ export function parseDLBarcode(raw) {
     if (!val) return '';
     // Strip "NONE" placeholder
     if (val === 'NONE' || val.startsWith('NONE ')) return '';
-    // Strip trailing uppercase sequences that look like leaked field codes (e.g., "DDFN", "DDG")
-    return val.replace(/\s*[A-Z]{2,3}[A-Z0-9]*$/, '').trim();
+    // Strip ONLY known 3-letter field codes that appear at the end as separate tokens
+    // (e.g., "MANUEL DDFN" → "MANUEL", but keep "HUERTADDEN")
+    const knownCodes = new Set(Object.keys(FIELD_MAP));
+    const words = val.trim().split(/\s+/);
+    while (words.length > 1) {
+      const lastWord = words[words.length - 1];
+      // Only strip if it's exactly 3 letters AND a known field code
+      if (lastWord.length === 3 && knownCodes.has(lastWord)) {
+        words.pop();
+      } else {
+        break;
+      }
+    }
+    return words.join(' ').trim();
   };
 
   Object.keys(result).forEach(key => {
