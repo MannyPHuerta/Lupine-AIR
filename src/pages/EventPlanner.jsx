@@ -273,7 +273,7 @@ export default function EventPlanner() {
           equipment={equipment}
           onComplete={async (wizardData) => {
             const { canvasItems: wizItems, skipReview, ...planData } = wizardData;
-            if (wizItems?.length) setCanvasItems(wizItems);
+            setCanvasItems(wizItems || []);
             if (planData.title) setTitle(planData.title);
             if (planData.eventDate) setEventDate(planData.eventDate);
             if (planData.eventTime) setEventTime(planData.eventTime);
