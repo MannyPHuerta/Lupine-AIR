@@ -24,13 +24,20 @@ export default function Counter() {
   const [branch, setBranch] = useState('01 McAllen');
   const [dlScanResult, setDlScanResult] = useState(null); // last scanned DL data
   const [debugLog, setDebugLog] = useState([]);
+  const [hookListening, setHookListening] = useState(false);
 
   const handleDLScan = useCallback((parsed) => {
+    console.log('[Counter] handleDLScan called with:', parsed);
     setDlScanResult(parsed);
     setDebugLog(prev => [...prev.slice(-4), `✅ Parsed: ${parsed?.fullName} | ${parsed?.address}, ${parsed?.city} ${parsed?.state}`]);
     if (parsed?.fullName) {
       setSearchTerm(parsed.lastName || parsed.fullName);
     }
+  }, []);
+
+  // Set flag to confirm hook is running
+  useEffect(() => {
+    setHookListening(true);
   }, []);
 
   useDLScanner(handleDLScan);
@@ -113,9 +120,9 @@ export default function Counter() {
       </div>
 
       {/* Temporary DL debug panel — remove after testing */}
-      {debugLog.length > 0 && (
-        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 text-xs font-mono text-yellow-900 space-y-0.5">
-          {debugLog.map((l, i) => <div key={i}>{l}</div>)}
+      {hookListening && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-xs font-mono text-blue-900">
+          🔵 Hook listening... {debugLog.length > 0 && <span className="ml-2 font-bold">GOT SCANS: {debugLog.map((l, i) => <div key={i}>{l}</div>)}</span>}
         </div>
       )}
 
