@@ -86,14 +86,19 @@ function extractFields(raw) {
   console.log('[parseDL] newline parse weak (' + keyCount + ' key fields), trying concatenated fallback');
 
   // --- Pass 2: concatenated format (TX and others) ---
-  // Strip everything before the first valid code marker (DL, DA, DB, DC, ZT, etc.)
-  const codeStart = raw.search(/[A-Z]{3}(?=[A-Z0-9])/);
-  const workStr = codeStart >= 0 ? raw.slice(codeStart) : raw;
+  // Find the first KNOWN field code (not just any 3 letters)
+  let workStr = raw;
+  for (let i = 0; i < raw.length - 2; i++) {
+    const potentialCode = raw.slice(i, i + 3);
+    if (potentialCode in FIELD_MAP) {
+      workStr = raw.slice(i);
+      break;
+    }
+  }
 
-  // Match pattern: 3 uppercase letters followed by alphanumeric value
-  // Stop at the next 3-letter code (lookahead) or end of string
-  // More permissive: allow digits, spaces, special chars in values until next code
-  const codePattern = /([A-Z]{3})([A-Z0-9\s\-\/.]{1,50}?)(?=[A-Z]{3}[A-Z0-9]|$)/g;
+  // Match pattern: 3 uppercase letters (from FIELD_MAP) followed by value until next known code
+  // Greedy match of value characters: letters, digits, spaces, dashes, slashes, periods
+  const codePattern = /([A-Z]{3})([A-Z0-9\s\-\/.,]*?)(?=[A-Z]{3}(?:[A-Z0-9]|$)|$)/g;
   let match;
   while ((match = codePattern.exec(workStr)) !== null) {
     const code = match[1];
