@@ -10,6 +10,7 @@ import EventSpecsPanel from '@/components/canvas/EventSpecsPanel';
 import SmartChecklist from '@/components/canvas/SmartChecklist';
 import CustomerWizard from '@/components/canvas/CustomerWizard';
 import PlanPaywall from '@/components/canvas/PlanPaywall.jsx';
+import SuggestionPanel from '@/components/canvas/SuggestionPanel';
 
 const CATEGORY_COLORS = {
   Tent: '#6366f1', Chair: '#f59e0b', Table: '#10b981', Generator: '#ef4444',
@@ -388,6 +389,42 @@ export default function EventPlanner() {
               </div>
             </div>
           )}
+
+          {/* Suggestion Panel */}
+          <SuggestionPanel
+            canvasItems={canvasItems}
+            eventData={{
+              guestCount,
+              venueSurface,
+              isIndoor: false,
+              eventDate,
+              eventTime,
+            }}
+            equipment={equipment}
+            onAddItem={(eqId, eqName, qty) => {
+              const eq = equipment.find(e => e.id === eqId);
+              if (eq) {
+                const fp = getFootprint(eq);
+                const newItem = {
+                  id: crypto.randomUUID(),
+                  equipmentId: eq.id,
+                  equipmentName: eq.name,
+                  category: eq.category,
+                  widthFt: fp.w,
+                  lengthFt: fp.l,
+                  x: 20,
+                  y: 20,
+                  rotation: 0,
+                  quantity: qty || 1,
+                  color: CATEGORY_COLORS[eq.category] || CATEGORY_COLORS.default,
+                  label: eq.name,
+                  dailyRate: eq.dailyRate || 0,
+                  notes: '',
+                };
+                setCanvasItems(prev => [...prev, newItem]);
+              }
+            }}
+          />
         </div>
 
         {/* Right: smart checklist */}
