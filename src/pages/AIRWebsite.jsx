@@ -48,7 +48,7 @@ function Nav({ activeSection }) {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2">
-          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/fb2e7daf1_AIR.png" alt="AIR" className="h-8 w-8 rounded-lg" />
+          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/ea7ea84c1_AIR.svg" alt="AIR" className="h-8 w-8 rounded-lg" />
           <span className="text-xs text-cyan-400 font-medium tracking-widest uppercase">by Lupine</span>
         </button>
         <div className="hidden md:flex items-center gap-6">
@@ -114,7 +114,7 @@ function Hero() {
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
             className="flex justify-center">
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/fb2e7daf1_AIR.png" alt="AIR" className="w-48 h-48 md:w-64 md:h-64 rounded-3xl" />
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/ea7ea84c1_AIR.svg" alt="AIR" className="w-48 h-48 md:w-64 md:h-64 rounded-3xl" />
           </motion.div>
           <p className="text-lg md:text-xl text-blue-200/70 mt-6 max-w-2xl mx-auto">
             The first rental equipment cloud platform to harness the full power of AI —
@@ -138,21 +138,17 @@ function Hero() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           className="flex flex-wrap justify-center gap-6 pt-4">
           {[
-            { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png', anchor: '#airental' },
-            { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png', anchor: '#airevents' },
-            { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png', anchor: '#airfq' },
-            { name: 'AIReports', icon: null, anchor: '#aireports' },
+            { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg', anchor: '#airental' },
+            { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg', anchor: '#airevents' },
+            { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg', anchor: '#airfq' },
+            { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg', anchor: '#aireports' },
           ].map((p) => (
             <button key={p.name} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
               {p.icon ? (
                 <img src={p.icon} alt={p.name}
                   className="w-24 h-24 rounded-2xl object-cover shadow-lg group-hover:scale-105 group-hover:shadow-cyan-500/30 transition-all duration-200" />
-              ) : (
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400/20 to-teal-600/20 border border-emerald-500/30 shadow-lg group-hover:scale-105 group-hover:shadow-emerald-500/20 transition-all duration-200 flex items-center justify-center">
-                  <span className="text-emerald-400 text-xs font-bold text-center leading-tight px-1">AIR<br/>Reports</span>
-                </div>
-              )}
+              ) : null}
             </button>
           ))}
         </motion.div>
@@ -552,7 +548,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <div>
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/fb2e7daf1_AIR.png" alt="AIR" className="h-12 w-12 rounded-xl mb-2" />
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/ea7ea84c1_AIR.svg" alt="AIR" className="h-12 w-12 rounded-xl mb-2" />
             <div className="text-xs text-cyan-400 font-medium tracking-widest uppercase mb-3">by Lupine</div>
             <p className="text-white/40 text-sm">The rental equipment platform built for the Rio Grande Valley — and beyond.</p>
           </div>
@@ -560,17 +556,14 @@ function Footer() {
             <div className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Products</div>
             <div className="space-y-3">
               {[
-                { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png' },
-                { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png' },
-                { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png' },
-                { name: 'AIReports', icon: null },
+                { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg' },
+                { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg' },
+                { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg' },
+                { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg' },
               ].map(p => (
                 <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
                   className="flex items-center gap-2 text-white/50 hover:text-white text-sm transition">
-                  {p.icon
-                    ? <img src={p.icon} alt={p.name} className="h-5 w-5 rounded-md" />
-                    : <div className="h-5 w-5 rounded-md bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center"><BarChart3 className="w-3 h-3 text-black" /></div>
-                  }
+                  <img src={p.icon} alt={p.name} className="h-5 w-5 rounded-md" />
                   {p.name}
                 </button>
               ))}
@@ -617,8 +610,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airental"
-        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png" alt="AIRental" className="h-6 w-6 rounded-md" />AIRental</span>}
-        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/80a77f907_AIRental.png" alt="AIRental" className="h-14 w-14 rounded-2xl" />AIRental</span>}
+        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg" alt="AIRental" className="h-6 w-6 rounded-md" />AIRental</span>}
+        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg" alt="AIRental" className="h-14 w-14 rounded-2xl" />AIRental</span>}
         tagline="Rental management, reinvented."
         description="From quote to signed contract in under 3 minutes. Multi-branch, multi-item, with dynamic pricing, delivery matrix, customer management, and a dispatch board that puts your drivers on the map."
         color="cyan"
@@ -635,8 +628,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airevents"
-        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png" alt="AIREvents" className="h-6 w-6 rounded-md" />AIREvents</span>}
-        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cd9627c55_AIRevents.png" alt="AIREvents" className="h-14 w-14 rounded-2xl" />AIREvents</span>}
+        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg" alt="AIREvents" className="h-6 w-6 rounded-md" />AIREvents</span>}
+        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg" alt="AIREvents" className="h-14 w-14 rounded-2xl" />AIREvents</span>}
         tagline="The floor plan IS the order."
         description="Drag equipment onto a live-inventory canvas — every item auto-checks availability, soft-reserves the unit, and adds to the quote. ADA compliance engine, permit tracker, surface & anchoring system built in. PartyCad, replaced."
         color="purple"
@@ -653,8 +646,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airfq"
-        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png" alt="AIRfq" className="h-6 w-6 rounded-md" />AIRfq · Premium</span>}
-        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/89df09246_AIRfq.png" alt="AIRfq" className="h-14 w-14 rounded-2xl" />AIRfq</span>}
+        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg" alt="AIRfq" className="h-6 w-6 rounded-md" />AIRfq · Premium</span>}
+        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg" alt="AIRfq" className="h-14 w-14 rounded-2xl" />AIRfq</span>}
         tagline="Upload the RFQ. Walk away with a bid."
         description="AI reads the government RFQ, matches every line item to your catalog, drafts the full bid response, flags every missing certification, and won't let you submit until it's complete. What used to take a day takes an hour."
         color="blue"
@@ -671,8 +664,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="aireports"
-        tag={<span className="flex items-center gap-2"><span className="text-emerald-400">📊</span>AIReports</span>}
-        title={<span className="flex items-center gap-4"><div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center flex-shrink-0"><BarChart3 className="w-7 h-7 text-black" /></div>AIReports</span>}
+        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg" alt="AIReports" className="h-6 w-6 rounded-md" />AIReports</span>}
+        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg" alt="AIReports" className="h-14 w-14 rounded-2xl" />AIReports</span>}
         tagline="Know your numbers. Grow your operation."
         description="Live dashboards built on your real rental data — equipment utilization by category, seasonal demand curves, asset aging, fleet health, and branch revenue side by side. No spreadsheets, no exports, no waiting."
         color="green"
