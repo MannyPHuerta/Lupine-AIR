@@ -467,20 +467,43 @@ function QuoteSection() {
 function PricingSection() {
   const tiers = [
     {
-      name: 'Starter',
-      price: '$299',
-      per: '/mo per branch',
-      desc: 'Core rental management for single-branch operators.',
-      features: ['Unlimited contracts & invoices', 'Equipment catalog (up to 500 units)', 'Customer management', 'Counter & manager apps', 'Email & SMS notifications'],
-      cta: 'Get Started',
+      name: 'Core',
+      price: '$199',
+      per: '/mo · single branch',
+      desc: 'Everything a single-branch operator needs to replace legacy software and go live fast.',
+      badge: null,
+      compare: 'EZRentOut charges $399 for fewer features.',
+      features: [
+        'Unlimited contracts & invoices',
+        'Equipment catalog — unlimited units',
+        'Customer management & DL scan',
+        'Counter & manager apps',
+        'Email & SMS notifications',
+        'AI rental assistant (scoped to your catalog)',
+        'Delivery matrix & driver dispatch',
+        'AIReports — utilization & fleet health',
+      ],
+      cta: 'Start Free Trial',
       highlight: false,
     },
     {
-      name: 'Growth',
-      price: '$599',
-      per: '/mo per branch',
-      desc: 'Multi-branch operations with full field ops and event tools.',
-      features: ['Everything in Starter', 'Unlimited equipment units', 'Multi-branch management', 'Driver & dispatch app', 'AIREvents canvas & floor plans', 'Delivery matrix & route optimization', 'QuickBooks sync'],
+      name: 'Pro',
+      price: '$449',
+      per: '/mo · unlimited branches',
+      desc: 'Multi-branch operations with full field ops, event planning, and advanced analytics.',
+      badge: 'MOST POPULAR',
+      compare: 'Point of Rental starts at $540/mo for 3 users — one branch.',
+      features: [
+        'Everything in Core',
+        'Unlimited branches',
+        'Cross-branch availability & transfers',
+        'AIREvents canvas & floor plans',
+        'ADA compliance engine',
+        'Permit & anchoring tracker',
+        'QuickBooks sync',
+        'Volume, loyalty & promo discount engine',
+        'Seasonal demand forecasting',
+      ],
       cta: 'Start Free Trial',
       highlight: true,
     },
@@ -488,8 +511,19 @@ function PricingSection() {
       name: 'Enterprise',
       price: 'Custom',
       per: '',
-      desc: 'Municipal bids, white-label, custom integrations.',
-      features: ['Everything in Growth', 'AIRfq — AI Bid Intelligence', 'White-label domain', 'SSO (Google / Microsoft)', 'Custom API integrations', 'Dedicated onboarding', 'SLA + priority support'],
+      desc: 'White-label, SSO, government bid intelligence, and dedicated infrastructure.',
+      badge: null,
+      compare: null,
+      features: [
+        'Everything in Pro',
+        'AIRfq — AI Government Bid Intelligence',
+        'White-label domain & branding',
+        'SSO (Google Workspace / Microsoft / Okta)',
+        'Isolated tenant environment',
+        'Custom API integrations',
+        'Dedicated onboarding & SLA',
+        'Priority support + account manager',
+      ],
       cta: 'Contact Sales',
       highlight: false,
     },
@@ -499,16 +533,21 @@ function PricingSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <AnimatedSection>
           <FadeUp className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white">Simple, transparent pricing</h2>
-            <p className="text-white/50 mt-4 text-lg">No setup fees. No per-contract charges. Cancel anytime.</p>
+          <h2 className="text-4xl md:text-5xl font-black text-white">Simple, transparent pricing</h2>
+          <p className="text-white/50 mt-4 text-lg max-w-2xl mx-auto">No setup fees. No per-contract charges. No per-user nickeling. AI included. Cancel anytime.</p>
+          <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm text-white/40">
+            <span>✓ Booqable: $149/mo — no AI, no dispatch, no field ops</span>
+            <span>✓ Point of Rental: $540+/mo — legacy UX, no AI</span>
+            <span>✓ EZRentOut: $399/mo — no event canvas, no bid tools</span>
+          </div>
           </FadeUp>
           <div className="grid md:grid-cols-3 gap-6">
             {tiers.map((tier, i) => (
               <FadeUp key={i} delay={i * 0.1}>
                 <div className={`rounded-2xl border p-8 h-full flex flex-col relative ${tier.highlight ? 'bg-cyan-500/10 border-cyan-400/50' : 'bg-white/5 border-white/10'}`}>
-                  {tier.highlight && (
+                  {tier.badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-500 text-black text-xs font-black px-4 py-1 rounded-full">
-                      MOST POPULAR
+                      {tier.badge}
                     </div>
                   )}
                   <div>
@@ -517,7 +556,12 @@ function PricingSection() {
                       <span className="text-4xl font-black text-white">{tier.price}</span>
                       <span className="text-white/40 text-sm mb-1">{tier.per}</span>
                     </div>
-                    <p className="text-white/50 text-sm mb-6">{tier.desc}</p>
+                    <p className="text-white/50 text-sm mb-3">{tier.desc}</p>
+                    {tier.compare && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 text-xs text-emerald-400 mb-5">
+                        💡 {tier.compare}
+                      </div>
+                    )}
                     <ul className="space-y-2.5 mb-8">
                       {tier.features.map((f, j) => (
                         <li key={j} className="flex items-start gap-2 text-sm text-white/70">
