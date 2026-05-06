@@ -610,8 +610,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airental"
-        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg" alt="AIRental" className="h-6 w-6 rounded-md" />AIRental</span>}
-        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg" alt="AIRental" className="h-14 w-14 rounded-2xl" />AIRental</span>}
+        tag="AIRental"
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg" alt="AIRental" className="h-20 w-20 rounded-2xl" />}
         tagline="Rental management, reinvented."
         description="From quote to signed contract in under 3 minutes. Multi-branch, multi-item, with dynamic pricing, delivery matrix, customer management, and a dispatch board that puts your drivers on the map."
         color="cyan"
@@ -628,8 +628,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airevents"
-        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg" alt="AIREvents" className="h-6 w-6 rounded-md" />AIREvents</span>}
-        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg" alt="AIREvents" className="h-14 w-14 rounded-2xl" />AIREvents</span>}
+        tag="AIREvents"
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg" alt="AIREvents" className="h-20 w-20 rounded-2xl" />}
         tagline="The floor plan IS the order."
         description="Drag equipment onto a live-inventory canvas — every item auto-checks availability, soft-reserves the unit, and adds to the quote. ADA compliance engine, permit tracker, surface & anchoring system built in. PartyCad, replaced."
         color="purple"
@@ -646,8 +646,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="airfq"
-        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg" alt="AIRfq" className="h-6 w-6 rounded-md" />AIRfq · Premium</span>}
-        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg" alt="AIRfq" className="h-14 w-14 rounded-2xl" />AIRfq</span>}
+        tag="AIRfq · Premium"
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg" alt="AIRfq" className="h-20 w-20 rounded-2xl" />}
         tagline="Upload the RFQ. Walk away with a bid."
         description="AI reads the government RFQ, matches every line item to your catalog, drafts the full bid response, flags every missing certification, and won't let you submit until it's complete. What used to take a day takes an hour."
         color="blue"
@@ -664,8 +664,8 @@ export default function AIRWebsite() {
 
       <ProductSection
         id="aireports"
-        tag={<span className="flex items-center gap-2"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg" alt="AIReports" className="h-6 w-6 rounded-md" />AIReports</span>}
-        title={<span className="flex items-center gap-4"><img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg" alt="AIReports" className="h-14 w-14 rounded-2xl" />AIReports</span>}
+        tag="AIReports"
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg" alt="AIReports" className="h-20 w-20 rounded-2xl" />}
         tagline="Know your numbers. Grow your operation."
         description="Live dashboards built on your real rental data — equipment utilization by category, seasonal demand curves, asset aging, fleet health, and branch revenue side by side. No spreadsheets, no exports, no waiting."
         color="green"
