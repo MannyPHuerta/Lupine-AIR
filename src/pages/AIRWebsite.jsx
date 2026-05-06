@@ -109,12 +109,28 @@ function Hero() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
-          <p className="text-blue-300 text-xl md:text-2xl font-light mb-4">It's time for a breath of fresh</p>
+          <div className="relative inline-block mb-4">
+            <p className="text-blue-300 text-xl md:text-2xl font-light">It's time for a breath of fresh</p>
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)' }}
+              animate={{ x: ['-150%', '150%'] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
+            />
+          </div>
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
             className="flex justify-center">
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIR" className="w-48 h-48 md:w-64 md:h-64 rounded-3xl" />
+            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden">
+              <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIR" className="w-full h-full rounded-3xl" />
+              <motion.div
+                className="absolute inset-0 rounded-3xl"
+                style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%)' }}
+                animate={{ x: ['-150%', '150%'] }}
+                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5, ease: 'easeInOut' }}
+              />
+            </div>
           </motion.div>
           <p className="text-lg md:text-xl text-blue-200/70 mt-6 max-w-2xl mx-auto">
             The first rental equipment cloud platform to harness the full power of AI —
