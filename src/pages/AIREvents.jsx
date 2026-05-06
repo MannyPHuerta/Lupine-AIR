@@ -14,9 +14,12 @@ export default function AIREvents() {
 
         <div className="space-y-8">
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              AIREvents
-            </h1>
+            <div className="flex items-center gap-4">
+              <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg" alt="AIREvents" className="h-16 w-16 rounded-2xl" />
+              <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                AIREvents
+              </h1>
+            </div>
             <p className="text-xl text-blue-200">Seamless event planning & coordination</p>
           </div>
 

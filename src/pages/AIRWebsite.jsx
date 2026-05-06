@@ -48,7 +48,7 @@ function Nav({ activeSection }) {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2">
-          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/ea7ea84c1_AIR.svg" alt="AIR" className="h-8 w-8 rounded-lg" />
+          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIR" className="h-8 w-8 rounded-lg" />
           <span className="text-xs text-cyan-400 font-medium tracking-widest uppercase">by Lupine</span>
         </button>
         <div className="hidden md:flex items-center gap-6">
@@ -114,7 +114,7 @@ function Hero() {
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
             className="flex justify-center">
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/ea7ea84c1_AIR.svg" alt="AIR" className="w-48 h-48 md:w-64 md:h-64 rounded-3xl" />
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIR" className="w-48 h-48 md:w-64 md:h-64 rounded-3xl" />
           </motion.div>
           <p className="text-lg md:text-xl text-blue-200/70 mt-6 max-w-2xl mx-auto">
             The first rental equipment cloud platform to harness the full power of AI —
@@ -548,7 +548,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <div>
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/ea7ea84c1_AIR.svg" alt="AIR" className="h-12 w-12 rounded-xl mb-2" />
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIR" className="h-12 w-12 rounded-xl mb-2" />
             <div className="text-xs text-cyan-400 font-medium tracking-widest uppercase mb-3">by Lupine</div>
             <p className="text-white/40 text-sm">The rental equipment platform built for the Rio Grande Valley — and beyond.</p>
           </div>
