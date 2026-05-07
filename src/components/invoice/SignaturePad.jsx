@@ -2,25 +2,30 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 
 /**
  * Signature pad supporting:
- *   1. Topaz SigWeb (LBK462 and other Topaz USB pads) via localhost:47289
- *   2. Mouse / touch fallback for laptops and tablets
- *
- * SigWeb must be installed and running on the local PC.
- * Download: https://www.topazsystems.com/software/sigweb.exe
+ *   1. Topaz SigWeb (LBK462-HSB and other Topaz USB/HSB pads)
+ *      Requires SigWeb installed & running: https://www.topazsystems.com/software/sigweb.exe
+ *      SigWeb exposes SigWebTablet.js at localhost:47289 with global JS functions.
+ *   2. Mouse / touch fallback when SigWeb is not detected.
  *
  * Props:
  *   onSave(dataUrl) — called when user clicks "Accept Signature"
  *   onClear()       — called when cleared
  */
 
-const SIGWEB_URL = 'http://localhost:47289';
+const SIGWEB_JS_URL = 'http://localhost:47289/SigWeb/SigWebTablet.js';
 
-async function sigwebCall(endpoint, method = 'GET', body = null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body !== null) opts.body = JSON.stringify(body);
-  const res = await fetch(`${SIGWEB_URL}/${endpoint}`, opts);
-  if (!res.ok) throw new Error(`SigWeb ${endpoint} failed: ${res.status}`);
-  return res.json();
+function loadSigWebScript() {
+  return new Promise((resolve, reject) => {
+    // Already loaded
+    if (window.SetTabletState) { resolve(); return; }
+    const existing = document.querySelector(`script[src="${SIGWEB_JS_URL}"]`);
+    if (existing) { existing.addEventListener('load', resolve); existing.addEventListener('error', reject); return; }
+    const script = document.createElement('script');
+    script.src = SIGWEB_JS_URL;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('SigWeb not available'));
+    document.head.appendChild(script);
+  });
 }
 
 export default function SignaturePad({ onSave, onClear }) {
@@ -28,79 +33,51 @@ export default function SignaturePad({ onSave, onClear }) {
   const [drawing, setDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
   const [sigwebAvailable, setSigwebAvailable] = useState(null); // null=checking, true, false
-  const [sigwebCapturing, setSigwebCapturing] = useState(false);
   const lastPos = useRef(null);
-  const sigwebTimer = useRef(null);
+  const pollTimer = useRef(null);
 
-  // ── Detect SigWeb on mount ──────────────────────────────────────────────────
+  // ── Load SigWebTablet.js and activate tablet ────────────────────────────────
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        await sigwebCall('SigWeb/TabletState', 'GET');
-        if (!cancelled) setSigwebAvailable(true);
-      } catch {
-        if (!cancelled) setSigwebAvailable(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  // ── Start SigWeb capture when pad is detected ───────────────────────────────
-  useEffect(() => {
-    if (!sigwebAvailable) return;
-
     let active = true;
 
-    const startCapture = async () => {
+    (async () => {
       try {
-        // Set tablet to capture mode
-        await sigwebCall('SigWeb/SetTabletState', 'POST', { state: 1 });
-        await sigwebCall('SigWeb/ClearSignature', 'POST');
-        setSigwebCapturing(true);
-        setIsEmpty(true);
+        await loadSigWebScript();
+        if (!active) return;
 
-        // Poll for signature data every 500ms
-        sigwebTimer.current = setInterval(async () => {
+        setSigwebAvailable(true);
+
+        const canvas = canvasRef.current;
+        if (canvas) {
+          if (window.SetDisplayTarget) window.SetDisplayTarget(canvas);
+          if (window.SetDisplayXSize) window.SetDisplayXSize(canvas.offsetWidth);
+          if (window.SetDisplayYSize) window.SetDisplayYSize(canvas.offsetHeight);
+        }
+
+        // Clear prior ink and turn the pad on
+        if (window.ClearTablet) window.ClearTablet();
+        if (window.SetTabletState) window.SetTabletState(1);
+
+        // Poll to detect when user has started signing
+        pollTimer.current = setInterval(() => {
           if (!active) return;
           try {
-            const result = await sigwebCall('SigWeb/NumberOfTabletPoints', 'GET');
-            const pts = result?.count ?? result?.NumberOfTabletPoints ?? 0;
-            if (pts > 0) {
-              setIsEmpty(false);
-              // Render to canvas
-              const imgData = await sigwebCall('SigWeb/SigImageB64', 'GET');
-              const b64 = imgData?.SigImageB64 ?? imgData?.sigImageB64;
-              if (b64 && canvasRef.current) {
-                const canvas = canvasRef.current;
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                img.onload = () => {
-                  ctx.clearRect(0, 0, canvas.width, canvas.height);
-                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                };
-                img.src = `data:image/png;base64,${b64}`;
-              }
-            }
-          } catch {
-            // SigWeb went away — stop polling
-            clearInterval(sigwebTimer.current);
-          }
-        }, 500);
-      } catch (err) {
-        console.warn('[SignaturePad] SigWeb startCapture error:', err);
-      }
-    };
+            const pts = window.NumberOfTabletPoints ? window.NumberOfTabletPoints() : 0;
+            if (pts > 0) setIsEmpty(false);
+          } catch {}
+        }, 400);
 
-    startCapture();
+      } catch {
+        if (active) setSigwebAvailable(false);
+      }
+    })();
 
     return () => {
       active = false;
-      clearInterval(sigwebTimer.current);
-      // Release tablet
-      sigwebCall('SigWeb/SetTabletState', 'POST', { state: 0 }).catch(() => {});
+      clearInterval(pollTimer.current);
+      try { if (window.SetTabletState) window.SetTabletState(0); } catch {}
     };
-  }, [sigwebAvailable]);
+  }, []);
 
   // ── Resize canvas ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -136,7 +113,7 @@ export default function SignaturePad({ onSave, onClear }) {
   };
 
   const startDraw = useCallback((e) => {
-    if (sigwebAvailable) return; // let SigWeb handle it
+    if (sigwebAvailable) return;
     e.preventDefault();
     setDrawing(true);
     setIsEmpty(false);
@@ -166,32 +143,23 @@ export default function SignaturePad({ onSave, onClear }) {
   }, []);
 
   // ── Clear ───────────────────────────────────────────────────────────────────
-  const handleClear = async () => {
+  const handleClear = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
     setIsEmpty(true);
-    if (sigwebAvailable) {
-      try { await sigwebCall('SigWeb/ClearSignature', 'POST'); } catch {}
-    }
+    try { if (window.ClearTablet) window.ClearTablet(); } catch {}
     if (onClear) onClear();
   };
 
   // ── Accept ──────────────────────────────────────────────────────────────────
-  const handleAccept = async () => {
+  const handleAccept = () => {
     if (isEmpty) return;
 
-    if (sigwebAvailable) {
-      try {
-        const imgData = await sigwebCall('SigWeb/SigImageB64', 'GET');
-        const b64 = imgData?.SigImageB64 ?? imgData?.sigImageB64;
-        if (b64 && onSave) {
-          onSave(`data:image/png;base64,${b64}`);
-          return;
-        }
-      } catch (err) {
-        console.warn('[SignaturePad] SigWeb accept error — falling back to canvas:', err);
-      }
+    if (sigwebAvailable && window.GetSigImageB64) {
+      window.GetSigImageB64((b64) => {
+        if (b64 && onSave) onSave(`data:image/png;base64,${b64}`);
+      });
+      return;
     }
 
     const dataUrl = canvasRef.current.toDataURL('image/png');
@@ -210,6 +178,9 @@ export default function SignaturePad({ onSave, onClear }) {
         )}
         {sigwebAvailable === false && (
           <div className="text-xs text-gray-400">Mouse / touch mode</div>
+        )}
+        {sigwebAvailable === null && (
+          <div className="text-xs text-gray-300 animate-pulse">Detecting pad…</div>
         )}
       </div>
 
@@ -254,10 +225,10 @@ export default function SignaturePad({ onSave, onClear }) {
 
       {sigwebAvailable === false && (
         <p className="text-xs text-gray-400">
-          No Topaz pad? Install{' '}
+          No Topaz pad detected. Install{' '}
           <a href="https://www.topazsystems.com/software/sigweb.exe" target="_blank" rel="noreferrer"
             className="underline hover:text-gray-600">SigWeb</a>{' '}
-          to activate the LBK462.
+          and plug in the LBK462 to activate the pad.
         </p>
       )}
     </div>
