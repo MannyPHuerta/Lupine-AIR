@@ -1,29 +1,43 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 
 /**
- * Signature pad supporting:
- *   1. Topaz SigWeb (LBK462-HSB and other Topaz USB/HSB pads)
- *      Requires SigWeb installed & running: https://www.topazsystems.com/software/sigweb.exe
- *      SigWeb exposes SigWebTablet.js at localhost:47289 with global JS functions.
- *   2. Mouse / touch fallback when SigWeb is not detected.
+ * Topaz SigWeb signature pad (LBK462-HSB) with mouse/touch fallback.
  *
- * Props:
- *   onSave(dataUrl) — called when user clicks "Accept Signature"
- *   onClear()       — called when cleared
+ * SigWeb runs a local HTTPS service on port 47290 (HTTP on 47289).
+ * Because the app is served over HTTPS, we MUST use port 47290.
+ * The DNS alias tablet.sigwebtablet.com resolves to 127.0.0.1 and has
+ * a self-signed cert that browsers accept for this purpose.
+ *
+ * Key API (from official SigWebTablet.js source):
+ *   SigWebSetDisplayTarget(ctx2d) — pass the 2D canvas CONTEXT, not the element
+ *   SetTabletState(1)             — activates pad
+ *   ClearTablet()                 — clears ink buffer
+ *   SigWebRefresh()               — call every ~50ms to render ink onto canvas
+ *   NumberOfTabletPoints()        — returns captured point count
+ *   GetSigImageB64(callback)      — returns base64 PNG
  */
 
-const SIGWEB_JS_URL = 'http://localhost:47289/SigWeb/SigWebTablet.js';
+function getSigWebScriptUrl() {
+  const port = location.protocol === 'https:' ? 47290 : 47289;
+  return `${location.protocol}//tablet.sigwebtablet.com:${port}/SigWeb/SigWebTablet.js`;
+}
 
 function loadSigWebScript() {
   return new Promise((resolve, reject) => {
-    // Already loaded
-    if (window.SetTabletState) { resolve(); return; }
-    const existing = document.querySelector(`script[src="${SIGWEB_JS_URL}"]`);
-    if (existing) { existing.addEventListener('load', resolve); existing.addEventListener('error', reject); return; }
+    if (window.SigWebSetDisplayTarget && window.SetTabletState) { resolve(); return; }
+    const url = getSigWebScriptUrl();
+    const existing = document.querySelector(`script[data-sigweb]`);
+    if (existing) {
+      if (window.SigWebSetDisplayTarget) { resolve(); return; }
+      existing.addEventListener('load', resolve);
+      existing.addEventListener('error', reject);
+      return;
+    }
     const script = document.createElement('script');
-    script.src = SIGWEB_JS_URL;
+    script.setAttribute('data-sigweb', '1');
+    script.src = url;
     script.onload = resolve;
-    script.onerror = () => reject(new Error('SigWeb not available'));
+    script.onerror = () => reject(new Error('SigWeb not reachable'));
     document.head.appendChild(script);
   });
 }
@@ -32,11 +46,11 @@ export default function SignaturePad({ onSave, onClear }) {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
-  const [sigwebAvailable, setSigwebAvailable] = useState(null); // null=checking, true, false
+  const [sigwebStatus, setSigwebStatus] = useState('checking'); // 'checking' | 'active' | 'fallback'
   const lastPos = useRef(null);
-  const pollTimer = useRef(null);
+  const refreshTimer = useRef(null);
 
-  // ── Load SigWebTablet.js and activate tablet ────────────────────────────────
+  // ── Activate SigWeb pad ─────────────────────────────────────────────────────
   useEffect(() => {
     let active = true;
 
@@ -45,86 +59,74 @@ export default function SignaturePad({ onSave, onClear }) {
         await loadSigWebScript();
         if (!active) return;
 
-        setSigwebAvailable(true);
-
         const canvas = canvasRef.current;
-        if (canvas) {
-          if (window.SetDisplayTarget) window.SetDisplayTarget(canvas);
-          if (window.SetDisplayXSize) window.SetDisplayXSize(canvas.offsetWidth);
-          if (window.SetDisplayYSize) window.SetDisplayYSize(canvas.offsetHeight);
-        }
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
 
-        // Clear prior ink and turn the pad on
-        if (window.ClearTablet) window.ClearTablet();
-        if (window.SetTabletState) window.SetTabletState(1);
+        // MUST pass the 2D context (not the canvas element)
+        window.SigWebSetDisplayTarget(ctx);
+        window.ClearTablet();
+        window.SetTabletState(1);
 
-        // Poll to detect when user has started signing
-        pollTimer.current = setInterval(() => {
+        setSigwebStatus('active');
+
+        // SigWebRefresh pulls new ink from the SigWeb service and draws it on canvas
+        refreshTimer.current = setInterval(() => {
           if (!active) return;
           try {
-            const pts = window.NumberOfTabletPoints ? window.NumberOfTabletPoints() : 0;
-            if (pts > 0) setIsEmpty(false);
+            window.SigWebRefresh();
+            if (window.NumberOfTabletPoints && window.NumberOfTabletPoints() > 0) {
+              setIsEmpty(false);
+            }
           } catch {}
-        }, 400);
+        }, 50);
 
-      } catch {
-        if (active) setSigwebAvailable(false);
+      } catch (err) {
+        console.warn('[SignaturePad] SigWeb unavailable:', err.message);
+        if (active) setSigwebStatus('fallback');
       }
     })();
 
     return () => {
       active = false;
-      clearInterval(pollTimer.current);
+      clearInterval(refreshTimer.current);
       try { if (window.SetTabletState) window.SetTabletState(0); } catch {}
     };
   }, []);
 
-  // ── Resize canvas ───────────────────────────────────────────────────────────
+  // ── Size canvas to its container ────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      const img = canvas.toDataURL();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      const ctx = canvas.getContext('2d');
-      ctx.strokeStyle = '#1e1b4b';
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      if (!isEmpty) {
-        const image = new Image();
-        image.onload = () => ctx.drawImage(image, 0, 0);
-        image.src = img;
-      }
+    const size = () => {
+      const w = canvas.offsetWidth;
+      canvas.width = w;
+      canvas.height = 140;
     };
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, [isEmpty]);
+    size();
+    window.addEventListener('resize', size);
+    return () => window.removeEventListener('resize', size);
+  }, []);
 
   // ── Mouse / touch fallback ──────────────────────────────────────────────────
   const getPos = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
   };
 
   const startDraw = useCallback((e) => {
-    if (sigwebAvailable) return;
+    if (sigwebStatus === 'active') return;
     e.preventDefault();
     setDrawing(true);
     setIsEmpty(false);
     lastPos.current = getPos(e);
-  }, [sigwebAvailable]);
+  }, [sigwebStatus]);
 
   const draw = useCallback((e) => {
-    if (sigwebAvailable || !drawing) return;
+    if (sigwebStatus === 'active' || !drawing) return;
     e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvasRef.current.getContext('2d');
     const pos = getPos(e);
     ctx.beginPath();
     ctx.strokeStyle = '#1e1b4b';
@@ -135,17 +137,14 @@ export default function SignaturePad({ onSave, onClear }) {
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     lastPos.current = pos;
-  }, [sigwebAvailable, drawing]);
+  }, [sigwebStatus, drawing]);
 
-  const stopDraw = useCallback(() => {
-    setDrawing(false);
-    lastPos.current = null;
-  }, []);
+  const stopDraw = useCallback(() => { setDrawing(false); lastPos.current = null; }, []);
 
   // ── Clear ───────────────────────────────────────────────────────────────────
   const handleClear = () => {
-    const canvas = canvasRef.current;
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    const c = canvasRef.current;
+    c.getContext('2d').clearRect(0, 0, c.width, c.height);
     setIsEmpty(true);
     try { if (window.ClearTablet) window.ClearTablet(); } catch {}
     if (onClear) onClear();
@@ -154,38 +153,33 @@ export default function SignaturePad({ onSave, onClear }) {
   // ── Accept ──────────────────────────────────────────────────────────────────
   const handleAccept = () => {
     if (isEmpty) return;
-
-    if (sigwebAvailable && window.GetSigImageB64) {
+    if (sigwebStatus === 'active' && window.GetSigImageB64) {
       window.GetSigImageB64((b64) => {
         if (b64 && onSave) onSave(`data:image/png;base64,${b64}`);
       });
       return;
     }
-
-    const dataUrl = canvasRef.current.toDataURL('image/png');
-    if (onSave) onSave(dataUrl);
+    if (onSave) onSave(canvasRef.current.toDataURL('image/png'));
   };
+
+  const isActive = sigwebStatus === 'active';
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Customer Signature</div>
-        {sigwebAvailable === true && (
+        {sigwebStatus === 'active' && (
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
             Topaz pad active
           </div>
         )}
-        {sigwebAvailable === false && (
-          <div className="text-xs text-gray-400">Mouse / touch mode</div>
-        )}
-        {sigwebAvailable === null && (
-          <div className="text-xs text-gray-300 animate-pulse">Detecting pad…</div>
-        )}
+        {sigwebStatus === 'fallback' && <div className="text-xs text-gray-400">Mouse / touch mode</div>}
+        {sigwebStatus === 'checking' && <div className="text-xs text-gray-300 animate-pulse">Detecting pad…</div>}
       </div>
 
       <div
-        className={`border-2 border-dashed rounded-lg bg-gray-50 relative ${sigwebAvailable ? 'border-emerald-400' : 'border-gray-300'}`}
+        className={`border-2 border-dashed rounded-lg bg-gray-50 relative ${isActive ? 'border-emerald-400' : 'border-gray-300'}`}
         style={{ touchAction: 'none' }}
       >
         <canvas
@@ -203,10 +197,10 @@ export default function SignaturePad({ onSave, onClear }) {
         {isEmpty && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-1">
             <span className="text-gray-400 text-sm">
-              {sigwebAvailable ? 'Sign on the Topaz pad' : 'Sign here'}
+              {isActive ? 'Sign on the Topaz pad' : 'Sign here'}
             </span>
-            {sigwebAvailable === false && (
-              <span className="text-gray-300 text-xs">Topaz SigWeb not detected — using mouse/touch</span>
+            {sigwebStatus === 'fallback' && (
+              <span className="text-gray-300 text-xs">SigWeb not detected — using mouse/touch</span>
             )}
           </div>
         )}
@@ -223,12 +217,12 @@ export default function SignaturePad({ onSave, onClear }) {
         </button>
       </div>
 
-      {sigwebAvailable === false && (
+      {sigwebStatus === 'fallback' && (
         <p className="text-xs text-gray-400">
           No Topaz pad detected. Install{' '}
           <a href="https://www.topazsystems.com/software/sigweb.exe" target="_blank" rel="noreferrer"
             className="underline hover:text-gray-600">SigWeb</a>{' '}
-          and plug in the LBK462 to activate the pad.
+          then reload to activate the LBK462.
         </p>
       )}
     </div>
