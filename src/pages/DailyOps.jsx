@@ -1,0 +1,264 @@
+import { useState, useEffect, useMemo } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useNavigate } from 'react-router-dom';
+import {
+  Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
+  Clock, CheckCircle, Loader2, Calendar
+} from 'lucide-react';
+
+const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
+
+const today = new Date().toISOString().split('T')[0];
+const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+function SectionHeader({ icon, label, count, color }) {
+  return (
+    <div className={`flex items-center gap-2 px-4 py-2.5 border-b font-semibold text-sm ${color}`}>
+      {icon}
+      <span>{label}</span>
+      <span className="ml-auto bg-white/20 rounded-full px-2 py-0.5 text-xs font-bold">{count}</span>
+    </div>
+  );
+}
+
+function RentalRow({ rental, badge, badgeColor, navigate }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b last:border-0 transition">
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-gray-900 text-sm truncate">{rental.customerName}</div>
+        <div className="text-xs text-gray-500 truncate">{rental.equipmentName || 'Multiple items'}</div>
+        <div className="text-xs text-gray-400 mt-0.5">
+          {rental.branch} · Invoice: {rental.invoiceNumber || '—'}
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
+        {rental.customerPhone && (
+          <a href={`tel:${rental.customerPhone}`}
+            className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition">
+            <Phone className="w-3 h-3" /> {rental.customerPhone}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ message }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-8 text-gray-400 text-sm">
+      <CheckCircle className="w-4 h-4 text-green-400" />
+      {message}
+    </div>
+  );
+}
+
+export default function DailyOps() {
+  const navigate = useNavigate();
+  const [rentals, setRentals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [branch, setBranch] = useState('All Branches');
+  const [user, setUser] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    const [me, r] = await Promise.all([
+      base44.auth.me(),
+      base44.entities.Rental.list('-startDate', 1000),
+    ]);
+    setUser(me);
+    setRentals(r);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = useMemo(() => {
+    return rentals.filter(r =>
+      branch === 'All Branches' || r.branch === branch
+    );
+  }, [rentals, branch]);
+
+  // Going out today (startDate = today, status = reservation/contract)
+  const goingOutToday = useMemo(() =>
+    filtered.filter(r =>
+      r.startDate === today &&
+      ['reservation', 'contract'].includes(r.status)
+    ), [filtered]);
+
+  // Due back today (endDate = today, status = out)
+  const dueToday = useMemo(() =>
+    filtered.filter(r =>
+      r.endDate === today &&
+      r.status === 'out'
+    ), [filtered]);
+
+  // Overdue (endDate < today, status = out)
+  const overdue = useMemo(() =>
+    filtered.filter(r =>
+      r.endDate < today &&
+      r.status === 'out'
+    ).sort((a, b) => a.endDate.localeCompare(b.endDate)), [filtered]);
+
+  // Ending tomorrow — re-rent candidates
+  const endingTomorrow = useMemo(() =>
+    filtered.filter(r =>
+      r.endDate === tomorrow &&
+      r.status === 'out'
+    ), [filtered]);
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+        <div className="px-4 py-4 max-w-4xl mx-auto">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div className="text-lg font-bold">
+                {greeting()}{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''} 👋
+              </div>
+              <div className="text-indigo-300 text-xs mt-0.5">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={branch}
+                onChange={e => setBranch(e.target.value)}
+                className="h-9 border-0 rounded px-2 bg-indigo-800 text-white text-sm"
+              >
+                {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => navigate('/counter')}
+                className="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg text-sm transition"
+              >
+                <Plus className="w-4 h-4" /> New Rental
+              </button>
+            </div>
+          </div>
+
+          {/* KPI bar */}
+          <div className="grid grid-cols-4 gap-3 mt-4">
+            {[
+              { label: 'Going Out', value: goingOutToday.length, color: 'text-cyan-300' },
+              { label: 'Due Back', value: dueToday.length, color: 'text-green-300' },
+              { label: 'Overdue', value: overdue.length, color: overdue.length > 0 ? 'text-red-300' : 'text-gray-400' },
+              { label: 'Re-Rent?', value: endingTomorrow.length, color: 'text-amber-300' },
+            ].map(k => (
+              <div key={k.label} className="text-center">
+                <div className={`text-2xl font-black ${k.color}`}>{k.value}</div>
+                <div className="text-indigo-400 text-xs">{k.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">
+
+        {/* Quick nav */}
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { label: 'Rental History', path: '/rental-history' },
+            { label: 'Dispatch', path: '/dispatch' },
+            { label: 'Availability Calendar', path: '/availability-calendar' },
+            { label: 'Manager Dashboard', path: '/manager' },
+          ].map(l => (
+            <button key={l.path} onClick={() => navigate(l.path)}
+              className="text-xs border border-indigo-200 text-indigo-700 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> {l.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Going Out Today */}
+        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+          <SectionHeader
+            icon={<Truck className="w-4 h-4" />}
+            label="Going Out Today"
+            count={goingOutToday.length}
+            color="bg-cyan-600 text-white"
+          />
+          {goingOutToday.length === 0
+            ? <EmptyState message="Nothing scheduled to go out today" />
+            : goingOutToday.map(r => (
+              <RentalRow key={r.id} rental={r} badge={`Starts ${r.startDate}`} badgeColor="bg-cyan-100 text-cyan-700" navigate={navigate} />
+            ))}
+        </div>
+
+        {/* Due Back Today */}
+        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+          <SectionHeader
+            icon={<RotateCcw className="w-4 h-4" />}
+            label="Due Back Today"
+            count={dueToday.length}
+            color="bg-green-600 text-white"
+          />
+          {dueToday.length === 0
+            ? <EmptyState message="No returns expected today" />
+            : dueToday.map(r => (
+              <RentalRow key={r.id} rental={r} badge="Due today" badgeColor="bg-green-100 text-green-700" navigate={navigate} />
+            ))}
+        </div>
+
+        {/* Overdue */}
+        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+          <SectionHeader
+            icon={<AlertTriangle className="w-4 h-4" />}
+            label="Overdue — Call Now"
+            count={overdue.length}
+            color={overdue.length > 0 ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-600'}
+          />
+          {overdue.length === 0
+            ? <EmptyState message="No overdue rentals" />
+            : overdue.map(r => (
+              <RentalRow key={r.id} rental={r}
+                badge={`Due ${r.endDate}`}
+                badgeColor="bg-red-100 text-red-700"
+                navigate={navigate}
+              />
+            ))}
+        </div>
+
+        {/* Ending Tomorrow — Re-rent candidates */}
+        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+          <SectionHeader
+            icon={<Clock className="w-4 h-4" />}
+            label="Ending Tomorrow — Re-Rent Conversation"
+            count={endingTomorrow.length}
+            color="bg-amber-500 text-white"
+          />
+          {endingTomorrow.length === 0
+            ? <EmptyState message="Nothing ending tomorrow" />
+            : endingTomorrow.map(r => (
+              <RentalRow key={r.id} rental={r}
+                badge="Ends tomorrow"
+                badgeColor="bg-amber-100 text-amber-700"
+                navigate={navigate}
+              />
+            ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}

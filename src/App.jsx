@@ -57,6 +57,7 @@ import DispatchBoard from "./pages/DispatchBoard";
 import AIReports from "./pages/AIReports";
 import EventPlanner from "./pages/EventPlanner";
 import AccountingDashboard from "./pages/AccountingDashboard";
+import DailyOps from "./pages/DailyOps";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -91,7 +92,8 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
-      <Route path="/" element={<ReportForm />} />
+      <Route path="/" element={<DailyOps />} />
+      <Route path="/report-form" element={<ReportForm />} />
       <Route path="/pending" element={<PendingReports />} />
       <Route path="/history" element={<ReportHistory />} />
       <Route path="/about" element={<About />} />
