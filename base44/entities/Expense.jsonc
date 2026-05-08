@@ -40,6 +40,10 @@
       "type": "string",
       "description": "Optional notes or description"
     },
+    "invoiceNumber": {
+      "type": "string",
+      "description": "Related rental invoice number (e.g. MCL-1042) \u2014 links expense to a specific rental job"
+    },
     "receiptUrl": {
       "type": "string",
       "description": "URL to uploaded receipt image"
