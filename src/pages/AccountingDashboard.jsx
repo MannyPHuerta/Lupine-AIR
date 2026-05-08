@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Download, Loader2, DollarSign, TrendingUp, FileText, CreditCard } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import InvoiceDrawer from '@/components/accounting/InvoiceDrawer';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
 
@@ -143,6 +144,7 @@ export default function AccountingDashboard() {
   });
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0]);
   const [exporting, setExporting] = useState(false);
+  const [selectedRental, setSelectedRental] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -335,7 +337,14 @@ export default function AccountingDashboard() {
                   const balance = total - (r.amountPaid || 0);
                   return (
                     <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 font-mono text-indigo-700 font-medium">{r.invoiceNumber || '—'}</td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => setSelectedRental(r)}
+                          className="font-mono text-indigo-700 font-medium hover:text-indigo-900 hover:underline underline-offset-2 transition"
+                        >
+                          {r.invoiceNumber || '—'}
+                        </button>
+                      </td>
                       <td className="px-4 py-2 text-gray-600">{r.startDate || '—'}</td>
                       <td className="px-4 py-2 font-medium text-gray-900">{r.customerName}</td>
                       <td className="px-4 py-2 text-gray-500">{r.branch || '—'}</td>
@@ -362,6 +371,9 @@ export default function AccountingDashboard() {
             )}
           </div>
         </div>
+
+        {/* Invoice Drawer */}
+        <InvoiceDrawer rental={selectedRental} onClose={() => setSelectedRental(null)} />
 
         {/* QB Account Mapping Note */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
