@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, Check, MapPin, Phone, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, MapPin, AlertCircle, SplitSquareHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PhotoCapture from '@/components/delivery/PhotoCapture';
 
@@ -23,14 +23,24 @@ export default function RecoveryDetail() {
   const [error, setError] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const [deliveryPhotos, setDeliveryPhotos] = useState([]);
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     base44.entities.Recovery.list('-created_date', 200)
-      .then(recs => {
+      .then(async recs => {
         const rec = recs.find(r => r.id === id);
         if (!rec) { setError('Recovery not found'); setLoading(false); return; }
         setRecovery(rec);
         setPhotos(rec.photos || []);
+
+        // Fetch delivery photos for side-by-side comparison
+        if (rec.rentalId) {
+          const deliveries = await base44.entities.Delivery.filter({ rentalId: rec.rentalId });
+          const deliveryWithPhotos = deliveries.find(d => d.photos && d.photos.length > 0);
+          if (deliveryWithPhotos) setDeliveryPhotos(deliveryWithPhotos.photos);
+        }
+
         setLoading(false);
       })
       .catch(err => { setError(err.message); setLoading(false); });
@@ -122,6 +132,54 @@ export default function RecoveryDetail() {
             <div className="text-xs text-gray-400">No items listed</div>
           )}
         </div>
+
+        {/* Side-by-side comparison */}
+        {['arrived', 'photos_captured', 'loaded', 'returned_to_branch'].includes(recovery.status) && deliveryPhotos.length > 0 && (
+          <div className="bg-white rounded-lg border overflow-hidden">
+            <button
+              onClick={() => setShowComparison(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-amber-50 hover:bg-amber-100 transition"
+            >
+              <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+                <SplitSquareHorizontal className="w-4 h-4" />
+                Compare: Delivery vs. Recovery ({deliveryPhotos.length} delivery photo{deliveryPhotos.length !== 1 ? 's' : ''})
+              </div>
+              <span className="text-xs text-amber-600">{showComparison ? 'Hide' : 'Show'}</span>
+            </button>
+            {showComparison && (
+              <div className="p-4 space-y-3">
+                <p className="text-xs text-gray-500">Left: taken at delivery · Right: take recovery photo for comparison</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {deliveryPhotos.map((dp, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                        📦 Delivery — {new Date(dp.timestamp).toLocaleDateString()}
+                      </div>
+                      <div className="aspect-square rounded-lg overflow-hidden border border-blue-200">
+                        <img src={dp.url} alt={`Delivery ${idx + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                      {photos[idx] && (
+                        <>
+                          <div className="text-xs font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
+                            🔄 Recovery — {new Date(photos[idx].timestamp).toLocaleTimeString()}
+                          </div>
+                          <div className="aspect-square rounded-lg overflow-hidden border border-rose-200">
+                            <img src={photos[idx].url} alt={`Recovery ${idx + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                        </>
+                      )}
+                      {!photos[idx] && (
+                        <div className="aspect-square rounded-lg border-2 border-dashed border-rose-200 flex items-center justify-center text-xs text-rose-400">
+                          Take recovery photo ↓
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Photos — show when arrived or later */}
         {['arrived', 'photos_captured', 'loaded', 'returned_to_branch'].includes(recovery.status) && (
