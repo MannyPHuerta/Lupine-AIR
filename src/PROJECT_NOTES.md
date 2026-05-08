@@ -207,4 +207,38 @@ The goal is to eventually incorporate Asset Wolf's functionality into the AIR pl
 
 ---
 
-*Last updated: 2026-05-03*
+## Signature Pad — Hardware Requirements & Compatibility
+
+### Current Implementation
+The signature pad integration (`components/invoice/SignaturePad`) uses **Topaz SigWeb** — a locally-installed Windows service that exposes a REST/JS API on `tablet.sigwebtablet.com:47290`.
+
+### ⚠️ Compatibility — NOT plug-and-play with any pad
+The code **only works with Topaz SigWeb-compatible pads**. It will NOT work with:
+- Generic USB signature pads (Wacom, Scriptel, ePadLink, etc.)
+- Any pad that doesn't use the Topaz SigWeb service
+
+### Subscriber Hardware Requirements
+When onboarding subscribers who need signature capture, they **must** purchase a **Topaz SigWeb-compatible pad**, specifically:
+- **Recommended:** Topaz LBK462-HSB (USB, backlit, signature-sized)
+- **Any** pad in the Topaz SigWeb-compatible lineup will work
+- Reference: https://www.topazsystems.com/sigweb.html
+
+### One-Time Setup Per Workstation
+Each Windows workstation that needs signature capture requires:
+1. Install SigWeb: https://www.topazsystems.com/software/sigweb.exe
+2. Plug in the Topaz pad (verify LED lights up + appears in Device Manager)
+3. Trust the SigWeb self-signed cert in the browser: visit `https://tablet.sigwebtablet.com:47290/SigWeb/TabletState` and click Advanced → Proceed
+4. Reload the app — the "Topaz pad active" indicator will appear
+
+### Fallback
+If no pad is detected, the component automatically falls back to mouse/touch signature capture. Contracts can still be signed without the hardware pad.
+
+### Diagnostic Check
+To verify SigWeb status on a workstation, visit: `https://tablet.sigwebtablet.com:47290/SigWeb/TabletState`
+- Returns `1` = pad connected and ready
+- Returns `0` = SigWeb running but no pad detected (check USB / Device Manager)
+- Page not found / error = SigWeb not installed or not running
+
+---
+
+*Last updated: 2026-05-08*
