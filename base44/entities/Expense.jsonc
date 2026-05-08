@@ -1,0 +1,63 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the expense was incurred"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Fuel",
+        "Repairs / Parts",
+        "Labor",
+        "Shop Supplies",
+        "Insurance",
+        "Rent / Lease",
+        "Utilities",
+        "Vehicle",
+        "Subcontractors",
+        "Equipment Purchase",
+        "Other"
+      ],
+      "description": "Expense category"
+    },
+    "vendor": {
+      "type": "string",
+      "description": "Vendor or payee name"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Expense amount (USD)"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch this expense belongs to"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional notes or description"
+    },
+    "receiptUrl": {
+      "type": "string",
+      "description": "URL to uploaded receipt image"
+    },
+    "capitalizedEquipmentId": {
+      "type": "string",
+      "description": "If this was a large equipment purchase (>= threshold) that was capitalized, reference to Equipment record"
+    },
+    "isCapitalized": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this purchase was capitalized (goes to depreciation) vs expensed immediately"
+    }
+  },
+  "required": [
+    "date",
+    "category",
+    "amount",
+    "branch"
+  ]
+}
