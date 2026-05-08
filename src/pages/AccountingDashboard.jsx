@@ -9,7 +9,7 @@ import InvoiceDrawer from '@/components/accounting/InvoiceDrawer';
 import ProfitLossStatement from '@/components/accounting/ProfitLossStatement';
 import ExpenseLog from '@/components/accounting/ExpenseLog';
 
-const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
+const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 const CAPITALIZATION_THRESHOLD = 2500;
 
 const QB_ACCOUNTS = {
