@@ -233,6 +233,14 @@ Each Windows workstation that needs signature capture requires:
 ### Fallback
 If no pad is detected, the component automatically falls back to mouse/touch signature capture. Contracts can still be signed without the hardware pad.
 
+### Handling Subscribers Who Already Own a Competing Pad
+**Policy (decided 2026-05-08):** Require Topaz SigWeb-compatible hardware as a non-negotiable workstation requirement for signature capture — treat it like requiring a barcode scanner or receipt printer.
+
+- **Topaz LBK462-HSB is ~$80-120** — inexpensive enough that asking a subscriber to replace a competing pad is reasonable
+- The fallback (mouse/touch on a touchscreen monitor) is a viable interim option if they push back
+- If a specific subscriber has a *large fleet* of a competing brand (e.g. Scriptel, ePadLink, Wacom STU), we can add that brand as a paid custom integration at that time — each brand requires its own local service/SDK code path
+- Do NOT pre-build multi-brand support speculatively — solve it only when a real subscriber demands it
+
 ### Diagnostic Check
 To verify SigWeb status on a workstation, visit: `https://tablet.sigwebtablet.com:47290/SigWeb/TabletState`
 - Returns `1` = pad connected and ready
