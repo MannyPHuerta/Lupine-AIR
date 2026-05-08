@@ -56,6 +56,7 @@ import RecoveryDetail from "./pages/RecoveryDetail";
 import DispatchBoard from "./pages/DispatchBoard";
 import AIReports from "./pages/AIReports";
 import EventPlanner from "./pages/EventPlanner";
+import AccountingDashboard from "./pages/AccountingDashboard";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -134,6 +135,7 @@ const AuthenticatedApp = () => {
       <Route path="/aireports" element={<AIReports />} />
       <Route path="/event-planner" element={<EventPlanner />} />
       <Route path="/event-planner/:planId" element={<EventPlanner />} />
+      <Route path="/accounting" element={<AccountingDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
