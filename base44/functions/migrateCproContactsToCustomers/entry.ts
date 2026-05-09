@@ -8,10 +8,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all CproContact records with pagination (smaller limits to avoid timeouts)
+    // Fetch all CproContact records with pagination (very small limits + aggressive delays)
     let allContacts = [];
     let offset = 0;
-    const limit = 500;  // Reduced from 1000 to 500
+    const limit = 200;  // Even smaller batch for fetching
     let batch;
     
     do {
@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
         allContacts = allContacts.concat(batch);
         offset += limit;
         console.log(`[Migration] Fetched ${allContacts.length} records so far...`);
-        // Small delay between fetches to prevent overwhelming the DB
-        await new Promise(r => setTimeout(r, 200));
+        // Aggressive delay between fetches
+        await new Promise(r => setTimeout(r, 1000));
       } else {
         break;
       }
@@ -49,9 +49,9 @@ Deno.serve(async (req) => {
       totalSpend: 0,
     }));
 
-    // Bulk create in very small batches with aggressive throttling
+    // Bulk create in tiny batches with massive throttling
     let migratedCount = 0;
-    const batchSize = 100;  // Much smaller batches
+    const batchSize = 50;  // Tiny batches to avoid overwhelming DB
 
     for (let i = 0; i < customers.length; i += batchSize) {
       const batch = customers.slice(i, i + batchSize);
@@ -61,9 +61,9 @@ Deno.serve(async (req) => {
         migratedCount += batch.length;
         console.log(`[Migration] Migrated batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(customers.length / batchSize)} (${migratedCount} total)`);
         
-        // Aggressive throttle to prevent gateway timeouts
+        // Massive throttle between batches
         if (i + batchSize < customers.length) {
-          await new Promise(r => setTimeout(r, 2500));
+          await new Promise(r => setTimeout(r, 3500));
         }
       } catch (err) {
         console.error(`[Migration] Batch failed at ${migratedCount} records: ${err.message}`);
