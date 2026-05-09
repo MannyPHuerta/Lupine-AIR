@@ -84,12 +84,23 @@ function extractCustomerFromRecord(bytes, recordOffset, recordIndex) {
 
   const companyName = extractTextRun(bytes, recordOffset + 532, 50);
 
-  if (recordIndex === 0) {
-    console.log(`[DEBUG] Record 0: companyName="${companyName}"`);
+  if (recordIndex < 5) {
+    console.log(`[DEBUG] Record ${recordIndex}: raw="${companyName}" cleaned="${cleanName(companyName)}" length=${companyName.length}`);
+    if (recordIndex === 0) {
+      // Log hex dump of +532 area
+      let hex = '';
+      for (let i = 0; i < 50 && recordOffset + 532 + i < bytes.length; i++) {
+        hex += bytes[recordOffset + 532 + i].toString(16).padStart(2, '0') + ' ';
+      }
+      console.log(`[DEBUG] Record 0 hex at +532: ${hex}`);
+    }
   }
 
   const fullName = cleanName(companyName);
-  if (!fullName || fullName.length < 2) return null;
+  if (!fullName || fullName.length < 2) {
+    if (recordIndex < 5) console.log(`[DEBUG] Record ${recordIndex}: REJECTED - no valid name`);
+    return null;
+  }
 
   return {
     fullName,
