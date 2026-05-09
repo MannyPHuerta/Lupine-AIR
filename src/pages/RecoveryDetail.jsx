@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Loader2, Check, MapPin, AlertCircle, SplitSquareHorizontal } from 'lucide-react';
+import ClaimPackageButton from '@/components/recovery/ClaimPackageButton';
 import { Button } from '@/components/ui/button';
 import PhotoCapture from '@/components/delivery/PhotoCapture';
 
@@ -242,6 +243,10 @@ export default function RecoveryDetail() {
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center text-sm text-green-800 font-medium">
               ✅ Recovery Completed at {new Date(recovery.completedAt).toLocaleTimeString()}
             </div>
+          )}
+
+          {['returned_to_branch', 'completed'].includes(recovery.status) && (
+            <ClaimPackageButton recovery={recovery} deliveryPhotos={deliveryPhotos} />
           )}
         </div>
       </div>
