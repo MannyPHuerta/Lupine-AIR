@@ -76,31 +76,15 @@ function extractCityZipPhone(bytes, offset, maxLen) {
   return null;
 }
 
-function extractCustomerFromRecord(bytes, recordOffset, recordIndex) {
+function extractCustomerFromRecord(bytes, recordOffset, recordIndex, globalByteOffset) {
   if (recordOffset + RECORD_SIZE > bytes.length) return null;
 
-  // Field layout (discovered via Prober):
-  // +532: ~50 bytes — Full name (COUNTRY INN MCALLEN confirmed here)
-
+  // Field layout (discovered via Prober at byte 1538976 + 532 = 1539508):
+  // +532 in the 552-byte record = company name
   const companyName = extractTextRun(bytes, recordOffset + 532, 50);
 
-  if (recordIndex < 5) {
-    console.log(`[DEBUG] Record ${recordIndex}: raw="${companyName}" cleaned="${cleanName(companyName)}" length=${companyName.length}`);
-    if (recordIndex === 0) {
-      // Log hex dump of +532 area
-      let hex = '';
-      for (let i = 0; i < 50 && recordOffset + 532 + i < bytes.length; i++) {
-        hex += bytes[recordOffset + 532 + i].toString(16).padStart(2, '0') + ' ';
-      }
-      console.log(`[DEBUG] Record 0 hex at +532: ${hex}`);
-    }
-  }
-
   const fullName = cleanName(companyName);
-  if (!fullName || fullName.length < 2) {
-    if (recordIndex < 5) console.log(`[DEBUG] Record ${recordIndex}: REJECTED - no valid name`);
-    return null;
-  }
+  if (!fullName || fullName.length < 2) return null;
 
   return {
     fullName,
@@ -141,9 +125,10 @@ Deno.serve(async (req) => {
     let recordStartInChunk = 0;
     let globalRecordIndex = chunkIndex * Math.floor(bytes.length / RECORD_SIZE);
     let totalAttempted = 0;
+    const globalByteOffset = chunkIndex * CHUNK_SIZE;
 
     while (recordStartInChunk + RECORD_SIZE <= bytes.length) {
-      const customer = extractCustomerFromRecord(bytes, recordStartInChunk, globalRecordIndex);
+      const customer = extractCustomerFromRecord(bytes, recordStartInChunk, globalRecordIndex, globalByteOffset + recordStartInChunk);
       totalAttempted++;
       if (customer) {
         customer.migrationSessionId = sessionId;
@@ -155,13 +140,16 @@ Deno.serve(async (req) => {
 
     console.log(`[Chunk ${chunkIndex}] Attempted ${totalAttempted} records, extracted ${customers.length}`);
 
-    // Bulk insert
+    // Bulk insert with delay to avoid rate limits
     let insertedCount = 0;
     if (customers.length > 0) {
-      for (let i = 0; i < customers.length; i += 50) {
-        const batch = customers.slice(i, i + 50);
+      for (let i = 0; i < customers.length; i += 20) {
+        const batch = customers.slice(i, i + 20);
         await base44.entities.CproContact.bulkCreate(batch);
         insertedCount += batch.length;
+        if (i + 20 < customers.length) {
+          await new Promise(r => setTimeout(r, 100));  // 100ms between batches
+        }
       }
     }
 
