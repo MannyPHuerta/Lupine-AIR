@@ -84,7 +84,7 @@ export default function AvailabilityManager() {
   // Fetch catalog and rental data
   useEffect(() => {
     Promise.all([
-      base44.entities.Equipment.list('-created_date', 500),
+      base44.entities.Equipment.list('name', 2000),
       base44.entities.Rental.list('-created_date', 1000),
       base44.entities.CompanySettings.list(),
       base44.entities.BranchSettings.list(),
