@@ -99,18 +99,19 @@ function extractCustomerFromRecord(bytes, recordOffset, recordIndex) {
     console.log(`[DEBUG] Record 0: name1="${name1}" name2="${name2}" name3="${name3}" address="${address}" cityBlock="${cityBlock.substring(0, 50)}"`);
   }
 
-  // Pick the cleanest name
+  // Pick the cleanest name — accept any non-empty candidate for now
   let fullName = '';
   for (const name of [name2, name1, name3]) {
     const cleaned = cleanName(name);
-    if (looksLikeName(cleaned) && cleaned.length <= 50) {
+    // Relaxed: accept if it has at least 2 chars and starts with letter
+    if (cleaned && cleaned.length >= 2 && /^[A-Za-z]/.test(cleaned)) {
       fullName = cleaned;
       break;
     }
   }
 
   if (!fullName) {
-    if (recordIndex === 0) console.log(`[DEBUG] Record 0: No valid name found after cleaning`);
+    if (recordIndex === 0) console.log(`[DEBUG] Record 0: No valid name found`);
     return null;
   }
 
