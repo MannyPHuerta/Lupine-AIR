@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const RECORD_SIZE = 552;  // Fixed CPro customer record size (bytes)
+const CHUNK_SIZE = 5 * 1024 * 1024;  // 5MB chunks
 
 function isPrintable(b) {
   return b >= 0x20 && b <= 0x7E;
