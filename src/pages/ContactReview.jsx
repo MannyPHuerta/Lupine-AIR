@@ -97,6 +97,14 @@ export default function ContactReview() {
     refetch();
   };
 
+  const formatPhone = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    if (!digits) return '';
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const handleSave = async (updatedContact) => {
     await base44.entities.CproContact.update(updatedContact.id, {
       fullName: updatedContact.fullName,
@@ -267,7 +275,7 @@ export default function ContactReview() {
                     <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Phone</p>
                     <Input
                       value={editingData.phone || ''}
-                      onChange={e => setEditingData({...editingData, phone: e.target.value})}
+                      onChange={e => setEditingData({...editingData, phone: formatPhone(e.target.value)})}
                       placeholder="(555) 555-5555"
                     />
                   </div>
