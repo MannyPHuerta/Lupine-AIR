@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench } from 'lucide-react';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { calcDeliveryFee } from '@/lib/deliveryFee';
 import SignaturePad from '@/components/invoice/SignaturePad';
@@ -578,6 +578,13 @@ export default function AvailabilityManager() {
               title="Discount manager"
             >
               <Tag className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/shop')}
+              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
+              title="Shop dashboard"
+            >
+              <Wrench className="w-4 h-4" />
             </button>
           </div>
         </div>
