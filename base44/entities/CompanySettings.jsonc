@@ -37,6 +37,21 @@
       "type": "string",
       "description": "Custom footer text for invoices"
     },
+    "autoAssignInvoiceNumbers": {
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically assign sequential invoice numbers when a rental is created"
+    },
+    "invoiceNumberStart": {
+      "type": "integer",
+      "default": 1001,
+      "description": "Starting invoice number for auto-assignment (e.g. 1001 produces MCL-1001)"
+    },
+    "invoiceNumberPrefix": {
+      "type": "string",
+      "default": "MCL",
+      "description": "Prefix prepended to auto-assigned invoice numbers (e.g. MCL)"
+    },
     "smsRemindersEnabled": {
       "type": "boolean",
       "default": true,
