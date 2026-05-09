@@ -94,6 +94,11 @@ function extractCustomerFromRecord(bytes, recordOffset, recordIndex) {
   const accountNum = extractTextRun(bytes, recordOffset + 206, 10);
   const name3 = extractTextRun(bytes, recordOffset + 532, 20);
 
+  // Debug: log first record
+  if (recordIndex === 0) {
+    console.log(`[DEBUG] Record 0: name1="${name1}" name2="${name2}" name3="${name3}" address="${address}" cityBlock="${cityBlock.substring(0, 50)}"`);
+  }
+
   // Pick the cleanest name
   let fullName = '';
   for (const name of [name2, name1, name3]) {
@@ -104,7 +109,10 @@ function extractCustomerFromRecord(bytes, recordOffset, recordIndex) {
     }
   }
 
-  if (!fullName) return null;
+  if (!fullName) {
+    if (recordIndex === 0) console.log(`[DEBUG] Record 0: No valid name found after cleaning`);
+    return null;
+  }
 
   // Parse city/state/zip/phone
   const cityData = extractCityZipPhone(bytes, recordOffset + 80, 44);
