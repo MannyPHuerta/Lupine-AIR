@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
-import LandingHero from "./pages/LandingHero";
 import AIRWebsite from "./pages/AIRWebsite";
 import AIRental from "./pages/AIRental";
 import AIREvents from "./pages/AIREvents";
@@ -153,7 +152,6 @@ function App() {
           <Routes>
             {/* Public routes - no auth required */}
             <Route path="/air" element={<AIRWebsite />} />
-            <Route path="/airlanding" element={<LandingHero />} />
             <Route path="/airental" element={<AIRental />} />
             <Route path="/airevents" element={<AIREvents />} />
             <Route path="/airfq" element={<AIRfq />} />
