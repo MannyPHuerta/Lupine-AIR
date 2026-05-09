@@ -8,10 +8,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all CproContact records with pagination
+    // Fetch all CproContact records with pagination (smaller limits to avoid timeouts)
     let allContacts = [];
     let offset = 0;
-    const limit = 1000;
+    const limit = 500;  // Reduced from 1000 to 500
     let batch;
     
     do {
@@ -20,6 +20,8 @@ Deno.serve(async (req) => {
         allContacts = allContacts.concat(batch);
         offset += limit;
         console.log(`[Migration] Fetched ${allContacts.length} records so far...`);
+        // Small delay between fetches to prevent overwhelming the DB
+        await new Promise(r => setTimeout(r, 200));
       } else {
         break;
       }
@@ -47,9 +49,9 @@ Deno.serve(async (req) => {
       totalSpend: 0,
     }));
 
-    // Bulk create in batches of 500
+    // Bulk create in smaller batches with longer delays to avoid timeouts
     let migratedCount = 0;
-    const batchSize = 500;
+    const batchSize = 250;  // Reduced from 500 to 250
 
     for (let i = 0; i < customers.length; i += batchSize) {
       const batch = customers.slice(i, i + batchSize);
@@ -59,9 +61,9 @@ Deno.serve(async (req) => {
         migratedCount += batch.length;
         console.log(`[Migration] Migrated batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(customers.length / batchSize)} (${migratedCount} total)`);
         
-        // Throttle between batches
+        // Longer throttle between batches to prevent gateway timeouts
         if (i + batchSize < customers.length) {
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 1500));
         }
       } catch (err) {
         console.error(`[Migration] Batch failed: ${err.message}`);
