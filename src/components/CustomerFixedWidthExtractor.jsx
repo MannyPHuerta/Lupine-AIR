@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 
 const CHUNK_SIZE = 5 * 1024 * 1024;  // 5MB chunks
 
@@ -52,23 +53,12 @@ export default function CustomerFixedWidthExtractor({ onComplete }) {
         }
         const base64Chunk = btoa(binaryString);
 
-        const response = await fetch('/api/functions/extractCustomersByRecordSize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chunk: base64Chunk,
-            chunkIndex,
-            totalChunks,
-            sessionId: sessionIdRef.current,
-          }),
+        const data = await base44.functions.invoke('extractCustomersByRecordSize', {
+          chunk: base64Chunk,
+          chunkIndex,
+          totalChunks,
+          sessionId: sessionIdRef.current,
         });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Upload failed');
-        }
-
-        const data = await response.json();
         totalRecords += data.recordsExtracted || 0;
         totalInserted += data.insertedCount || 0;
 
