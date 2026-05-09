@@ -141,16 +141,14 @@ Deno.serve(async (req) => {
 
     console.log(`[Chunk ${chunkIndex}] Attempted ${totalAttempted} records, extracted ${customers.length}`);
 
-    // Bulk insert with delay to avoid rate limits
+    // Bulk insert with aggressive throttling to avoid rate limits
     let insertedCount = 0;
     if (customers.length > 0) {
-      for (let i = 0; i < customers.length; i += 20) {
-        const batch = customers.slice(i, i + 20);
+      for (let i = 0; i < customers.length; i += 10) {
+        const batch = customers.slice(i, i + 10);
         await base44.entities.CproContact.bulkCreate(batch);
         insertedCount += batch.length;
-        if (i + 20 < customers.length) {
-          await new Promise(r => setTimeout(r, 100));  // 100ms between batches
-        }
+        await new Promise(r => setTimeout(r, 250));  // 250ms between every batch
       }
     }
 
