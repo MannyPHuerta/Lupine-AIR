@@ -1,6 +1,28 @@
 import { useState, useRef } from 'react';
-import { Upload, Trash2, Camera, Loader2 } from 'lucide-react';
+import { Trash2, Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
+
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxWidth = 1200;
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(
+        (blob) => resolve(new File([blob], file.name, { type: 'image/jpeg' })),
+        'image/jpeg', 0.7
+      );
+    };
+    img.src = url;
+  });
+}
 
 export default function PhotoCapture({ photos, onAddPhoto, onRemovePhoto }) {
   const [uploading, setUploading] = useState(false);
@@ -11,21 +33,16 @@ export default function PhotoCapture({ photos, onAddPhoto, onRemovePhoto }) {
     if (!file) return;
 
     setUploading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const photo = {
-          url: event.target.result,
-          timestamp: new Date().toISOString(),
-          gps: null,
-        };
-        onAddPhoto(photo);
-      };
-      reader.readAsDataURL(file);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    const compressed = await compressImage(file);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
+    const photo = {
+      url: file_url,
+      timestamp: new Date().toISOString(),
+      gps: null,
+    };
+    onAddPhoto(photo);
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
