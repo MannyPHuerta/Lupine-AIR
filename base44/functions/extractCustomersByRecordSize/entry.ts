@@ -80,20 +80,27 @@ function extractCityZipPhone(bytes, offset, maxLen) {
 function extractCustomerFromRecord(bytes, recordOffset, recordIndex, globalByteOffset) {
   if (recordOffset + RECORD_SIZE > bytes.length) return null;
 
-  // Field layout (discovered via Prober at byte 1538976 + 532 = 1539508):
-  // +532 in the 552-byte record = company name
-  const companyName = extractTextRun(bytes, recordOffset + 532, 50);
+  // Field layout discovered via Prober:
+  const fullName = cleanName(extractTextRun(bytes, recordOffset + 205, 21));
+  const address = cleanName(extractTextRun(bytes, recordOffset + 228, 17));
+  const cityStateZipPhone = bytesToString(bytes, recordOffset + 255, recordOffset + 255 + 44);
 
-  const fullName = cleanName(companyName);
   if (!fullName || fullName.length < 2) return null;
+
+  // Parse city, state, zip, phone from the combined field
+  const cityMatch = cityStateZipPhone.match(/^([A-Z\s]+),\s+([A-Z]{2})\s+(\d{5})\s+([\d\-\(\)]+)/);
+  const city = cityMatch ? cityMatch[1].trim() : '';
+  const state = cityMatch ? cityMatch[2].trim() : '';
+  const zipCode = cityMatch ? cityMatch[3].trim() : '';
+  const phone = cityMatch ? cityMatch[4].replace(/[^\d\-\(\)]/g, '') : '';
 
   return {
     fullName,
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
+    phone,
+    address,
+    city,
+    state,
+    zipCode,
     accountNumber: '',
     migrationSource: 'cu_fixed_width',
     migrationSessionId: null,
