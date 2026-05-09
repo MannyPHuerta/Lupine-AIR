@@ -148,31 +148,34 @@ Deno.serve(async (req) => {
 
     console.log(`[Chunk ${chunkIndex}] Attempted ${totalAttempted} records, extracted ${customers.length}`);
 
-    // Insert all records with throttling
+    // Insert all records with retry logic and throttling
     let insertedCount = 0;
     if (customers.length > 0) {
-      const batchSize = 100;  // 100 per batch
-      const minDelayMs = 1000;  // 1s minimum between batches
+      const batchSize = 50;  // Smaller batches for better resilience
+      const minDelayMs = 1500;  // Longer minimum delay
       
       for (let i = 0; i < customers.length; i += batchSize) {
         const batch = customers.slice(i, i + batchSize);
         
         let retries = 0;
-        while (retries < 3) {
+        let success = false;
+        while (retries < 3 && !success) {
           try {
             await base44.entities.CproContact.bulkCreate(batch);
             insertedCount += batch.length;
-            break;
+            success = true;
           } catch (err) {
             retries++;
+            console.error(`Batch ${Math.floor(i / batchSize) + 1} attempt ${retries} failed: ${err.message}`);
             if (retries < 3) {
               const backoffMs = minDelayMs * Math.pow(2, retries);
               await new Promise(r => setTimeout(r, backoffMs));
-            } else {
-              console.error(`Batch insert failed: ${err.message}`);
-              throw err;
             }
           }
+        }
+        
+        if (!success) {
+          throw new Error(`Failed to insert batch after 3 retries at record ${i}`);
         }
         
         // Delay before next batch
