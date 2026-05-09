@@ -44,7 +44,12 @@ export default function CustomerFixedWidthExtractor({ onComplete }) {
         const end = Math.min(start + CHUNK_SIZE, file.size);
         const chunkBlob = file.slice(start, end);
         const arrayBuffer = await chunkBlob.arrayBuffer();
-        const binaryString = String.fromCharCode(...new Uint8Array(arrayBuffer));
+        const uint8 = new Uint8Array(arrayBuffer);
+        let binaryString = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < uint8.length; i += chunkSize) {
+          binaryString += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+        }
         const base64Chunk = btoa(binaryString);
 
         const response = await fetch('/api/functions/extractCustomersByRecordSize', {
