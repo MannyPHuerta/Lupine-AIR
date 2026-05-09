@@ -148,9 +148,11 @@ Deno.serve(async (req) => {
     const customers = [];
     let recordStartInChunk = 0;
     let globalRecordIndex = chunkIndex * Math.floor(bytes.length / RECORD_SIZE);
+    let totalAttempted = 0;
 
     while (recordStartInChunk + RECORD_SIZE <= bytes.length) {
       const customer = extractCustomerFromRecord(bytes, recordStartInChunk, globalRecordIndex);
+      totalAttempted++;
       if (customer) {
         customer.migrationSessionId = sessionId;
         customers.push(customer);
@@ -158,6 +160,8 @@ Deno.serve(async (req) => {
       recordStartInChunk += RECORD_SIZE;
       globalRecordIndex++;
     }
+
+    console.log(`[Chunk ${chunkIndex}] Attempted ${totalAttempted} records, extracted ${customers.length}`);
 
     // Bulk insert
     let insertedCount = 0;
