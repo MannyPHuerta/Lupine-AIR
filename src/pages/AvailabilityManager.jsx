@@ -59,6 +59,7 @@ export default function AvailabilityManager() {
   const [pendingInvoice, setPendingInvoice] = useState(null);
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [loyaltyDiscount, setLoyaltyDiscount] = useState(null); // percent number or null
+  const [manualInvoiceNumber, setManualInvoiceNumber] = useState('');
   const [volumeRules, setVolumeRules] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
   const qtyRefs = useRef({});
@@ -236,7 +237,7 @@ export default function AvailabilityManager() {
     const paid = parseFloat(amountPaid) || 0;
 
     // Fetch and increment invoice number for confirmed invoices
-    let invoiceNumber = '';
+    let invoiceNumber = companyInfo?.autoAssignInvoiceNumbers === false ? (manualInvoiceNumber || '') : '';
     if (status === 'confirmed' && companyInfo?.autoAssignInvoiceNumbers !== false) {
       const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
       const bs = branchSettingsList[0];
@@ -330,8 +331,7 @@ export default function AvailabilityManager() {
       setSignatureDataUrl(null);
       setAppliedPromo(null);
       setLoyaltyDiscount(null);
-      setAppliedPromo(null);
-      setLoyaltyDiscount(null);
+      setManualInvoiceNumber('');
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -782,6 +782,9 @@ export default function AvailabilityManager() {
               volumeRules={volumeRules}
               equipment={equipment}
               promoCodes={promoCodes}
+              showManualInvoiceField={companyInfo?.autoAssignInvoiceNumbers === false}
+              manualInvoiceNumber={manualInvoiceNumber}
+              onManualInvoiceNumberChange={setManualInvoiceNumber}
             />
             <div className="bg-white rounded-xl border shadow-sm p-6">
               <SignaturePad
@@ -802,7 +805,7 @@ export default function AvailabilityManager() {
         <div className="flex gap-3 justify-end print:hidden pb-8 flex-wrap">
           <Button
             variant="outline"
-            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); setAmountPaid(''); setReturnMethod('customer_return'); setAppliedPromo(null); setLoyaltyDiscount(null); }}
+            onClick={() => { setCustomer(EMPTY_CUSTOMER); setLines([newLine()]); setDiscount(''); setTaxRate('8.25'); setAmountPaid(''); setReturnMethod('customer_return'); setAppliedPromo(null); setLoyaltyDiscount(null); setManualInvoiceNumber(''); }}
           >
             Clear
           </Button>

@@ -12,7 +12,7 @@ import { useState } from 'react';
 
 const PAYMENT_METHODS = ['Cash', 'Check', 'Card', 'Net 30', 'Other'];
 
-export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod, appliedPromo, onPromoApply, onPromoRemove, loyaltyDiscount, volumeRules = [], equipment = [], promoCodes = [] }) {
+export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRate, onTaxRateChange, amountPaid, onAmountPaidChange, paymentMethod, onPaymentMethodChange, autoSendCommunications, onAutoSendChange, deliveryFee = 0, returnFee = 0, deliveryMethod, returnMethod, appliedPromo, onPromoApply, onPromoRemove, loyaltyDiscount, volumeRules = [], equipment = [], promoCodes = [], manualInvoiceNumber, onManualInvoiceNumberChange, showManualInvoiceField = false }) {
   const rentalSubtotal = lines.reduce((acc, line) => acc + (line.baseAmount || 0), 0);
   const depositTotal = lines.reduce((acc, line) => acc + (line.deposit || 0) * (line.quantity || 1), 0);
 
@@ -91,6 +91,20 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
     <div className="bg-white rounded-xl border shadow-sm p-6">
       <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Invoice Totals</h3>
       <div className="space-y-3 text-sm">
+
+        {/* Manual invoice number — shown only when auto-assign is disabled */}
+        {showManualInvoiceField && (
+          <div className="flex items-center justify-between text-gray-600 gap-4 pb-2 border-b">
+            <span className="shrink-0 font-medium">Invoice #</span>
+            <input
+              type="text"
+              value={manualInvoiceNumber || ''}
+              onChange={e => onManualInvoiceNumberChange && onManualInvoiceNumberChange(e.target.value)}
+              placeholder="e.g. MCL-1042"
+              className="w-36 text-right border rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 font-mono"
+            />
+          </div>
+        )}
 
         {/* Category-matched promo suggestion */}
         {suggestedPromo && (
