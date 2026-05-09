@@ -102,6 +102,12 @@ export default function ManagerDashboard() {
           >
             🎪 Planner Queue
           </button>
+          <button
+            onClick={() => navigate('/shop')}
+            className="flex items-center gap-1.5 bg-orange-700 hover:bg-orange-600 px-3 py-1.5 rounded-lg text-xs font-medium"
+          >
+            🔧 Shop
+          </button>
           <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
             <RefreshCw className="w-4 h-4" />
           </button>
