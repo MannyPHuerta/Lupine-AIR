@@ -151,8 +151,8 @@ Deno.serve(async (req) => {
     // Insert all records with retry logic and throttling
     let insertedCount = 0;
     if (customers.length > 0) {
-      const batchSize = 50;  // Smaller batches for better resilience
-      const minDelayMs = 1500;  // Longer minimum delay
+      const batchSize = 25;  // Very small batches to avoid timeouts
+      const minDelayMs = 2000;  // 2s between each batch
       
       for (let i = 0; i < customers.length; i += batchSize) {
         const batch = customers.slice(i, i + batchSize);
