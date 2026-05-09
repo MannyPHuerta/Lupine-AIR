@@ -141,21 +141,37 @@ Deno.serve(async (req) => {
 
     console.log(`[Chunk ${chunkIndex}] Attempted ${totalAttempted} records, extracted ${customers.length}`);
 
-    // Insert only first batch in this call to avoid rate limits
-    // Remaining batches will be queued for async processing
+    // Insert all records with throttling
     let insertedCount = 0;
     if (customers.length > 0) {
-      const batchSize = 50;  // Larger batch to reduce total requests
-      const firstBatch = customers.slice(0, batchSize);
+      const batchSize = 100;  // 100 per batch
+      const minDelayMs = 1000;  // 1s minimum between batches
       
-      await base44.entities.CproContact.bulkCreate(firstBatch);
-      insertedCount = firstBatch.length;
-      
-      // Queue remaining batches for background processing if any
-      if (customers.length > batchSize) {
-        const remainingCustomers = customers.slice(batchSize);
-        console.log(`Queued ${remainingCustomers.length} remaining records for background processing`);
-        // In production, these would be queued to a background job processor
+      for (let i = 0; i < customers.length; i += batchSize) {
+        const batch = customers.slice(i, i + batchSize);
+        
+        let retries = 0;
+        while (retries < 3) {
+          try {
+            await base44.entities.CproContact.bulkCreate(batch);
+            insertedCount += batch.length;
+            break;
+          } catch (err) {
+            retries++;
+            if (retries < 3) {
+              const backoffMs = minDelayMs * Math.pow(2, retries);
+              await new Promise(r => setTimeout(r, backoffMs));
+            } else {
+              console.error(`Batch insert failed: ${err.message}`);
+              throw err;
+            }
+          }
+        }
+        
+        // Delay before next batch
+        if (i + batchSize < customers.length) {
+          await new Promise(r => setTimeout(r, minDelayMs));
+        }
       }
     }
 
