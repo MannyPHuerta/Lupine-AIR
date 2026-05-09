@@ -1,9 +1,81 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Download, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, Download, RefreshCw, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+
+function ChangeDetail({ changes }) {
+  if (!changes || Object.keys(changes).length === 0) return <span className="text-gray-400 italic">no details</span>;
+  return (
+    <div className="space-y-1 mt-1">
+      {Object.entries(changes).map(([field, val]) => {
+        const before = val?.before;
+        const after = val?.after;
+        const hasDiff = before !== undefined || after !== undefined;
+        return (
+          <div key={field} className="flex items-start gap-2 text-xs">
+            <span className="font-mono text-gray-500 shrink-0">{field}:</span>
+            {hasDiff ? (
+              <span className="flex items-center gap-1 flex-wrap">
+                {before !== undefined && <span className="line-through text-red-600 bg-red-50 px-1 rounded">{JSON.stringify(before)}</span>}
+                {after !== undefined && <span className="text-green-700 bg-green-50 px-1 rounded">{JSON.stringify(after)}</span>}
+              </span>
+            ) : (
+              <span className="text-gray-700">{JSON.stringify(val)}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function AuditRow({ log, actionColor }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasChanges = log.changes && Object.keys(log.changes).length > 0;
+  return (
+    <>
+      <tr
+        className={`hover:bg-gray-50 transition ${hasChanges ? 'cursor-pointer' : ''}`}
+        onClick={() => hasChanges && setExpanded(v => !v)}
+      >
+        <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
+          {new Date(log.performedAt).toLocaleString('en-US', {
+            timeZone: 'America/Chicago',
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+          })}
+        </td>
+        <td className="px-4 py-3 text-gray-900 font-medium text-xs">{log.performedBy}</td>
+        <td className="px-4 py-3">
+          <span className={`text-xs px-2 py-1 rounded-full font-medium ${actionColor(log.action)}`}>
+            {log.action}
+          </span>
+        </td>
+        <td className="px-4 py-3 text-gray-600 text-xs">{log.entityName}</td>
+        <td className="px-4 py-3 text-gray-900 text-xs">{log.entityLabel || '—'}</td>
+        <td className="px-4 py-3 text-gray-600 text-xs">{log.branch || '—'}</td>
+        <td className="px-4 py-3 text-gray-400 text-xs">
+          {log.reason && <span className="italic text-gray-500">{log.reason}</span>}
+        </td>
+        <td className="px-4 py-3 w-8">
+          {hasChanges && (
+            expanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />
+          )}
+        </td>
+      </tr>
+      {expanded && hasChanges && (
+        <tr className="bg-gray-50 border-b">
+          <td colSpan={8} className="px-6 py-3">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Changes</div>
+            <ChangeDetail changes={log.changes} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
 
 export default function AuditLogDashboard() {
   const navigate = useNavigate();
@@ -207,6 +279,28 @@ export default function AuditLogDashboard() {
           </div>
         </div>
 
+        {/* Summary Stats */}
+        {!loading && filtered.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Creates', action: 'create', color: 'text-green-700 bg-green-50 border-green-200' },
+              { label: 'Updates', action: 'update', color: 'text-blue-700 bg-blue-50 border-blue-200' },
+              { label: 'Deletes', action: 'delete', color: 'text-red-700 bg-red-50 border-red-200' },
+              { label: 'Other', action: null, color: 'text-gray-700 bg-gray-50 border-gray-200' },
+            ].map(({ label, action, color }) => {
+              const count = action
+                ? filtered.filter(l => l.action === action).length
+                : filtered.filter(l => !['create', 'update', 'delete'].includes(l.action)).length;
+              return (
+                <div key={label} className={`rounded-lg border px-4 py-3 ${color}`}>
+                  <div className="text-xl font-bold">{count}</div>
+                  <div className="text-xs font-medium">{label}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Table */}
         {loading ? (
           <div className="flex justify-center py-16">
@@ -221,38 +315,19 @@ export default function AuditLogDashboard() {
             <table className="w-full text-sm">
               <thead className="border-b bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Timestamp</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">User</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Action</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Entity Type</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Entity Affected</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Branch</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 text-xs">Timestamp</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 text-xs">User</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 text-xs">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 text-xs">Entity Type</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 text-xs">Entity Affected</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 text-xs">Branch</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-700 text-xs">Reason</th>
+                  <th className="px-4 py-3 w-8"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filtered.map(log => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
-                      {new Date(log.performedAt).toLocaleString('en-US', {
-                        timeZone: 'America/Chicago',
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })}
-                    </td>
-                    <td className="px-4 py-3 text-gray-900 font-medium text-xs">{log.performedBy}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${actionColor(log.action)}`}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{log.entityName}</td>
-                    <td className="px-4 py-3 text-gray-900 text-xs">{log.entityLabel || '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{log.branch || '—'}</td>
-                  </tr>
+                  <AuditRow key={log.id} log={log} actionColor={actionColor} />
                 ))}
               </tbody>
             </table>
