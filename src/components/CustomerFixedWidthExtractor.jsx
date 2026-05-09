@@ -53,7 +53,7 @@ export default function CustomerFixedWidthExtractor({ onComplete }) {
         }
         const base64Chunk = btoa(binaryString);
 
-        const response = await base44.functions.invoke('extractCustomersByRecordSize', {
+        const response = await base44.functions.invoke('extractCproRecords', {
           chunk: base64Chunk,
           chunkIndex,
           totalChunks,
