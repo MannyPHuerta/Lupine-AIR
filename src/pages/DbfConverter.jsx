@@ -11,6 +11,7 @@ import InvImporter from '@/components/InvImporter';
 import InvOffsetExtractor from '@/components/InvOffsetExtractor';
 import CuauxExtractor from '@/components/CuauxExtractor';
 import CatalogBulkLoader from '@/components/CatalogBulkLoader';
+import CustomerFixedWidthExtractor from '@/components/CustomerFixedWidthExtractor';
 
 export default function DbfConverter() {
   const navigate = useNavigate();
@@ -47,6 +48,12 @@ export default function DbfConverter() {
 
         {/* Tab selector */}
         <div className="flex gap-2 bg-white border rounded-lg p-1 shadow-sm flex-wrap">
+          <button
+            onClick={() => setActiveTab('cu')}
+            className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'cu' ? 'bg-cyan-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            Customer (cu)
+          </button>
           <button
             onClick={() => setActiveTab('tps')}
             className={`flex-1 min-w-max py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'tps' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -103,7 +110,13 @@ export default function DbfConverter() {
           </button>
         </div>
 
-        {activeTab === 'tps' ? (
+        {activeTab === 'cu' ? (
+          <div className="bg-white rounded-xl border shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Customer File Extractor</h2>
+            <p className="text-sm text-gray-500 mb-4">Fixed-width CPro customer records (149,040 bytes/record). Extracts name, address, city, state, zip, phone, and account number for all 22,000+ customers.</p>
+            <CustomerFixedWidthExtractor onComplete={handleImportComplete} />
+          </div>
+        ) : activeTab === 'tps' ? (
           <div className="bg-white rounded-xl border shadow-sm p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">CPro Contact Extractor</h2>
             <p className="text-sm text-gray-500 mb-4">Scans the binary FILE for ALL-CAPS names and phone number patterns and saves them as contacts.</p>
