@@ -237,7 +237,7 @@ export default function AvailabilityManager() {
 
     // Fetch and increment invoice number for confirmed invoices
     let invoiceNumber = '';
-    if (status === 'confirmed') {
+    if (status === 'confirmed' && companyInfo?.autoAssignInvoiceNumbers !== false) {
       const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
       const bs = branchSettingsList[0];
       if (bs) {
@@ -351,10 +351,13 @@ export default function AvailabilityManager() {
       return;
     }
 
-    // Fetch invoice number
-    const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
-    const bs = branchSettingsList[0];
-    const invNumber = bs ? `${bs.invoicePrefix || ''}-${String(bs.nextInvoiceNumber || 1000).padStart(4, '0')}` : '';
+    // Fetch invoice number (preview only — not incremented yet, that happens in handleSave)
+    let invNumber = '';
+    if (companyInfo?.autoAssignInvoiceNumbers !== false) {
+      const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
+      const bs = branchSettingsList[0];
+      invNumber = bs ? `${bs.invoicePrefix || ''}-${String(bs.nextInvoiceNumber || 1000).padStart(4, '0')}` : '';
+    }
 
     // Calculate total amount due
     const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
