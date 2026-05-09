@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Search, Trash2, CheckCircle2, Download } from 'lucide-react';
+import { ArrowLeft, Search, Trash2, CheckCircle2, Download, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,20 +12,35 @@ export default function ContactReview() {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [sortBy, setSortBy] = useState('newest');
+  const [filterBy, setFilterBy] = useState('all');
+  const [selectedContact, setSelectedContact] = useState(null);
 
   const { data: contacts = [], isLoading, refetch } = useQuery({
     queryKey: ['cproContacts'],
     queryFn: () => base44.entities.CproContact.list('-created_date', 10000),
   });
 
-  const filtered = contacts.filter(c => {
-    const q = search.toLowerCase();
-    return (
-      c.fullName?.toLowerCase().includes(q) ||
-      c.phone?.toLowerCase().includes(q) ||
-      c.notes?.toLowerCase().includes(q)
-    );
-  });
+  const filtered = contacts
+    .filter(c => {
+      const q = search.toLowerCase();
+      return (
+        c.fullName?.toLowerCase().includes(q) ||
+        c.phone?.toLowerCase().includes(q) ||
+        c.notes?.toLowerCase().includes(q)
+      );
+    })
+    .filter(c => {
+      if (filterBy === 'complete') return c.fullName?.trim() && c.phone?.trim();
+      if (filterBy === 'incomplete') return !c.fullName?.trim() || !c.phone?.trim();
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.created_date) - new Date(a.created_date);
+      if (sortBy === 'oldest') return new Date(a.created_date) - new Date(b.created_date);
+      if (sortBy === 'name') return (a.fullName || '').localeCompare(b.fullName || '');
+      return 0;
+    });
 
   const handleDelete = async (id) => {
     setDeletingId(id);
@@ -107,24 +122,49 @@ export default function ContactReview() {
           </div>
         </div>
 
-        {/* Search + actions */}
-        <div className="flex gap-2">
-          <Button className="bg-green-600 hover:bg-green-700 gap-1" onClick={handleExportCsv} disabled={contacts.length === 0}>
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-            <Input
-              className="pl-9"
-              placeholder="Search name or phone..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        {/* Search + filters + actions */}
+        <div className="space-y-3">
+          <div className="flex gap-2 flex-wrap">
+            <Button className="bg-green-600 hover:bg-green-700 gap-1" onClick={handleExportCsv} disabled={contacts.length === 0}>
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <Input
+                className="pl-9"
+                placeholder="Search name or phone..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={handleDeleteAll}>
+              Delete All
+            </Button>
           </div>
-          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={handleDeleteAll}>
-            Delete All
-          </Button>
+          
+          {/* Sorting & Filtering */}
+          <div className="flex gap-2 flex-wrap">
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="px-3 py-2 border rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name">By Name (A-Z)</option>
+            </select>
+            
+            <select
+              value={filterBy}
+              onChange={e => setFilterBy(e.target.value)}
+              className="px-3 py-2 border rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <option value="all">All Records ({contacts.length})</option>
+              <option value="complete">Complete Only ({contacts.filter(c => c.fullName?.trim() && c.phone?.trim()).length})</option>
+              <option value="incomplete">Incomplete Only ({contacts.filter(c => !c.fullName?.trim() || !c.phone?.trim()).length})</option>
+            </select>
+          </div>
         </div>
 
         {/* Contact list */}
@@ -135,7 +175,11 @@ export default function ContactReview() {
         ) : (
           <div className="space-y-2">
             {filtered.map(c => (
-              <div key={c.id} className="bg-white border rounded-lg px-4 py-3 flex items-start justify-between gap-3">
+              <div
+                key={c.id}
+                onClick={() => setSelectedContact(c)}
+                className="bg-white border rounded-lg px-4 py-3 flex items-start justify-between gap-3 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {c.fullName && c.phone ? (
@@ -149,7 +193,10 @@ export default function ContactReview() {
                   {c.notes && <p className="text-xs text-gray-400 ml-6 truncate">{c.notes}</p>}
                 </div>
                 <button
-                  onClick={() => handleDelete(c.id)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleDelete(c.id);
+                  }}
                   disabled={deletingId === c.id}
                   className="text-gray-300 hover:text-red-500 transition-colors p-1 flex-shrink-0"
                 >
@@ -157,6 +204,87 @@ export default function ContactReview() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Detail Modal */}
+        {selectedContact && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedContact(null)}>
+            <div className="bg-white rounded-lg max-w-lg w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Contact Details</h2>
+                <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wide">Full Name</p>
+                  <p className="font-semibold text-gray-900">{selectedContact.fullName || <span className="text-gray-400 italic">Not set</span>}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-wide">Phone</p>
+                  <p className="font-semibold text-gray-900">{selectedContact.phone || <span className="text-gray-400 italic">Not set</span>}</p>
+                </div>
+                {selectedContact.email && (
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Email</p>
+                    <p className="font-semibold text-gray-900">{selectedContact.email}</p>
+                  </div>
+                )}
+                {selectedContact.address && (
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Address</p>
+                    <p className="font-semibold text-gray-900">{selectedContact.address}</p>
+                  </div>
+                )}
+                {(selectedContact.city || selectedContact.state || selectedContact.zipCode) && (
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">City, State, Zip</p>
+                    <p className="font-semibold text-gray-900">
+                      {[selectedContact.city, selectedContact.state, selectedContact.zipCode].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                )}
+                {selectedContact.companyName && (
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Company</p>
+                    <p className="font-semibold text-gray-900">{selectedContact.companyName}</p>
+                  </div>
+                )}
+                {selectedContact.accountNumber && (
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Account Number</p>
+                    <p className="font-semibold text-gray-900">{selectedContact.accountNumber}</p>
+                  </div>
+                )}
+                {selectedContact.notes && (
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Notes</p>
+                    <p className="font-semibold text-gray-900">{selectedContact.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setSelectedContact(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={async () => {
+                    await handleDelete(selectedContact.id);
+                    setSelectedContact(null);
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
