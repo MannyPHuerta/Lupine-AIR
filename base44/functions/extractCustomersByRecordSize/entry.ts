@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const RECORD_SIZE = 1000;  // Fixed CPro customer record size (bytes)
+const RECORD_SIZE = 149040;  // Fixed CPro customer record size (bytes)
 
 function isPrintable(b) {
   return b >= 0x20 && b <= 0x7E;
@@ -80,53 +80,25 @@ function extractCustomerFromRecord(bytes, recordOffset, recordIndex) {
   if (recordOffset + RECORD_SIZE > bytes.length) return null;
 
   // Field layout (discovered via Prober):
-  // +6: ~22 bytes — Name variant 1
-  // +30: ~21 bytes — Name variant 2 (cleanest)
-  // +53: ~17 bytes — Address
-  // +80: ~44 bytes — City, State, Zip, Phone
-  // +206: ~10 bytes — Account number
-  // +532: ~20 bytes — Full name or company (COUNTRY INN MCALLEN hit here)
+  // +532: ~50 bytes — Full name (COUNTRY INN MCALLEN confirmed here)
 
-  const name1 = extractTextRun(bytes, recordOffset + 6, 22);
-  const name2 = extractTextRun(bytes, recordOffset + 30, 21);
-  const address = extractTextRun(bytes, recordOffset + 53, 17);
-  const cityBlock = bytesToString(bytes, recordOffset + 80, recordOffset + 80 + 44);
-  const accountNum = extractTextRun(bytes, recordOffset + 206, 10);
-  const name3 = extractTextRun(bytes, recordOffset + 532, 20);
+  const companyName = extractTextRun(bytes, recordOffset + 532, 50);
 
-  // Debug: log first record
   if (recordIndex === 0) {
-    console.log(`[DEBUG] Record 0: name1="${name1}" name2="${name2}" name3="${name3}" address="${address}" cityBlock="${cityBlock.substring(0, 50)}"`);
+    console.log(`[DEBUG] Record 0: companyName="${companyName}"`);
   }
 
-  // Pick the cleanest name — accept any non-empty candidate for now
-  let fullName = '';
-  for (const name of [name2, name1, name3]) {
-    const cleaned = cleanName(name);
-    // Relaxed: accept if it has at least 2 chars and starts with letter
-    if (cleaned && cleaned.length >= 2 && /^[A-Za-z]/.test(cleaned)) {
-      fullName = cleaned;
-      break;
-    }
-  }
-
-  if (!fullName) {
-    if (recordIndex === 0) console.log(`[DEBUG] Record 0: No valid name found`);
-    return null;
-  }
-
-  // Parse city/state/zip/phone
-  const cityData = extractCityZipPhone(bytes, recordOffset + 80, 44);
-  if (!cityData) return null;
+  const fullName = cleanName(companyName);
+  if (!fullName || fullName.length < 2) return null;
 
   return {
     fullName,
-    phone: cityData.phone || '',
-    address: looksLikeAddress(address) ? address : '',
-    city: cityData.city || '',
-    state: cityData.state || '',
-    zipCode: cityData.zip || '',
-    accountNumber: accountNum || '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    accountNumber: '',
     migrationSource: 'cu_fixed_width',
     migrationSessionId: null,
     recordIndex,
