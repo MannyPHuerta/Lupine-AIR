@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import StreamingDbfUploader from '@/components/StreamingDbfUploader';
@@ -18,6 +18,7 @@ export default function DbfConverter() {
   const navigate = useNavigate();
   const [importComplete, setImportComplete] = useState(null);
   const [activeTab, setActiveTab] = useState('tps');
+  const [migratingContacts, setMigratingContacts] = useState(false);
 
   const handleImportComplete = (result) => {
     setImportComplete(result);
@@ -123,16 +124,21 @@ export default function DbfConverter() {
               <p className="text-xs text-gray-600 mb-3">Convert all CproContact records into the main Customer entity for use in the system.</p>
               <Button
                 onClick={async () => {
+                  setMigratingContacts(true);
                   try {
                     const res = await base44.functions.invoke('migrateCproContactsToCustomers', {});
                     alert(`✓ Migrated ${res.data.migratedCount} customers`);
                   } catch (err) {
                     alert(`Error: ${err.message}`);
+                  } finally {
+                    setMigratingContacts(false);
                   }
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={migratingContacts}
+                className="bg-green-600 hover:bg-green-700 text-white gap-2"
               >
-                Migrate CproContacts → Customers
+                {migratingContacts && <Loader2 className="w-4 h-4 animate-spin" />}
+                {migratingContacts ? 'Migrating...' : 'Migrate CproContacts → Customers'}
               </Button>
             </div>
           </div>

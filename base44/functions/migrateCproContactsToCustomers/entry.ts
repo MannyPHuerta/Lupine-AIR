@@ -8,17 +8,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all CproContact records
-    const contacts = await base44.entities.CproContact.list('', 50000);
+    // Fetch all CproContact records with pagination
+    let allContacts = [];
+    let offset = 0;
+    const limit = 1000;
+    let batch;
     
-    if (!contacts || contacts.length === 0) {
+    do {
+      batch = await base44.entities.CproContact.list('-created_date', limit, offset);
+      if (batch && batch.length > 0) {
+        allContacts = allContacts.concat(batch);
+        offset += limit;
+        console.log(`[Migration] Fetched ${allContacts.length} records so far...`);
+      } else {
+        break;
+      }
+    } while (batch && batch.length === limit);
+    
+    if (!allContacts || allContacts.length === 0) {
       return Response.json({ success: true, migratedCount: 0, message: 'No CproContact records found' });
     }
 
-    console.log(`[Migration] Starting conversion of ${contacts.length} CproContact records...`);
+    console.log(`[Migration] Starting conversion of ${allContacts.length} CproContact records...`);
 
     // Transform contacts into customer records
-    const customers = contacts.map(contact => ({
+    const customers = allContacts.map(contact => ({
       fullName: contact.fullName || '',
       companyName: contact.companyName || '',
       phone: contact.phone || '',
@@ -56,7 +70,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`[Migration] Complete! Migrated ${migratedCount} customers.`);
-    return Response.json({ success: true, migratedCount, totalContacts: contacts.length });
+    return Response.json({ success: true, migratedCount, totalContacts: allContacts.length });
 
   } catch (error) {
     console.error(`[Migration] Error: ${error.message}`);
