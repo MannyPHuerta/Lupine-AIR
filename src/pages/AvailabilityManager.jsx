@@ -236,16 +236,14 @@ export default function AvailabilityManager() {
     const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
     const paid = parseFloat(amountPaid) || 0;
 
-    // Fetch and increment invoice number for confirmed invoices only
-    let invoiceNumber = (status === 'confirmed' && companyInfo?.autoAssignInvoiceNumbers === false) ? (manualInvoiceNumber || '') : '';
-    if (status === 'confirmed' && companyInfo?.autoAssignInvoiceNumbers !== false) {
-      const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
-      const bs = branchSettingsList[0];
-      if (bs) {
-        const num = bs.nextInvoiceNumber || 1000;
-        invoiceNumber = `${bs.invoicePrefix || ''}-${String(num).padStart(4, '0')}`;
-        await base44.entities.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
-      }
+    // Always auto-assign invoice number from branch sequence on first save
+    let invoiceNumber = '';
+    const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
+    const bs = branchSettingsList[0];
+    if (bs) {
+      const num = bs.nextInvoiceNumber || 1000;
+      invoiceNumber = `${bs.invoicePrefix || ''}-${String(num).padStart(4, '0')}`;
+      await base44.entities.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
     }
 
     setSaving(true);
@@ -351,12 +349,12 @@ export default function AvailabilityManager() {
       return;
     }
 
-    // Fetch invoice number (preview only — not incremented yet, that happens in handleSave)
+    // Fetch invoice number preview (not incremented yet — that happens in handleSave)
     let invNumber = '';
-    if (companyInfo?.autoAssignInvoiceNumbers !== false) {
-      const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
-      const bs = branchSettingsList[0];
-      invNumber = bs ? `${bs.invoicePrefix || ''}-${String(bs.nextInvoiceNumber || 1000).padStart(4, '0')}` : '';
+    const _branchSettingsPreview = await base44.entities.BranchSettings.filter({ branch: customer.branch });
+    const _bsPreview = _branchSettingsPreview[0];
+    if (_bsPreview) {
+      invNumber = `${_bsPreview.invoicePrefix || ''}-${String(_bsPreview.nextInvoiceNumber || 1000).padStart(4, '0')}`;
     }
 
     // Calculate total amount due
@@ -782,9 +780,7 @@ export default function AvailabilityManager() {
               volumeRules={volumeRules}
               equipment={equipment}
               promoCodes={promoCodes}
-              showManualInvoiceField={companyInfo?.autoAssignInvoiceNumbers === false}
-              manualInvoiceNumber={manualInvoiceNumber}
-              onManualInvoiceNumberChange={setManualInvoiceNumber}
+              showManualInvoiceField={false}
             />
             <div className="bg-white rounded-xl border shadow-sm p-6">
               <SignaturePad

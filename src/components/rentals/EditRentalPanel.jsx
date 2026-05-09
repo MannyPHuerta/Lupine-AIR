@@ -168,7 +168,10 @@ export default function EditRentalPanel({ order, equipment, onClose, onSaved }) 
         <div className="sticky top-0 bg-indigo-900 text-white px-5 py-4 flex items-center justify-between z-10">
           <div>
             <div className="font-bold text-lg">Edit Order</div>
-            <div className="text-indigo-300 text-xs">{order.invoiceNumber || order.id}</div>
+            <div className="text-indigo-300 text-xs font-mono">
+              {order.invoiceNumber ? `📄 ${order.invoiceNumber}` : order.id}
+              {order.invoiceNumber && <span className="ml-2 text-indigo-400 text-xs normal-case font-sans">(locked)</span>}
+            </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-indigo-800">
             <X className="w-5 h-5" />

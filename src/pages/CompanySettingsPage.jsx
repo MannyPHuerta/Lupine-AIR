@@ -284,61 +284,16 @@ export default function CompanySettingsPage() {
               </div>
             </div>
 
-            {/* Invoice Numbering */}
+            {/* Invoice Numbering — managed per branch in Branch Settings */}
             <div className="bg-white rounded-xl border shadow-sm p-5">
               <div className="font-semibold text-gray-900 mb-1">Invoice Numbering</div>
-              <p className="text-xs text-gray-500 mb-4">Control how rental invoice numbers are generated.</p>
-              <div className="space-y-4">
-                {/* Auto-assign toggle */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-gray-700">Auto-Assign Invoice Numbers</div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      {settings.autoAssignInvoiceNumbers !== false
-                        ? '✓ Numbers assigned automatically on rental creation'
-                        : '✗ You will enter invoice numbers manually'}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleChange('autoAssignInvoiceNumbers', settings.autoAssignInvoiceNumbers === false ? true : false)}
-                    className={`relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0 ${
-                      settings.autoAssignInvoiceNumbers !== false ? 'bg-indigo-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform mt-0.5 ${
-                      settings.autoAssignInvoiceNumbers !== false ? 'translate-x-5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
-                </div>
-
-                {/* Prefix + Starting number — only shown when auto-assign is on */}
-                {settings.autoAssignInvoiceNumbers !== false && (
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Prefix</label>
-                      <Input
-                        value={settings.invoiceNumberPrefix}
-                        onChange={e => handleChange('invoiceNumberPrefix', e.target.value.toUpperCase())}
-                        placeholder="MCL"
-                        maxLength={6}
-                      />
-                      <p className="text-xs text-gray-400 mt-1">e.g. MCL → MCL-1042</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Starting Number</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={settings.invoiceNumberStart}
-                        onChange={e => handleChange('invoiceNumberStart', e.target.value)}
-                        placeholder="1001"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">New rentals count up from here</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <p className="text-xs text-gray-500 mb-3">Invoice numbers are automatically assigned per branch at the time of first save (quote or contract). Each branch maintains its own sequence and prefix.</p>
+              <button
+                onClick={() => navigate('/branch-settings')}
+                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+              >
+                🏢 Configure per-branch prefix & starting number →
+              </button>
             </div>
 
             {/* SMS Reminders */}
