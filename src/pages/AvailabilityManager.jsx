@@ -236,8 +236,8 @@ export default function AvailabilityManager() {
     const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
     const paid = parseFloat(amountPaid) || 0;
 
-    // Fetch and increment invoice number for confirmed invoices
-    let invoiceNumber = companyInfo?.autoAssignInvoiceNumbers === false ? (manualInvoiceNumber || '') : '';
+    // Fetch and increment invoice number for confirmed invoices only
+    let invoiceNumber = (status === 'confirmed' && companyInfo?.autoAssignInvoiceNumbers === false) ? (manualInvoiceNumber || '') : '';
     if (status === 'confirmed' && companyInfo?.autoAssignInvoiceNumbers !== false) {
       const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
       const bs = branchSettingsList[0];
