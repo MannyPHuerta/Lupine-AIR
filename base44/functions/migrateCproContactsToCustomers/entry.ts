@@ -49,9 +49,9 @@ Deno.serve(async (req) => {
       totalSpend: 0,
     }));
 
-    // Bulk create in smaller batches with longer delays to avoid timeouts
+    // Bulk create in very small batches with aggressive throttling
     let migratedCount = 0;
-    const batchSize = 250;  // Reduced from 500 to 250
+    const batchSize = 100;  // Much smaller batches
 
     for (let i = 0; i < customers.length; i += batchSize) {
       const batch = customers.slice(i, i + batchSize);
@@ -61,12 +61,12 @@ Deno.serve(async (req) => {
         migratedCount += batch.length;
         console.log(`[Migration] Migrated batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(customers.length / batchSize)} (${migratedCount} total)`);
         
-        // Longer throttle between batches to prevent gateway timeouts
+        // Aggressive throttle to prevent gateway timeouts
         if (i + batchSize < customers.length) {
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, 2500));
         }
       } catch (err) {
-        console.error(`[Migration] Batch failed: ${err.message}`);
+        console.error(`[Migration] Batch failed at ${migratedCount} records: ${err.message}`);
         throw err;
       }
     }
