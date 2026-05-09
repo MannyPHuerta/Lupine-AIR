@@ -12,9 +12,10 @@ export default function ContactReview() {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState(null);
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('name');
   const [filterBy, setFilterBy] = useState('all');
   const [selectedContact, setSelectedContact] = useState(null);
+  const [editingData, setEditingData] = useState(null);
 
   const { data: contacts = [], isLoading, refetch } = useQuery({
     queryKey: ['cproContacts'],
@@ -80,6 +81,25 @@ export default function ContactReview() {
     if (!confirm(`Delete all ${contacts.length} contacts? This cannot be undone.`)) return;
     await base44.functions.invoke('deleteAllCproContacts', {});
     toast({ title: 'All contacts deleted', variant: 'destructive' });
+    refetch();
+  };
+
+  const handleSave = async (updatedContact) => {
+    await base44.entities.CproContact.update(updatedContact.id, {
+      fullName: updatedContact.fullName,
+      phone: updatedContact.phone,
+      email: updatedContact.email,
+      address: updatedContact.address,
+      city: updatedContact.city,
+      state: updatedContact.state,
+      zipCode: updatedContact.zipCode,
+      companyName: updatedContact.companyName,
+      accountNumber: updatedContact.accountNumber,
+      notes: updatedContact.notes,
+    });
+    toast({ title: 'Contact updated' });
+    setEditingData(null);
+    setSelectedContact(updatedContact);
     refetch();
   };
 
@@ -212,77 +232,189 @@ export default function ContactReview() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedContact(null)}>
             <div className="bg-white rounded-lg max-w-lg w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Contact Details</h2>
-                <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                <h2 className="text-xl font-bold">{editingData ? 'Edit Contact' : 'Contact Details'}</h2>
+                <button onClick={() => { setSelectedContact(null); setEditingData(null); }} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
               </div>
 
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Full Name</p>
-                  <p className="font-semibold text-gray-900">{selectedContact.fullName || <span className="text-gray-400 italic">Not set</span>}</p>
+              {editingData ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Full Name</p>
+                    <Input
+                      value={editingData.fullName || ''}
+                      onChange={e => setEditingData({...editingData, fullName: e.target.value})}
+                      placeholder="First Last or Last, First"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Phone</p>
+                    <Input
+                      value={editingData.phone || ''}
+                      onChange={e => setEditingData({...editingData, phone: e.target.value})}
+                      placeholder="(555) 555-5555"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Email</p>
+                    <Input
+                      value={editingData.email || ''}
+                      onChange={e => setEditingData({...editingData, email: e.target.value})}
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Address</p>
+                    <Input
+                      value={editingData.address || ''}
+                      onChange={e => setEditingData({...editingData, address: e.target.value})}
+                      placeholder="Street address"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">City</p>
+                      <Input
+                        value={editingData.city || ''}
+                        onChange={e => setEditingData({...editingData, city: e.target.value})}
+                        placeholder="City"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">State</p>
+                      <Input
+                        value={editingData.state || ''}
+                        onChange={e => setEditingData({...editingData, state: e.target.value})}
+                        placeholder="TX"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Zip</p>
+                      <Input
+                        value={editingData.zipCode || ''}
+                        onChange={e => setEditingData({...editingData, zipCode: e.target.value})}
+                        placeholder="12345"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Company</p>
+                    <Input
+                      value={editingData.companyName || ''}
+                      onChange={e => setEditingData({...editingData, companyName: e.target.value})}
+                      placeholder="Company name"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Account Number</p>
+                    <Input
+                      value={editingData.accountNumber || ''}
+                      onChange={e => setEditingData({...editingData, accountNumber: e.target.value})}
+                      placeholder="Account #"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase mb-1 font-semibold">Notes</p>
+                    <Input
+                      value={editingData.notes || ''}
+                      onChange={e => setEditingData({...editingData, notes: e.target.value})}
+                      placeholder="Additional notes"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Phone</p>
-                  <p className="font-semibold text-gray-900">{selectedContact.phone || <span className="text-gray-400 italic">Not set</span>}</p>
+              ) : (
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Full Name</p>
+                    <p className="font-semibold text-gray-900">{selectedContact.fullName || <span className="text-gray-400 italic">Not set</span>}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide">Phone</p>
+                    <p className="font-semibold text-gray-900">{selectedContact.phone || <span className="text-gray-400 italic">Not set</span>}</p>
+                  </div>
+                  {selectedContact.email && (
+                    <div>
+                      <p className="text-gray-500 text-xs uppercase tracking-wide">Email</p>
+                      <p className="font-semibold text-gray-900">{selectedContact.email}</p>
+                    </div>
+                  )}
+                  {selectedContact.address && (
+                    <div>
+                      <p className="text-gray-500 text-xs uppercase tracking-wide">Address</p>
+                      <p className="font-semibold text-gray-900">{selectedContact.address}</p>
+                    </div>
+                  )}
+                  {(selectedContact.city || selectedContact.state || selectedContact.zipCode) && (
+                    <div>
+                      <p className="text-gray-500 text-xs uppercase tracking-wide">City, State, Zip</p>
+                      <p className="font-semibold text-gray-900">
+                        {[selectedContact.city, selectedContact.state, selectedContact.zipCode].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                  )}
+                  {selectedContact.companyName && (
+                    <div>
+                      <p className="text-gray-500 text-xs uppercase tracking-wide">Company</p>
+                      <p className="font-semibold text-gray-900">{selectedContact.companyName}</p>
+                    </div>
+                  )}
+                  {selectedContact.accountNumber && (
+                    <div>
+                      <p className="text-gray-500 text-xs uppercase tracking-wide">Account Number</p>
+                      <p className="font-semibold text-gray-900">{selectedContact.accountNumber}</p>
+                    </div>
+                  )}
+                  {selectedContact.notes && (
+                    <div>
+                      <p className="text-gray-500 text-xs uppercase tracking-wide">Notes</p>
+                      <p className="font-semibold text-gray-900">{selectedContact.notes}</p>
+                    </div>
+                  )}
                 </div>
-                {selectedContact.email && (
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">Email</p>
-                    <p className="font-semibold text-gray-900">{selectedContact.email}</p>
-                  </div>
-                )}
-                {selectedContact.address && (
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">Address</p>
-                    <p className="font-semibold text-gray-900">{selectedContact.address}</p>
-                  </div>
-                )}
-                {(selectedContact.city || selectedContact.state || selectedContact.zipCode) && (
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">City, State, Zip</p>
-                    <p className="font-semibold text-gray-900">
-                      {[selectedContact.city, selectedContact.state, selectedContact.zipCode].filter(Boolean).join(', ')}
-                    </p>
-                  </div>
-                )}
-                {selectedContact.companyName && (
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">Company</p>
-                    <p className="font-semibold text-gray-900">{selectedContact.companyName}</p>
-                  </div>
-                )}
-                {selectedContact.accountNumber && (
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">Account Number</p>
-                    <p className="font-semibold text-gray-900">{selectedContact.accountNumber}</p>
-                  </div>
-                )}
-                {selectedContact.notes && (
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide">Notes</p>
-                    <p className="font-semibold text-gray-900">{selectedContact.notes}</p>
-                  </div>
-                )}
-              </div>
+              )}
 
               <div className="border-t pt-4 flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setSelectedContact(null)}
-                >
-                  Close
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={async () => {
-                    await handleDelete(selectedContact.id);
-                    setSelectedContact(null);
-                  }}
-                >
-                  Delete
-                </Button>
+                {editingData ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setEditingData(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleSave(editingData)}
+                    >
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setSelectedContact(null)}
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => setEditingData({...selectedContact})}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        await handleDelete(selectedContact.id);
+                        setSelectedContact(null);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
