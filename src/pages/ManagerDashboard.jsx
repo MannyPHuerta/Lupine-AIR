@@ -96,6 +96,12 @@ export default function ManagerDashboard() {
           >
             <DollarSign className="w-4 h-4" /> Accounting
           </button>
+          <button
+            onClick={() => navigate('/planner-queue')}
+            className="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-medium"
+          >
+            🎪 Planner Queue
+          </button>
           <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
             <RefreshCw className="w-4 h-4" />
           </button>

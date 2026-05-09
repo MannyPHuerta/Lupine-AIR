@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Loader2, Wand2, Lock } from 'lucide-react';
@@ -38,6 +38,8 @@ export default function EventPlanner() {
   const [showGrid, setShowGrid] = useState(true);
   const [acknowledged, setAcknowledged] = useState([]);
   const [user, setUser] = useState(null);
+  const autosaveTimer = useRef(null);
+  const planRef = useRef(null);
 
   // Plan metadata
   const [title, setTitle] = useState('New Event Plan');
@@ -103,6 +105,36 @@ export default function EventPlanner() {
     };
     init();
   }, [planId]);
+
+  // Keep planRef in sync for beforeunload handler
+  useEffect(() => { planRef.current = plan; }, [plan]);
+
+  // Autosave on canvas changes (debounced 2s) — only for unlocked/saved plans
+  useEffect(() => {
+    if (!isUnlocked || !plan?.id) return;
+    clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(() => {
+      const data = buildPlanData();
+      base44.entities.EventPlan.update(plan.id, data).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(autosaveTimer.current);
+  }, [canvasItems, isUnlocked, plan?.id]);
+
+  // Save before navigating away (unlocked plans)
+  useEffect(() => {
+    const handler = (e) => {
+      if (!isUnlocked || !planRef.current?.id) return;
+      // Flush any pending autosave immediately
+      clearTimeout(autosaveTimer.current);
+      const data = buildPlanData();
+      base44.entities.EventPlan.update(planRef.current.id, data).catch(() => {});
+      // Show browser warning
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isUnlocked]);
 
   // Real-time sync for collaborative editing
   useEffect(() => {
@@ -216,16 +248,71 @@ export default function EventPlanner() {
     setSaving(false);
   };
 
+  const convertToRental = async (p) => {
+    // Build a Rental from plan data
+    const lineItems = [];
+    const seen = {};
+    (p.canvasItems || []).forEach(item => {
+      if (seen[item.equipmentId]) {
+        seen[item.equipmentId].quantity += (item.quantity || 1);
+      } else {
+        seen[item.equipmentId] = { equipmentId: item.equipmentId, equipmentName: item.equipmentName, quantity: item.quantity || 1, dailyRate: item.dailyRate || 0 };
+        lineItems.push(seen[item.equipmentId]);
+      }
+    });
+    const baseAmount = lineItems.reduce((s, l) => s + l.dailyRate * l.quantity, 0);
+    const rental = await base44.entities.Rental.create({
+      equipmentId: lineItems[0]?.equipmentId || '',
+      equipmentName: lineItems.map(l => `${l.equipmentName} ×${l.quantity}`).join(', '),
+      startDate: p.eventDate || '',
+      endDate: p.eventDate || '',
+      customerName: p.customerName || '',
+      customerEmail: p.customerEmail || '',
+      customerPhone: p.customerPhone || '',
+      branch: p.branch || '',
+      baseAmount,
+      status: 'quote',
+      notes: `Converted from Event Plan: ${p.title}`,
+    });
+    await base44.entities.EventPlan.update(p.id, { status: 'converted', rentalId: rental.id });
+    return rental;
+  };
+
   const handleRequestReview = async () => {
     await handleSave();
-    const nextStatus = plan?.status === 'draft' ? 'customer_review'
-      : plan?.status === 'customer_review' ? 'planner_review'
-      : plan?.status === 'planner_review' ? 'finalized'
-      : plan?.status;
-    if (plan?.id) {
-      await base44.entities.EventPlan.update(plan.id, { status: nextStatus });
+    const currentPlan = plan;
+    const nextStatus = currentPlan?.status === 'draft' ? 'customer_review'
+      : currentPlan?.status === 'customer_review' ? 'planner_review'
+      : currentPlan?.status === 'planner_review' ? 'finalized'
+      : currentPlan?.status;
+
+    if (currentPlan?.id) {
+      await base44.entities.EventPlan.update(currentPlan.id, { status: nextStatus });
+      setPlan(p => ({ ...p, status: nextStatus }));
+
+      // Planner finalizes → auto-convert to Rental
+      if (nextStatus === 'finalized') {
+        const rental = await convertToRental({ ...currentPlan, canvasItems });
+        alert(`✅ Plan finalized and converted to rental quote!\nRental ID: ${rental.id}\nNavigate to Rental History to view.`);
+        navigate('/rental-history');
+        return;
+      }
+
+      alert(nextStatus === 'customer_review'
+        ? '✅ Plan submitted for planner review!'
+        : nextStatus === 'planner_review'
+        ? '✅ Plan sent to planner queue!'
+        : `Plan status: ${nextStatus}`
+      );
     }
-    alert(`Plan status updated to: ${nextStatus}`);
+  };
+
+  // Self-serve: customer finalizes and pays without planner
+  const handleSelfServeCheckout = async () => {
+    await handleSave();
+    if (!plan?.id) return;
+    const rental = await convertToRental({ ...plan, canvasItems });
+    navigate(`/rental-history?highlight=${rental.id}`);
   };
 
   if (loading) {
@@ -444,9 +531,11 @@ export default function EventPlanner() {
         eventDate={eventDate}
         onSave={handleSave}
         onRequestReview={handleRequestReview}
+        onSelfServeCheckout={handleSelfServeCheckout}
         saving={saving}
-        isCustomer={false}
+        isCustomer={user?.role !== 'admin' && user?.role !== 'staff'}
         planStatus={plan?.status || 'draft'}
+        isUnlocked={isUnlocked}
       />
     </div>
   );

@@ -1,6 +1,6 @@
-import { ShoppingCart, ArrowRight, Save, Loader2 } from 'lucide-react';
+import { ShoppingCart, ArrowRight, Save, Loader2, Zap } from 'lucide-react';
 
-export default function QuoteSummary({ items, eventDate, onSave, onRequestReview, saving, isCustomer, planStatus }) {
+export default function QuoteSummary({ items, eventDate, onSave, onRequestReview, onSelfServeCheckout, saving, isCustomer, planStatus, isUnlocked }) {
   const lineItems = [];
   const seen = {};
 
@@ -22,8 +22,9 @@ export default function QuoteSummary({ items, eventDate, onSave, onRequestReview
   });
 
   const dailyTotal = lineItems.reduce((s, l) => s + l.subtotal, 0);
-
-  const canRequestReview = planStatus === 'draft' || planStatus === 'customer_review';
+  const isDraft = planStatus === 'draft' || planStatus === 'customer_review';
+  const isPlannerReview = planStatus === 'planner_review';
+  const isFinalized = planStatus === 'finalized' || planStatus === 'converted';
 
   return (
     <div className="bg-slate-900 border-t border-white/10 px-4 py-3">
@@ -65,24 +66,45 @@ export default function QuoteSummary({ items, eventDate, onSave, onRequestReview
             Save
           </button>
 
-          {canRequestReview && (
+          {/* Self-serve: customer skips planner and goes straight to quote/rental */}
+          {isCustomer && isDraft && isUnlocked && items.length > 0 && (
+            <button
+              onClick={onSelfServeCheckout}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-bold text-xs transition"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              Book Now (No Review)
+            </button>
+          )}
+
+          {/* Request planner review */}
+          {isDraft && isUnlocked && items.length > 0 && (
             <button
               onClick={onRequestReview}
-              disabled={saving || items.length === 0}
+              disabled={saving}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-bold text-xs transition"
             >
-              {isCustomer ? 'Request Review' : 'Finalize Plan'}
+              {isCustomer ? 'Request Planner Review' : 'Send to Planner Queue'}
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
 
-          {planStatus === 'planner_review' && !isCustomer && (
+          {/* Planner: finalize and convert to rental */}
+          {isPlannerReview && !isCustomer && (
             <button
               onClick={onRequestReview}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-500 hover:bg-green-400 text-black font-bold text-xs transition"
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-bold text-xs transition"
             >
-              Convert to Quote <ArrowRight className="w-3.5 h-3.5" />
+              Finalize → Create Rental <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          )}
+
+          {isFinalized && (
+            <div className="text-xs text-green-400 font-semibold px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-lg">
+              ✅ Converted to Rental
+            </div>
           )}
         </div>
       </div>
