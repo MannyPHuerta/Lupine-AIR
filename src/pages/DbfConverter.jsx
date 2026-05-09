@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 import StreamingDbfUploader from '@/components/StreamingDbfUploader';
 import TpsContactExtractor from '@/components/TpsContactExtractor';
 import RecordProber from '@/components/RecordProber';
@@ -111,10 +112,29 @@ export default function DbfConverter() {
         </div>
 
         {activeTab === 'cu' ? (
-          <div className="bg-white rounded-xl border shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Customer File Extractor</h2>
-            <p className="text-sm text-gray-500 mb-4">Fixed-width CPro customer records (149,040 bytes/record). Extracts name, address, city, state, zip, phone, and account number for all 22,000+ customers.</p>
-            <CustomerFixedWidthExtractor onComplete={handleImportComplete} />
+          <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">Customer File Extractor</h2>
+              <p className="text-sm text-gray-500 mb-4">Fixed-width CPro customer records (149,040 bytes/record). Extracts name, address, city, state, zip, phone, and account number for all 22,000+ customers.</p>
+              <CustomerFixedWidthExtractor onComplete={handleImportComplete} />
+            </div>
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Next Step: Migrate to Customer Entity</h3>
+              <p className="text-xs text-gray-600 mb-3">Convert all CproContact records into the main Customer entity for use in the system.</p>
+              <Button
+                onClick={async () => {
+                  try {
+                    const res = await base44.functions.invoke('migrateCproContactsToCustomers', {});
+                    alert(`✓ Migrated ${res.data.migratedCount} customers`);
+                  } catch (err) {
+                    alert(`Error: ${err.message}`);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Migrate CproContacts → Customers
+              </Button>
+            </div>
           </div>
         ) : activeTab === 'tps' ? (
           <div className="bg-white rounded-xl border shadow-sm p-6">
