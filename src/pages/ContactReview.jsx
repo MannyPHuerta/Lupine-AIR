@@ -20,18 +20,27 @@ export default function ContactReview() {
   const { data: contacts = [], isLoading, refetch } = useQuery({
     queryKey: ['cproContacts'],
     queryFn: async () => {
-      const all = [];
-      let offset = 0;
-      const limit = 1000;
-      let batch;
-      do {
-        batch = await base44.entities.CproContact.list('-created_date', limit, offset);
-        if (batch?.length) {
-          all.push(...batch);
-          offset += limit;
+      try {
+        const all = [];
+        let offset = 0;
+        const limit = 500;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const batch = await base44.entities.CproContact.list('-created_date', limit, offset);
+          if (!batch || batch.length === 0) {
+            hasMore = false;
+          } else {
+            all.push(...batch);
+            offset += limit;
+            if (batch.length < limit) hasMore = false;
+          }
         }
-      } while (batch?.length === limit);
-      return all;
+        return all;
+      } catch (err) {
+        console.error('Failed to fetch contacts:', err);
+        return [];
+      }
     },
   });
 
@@ -88,13 +97,6 @@ export default function ContactReview() {
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: `✓ Exported ${contacts.length} contacts as CSV` });
-  };
-
-  const handleDeleteAll = async () => {
-    if (!confirm(`Delete all ${contacts.length} contacts? This cannot be undone.`)) return;
-    await base44.functions.invoke('deleteAllCproContacts', {});
-    toast({ title: 'All contacts deleted', variant: 'destructive' });
-    refetch();
   };
 
   const formatPhone = (value) => {
@@ -183,9 +185,6 @@ export default function ContactReview() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={handleDeleteAll}>
-              Delete All
-            </Button>
           </div>
           
           {/* Sorting & Filtering */}
