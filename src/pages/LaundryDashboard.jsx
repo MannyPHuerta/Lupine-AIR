@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Clock, CheckCircle2, AlertTriangle, Zap, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock, CheckCircle2, AlertTriangle, Zap, TrendingUp, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
@@ -119,9 +119,12 @@ export default function LaundryDashboard() {
           <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Laundry Operations</div>
-            <div className="text-indigo-300 text-xs">{metrics.inQueue} items in queue</div>
+          <div className="flex-1 flex items-center gap-3">
+            <Droplets className="w-6 h-6 text-cyan-300" />
+            <div>
+              <div className="text-lg font-bold">Laundry Operations</div>
+              <div className="text-indigo-300 text-xs">{metrics.inQueue} items in queue</div>
+            </div>
           </div>
           <select
             value={branch}
