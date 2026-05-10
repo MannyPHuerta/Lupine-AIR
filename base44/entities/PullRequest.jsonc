@@ -1,0 +1,45 @@
+{
+  "name": "PullRequest",
+  "type": "object",
+  "properties": {
+    "prNumber": {
+      "type": "integer",
+      "description": "PR number from GitHub"
+    },
+    "title": {
+      "type": "string",
+      "description": "PR title"
+    },
+    "author": {
+      "type": "string",
+      "description": "GitHub username of PR author"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "merged",
+        "closed"
+      ],
+      "description": "Current PR status"
+    },
+    "mergedAt": {
+      "type": "string",
+      "description": "ISO timestamp when PR was merged (null if not merged)"
+    },
+    "url": {
+      "type": "string",
+      "description": "GitHub PR URL"
+    },
+    "lastCheckedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last status check"
+    }
+  },
+  "required": [
+    "prNumber",
+    "title",
+    "author",
+    "status"
+  ]
+}
