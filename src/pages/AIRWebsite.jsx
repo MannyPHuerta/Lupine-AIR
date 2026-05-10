@@ -114,7 +114,7 @@ function Hero() {
                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
                className="flex justify-center pointer-events-none">
                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden">
-                 <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/66e7d6961_AIR-01.svg" alt="AIR" className="w-full h-full rounded-3xl" />
+                 <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIR" className="w-full h-full rounded-3xl" />
                  <motion.div
                    className="absolute inset-0 rounded-3xl pointer-events-none"
                    style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)' }}
@@ -145,11 +145,11 @@ function Hero() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           className="flex flex-wrap justify-center gap-6 pt-4">
           {[
-            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/82f57f2c3_AIRental-01.svg', anchor: '#airental' },
-            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f942492e7_AIREvents-01.svg', anchor: '#airevents' },
-            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7f54c3dc0_AIRfq-01.svg', anchor: '#airfq' },
-            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cf69cddb6_AIReports-01.svg', anchor: '#aireports' },
-            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/75e21ad28_AIRepair_png_transparent-01.svg', anchor: '#airepair' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/68b1feaf4_AIRentalBlack-01.svg', anchor: '#airental' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f62f4b089_AIREvents_black-01.svg', anchor: '#airevents' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f288b892e_AIRfqBlack-01.svg', anchor: '#airfq' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg', anchor: '#aireports' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg', anchor: '#airepair' },
           ].map((p, idx) => (
             <button key={idx} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
