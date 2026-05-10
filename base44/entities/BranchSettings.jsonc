@@ -26,6 +26,10 @@
     "email": {
       "type": "string",
       "description": "Contact email for this branch"
+    },
+    "partsBuyerEmail": {
+      "type": "string",
+      "description": "Default email for parts purchase requests from this branch"
     }
   },
   "required": [

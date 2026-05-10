@@ -44,11 +44,12 @@ export default function BranchSettingsPage() {
           address: r.address || '',
           phone: r.phone || '',
           email: r.email || '',
+          partsBuyerEmail: r.partsBuyerEmail || '',
         };
       });
       // Fill in any branches not yet configured
       BRANCHES.forEach(b => {
-        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '' };
+        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '', partsBuyerEmail: '' };
       });
       setSettings(map);
       setLoading(false);
@@ -69,6 +70,7 @@ export default function BranchSettingsPage() {
       address: s.address,
       phone: s.phone,
       email: s.email,
+      partsBuyerEmail: s.partsBuyerEmail,
     };
     if (s.id) {
       await base44.entities.BranchSettings.update(s.id, payload);
@@ -150,38 +152,51 @@ export default function BranchSettingsPage() {
                       </div>
                     </div>
                     <div className="border-t pt-4">
-                      <div className="text-xs font-semibold text-gray-700 mb-3">Contact Information</div>
-                      <div className="grid grid-cols-1 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
-                          <Input
-                            value={s.address}
-                            onChange={e => handleChange(branch, 'address', e.target.value)}
-                            placeholder="Street address"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
-                            <Input
-                              value={s.phone}
-                              onChange={e => handleChange(branch, 'phone', formatPhoneUS(e.target.value))}
-                              placeholder="(956) 123-4567"
-                              inputMode="numeric"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-                            <Input
-                              type="email"
-                              value={s.email}
-                              onChange={e => handleChange(branch, 'email', e.target.value)}
-                              placeholder="branch@example.com"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                       <div className="text-xs font-semibold text-gray-700 mb-3">Contact Information</div>
+                       <div className="grid grid-cols-1 gap-4">
+                         <div>
+                           <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                           <Input
+                             value={s.address}
+                             onChange={e => handleChange(branch, 'address', e.target.value)}
+                             placeholder="Street address"
+                           />
+                         </div>
+                         <div className="grid grid-cols-2 gap-4">
+                           <div>
+                             <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                             <Input
+                               value={s.phone}
+                               onChange={e => handleChange(branch, 'phone', formatPhoneUS(e.target.value))}
+                               placeholder="(956) 123-4567"
+                               inputMode="numeric"
+                             />
+                           </div>
+                           <div>
+                             <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                             <Input
+                               type="email"
+                               value={s.email}
+                               onChange={e => handleChange(branch, 'email', e.target.value)}
+                               placeholder="branch@example.com"
+                             />
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     <div className="border-t pt-4">
+                       <div className="text-xs font-semibold text-gray-700 mb-3">Parts Requests</div>
+                       <div>
+                         <label className="block text-xs font-medium text-gray-600 mb-1">Default Parts Buyer Email</label>
+                         <Input
+                           type="email"
+                           value={s.partsBuyerEmail}
+                           onChange={e => handleChange(branch, 'partsBuyerEmail', e.target.value)}
+                           placeholder="buyer@example.com"
+                         />
+                         <p className="text-xs text-gray-500 mt-1">Shop Floor will use this email by default; supervisors can override it manually.</p>
+                       </div>
+                     </div>
                   </div>
                 </div>
               );

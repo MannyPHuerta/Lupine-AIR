@@ -16,6 +16,7 @@ export default function ShopFloor() {
   const [workOrders, setWorkOrders] = useState([]);
   const [mechanics, setMechanics] = useState([]);
   const [parts, setParts] = useState([]);
+  const [branchSettings, setBranchSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedWO, setSelectedWO] = useState(null);
   const [assigningWO, setAssigningWO] = useState(null);
@@ -25,14 +26,20 @@ export default function ShopFloor() {
 
   const load = async () => {
     setLoading(true);
-    const [wo, mech, pt] = await Promise.all([
+    const [wo, mech, pt, bs] = await Promise.all([
       base44.entities.WorkOrder.list('-createdAt', 500),
       base44.entities.MechanicProfile.filter({ isActive: true }),
       base44.entities.PartRequirement.list('-created_date', 500),
+      base44.entities.BranchSettings.filter({ branch: '01 McAllen' }),
     ]);
     setWorkOrders(wo);
     setMechanics(mech);
     setParts(pt);
+    setBranchSettings(bs[0] || null);
+    // Auto-populate buyer email from branch settings if available
+    if (bs[0]?.partsBuyerEmail) {
+      setBuyerEmail(bs[0].partsBuyerEmail);
+    }
     setLoading(false);
   };
 
@@ -190,22 +197,22 @@ export default function ShopFloor() {
                             <input
                               type="email"
                               autoFocus
-                              placeholder="buyer@email.com"
+                              placeholder={branchSettings?.partsBuyerEmail || 'buyer@email.com'}
                               value={buyerEmail}
                               onChange={e => setBuyerEmail(e.target.value)}
                               className="h-9 border border-purple-300 rounded px-2 text-xs"
                             />
                             <button
                               onClick={async () => {
-                                if (!buyerEmail.trim()) { alert('Enter buyer email'); return; }
+                                const email = buyerEmail.trim() || branchSettings?.partsBuyerEmail;
+                                if (!email) { alert('No buyer email configured'); return; }
                                 setSendingRequest(null);
                                 try {
                                   await base44.functions.invoke('sendPartsRequest', {
                                     workOrderId: wo.id,
-                                    buyerEmail: buyerEmail.trim(),
+                                    buyerEmail: email,
                                   });
                                   alert('✓ Parts request sent');
-                                  setBuyerEmail('');
                                   load();
                                 } catch (err) {
                                   alert(`Error: ${err.message}`);
@@ -216,7 +223,7 @@ export default function ShopFloor() {
                               Send
                             </button>
                             <button
-                              onClick={() => { setSendingRequest(null); setBuyerEmail(''); }}
+                              onClick={() => { setSendingRequest(null); setBuyerEmail(branchSettings?.partsBuyerEmail || ''); }}
                               className="text-gray-400 hover:text-gray-600 text-lg leading-none"
                             >
                               ✕
