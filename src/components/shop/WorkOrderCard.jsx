@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Wrench, ChevronDown, ChevronUp, Plus, Trash2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { base44 } from '@/api/base44Client';
+import MechanicRecommendation from '@/components/repair/MechanicRecommendation';
+import PartsPredictor from '@/components/repair/PartsPredictor';
 
 const STATUSES = ['scheduled', 'in_progress', 'awaiting_parts', 'completed', 'cancelled'];
 const CONDITIONS = ['New', 'Good', 'Fair', 'Needs Repair', 'Retired'];
@@ -49,6 +52,20 @@ export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, on
 
   const addPart = () => {
     setForm(f => ({ ...f, partsRequired: [...(f.partsRequired || []), { partName: '', quantity: 1, cost: 0, vendor: '', eta: '', received: false }] }));
+  };
+
+  const handleAddPredictedParts = (partNames) => {
+    setForm(f => ({
+      ...f,
+      partsRequired: [
+        ...(f.partsRequired || []),
+        ...partNames.map(name => ({ partName: name, quantity: 1, cost: 0, vendor: '', eta: '', received: false }))
+      ]
+    }));
+  };
+
+  const handleAutoAssignMechanic = async (email) => {
+    setForm(f => ({ ...f, assignedTo: email }));
   };
 
   const updatePart = (idx, field, value) => {
@@ -176,13 +193,29 @@ export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, on
                 />
               </div>
 
+              {/* AI Mechanic Recommendation */}
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                <MechanicRecommendation
+                  workOrderId={wo.id}
+                  onAssign={handleAutoAssignMechanic}
+                  disabled={!isEditing}
+                />
+              </div>
+
               {/* Parts */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Parts Required</label>
-                  <button onClick={addPart} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                    <Plus className="w-3 h-3" /> Add Part
-                  </button>
+                  <div className="flex gap-2">
+                    <PartsPredictor
+                      workOrderId={wo.id}
+                      equipmentId={wo.equipmentId}
+                      onCreatePartRequirements={handleAddPredictedParts}
+                    />
+                    <button onClick={addPart} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                      <Plus className="w-3 h-3" /> Add Part
+                    </button>
+                  </div>
                 </div>
                 {(form.partsRequired || []).length === 0 && (
                   <div className="text-xs text-gray-400 italic">No parts listed</div>

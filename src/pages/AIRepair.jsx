@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Loader2, Wrench, Clock, CheckCircle2, AlertTriangle, Package, Zap, TrendingUp } from 'lucide-react';
 import WorkOrderCard from '@/components/shop/WorkOrderCard';
 import PredictiveAlertsPanel from '@/components/repair/PredictiveAlertsPanel';
+import SmartSchedulePanel from '@/components/repair/SmartSchedulePanel';
+import RepairAnomaliesPanel from '@/components/repair/RepairAnomaliesPanel';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
@@ -126,13 +128,29 @@ export default function AIRepair() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* Predictive Alerts */}
-        <div>
-          <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-orange-600" />
-            Predictive Alerts
-          </h2>
-          <PredictiveAlertsPanel />
+        {/* AI Intelligence Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div>
+            <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-orange-600" />
+              Predictive Alerts
+            </h2>
+            <PredictiveAlertsPanel />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-orange-600" />
+              Smart Schedule
+            </h2>
+            <SmartSchedulePanel />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+              Anomalies
+            </h2>
+            <RepairAnomaliesPanel />
+          </div>
         </div>
 
         {/* KPI cards */}
