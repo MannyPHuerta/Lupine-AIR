@@ -73,9 +73,14 @@ export default function AIRepair() {
       {/* Header */}
       <div className="bg-orange-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto flex-wrap">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-orange-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-orange-800">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <button onClick={() => navigate('/repair-manager-report')} className="px-3 py-1.5 text-sm font-medium bg-orange-800 hover:bg-orange-700 rounded transition">
+              📊 Performance Report
+            </button>
+          </div>
           <div className="flex-1 min-w-0">
             <div className="text-lg font-bold">AIRepair Intelligence</div>
             <div className="text-orange-300 text-xs">{filtered.length} work order{filtered.length !== 1 ? 's' : ''} shown</div>
