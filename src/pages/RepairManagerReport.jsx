@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Filter, TrendingUp, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 export default function RepairManagerReport() {
   const navigate = useNavigate();
@@ -104,30 +103,38 @@ export default function RepairManagerReport() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 15;
+    let currentY = 15;
 
     // Title
     doc.setFontSize(20);
-    doc.text('Repair Manager Performance Report', margin, 15);
+    doc.text('Repair Manager Performance Report', margin, currentY);
+    currentY += 12;
 
     // Date range and filters
     doc.setFontSize(10);
-    doc.text(`Report Period: ${dateFrom} to ${dateTo}`, margin, 25);
+    doc.text(`Report Period: ${dateFrom} to ${dateTo}`, margin, currentY);
+    currentY += 5;
     if (selectedManager !== 'all') {
       const mgr = users.find(u => u.email === selectedManager);
-      doc.text(`Manager: ${mgr?.full_name || selectedManager}`, margin, 30);
+      doc.text(`Manager: ${mgr?.full_name || selectedManager}`, margin, currentY);
+      currentY += 5;
     }
     if (selectedBranch !== 'all') {
-      doc.text(`Branch: ${selectedBranch}`, margin, selectedManager !== 'all' ? 35 : 30);
+      doc.text(`Branch: ${selectedBranch}`, margin, currentY);
+      currentY += 5;
     }
 
-    // KPI Cards
-    const kpiY = selectedManager !== 'all' || selectedBranch !== 'all' ? 40 : 35;
+    // KPI Section
+    currentY += 5;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.text('Key Performance Indicators', margin, kpiY);
+    doc.text('Key Performance Indicators', margin, currentY);
+    currentY += 8;
 
-    const kpiData = [
-      ['Metric', 'Value'],
+    // Draw KPI table manually
+    doc.setFontSize(9);
+    const colWidth = (pageWidth - 2 * margin) / 2;
+    const metrics_list = [
       ['Total Work Orders', metrics.totalWorkOrders.toString()],
       ['Completed', metrics.completedWorkOrders.toString()],
       ['Avg Turnaround', `${metrics.avgTurnaroundDays} days`],
@@ -138,58 +145,71 @@ export default function RepairManagerReport() {
       ['Alert Accuracy', `${metrics.alertAccuracy}%`],
     ];
 
-    autoTable(doc, {
-      startY: kpiY + 5,
-      head: [kpiData[0]],
-      body: kpiData.slice(1),
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      styles: { fontSize: 9, cellPadding: 4 },
-      headerStyles: { fillColor: [95, 61, 20], textColor: 255 },
+    metrics_list.forEach(([label, value]) => {
+      doc.setFont(undefined, 'normal');
+      doc.text(label, margin, currentY);
+      doc.text(value, margin + colWidth, currentY);
+      currentY += 6;
     });
 
-    // Work Orders Detail
-    const woY = doc.lastAutoTable.finalY + 10;
+    // Work Orders Section
+    currentY += 5;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.text('Work Orders Summary', margin, woY);
+    doc.text('Recent Work Orders', margin, currentY);
+    currentY += 8;
 
-    const woData = [
-      ['Order ID', 'Status', 'Equipment', 'Created', 'Days to Complete'],
-      ...filtered.workOrders.slice(0, 15).map(wo => [
-        wo.id?.slice(0, 8) || '-',
-        wo.status,
-        wo.equipmentName || '-',
-        new Date(wo.createdAt).toLocaleDateString(),
-        wo.status === 'completed' ? Math.round((new Date(wo.completedAt) - new Date(wo.createdAt)) / (1000 * 60 * 60 * 24)).toString() : '-',
-      ]),
-    ];
+    doc.setFontSize(8);
+    const headers = ['Order ID', 'Status', 'Equipment', 'Created', 'Days'];
+    const col1 = margin;
+    const col2 = col1 + 25;
+    const col3 = col2 + 25;
+    const col4 = col3 + 45;
+    const col5 = col4 + 35;
 
-    autoTable(doc, {
-      startY: woY + 5,
-      head: [woData[0]],
-      body: woData.slice(1),
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 3 },
-      headerStyles: { fillColor: [95, 61, 20], textColor: 255 },
-      columnStyles: { 4: { halign: 'right' } },
+    // Header row
+    doc.setFont(undefined, 'bold');
+    doc.setFillColor(95, 61, 20);
+    doc.setTextColor(255);
+    doc.text(headers[0], col1, currentY);
+    doc.text(headers[1], col2, currentY);
+    doc.text(headers[2], col3, currentY);
+    doc.text(headers[3], col4, currentY);
+    doc.text(headers[4], col5, currentY);
+    currentY += 6;
+
+    // Data rows
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(0);
+    filtered.workOrders.slice(0, 12).forEach(wo => {
+      if (currentY > 250) {
+        doc.addPage();
+        currentY = 15;
+      }
+      const id = wo.id?.slice(0, 8) || '-';
+      const status = wo.status;
+      const eq = wo.equipmentName || '-';
+      const created = new Date(wo.createdAt).toLocaleDateString();
+      const days = wo.status === 'completed' ? Math.round((new Date(wo.completedAt) - new Date(wo.createdAt)) / (1000 * 60 * 60 * 24)).toString() : '-';
+
+      doc.text(id, col1, currentY);
+      doc.text(status, col2, currentY);
+      doc.text(eq.length > 15 ? eq.slice(0, 12) + '...' : eq, col3, currentY);
+      doc.text(created, col4, currentY);
+      doc.text(days, col5, currentY);
+      currentY += 6;
     });
 
     // Summary
-    const summaryY = doc.lastAutoTable.finalY + 10;
+    currentY += 5;
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.text('Performance Summary', margin, summaryY);
+    doc.text('Performance Summary', margin, currentY);
+    currentY += 8;
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
-    doc.text(
-      `This manager has completed ${metrics.completedWorkOrders} work orders with an average turnaround of ${metrics.avgTurnaroundDays} days. ` +
-      `Total maintenance cost managed: $${metrics.totalMaintenanceCost.toFixed(0)}. ` +
-      `Alert prediction accuracy: ${metrics.alertAccuracy}%, demonstrating strong preventive maintenance planning.`,
-      margin, summaryY + 7,
-      { maxWidth: pageWidth - 2 * margin }
-    );
+    const summaryText = `This manager has completed ${metrics.completedWorkOrders} work orders with an average turnaround of ${metrics.avgTurnaroundDays} days. Total maintenance cost managed: $${metrics.totalMaintenanceCost.toFixed(0)}. Alert prediction accuracy: ${metrics.alertAccuracy}%, demonstrating strong preventive maintenance planning.`;
+    doc.text(summaryText, margin, currentY, { maxWidth: pageWidth - 2 * margin });
 
     // Footer
     const footerY = doc.internal.pageSize.getHeight() - 10;
