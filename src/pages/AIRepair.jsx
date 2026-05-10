@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Loader2, Wrench, Clock, CheckCircle2, AlertTriangle, Package, Zap, TrendingUp } from 'lucide-react';
 import WorkOrderCard from '@/components/shop/WorkOrderCard';
+import PredictiveAlertsPanel from '@/components/repair/PredictiveAlertsPanel';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
@@ -119,6 +120,15 @@ export default function AIRepair() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {/* Predictive Alerts */}
+        <div>
+          <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-orange-600" />
+            Predictive Alerts
+          </h2>
+          <PredictiveAlertsPanel />
+        </div>
+
         {/* KPI cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[

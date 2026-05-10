@@ -1,0 +1,97 @@
+{
+  "name": "PredictiveAlert",
+  "type": "object",
+  "properties": {
+    "equipmentId": {
+      "type": "string",
+      "description": "Reference to Equipment"
+    },
+    "equipmentName": {
+      "type": "string",
+      "description": "Equipment name for display"
+    },
+    "category": {
+      "type": "string",
+      "description": "Equipment category"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium",
+      "description": "Alert severity level"
+    },
+    "alertType": {
+      "type": "string",
+      "enum": [
+        "maintenance_overdue",
+        "wear_pattern",
+        "failure_risk",
+        "inspection_due",
+        "parts_degradation"
+      ],
+      "description": "Type of predictive alert"
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable alert message"
+    },
+    "recommendation": {
+      "type": "string",
+      "description": "Recommended action"
+    },
+    "confidenceScore": {
+      "type": "number",
+      "description": "Confidence percentage (0-100) of prediction"
+    },
+    "daysSinceLastService": {
+      "type": "integer",
+      "description": "Days elapsed since last maintenance"
+    },
+    "estimatedDaysUntilFailure": {
+      "type": "integer",
+      "description": "Estimated days before potential failure"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch location"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "acknowledged",
+        "resolved"
+      ],
+      "default": "active",
+      "description": "Alert status"
+    },
+    "acknowledgedAt": {
+      "type": "string",
+      "description": "When alert was acknowledged by staff"
+    },
+    "acknowledgedBy": {
+      "type": "string",
+      "description": "Email of staff who acknowledged"
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "ISO timestamp when alert was generated"
+    },
+    "expiresAt": {
+      "type": "string",
+      "description": "ISO timestamp when alert expires (automatically resolved if passed)"
+    }
+  },
+  "required": [
+    "equipmentId",
+    "equipmentName",
+    "alertType",
+    "message",
+    "severity"
+  ]
+}
