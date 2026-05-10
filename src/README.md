@@ -104,8 +104,10 @@ AIR is a full-featured SaaS platform for equipment rental companies with:
 ### Public Pages
 - **AIRWebsite** (`/air`) — Marketing landing page
 - **AIRental** (`/airental`) — Equipment rental product page
-- **AIREvents** (`/airevents`) — Event planning tool showcaseAIRfq (`/airfq`) — Request for quote management
+- **AIREvents** (`/airevents`) — Event planning tool showcase
+- **AIRfq** (`/airfq`) — Request for quote management
 - **AIReports** (`/aireports`) — Business intelligence dashboard
+- **AIRepair** (`/airepair`) — AI-powered repair intelligence, ROI analysis, parts suggestions, and success predictions
 
 ## Backend Functions
 
@@ -132,6 +134,9 @@ AIR is a full-featured SaaS platform for equipment rental companies with:
 - `inventoryHealth` — Condition and status reports
 - `sendAssetReport` — Email disposal/sale reports with photos
 - `trackReportView` — Log when recipients view reports
+
+### AI-Powered Intelligence
+- `analyzeRepairIntel` — Generates business impact, ROI analysis, success probability, and parts recommendations for repair decisions
 
 ### Integrations
 - `trackGitHubPRs` — Hourly sync of merged PRs from MannyPHuerta/air repo
