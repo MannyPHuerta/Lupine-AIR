@@ -489,7 +489,7 @@ export default function AvailabilityManager() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <div className="text-lg font-bold">New Rental Invoice</div>
+            <div className="text-lg font-bold">New Rental Quote</div>
             <div className="text-indigo-300 text-xs">{equipment.length} items in catalog</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -622,12 +622,39 @@ export default function AvailabilityManager() {
            </div>
          )}
 
-        {/* Customer identity */}
+        {/* Line items — FIRST: check availability before collecting customer info */}
+        <div className="space-y-3">
+          {lines.map(line => {
+            if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
+            return (
+              <EquipmentLineItem
+                key={line.id}
+                line={line}
+                equipment={equipment}
+                rentals={rentals}
+                onUpdate={(updated) => updateLine(line.id, updated)}
+                onRemove={() => removeLine(line.id)}
+                qtyRef={qtyRefs.current[line.id]}
+                onAddLine={handleAddSuggestedItem}
+              />
+            );
+          })}
+        </div>
+
+        {/* Add Equipment */}
+        <button
+          ref={addButtonRef}
+          onClick={addLine}
+          className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" /> Add Equipment
+        </button>
+
+        {/* Customer identity — SECOND: collect after availability confirmed */}
         <CustomerIdentity
           customer={customer}
           onChange={(updated) => {
             setCustomer(updated);
-            // Auto-apply loyalty discount when customer with loyalty is selected
             if (updated.loyaltyDiscountEnabled && updated.loyaltyDiscountPercent) {
               setLoyaltyDiscount(updated.loyaltyDiscountPercent);
             } else if (!updated.loyaltyDiscountEnabled) {
@@ -638,7 +665,6 @@ export default function AvailabilityManager() {
           lines={lines}
           onAddItems={(items) => {
             setLines(prev => {
-              // Inherit dates from last line that has BOTH equipment AND dates
               const lastWithDates = [...prev].reverse().find(l => l.equipmentId && l.startDate && l.endDate);
               const inheritStart = lastWithDates?.startDate || '';
               const inheritEnd = lastWithDates?.endDate || '';
@@ -659,7 +685,6 @@ export default function AvailabilityManager() {
                   endDate: inheritEnd,
                 };
               });
-              // Remove blank placeholder line if it's the only one
               const filtered = prev.filter(l => l.equipmentId);
               return [...filtered, ...newLines];
             });
@@ -728,34 +753,6 @@ export default function AvailabilityManager() {
             </div>
           )}
         </div>
-
-        {/* Line items */}
-        <div className="space-y-3">
-          {lines.map(line => {
-            if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
-            return (
-              <EquipmentLineItem
-                key={line.id}
-                line={line}
-                equipment={equipment}
-                rentals={rentals}
-                onUpdate={(updated) => updateLine(line.id, updated)}
-                onRemove={() => removeLine(line.id)}
-                qtyRef={qtyRefs.current[line.id]}
-                onAddLine={handleAddSuggestedItem}
-              />
-            );
-          })}
-        </div>
-
-        {/* Add Equipment */}
-        <button
-          ref={addButtonRef}
-          onClick={addLine}
-          className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Add Equipment
-        </button>
 
         {/* Totals */}
         {lines.some(l => l.equipmentId) && (
