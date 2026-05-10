@@ -49,7 +49,7 @@ function Nav({ activeSection }) {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2">
-          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/66e7d6961_AIR-01.svg" alt="AIR" className="h-8 w-8 rounded-lg" />
+          <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIR" className="h-8 w-8 rounded-lg" />
           <span className="text-xs text-cyan-400 font-medium tracking-widest uppercase">by Lupine</span>
         </button>
         <div className="hidden md:flex items-center gap-6">
@@ -645,7 +645,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <div>
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/66e7d6961_AIR-01.svg" alt="AIR" className="h-12 w-12 rounded-xl mb-2" />
+            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIR" className="h-12 w-12 rounded-xl mb-2" />
             <div className="text-xs text-cyan-400 font-medium tracking-widest uppercase mb-3">by Lupine</div>
             <p className="text-white/40 text-sm">The rental equipment platform built for the Rio Grande Valley — and beyond.</p>
           </div>
@@ -653,11 +653,11 @@ function Footer() {
             <div className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Products</div>
             <div className="space-y-3">
               {[
-                { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/82f57f2c3_AIRental-01.svg' },
-                { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f942492e7_AIREvents-01.svg' },
-                { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7f54c3dc0_AIRfq-01.svg' },
-                { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cf69cddb6_AIReports-01.svg' },
-                { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/75e21ad28_AIRepair_png_transparent-01.svg' },
+                { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/68b1feaf4_AIRentalBlack-01.svg' },
+                { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f62f4b089_AIREvents_black-01.svg' },
+                { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f288b892e_AIRfqBlack-01.svg' },
+                { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg' },
+                { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg' },
               ].map(p => (
                 <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
                   className="text-white/50 hover:text-white transition">
@@ -708,7 +708,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="airental"
         tag="AIRental"
-        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/82f57f2c3_AIRental-01.svg" alt="AIRental" className="h-20 w-20 rounded-2xl" />}
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/68b1feaf4_AIRentalBlack-01.svg" alt="AIRental" className="h-20 w-20 rounded-2xl" />}
         tagline="Rental management, reinvented."
         description="From quote to signed contract in under 3 minutes. Multi-branch, multi-item, with dynamic pricing, delivery matrix, customer management, and a dispatch board that puts your drivers on the map."
         color="cyan"
@@ -726,7 +726,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="airevents"
         tag="AIREvents"
-        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f942492e7_AIREvents-01.svg" alt="AIREvents" className="h-20 w-20 rounded-2xl" />}
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f62f4b089_AIREvents_black-01.svg" alt="AIREvents" className="h-20 w-20 rounded-2xl" />}
         tagline="The floor plan IS the order."
         description="Drag equipment onto a live-inventory canvas — every item auto-checks availability, soft-reserves the unit, and adds to the quote. ADA compliance engine, permit tracker, surface & anchoring system built in. PartyCad, replaced."
         color="purple"
@@ -744,7 +744,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="airfq"
         tag="AIRfq · Premium"
-        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7f54c3dc0_AIRfq-01.svg" alt="AIRfq" className="h-20 w-20 rounded-2xl" />}
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f288b892e_AIRfqBlack-01.svg" alt="AIRfq" className="h-20 w-20 rounded-2xl" />}
         tagline="Upload the RFQ. Walk away with a bid."
         description="AI reads the government RFQ, matches every line item to your catalog, drafts the full bid response, flags every missing certification, and won't let you submit until it's complete. What used to take a day takes an hour."
         color="blue"
@@ -762,7 +762,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="aireports"
         tag="AIReports"
-        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/cf69cddb6_AIReports-01.svg" alt="AIReports" className="h-20 w-20 rounded-2xl" />}
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg" alt="AIReports" className="h-20 w-20 rounded-2xl" />}
         tagline="Know your numbers. Grow your operation."
         description="Live dashboards built on your real rental data — equipment utilization by category, seasonal demand curves, asset aging, fleet health, and branch revenue side by side. No spreadsheets, no exports, no waiting."
         color="green"
@@ -780,7 +780,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="airepair"
         tag="AIRepair · Shop Management"
-        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/75e21ad28_AIRepair_png_transparent-01.svg" alt="AIRepair" className="h-20 w-20 rounded-2xl" />}
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg" alt="AIRepair" className="h-20 w-20 rounded-2xl" />}
         tagline="From breakdown to backyard — automatically."
         description="Equipment flagged by field ops flows directly into a work order queue. AI routes jobs to the right mechanic based on skills and availability. Track parts procurement, labor costs, condition before/after. Predict failures before they happen with automated preventive maintenance alerts."
         color="orange"
