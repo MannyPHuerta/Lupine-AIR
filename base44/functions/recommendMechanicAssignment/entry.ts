@@ -16,30 +16,36 @@ Deno.serve(async (req) => {
     }
 
     const workOrder = wo[0];
+    const equipmentName = workOrder.equipmentName || '';
     const equipmentCategory = workOrder.type || '';
 
     // Score each mechanic
     const scored = mechanics.map(mech => {
-      // Skills match: does mechanic have certification for this equipment category?
-      const hasSkill = (mech.skills || []).some(s => 
-        equipmentCategory.toLowerCase().includes(s.toLowerCase()) ||
-        s.toLowerCase().includes(equipmentCategory.toLowerCase())
-      );
-      const skillScore = hasSkill ? 20 : 0;
+      // Skills match: does mechanic have a skill matching this equipment?
+      const hasSkill = (mech.skills || []).some(skill => {
+        const skillLower = skill.toLowerCase();
+        const catLower = equipmentCategory.toLowerCase();
+        const nameLower = equipmentName.toLowerCase();
+        return catLower.includes(skillLower) || skillLower.includes(catLower) || 
+               nameLower.includes(skillLower) || skillLower.includes(nameLower);
+      });
+      const skillScore = hasSkill ? 30 : 5; // Strong bonus for skill match, small credit for any match
 
       // Workload: current job count vs max concurrent jobs
       const currentJobs = workOrders.filter(w => w.assignedTo === mech.email && 
         ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length;
       const workloadScore = Math.max(0, 20 - (currentJobs * 5)); // Penalize busy mechanics
 
-      // Availability: prefer mechanics assigned to same branch
-      const branchScore = mech.branch === workOrder.branch ? 10 : 0;
+      // Branch match
+      const branchScore = mech.branch === workOrder.branch ? 15 : 0;
 
-      // Certification bonus
-      const certScore = (mech.certifications || []).length * 2;
+      // Certification bonus: more certs = more experienced
+      const certScore = Math.min((mech.certifications || []).length * 3, 20);
+
+      // Availability check
+      const available = currentJobs < (mech.maxConcurrentJobs || 2);
 
       const totalScore = skillScore + workloadScore + branchScore + certScore;
-      const available = currentJobs < mech.maxConcurrentJobs;
 
       return {
         mechanicId: mech.id,
@@ -49,8 +55,9 @@ Deno.serve(async (req) => {
         available,
         skillMatch: hasSkill,
         currentJobs,
-        maxJobs: mech.maxConcurrentJobs,
+        maxJobs: mech.maxConcurrentJobs || 2,
         skills: mech.skills || [],
+        certifications: mech.certifications || [],
       };
     }).sort((a, b) => {
       if (a.available !== b.available) return a.available ? -1 : 1;
