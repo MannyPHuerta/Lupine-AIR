@@ -108,12 +108,6 @@ function Hero() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
           <div className="relative inline-block mb-4">
             <p className="text-blue-300 text-xl md:text-2xl font-light">It's time for a breath of fresh</p>
-            <motion.div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)' }}
-              animate={{ x: ['-150%', '150%'] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
-            />
           </div>
           <motion.div
                animate={{ y: [0, -8, 0] }}
