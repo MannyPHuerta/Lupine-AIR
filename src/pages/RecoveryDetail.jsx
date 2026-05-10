@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Loader2, Check, MapPin, AlertCircle, SplitSquareHorizontal } from 'lucide-react';
@@ -234,10 +235,22 @@ export default function RecoveryDetail() {
             </Button>
           )}
           {recovery.status === 'returned_to_branch' && (
-            <Button onClick={() => handleStatusUpdate('completed')} disabled={updating} className="w-full bg-green-600 hover:bg-green-700">
-              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-              Mark Recovery Complete
-            </Button>
+            <>
+              <Button
+                onClick={async () => {
+                  await base44.entities.Equipment.update(recovery.equipmentId, { unitStatus: 'under_inspection' });
+                  alert('✓ Equipment flagged for shop inspection');
+                }}
+                disabled={updating}
+                className="w-full bg-orange-600 hover:bg-orange-700"
+              >
+                🚩 Flag for Shop Inspection
+              </Button>
+              <Button onClick={() => handleStatusUpdate('completed')} disabled={updating} className="w-full bg-green-600 hover:bg-green-700">
+                {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                Mark Recovery Complete (No Repair)
+              </Button>
+            </>
           )}
           {recovery.status === 'completed' && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center text-sm text-green-800 font-medium">

@@ -125,6 +125,9 @@ export default function ShopFloor() {
             <div className="text-lg font-bold">Shop Floor</div>
             <div className="text-orange-300 text-xs">{workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs</div>
           </div>
+          <button onClick={() => navigate('/inspection-queue')} className="px-3 py-2 bg-orange-800 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
+            📋 Inspection Queue
+          </button>
           <button onClick={() => navigate('/parts-procurement')} className="px-3 py-2 bg-orange-800 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
             <Package className="w-4 h-4" /> Procurement Report
           </button>
