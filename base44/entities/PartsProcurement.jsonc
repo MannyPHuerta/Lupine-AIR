@@ -1,0 +1,79 @@
+{
+  "name": "PartsProcurement",
+  "type": "object",
+  "properties": {
+    "workOrderId": {
+      "type": "string",
+      "description": "Reference to WorkOrder"
+    },
+    "partRequirementId": {
+      "type": "string",
+      "description": "Reference to PartRequirement"
+    },
+    "partName": {
+      "type": "string",
+      "description": "Part name (denormalized)"
+    },
+    "quantity": {
+      "type": "integer",
+      "default": 1,
+      "description": "Quantity purchased"
+    },
+    "vendor": {
+      "type": "string",
+      "description": "Vendor name"
+    },
+    "unitCost": {
+      "type": "number",
+      "description": "Cost per unit"
+    },
+    "totalCost": {
+      "type": "number",
+      "description": "Total cost (quantity \u00d7 unitCost)"
+    },
+    "purchaseDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When part was purchased"
+    },
+    "receivedDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When part was received"
+    },
+    "invoiceNumber": {
+      "type": "string",
+      "description": "Vendor invoice/PO number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ordered",
+        "in_transit",
+        "received",
+        "rejected"
+      ],
+      "default": "ordered",
+      "description": "Procurement status"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch receiving the parts"
+    },
+    "purchasedBy": {
+      "type": "string",
+      "description": "Email of buyer who purchased"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "workOrderId",
+    "partName",
+    "vendor",
+    "unitCost",
+    "quantity"
+  ]
+}

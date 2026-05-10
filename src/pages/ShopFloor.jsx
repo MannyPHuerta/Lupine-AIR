@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Clock, User, Zap, Plus, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Clock, User, Zap, Plus, Loader2, Check, Send, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const STATUS_COLORS = {
@@ -20,6 +20,8 @@ export default function ShopFloor() {
   const [selectedWO, setSelectedWO] = useState(null);
   const [assigningWO, setAssigningWO] = useState(null);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [sendingRequest, setSendingRequest] = useState(null);
+  const [buyerEmail, setBuyerEmail] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -108,14 +110,17 @@ export default function ShopFloor() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-orange-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto flex-wrap">
           <button onClick={() => navigate('/airepair')} className="p-2 rounded-lg hover:bg-orange-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-48">
             <div className="text-lg font-bold">Shop Floor</div>
             <div className="text-orange-300 text-xs">{workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs</div>
           </div>
+          <button onClick={() => navigate('/parts-procurement')} className="px-3 py-2 bg-orange-800 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
+            <Package className="w-4 h-4" /> Procurement Report
+          </button>
           <button onClick={load} className="p-2 rounded-lg hover:bg-orange-800">
             ↻
           </button>
@@ -172,6 +177,52 @@ export default function ShopFloor() {
                       </div>
 
                       <div className="flex gap-2 flex-shrink-0">
+                        {getPartsForWO(wo.id).length > 0 && !assigningWO && (
+                          <button
+                            onClick={() => setSendingRequest(wo.id)}
+                            className="flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition"
+                          >
+                            <Send className="w-3 h-3" /> Request Parts
+                          </button>
+                        )}
+                        {sendingRequest === wo.id ? (
+                          <div className="flex gap-1 items-center">
+                            <input
+                              type="email"
+                              autoFocus
+                              placeholder="buyer@email.com"
+                              value={buyerEmail}
+                              onChange={e => setBuyerEmail(e.target.value)}
+                              className="h-9 border border-purple-300 rounded px-2 text-xs"
+                            />
+                            <button
+                              onClick={async () => {
+                                if (!buyerEmail.trim()) { alert('Enter buyer email'); return; }
+                                setSendingRequest(null);
+                                try {
+                                  await base44.functions.invoke('sendPartsRequest', {
+                                    workOrderId: wo.id,
+                                    buyerEmail: buyerEmail.trim(),
+                                  });
+                                  alert('✓ Parts request sent');
+                                  setBuyerEmail('');
+                                  load();
+                                } catch (err) {
+                                  alert(`Error: ${err.message}`);
+                                }
+                              }}
+                              className="px-2 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition"
+                            >
+                              Send
+                            </button>
+                            <button
+                              onClick={() => { setSendingRequest(null); setBuyerEmail(''); }}
+                              className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : null}
                         {assigningWO === wo.id ? (
                           <div className="relative">
                             <select
