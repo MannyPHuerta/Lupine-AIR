@@ -26,21 +26,19 @@ export default function DeliveryDetail() {
       return;
     }
 
-    Promise.all([
-      base44.entities.Delivery.list('-created_date', 100),
-      base44.entities.Rental.list('-created_date', 100),
-    ])
-      .then(([dels, rentals]) => {
-        const delivery = dels.find(d => d.id === id);
+    base44.entities.Delivery.filter({ id })
+      .then(async ([delivery]) => {
         if (!delivery) {
           setError('Delivery not found');
           setLoading(false);
           return;
         }
-        const rental = rentals.find(r => r.id === delivery.rentalId);
         setDelivery(delivery);
-        setRental(rental);
         setPhotos(delivery.photos || []);
+        if (delivery.rentalId) {
+          const rentals = await base44.entities.Rental.filter({ id: delivery.rentalId });
+          setRental(rentals[0] || null);
+        }
         setLoading(false);
       })
       .catch(err => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, X, ScanLine } from 'lucide-react';
@@ -22,25 +23,16 @@ export default function Counter() {
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [branch, setBranch] = useState('01 McAllen');
-  const [dlScanResult, setDlScanResult] = useState(null); // last scanned DL data
-  const [dlScanFlash, setDlScanFlash] = useState(null); // 'success' | 'expired' | null
-  const [debugLog, setDebugLog] = useState([]);
-  const [hookListening, setHookListening] = useState(false);
+  const [dlScanResult, setDlScanResult] = useState(null);
+  const [dlScanFlash, setDlScanFlash] = useState(null);
 
   const handleDLScan = useCallback((parsed) => {
-    console.log('[Counter] handleDLScan called with:', parsed);
     setDlScanResult(parsed);
     setDlScanFlash(parsed?.isExpired ? 'expired' : 'success');
-    setDebugLog(prev => [...prev.slice(-4), `✅ Parsed: ${parsed?.fullName} | ${parsed?.address}, ${parsed?.city} ${parsed?.state}`]);
     if (parsed?.fullName) {
       setSearchTerm(parsed.lastName || parsed.fullName);
     }
     setTimeout(() => setDlScanFlash(null), 4000);
-  }, []);
-
-  // Set flag to confirm hook is running
-  useEffect(() => {
-    setHookListening(true);
   }, []);
 
   useDLScanner(handleDLScan);
@@ -122,12 +114,7 @@ export default function Counter() {
         </div>
       </div>
 
-      {/* Temporary DL debug panel — remove after testing */}
-      {hookListening && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-xs font-mono text-blue-900">
-          🔵 Hook listening... {debugLog.length > 0 && <span className="ml-2 font-bold">GOT SCANS: {debugLog.map((l, i) => <div key={i}>{l}</div>)}</span>}
-        </div>
-      )}
+
 
       <div className="flex h-[calc(100vh-60px)]">
         {/* Left: Customer & Equipment Search */}
