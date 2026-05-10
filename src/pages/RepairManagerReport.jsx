@@ -238,7 +238,7 @@ export default function RepairManagerReport() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <div className="text-lg font-bold">Repair Manager Performance</div>
+            <div className="text-lg font-bold">AIRepair Manager Performance</div>
             <div className="text-orange-300 text-xs">Showcase your repair excellence</div>
           </div>
         </div>
