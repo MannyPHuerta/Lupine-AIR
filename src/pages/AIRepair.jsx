@@ -72,18 +72,10 @@ export default function AIRepair() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-orange-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto flex-wrap">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-orange-800">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <button onClick={() => navigate('/shop-floor')} className="px-3 py-1.5 text-sm font-medium bg-orange-700 hover:bg-orange-600 rounded transition">
-              🔧 Shop Floor
-            </button>
-            <button onClick={() => navigate('/repair-manager-report')} className="px-3 py-1.5 text-sm font-medium bg-orange-800 hover:bg-orange-700 rounded transition">
-              📊 Performance Report
-            </button>
-          </div>
+        <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
+          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-orange-800">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
           <div className="flex-1 min-w-0">
             <div className="text-lg font-bold">AIRepair Intelligence</div>
             <div className="text-orange-300 text-xs">{filtered.length} work order{filtered.length !== 1 ? 's' : ''} shown</div>
@@ -101,7 +93,7 @@ export default function AIRepair() {
         </div>
 
         {/* Status filter tabs */}
-         <div className="px-4 max-w-5xl mx-auto flex gap-1 flex-wrap">
+         <div className="px-4 max-w-5xl mx-auto flex gap-1 flex-wrap items-center">
            {[
              { key: 'open', label: 'Open' },
              { key: 'completed', label: 'Completed' },
@@ -119,8 +111,14 @@ export default function AIRepair() {
                {tab.label}
              </button>
            ))}
+           <button onClick={() => navigate('/shop-floor')} className="ml-4 px-3 py-1.5 text-sm font-medium bg-orange-700 hover:bg-orange-600 rounded transition">
+             🔧 Shop Floor
+           </button>
+           <button onClick={() => navigate('/repair-manager-report')} className="px-3 py-1.5 text-sm font-medium bg-orange-800 hover:bg-orange-700 rounded transition">
+             📊 Performance Report
+           </button>
            {maintenanceLogs.filter(m => m.status === 'completed').length > 0 && (
-             <span className="px-4 py-2.5 text-sm text-orange-300 ml-auto flex items-center gap-1">
+             <span className="ml-auto text-sm text-orange-300 flex items-center gap-1 py-2.5 px-4 whitespace-nowrap">
                <Zap className="w-4 h-4" /> {maintenanceLogs.filter(m => m.status === 'completed').length} repairs analyzed
              </span>
            )}
