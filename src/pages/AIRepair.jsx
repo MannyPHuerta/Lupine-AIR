@@ -73,23 +73,23 @@ export default function AIRepair() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-orange-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-orange-800">
+          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
             <div className="text-lg font-bold">AIRepair Intelligence</div>
-            <div className="text-orange-300 text-xs">{filtered.length} work order{filtered.length !== 1 ? 's' : ''} shown</div>
+            <div className="text-indigo-300 text-xs">{filtered.length} work order{filtered.length !== 1 ? 's' : ''} shown</div>
           </div>
           <select
             value={branch}
             onChange={e => setBranch(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-orange-800 text-white text-sm"
+            className="h-9 border-0 rounded px-2 bg-indigo-800 text-white text-sm"
           >
             {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
-          <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-orange-800 text-orange-200">
+          <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
@@ -107,20 +107,20 @@ export default function AIRepair() {
                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
                  statusFilter === tab.key
                    ? 'border-white text-white'
-                   : 'border-transparent text-orange-300 hover:text-white'
+                   : 'border-transparent text-indigo-300 hover:text-white'
                }`}
              >
                {tab.label}
              </button>
            ))}
-           <button onClick={() => navigate('/shop-floor')} className="ml-4 px-3 py-1.5 text-sm font-medium bg-orange-700 hover:bg-orange-600 rounded transition">
+           <button onClick={() => navigate('/shop-floor')} className="ml-4 px-3 py-1.5 text-sm font-medium bg-orange-600 hover:bg-orange-700 rounded transition">
              🔧 Shop Floor
            </button>
-           <button onClick={() => navigate('/repair-manager-report')} className="px-3 py-1.5 text-sm font-medium bg-orange-800 hover:bg-orange-700 rounded transition">
+           <button onClick={() => navigate('/repair-manager-report')} className="px-3 py-1.5 text-sm font-medium bg-indigo-700 hover:bg-indigo-600 rounded transition">
              📊 Performance Report
            </button>
            {maintenanceLogs.filter(m => m.status === 'completed').length > 0 && (
-             <span className="ml-auto text-sm text-orange-300 flex items-center gap-1 py-2.5 px-4 whitespace-nowrap">
+             <span className="ml-auto text-sm text-indigo-300 flex items-center gap-1 py-2.5 px-4 whitespace-nowrap">
                <Zap className="w-4 h-4" /> {maintenanceLogs.filter(m => m.status === 'completed').length} repairs analyzed
              </span>
            )}

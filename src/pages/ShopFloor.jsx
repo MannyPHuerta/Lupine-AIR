@@ -108,7 +108,7 @@ export default function ShopFloor() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
       </div>
     );
   }
@@ -116,22 +116,22 @@ export default function ShopFloor() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-orange-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto flex-wrap">
-          <button onClick={() => navigate('/airepair')} className="p-2 rounded-lg hover:bg-orange-800">
+          <button onClick={() => navigate('/airepair')} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-48">
             <div className="text-lg font-bold">Shop Floor</div>
-            <div className="text-orange-300 text-xs">{workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs</div>
+            <div className="text-indigo-300 text-xs">{workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs</div>
           </div>
-          <button onClick={() => navigate('/inspection-queue')} className="px-3 py-2 bg-orange-800 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
+          <button onClick={() => navigate('/inspection-queue')} className="px-3 py-2 bg-indigo-800 hover:bg-indigo-700 rounded text-xs font-medium flex items-center gap-1 transition">
             📋 Inspection Queue
           </button>
-          <button onClick={() => navigate('/parts-procurement')} className="px-3 py-2 bg-orange-800 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
+          <button onClick={() => navigate('/parts-procurement')} className="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
             <Package className="w-4 h-4" /> Procurement Report
           </button>
-          <button onClick={load} className="p-2 rounded-lg hover:bg-orange-800">
+          <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
             ↻
           </button>
         </div>
@@ -140,9 +140,9 @@ export default function ShopFloor() {
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Unassigned queue */}
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <h2 className="font-bold text-red-900">Unassigned — Waiting for Assignment ({unassigned.length})</h2>
+          <div className="px-6 py-4 bg-orange-50 border-b border-orange-200 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-orange-600" />
+            <h2 className="font-bold text-orange-900">Unassigned — Waiting for Assignment ({unassigned.length})</h2>
           </div>
 
           {unassigned.length === 0 ? (
@@ -240,7 +240,7 @@ export default function ShopFloor() {
                               onChange={e => {
                                 if (e.target.value) handleAssign(wo.id, e.target.value);
                               }}
-                              className="h-9 border border-orange-300 rounded px-2 text-sm bg-white cursor-pointer"
+                              className="h-9 border border-indigo-300 rounded px-2 text-sm bg-white cursor-pointer"
                             >
                               <option value="">Select mechanic...</option>
                               {mechanics
@@ -278,7 +278,7 @@ export default function ShopFloor() {
         {/* By Mechanic */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <User className="w-5 h-5 text-orange-600" />
+            <User className="w-5 h-5 text-indigo-600" />
             Shop Floor Status
           </h2>
 
