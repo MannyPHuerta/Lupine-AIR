@@ -127,7 +127,11 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   useEffect(() => {
     if (!line.equipmentId) {
       setOpen(true);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      // Use a slightly longer delay so the DOM is fully ready before grabbing focus
+      setTimeout(() => {
+        inputRef.current?.focus();
+        setOpen(true);
+      }, 80);
     }
   }, []);
 
@@ -199,14 +203,14 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
         <div className="flex-1 relative">
           <Input
             ref={inputRef}
-            value={open ? search : line.equipmentName}
+            value={open ? search : (line.equipmentName || '')}
             placeholder="Search equipment..."
             className="text-sm"
-            onFocus={() => { setOpen(true); if (!line.equipmentId) setSearch(''); }}
+            onFocus={() => { setOpen(true); setSearch(line.equipmentId ? '' : search); }}
             onChange={e => { setSearch(e.target.value); setOpen(true); }}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => setOpen(false), 150)}
-            readOnly={!open && !!line.equipmentId}
+            onBlur={() => setTimeout(() => setOpen(false), 200)}
+            readOnly={false}
           />
           {open && (
             <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-xl">
