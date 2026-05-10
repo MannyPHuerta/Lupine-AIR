@@ -258,7 +258,30 @@ export default function RecoveryDetail() {
           )}
 
           {['returned_to_branch', 'completed'].includes(recovery.status) && (
-            <ClaimPackageButton recovery={recovery} deliveryPhotos={deliveryPhotos} />
+            <>
+              <button
+                onClick={async () => {
+                  if (photos.length === 0) { alert('Add at least one photo'); return; }
+                  const problemDesc = prompt('Describe the problem detected:');
+                  if (!problemDesc) return;
+                  try {
+                    const result = await base44.functions.invoke('flagEquipmentForRepair', {
+                      equipmentId: recovery.equipmentId,
+                      problemDetected: problemDesc,
+                      photos: photos.map(p => p.url),
+                      sourceContext: { source: 'recovery', branch: recovery.customerCity },
+                    });
+                    alert(`✅ Work order ${result.data.workOrderId} created`);
+                  } catch (err) {
+                    alert(`Error: ${err.message}`);
+                  }
+                }}
+                className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded transition"
+              >
+                🚩 Flag for Repair
+              </button>
+              <ClaimPackageButton recovery={recovery} deliveryPhotos={deliveryPhotos} />
+            </>
           )}
         </div>
       </div>

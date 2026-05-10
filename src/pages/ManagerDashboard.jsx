@@ -6,9 +6,13 @@ import { Button } from '@/components/ui/button';
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
+  const [selectedWO, setSelectedWO] = useState(null);
+  const [certifyingWO, setCertifyingWO] = useState(null);
   const [branch, setBranch] = useState('01 McAllen');
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
+  const [workOrders, setWorkOrders] = useState([]);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const load = () => {
@@ -16,9 +20,13 @@ export default function ManagerDashboard() {
     Promise.all([
       base44.entities.Rental.list('-created_date', 500),
       base44.entities.Equipment.list('-updated_date', 500),
-    ]).then(([r, e]) => {
+      base44.entities.WorkOrder.list('-createdAt', 500),
+      base44.auth.me(),
+    ]).then(([r, e, wo, u]) => {
       setRentals(r);
       setEquipment(e);
+      setWorkOrders(wo);
+      setUser(u);
       setLoading(false);
     });
   };
@@ -103,7 +111,7 @@ export default function ManagerDashboard() {
             🎪 Planner Queue
           </button>
           <button
-            onClick={() => navigate('/shop')}
+            onClick={() => navigate('/shop-floor')}
             className="flex items-center gap-1.5 bg-orange-700 hover:bg-orange-600 px-3 py-1.5 rounded-lg text-xs font-medium"
           >
             🔧 Shop
@@ -197,10 +205,31 @@ export default function ManagerDashboard() {
             </div>
           </div>
 
+          {/* Inspection Queue */}
+          <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+            <div className="bg-orange-50 border-b px-4 py-3 font-semibold text-gray-900 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-orange-600" />
+              Flagged for Repair ({workOrders.filter(w => w.status === 'scheduled' && w.branch === branch).length})
+            </div>
+            <div className="max-h-96 overflow-y-auto divide-y">
+              {workOrders.filter(w => w.status === 'scheduled' && w.branch === branch).length === 0 ? (
+                <div className="text-center text-gray-400 text-xs py-8">No flagged items</div>
+              ) : (
+                workOrders.filter(w => w.status === 'scheduled' && w.branch === branch).map(wo => (
+                  <div key={wo.id} className="p-3 text-xs hover:bg-gray-50 transition cursor-pointer" onClick={() => setSelectedWO(wo)}>
+                    <div className="font-medium text-gray-900">{wo.equipmentName}</div>
+                    <div className="text-gray-600 mt-1 line-clamp-2">{wo.description}</div>
+                    <div className="text-gray-500 mt-1">By: {wo.created_by}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
           {/* Maintenance Queue */}
           <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
             <div className="bg-purple-50 border-b px-4 py-3 font-semibold text-gray-900">
-              Maintenance Queue ({branchData.inMaintenance.length})
+              In Maintenance ({branchData.inMaintenance.length})
             </div>
             <div className="max-h-96 overflow-y-auto divide-y">
               {branchData.inMaintenance.length === 0 ? (
@@ -219,6 +248,117 @@ export default function ManagerDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Work Order Detail Modal */}
+        {selectedWO && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+              <div className="p-6 border-b flex items-start justify-between sticky top-0 bg-white">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">{selectedWO.equipmentName}</h2>
+                  <p className="text-sm text-gray-500 mt-1">{selectedWO.type}</p>
+                </div>
+                <button onClick={() => setSelectedWO(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">
+                  ✕
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <div className="text-xs font-semibold text-gray-600 uppercase mb-1">Problem Detected</div>
+                  <p className="text-sm text-gray-800">{selectedWO.description}</p>
+                </div>
+                {selectedWO.notes && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-600 uppercase mb-1">Notes</div>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{selectedWO.notes}</p>
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end pt-4 border-t">
+                  <button
+                    onClick={() => setSelectedWO(null)}
+                    className="px-4 py-2 border border-gray-300 text-gray-900 rounded hover:bg-gray-50 text-sm font-medium transition"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => { setCertifyingWO(selectedWO); setSelectedWO(null); }}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition"
+                  >
+                    ✓ Certify & Return to Service
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Certification Modal */}
+        {certifyingWO && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full">
+              <div className="p-6 border-b">
+                <h2 className="text-lg font-bold text-gray-900">Certify Repair</h2>
+                <p className="text-sm text-gray-600 mt-1">{certifyingWO.equipmentName}</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-2">Condition After Repair</label>
+                  <select
+                    id="conditionAfter"
+                    defaultValue="Good"
+                    className="w-full h-9 border border-gray-300 rounded px-3 text-sm bg-white"
+                  >
+                    <option value="New">New</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
+                    <option value="Needs Repair">Needs Repair</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-2">Final Notes</label>
+                  <textarea
+                    id="finalNotes"
+                    rows={3}
+                    placeholder="Repair summary..."
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none"
+                  />
+                </div>
+                <div className="flex gap-2 justify-end pt-4 border-t">
+                  <button
+                    onClick={() => setCertifyingWO(null)}
+                    className="px-4 py-2 border border-gray-300 text-gray-900 rounded hover:bg-gray-50 text-sm font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const condAfter = document.getElementById('conditionAfter').value;
+                      const notes = document.getElementById('finalNotes').value;
+                      await base44.entities.WorkOrder.update(certifyingWO.id, {
+                        status: 'completed',
+                        conditionAfter: condAfter,
+                        notes: (certifyingWO.notes || '') + '\n\n[CERTIFIED] ' + notes,
+                        completedDate: new Date().toISOString().split('T')[0],
+                      });
+                      await base44.entities.Equipment.update(certifyingWO.equipmentId, {
+                        unitStatus: 'available',
+                        condition: condAfter,
+                        statusUpdatedAt: new Date().toISOString(),
+                        statusUpdatedBy: user?.email || 'system',
+                        statusNote: 'Returned to service',
+                      });
+                      setCertifyingWO(null);
+                      load();
+                    }}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition"
+                  >
+                    ✓ Certify
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
