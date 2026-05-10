@@ -120,19 +120,19 @@ function Hero() {
             />
           </div>
           <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-            className="flex justify-center">
-            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden">
-              <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIR" className="w-full h-full rounded-3xl" />
-              <motion.div
-                className="absolute inset-0 rounded-3xl"
-                style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%)' }}
-                animate={{ x: ['-150%', '150%'] }}
-                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5, ease: 'easeInOut' }}
-              />
-            </div>
-          </motion.div>
+               animate={{ y: [0, -8, 0] }}
+               transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+               className="flex justify-center pointer-events-none">
+               <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden">
+                 <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIR" className="w-full h-full rounded-3xl" />
+                 <motion.div
+                   className="absolute inset-0 rounded-3xl pointer-events-none"
+                   style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%)' }}
+                   animate={{ x: ['-150%', '150%'] }}
+                   transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5, ease: 'easeInOut' }}
+                 />
+               </div>
+             </motion.div>
           <p className="text-lg md:text-xl text-blue-200/70 mt-6 max-w-2xl mx-auto">
             The first rental equipment cloud platform to harness the full power of AI —
             from instant invoices to AI-drafted government bids.
@@ -671,9 +671,8 @@ function Footer() {
                 { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg' },
               ].map(p => (
                 <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
-                  className="flex items-center gap-2 text-white/50 hover:text-white text-sm transition">
+                  className="text-white/50 hover:text-white transition">
                   <img src={p.icon} alt={p.name} className="h-5 w-5 rounded-md" />
-                  {p.name}
                 </button>
               ))}
             </div>
