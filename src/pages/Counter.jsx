@@ -22,6 +22,7 @@ export default function Counter() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [equipmentSearchTerm, setEquipmentSearchTerm] = useState('');
   const [branch, setBranch] = useState('01 McAllen');
   const [dlScanResult, setDlScanResult] = useState(null);
   const [dlScanFlash, setDlScanFlash] = useState(null);
@@ -149,10 +150,9 @@ export default function Counter() {
                   <div className="relative mb-3">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      ref={searchRef}
-                      placeholder="Search equipment... (Ctrl+K)"
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
+                      placeholder="Search equipment..."
+                      value={equipmentSearchTerm}
+                      onChange={e => setEquipmentSearchTerm(e.target.value)}
                       className="pl-9 text-sm"
                     />
                   </div>
@@ -161,7 +161,7 @@ export default function Counter() {
                       .filter(e => 
                         e.status === 'available' && 
                         e.location === branch &&
-                        e.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                        e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
                       )
                       .slice(0, 20)
                       .map(e => (
@@ -169,7 +169,7 @@ export default function Counter() {
                           key={e.id}
                           onClick={() => {
                             handleAddToCart(e);
-                            setSearchTerm('');
+                            setEquipmentSearchTerm('');
                           }}
                           className="w-full text-left p-2 rounded hover:bg-indigo-50 text-xs border border-transparent hover:border-indigo-300 transition group"
                         >
@@ -177,10 +177,10 @@ export default function Counter() {
                           <div className="text-gray-500">${e.dailyRate}/day</div>
                         </button>
                       ))}
-                    {searchTerm && equipment.filter(e => 
+                    {equipmentSearchTerm && equipment.filter(e => 
                       e.status === 'available' && 
                       e.location === branch &&
-                      e.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                      e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
                     ).length === 0 && (
                       <div className="text-xs text-gray-400 text-center py-3">No equipment found</div>
                     )}
