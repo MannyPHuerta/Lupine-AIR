@@ -65,6 +65,7 @@ import ShopFloor from "./pages/ShopFloor";
 import PartsProcurementReport from "./pages/PartsProcurementReport";
 import InspectionQueue from "./pages/InspectionQueue";
 import EmployeeProfileManager from "./pages/EmployeeProfileManager";
+import LaundryDashboard from "./pages/LaundryDashboard";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -154,6 +155,7 @@ const AuthenticatedApp = () => {
       <Route path="/parts-procurement" element={<PartsProcurementReport />} />
       <Route path="/inspection-queue" element={<InspectionQueue />} />
       <Route path="/employee-profiles" element={<EmployeeProfileManager />} />
+      <Route path="/laundry" element={<LaundryDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
