@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Wrench, ChevronDown, ChevronUp, Plus, Trash2, Check, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Wrench, ChevronDown, ChevronUp, Plus, Trash2, Check, X, Play, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { base44 } from '@/api/base44Client';
@@ -12,6 +12,19 @@ const CONDITIONS = ['New', 'Good', 'Fair', 'Needs Repair', 'Retired'];
 export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, onEdit, onCancelEdit, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState(null);
+  const [elapsed, setElapsed] = useState(null);
+
+  useEffect(() => {
+    if (wo.status !== 'in_progress' || !wo.startedAt) return;
+    const timer = setInterval(() => {
+      const ms = Date.now() - new Date(wo.startedAt).getTime();
+      const secs = Math.floor(ms / 1000);
+      const mins = Math.floor(secs / 60);
+      const hrs = Math.floor(mins / 60);
+      setElapsed(`${hrs}h ${mins % 60}m ${secs % 60}s`);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [wo.status, wo.startedAt]);
 
   const startEdit = () => {
     setForm({
@@ -109,12 +122,31 @@ export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, on
             {wo.assignedTo && <span>🔧 {wo.assignedTo}</span>}
             {wo.eta && <span>📅 ETA {wo.eta}</span>}
             {wo.scheduledDate && <span>Scheduled {wo.scheduledDate}</span>}
+            {wo.status === 'in_progress' && elapsed && <span className="font-mono text-blue-700 font-semibold animate-pulse">⏱ {elapsed}</span>}
           </div>
           {wo.description && <div className="text-xs text-gray-600 mt-1 line-clamp-1">{wo.description}</div>}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {(wo.cost > 0) && (
             <span className="text-sm font-semibold text-gray-700">${(wo.cost || 0).toFixed(2)}</span>
+          )}
+          {!isEditing && wo.status === 'scheduled' && (
+            <Button
+              size="sm"
+              onClick={e => { e.stopPropagation(); onUpdate({ status: 'in_progress', startedAt: new Date().toISOString() }); }}
+              className="bg-blue-600 hover:bg-blue-700 gap-1"
+            >
+              <Play className="w-3 h-3" /> Start
+            </Button>
+          )}
+          {!isEditing && wo.status === 'in_progress' && (
+            <Button
+              size="sm"
+              onClick={e => { e.stopPropagation(); onUpdate({ status: 'completed', completedAt: new Date().toISOString() }); }}
+              className="bg-green-600 hover:bg-green-700 gap-1"
+            >
+              <CheckCircle2 className="w-3 h-3" /> Done
+            </Button>
           )}
           {!isEditing && (
             <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); startEdit(); }}>
