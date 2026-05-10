@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
 
     // Fetch merged PRs from GitHub (main branch, sorted by merge date)
     const response = await fetch(
-      'https://api.github.com/repos/YOUR_OWNER/air/pulls?state=closed&base=main&sort=updated&direction=desc&per_page=50',
+      'https://api.github.com/repos/MannyPHuerta/air/pulls?state=closed&base=main&sort=updated&direction=desc&per_page=50',
       {
         headers: {
           'Authorization': `Bearer ${githubToken}`,
