@@ -155,7 +155,7 @@ function Hero() {
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg', anchor: '#airevents' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg', anchor: '#airfq' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg', anchor: '#aireports' },
-            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/00558693b_AIRepair.svg', anchor: '#airepair' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/65c9b4135_AIRepair_black1.svg', anchor: '#airepair' },
           ].map((p, idx) => (
             <button key={idx} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
@@ -663,7 +663,7 @@ function Footer() {
                 { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg' },
                 { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg' },
                 { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg' },
-                { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/00558693b_AIRepair.svg' },
+                { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/65c9b4135_AIRepair_black1.svg' },
               ].map(p => (
                 <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
                   className="text-white/50 hover:text-white transition">
@@ -786,7 +786,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="airepair"
         tag="AIRepair · Shop Management"
-        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/00558693b_AIRepair.svg" alt="AIRepair" className="h-20 w-20 rounded-2xl" />}
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/65c9b4135_AIRepair_black1.svg" alt="AIRepair" className="h-20 w-20 rounded-2xl" />}
         tagline="From breakdown to backyard — automatically."
         description="Equipment flagged by field ops flows directly into a work order queue. AI routes jobs to the right mechanic based on skills and availability. Track parts procurement, labor costs, condition before/after. Predict failures before they happen with automated preventive maintenance alerts."
         color="orange"
