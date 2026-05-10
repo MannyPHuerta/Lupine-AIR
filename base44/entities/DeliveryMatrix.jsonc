@@ -1,0 +1,75 @@
+{
+  "name": "DeliveryMatrix",
+  "type": "object",
+  "properties": {
+    "branch": {
+      "type": "string",
+      "description": "Branch this rate applies to (e.g. '01 McAllen')"
+    },
+    "laborRatePerManHour": {
+      "type": "number",
+      "description": "Hourly labor rate per crew member (USD)"
+    },
+    "truckRatePerHour": {
+      "type": "number",
+      "description": "Hourly truck/equipment rate (USD)"
+    },
+    "defaultCrewSize": {
+      "type": "integer",
+      "default": 2,
+      "description": "Default number of crew members per delivery"
+    },
+    "defaultTrucks": {
+      "type": "integer",
+      "default": 1,
+      "description": "Default number of trucks per delivery"
+    },
+    "minimumCharge": {
+      "type": "number",
+      "description": "Minimum delivery charge regardless of distance (USD)"
+    },
+    "zones": {
+      "type": "array",
+      "description": "Zip-prefix or zip-range based zone overrides",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Zone name (e.g. 'McAllen Metro')"
+          },
+          "zipPrefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of zip prefixes or full zips in this zone (e.g. ['785', '78501'])"
+          },
+          "estimatedMinutes": {
+            "type": "integer",
+            "description": "Estimated one-way drive time in minutes"
+          },
+          "crewSize": {
+            "type": "integer",
+            "description": "Override crew size for this zone"
+          },
+          "trucks": {
+            "type": "integer",
+            "description": "Override truck count for this zone"
+          },
+          "flatRate": {
+            "type": "number",
+            "description": "Optional flat rate override for this zone (USD) \u2014 bypasses formula"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes about this branch's delivery pricing"
+    }
+  },
+  "required": [
+    "branch"
+  ]
+}
