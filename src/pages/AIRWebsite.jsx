@@ -93,12 +93,8 @@ function Hero() {
     <section className="relative min-h-screen bg-black flex items-center justify-center overflow-hidden pt-16">
       {/* Background glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500 rounded-full blur-3xl opacity-10"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.10, 0.18, 0.10] }}
-          transition={{ duration: 6, repeat: Infinity }} />
-        <motion.div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500 rounded-full blur-3xl opacity-10"
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.10, 0.18, 0.10] }}
-          transition={{ duration: 8, repeat: Infinity }} />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500 rounded-full blur-3xl opacity-10" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500 rounded-full blur-3xl opacity-10" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 text-center space-y-8">
@@ -155,18 +151,16 @@ function Hero() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
           className="flex flex-wrap justify-center gap-6 pt-4">
           {[
-            { name: 'AIRental', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg', anchor: '#airental' },
-            { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg', anchor: '#airevents' },
-            { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg', anchor: '#airfq' },
-            { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg', anchor: '#aireports' },
-            { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg', anchor: '#airepair' },
-          ].map((p) => (
-            <button key={p.name} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/52eafcdcd_AIRental_final.svg', anchor: '#airental' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg', anchor: '#airevents' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg', anchor: '#airfq' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg', anchor: '#aireports' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg', anchor: '#airepair' },
+          ].map((p, idx) => (
+            <button key={idx} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
-              {p.icon ? (
-                <img src={p.icon} alt={p.name}
-                  className="w-24 h-24 rounded-2xl object-cover shadow-lg group-hover:scale-105 group-hover:shadow-cyan-500/30 transition-all duration-200" />
-              ) : null}
+              <img src={p.icon} alt="product"
+                className="w-24 h-24 rounded-2xl object-cover shadow-lg group-hover:scale-105 group-hover:shadow-cyan-500/30 transition-all duration-200" />
             </button>
           ))}
         </motion.div>
