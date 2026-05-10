@@ -54,12 +54,11 @@ import DeliveryAssignment from "./pages/DeliveryAssignment";
 import RecoveryDetail from "./pages/RecoveryDetail";
 import DispatchBoard from "./pages/DispatchBoard";
 import AIReports from "./pages/AIReports";
-import AIRepair from "./pages/AIRepair";
 import EventPlanner from "./pages/EventPlanner";
 import AccountingDashboard from "./pages/AccountingDashboard";
 import DailyOps from "./pages/DailyOps";
 import PlannerQueue from "./pages/PlannerQueue";
-import ShopDashboard from "./pages/ShopDashboard";
+import AIRepair from "./pages/AIRepair";
 import GitHubPRDashboard from "./pages/GitHubPRDashboard";
 
 const AuthenticatedApp = () => {
@@ -143,7 +142,7 @@ const AuthenticatedApp = () => {
       <Route path="/event-planner/:planId" element={<EventPlanner />} />
       <Route path="/accounting" element={<AccountingDashboard />} />
       <Route path="/planner-queue" element={<PlannerQueue />} />
-      <Route path="/shop" element={<ShopDashboard />} />
+
       <Route path="/github-prs" element={<GitHubPRDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
