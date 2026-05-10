@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Search, AlertTriangle, Ban, ShieldCheck, Building2, User, Star } from 'lucide-react';
+import { ArrowLeft, Plus, Search, AlertTriangle, Ban, ShieldCheck, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CustomerCard from '@/components/customers/CustomerCard';
@@ -53,7 +53,7 @@ export default function Customers() {
         c.phone?.includes(q)
       );
     }
-    return list;
+    return [...list].sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
   }, [customers, filter, search]);
 
   const stats = useMemo(() => ({
@@ -154,15 +154,36 @@ export default function Customers() {
             <p className="text-sm">No customers found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {filtered.map(c => (
-              <CustomerCard
-                key={c.id}
-                customer={c}
-                rentals={rentals.filter(r => r.customerName === c.fullName || r.customerEmail === c.email)}
-                onClick={() => setSelectedCustomer(c)}
-              />
-            ))}
+          <div className="bg-white rounded-xl border shadow-sm divide-y divide-gray-100">
+            {filtered.map(c => {
+              const custRentals = rentals.filter(r => r.customerName === c.fullName || r.customerEmail === c.email);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCustomer(c)}
+                  className="w-full text-left px-4 py-3 hover:bg-indigo-50 transition flex items-center gap-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900 text-sm">{c.fullName}</span>
+                      {c.companyName && <span className="text-xs text-gray-500">· {c.companyName}</span>}
+                      {c.blacklisted && <Ban className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />}
+                      {c.creditHold && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />}
+                      {c.taxExempt && <ShieldCheck className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                      {c.phone && <span>{c.phone}</span>}
+                      {c.email && <span className="truncate">{c.email}</span>}
+                      {c.city && <span>{c.city}, {c.state}</span>}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 flex-shrink-0 text-right">
+                    <div className="font-medium text-gray-700">{custRentals.length} rental{custRentals.length !== 1 ? 's' : ''}</div>
+                    <div className="text-gray-400">{c.accountType !== 'individual' ? c.accountType : ''}</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

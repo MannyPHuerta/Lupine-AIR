@@ -249,9 +249,9 @@ export default function AvailabilityManager() {
     setSaving(true);
     const createdIds = [];
     try {
-      // Auto-sync customer record on confirmed rentals
+      // Auto-sync customer record on all saves (quote or confirmed)
       let customerId = null;
-      if (status === 'confirmed' || status === 'contract') {
+      if (customer.name) {
         try {
           const res = await base44.functions.invoke('upsertCustomer', {
             fullName: customer.name,
