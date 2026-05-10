@@ -76,7 +76,7 @@ export default function AIRepair() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
-            <div className="text-lg font-bold">AI Repair Intelligence</div>
+            <div className="text-lg font-bold">AIRepair Intelligence</div>
             <div className="text-orange-300 text-xs">{filtered.length} work order{filtered.length !== 1 ? 's' : ''} shown</div>
           </div>
           <select
