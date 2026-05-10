@@ -54,7 +54,6 @@ import DeliveryAssignment from "./pages/DeliveryAssignment";
 import RecoveryDetail from "./pages/RecoveryDetail";
 import DispatchBoard from "./pages/DispatchBoard";
 import AIReports from "./pages/AIReports";
-import AIRepair from "./pages/AIRepair";
 import EventPlanner from "./pages/EventPlanner";
 import AccountingDashboard from "./pages/AccountingDashboard";
 import DailyOps from "./pages/DailyOps";
@@ -138,7 +137,6 @@ const AuthenticatedApp = () => {
       <Route path="/recovery/:id" element={<RecoveryDetail />} />
       <Route path="/dispatch" element={<DispatchBoard />} />
       <Route path="/aireports" element={<AIReports />} />
-      <Route path="/airepair" element={<AIRepair />} />
       <Route path="/event-planner" element={<EventPlanner />} />
       <Route path="/event-planner/:planId" element={<EventPlanner />} />
       <Route path="/accounting" element={<AccountingDashboard />} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Loader2, Wrench, Clock, CheckCircle2, AlertTriangle, Package } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Wrench, Clock, CheckCircle2, AlertTriangle, Package, Zap, TrendingUp } from 'lucide-react';
 import WorkOrderCard from '@/components/shop/WorkOrderCard';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
@@ -19,15 +19,25 @@ const STATUS_META = {
 export default function ShopDashboard() {
   const navigate = useNavigate();
   const [workOrders, setWorkOrders] = useState([]);
+  const [equipment, setEquipment] = useState([]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState('All Branches');
   const [statusFilter, setStatusFilter] = useState('open'); // 'open' | 'completed' | 'all'
   const [editingId, setEditingId] = useState(null);
+  const [expandedAI, setExpandedAI] = useState(null); // which maintenance log has AI expanded
+  const [aiResults, setAiResults] = useState({}); // map of maintenance log id to AI analysis
 
   const load = async () => {
     setLoading(true);
-    const wo = await base44.entities.WorkOrder.list('-createdAt', 500);
+    const [wo, eq, logs] = await Promise.all([
+      base44.entities.WorkOrder.list('-createdAt', 500),
+      base44.entities.Equipment.list('name', 2000),
+      base44.entities.MaintenanceLog.list('-completedDate', 200),
+    ]);
     setWorkOrders(wo);
+    setEquipment(eq);
+    setMaintenanceLogs(logs);
     setLoading(false);
   };
 
@@ -82,25 +92,30 @@ export default function ShopDashboard() {
         </div>
 
         {/* Status filter tabs */}
-        <div className="px-4 max-w-5xl mx-auto flex gap-1">
-          {[
-            { key: 'open', label: 'Open' },
-            { key: 'completed', label: 'Completed' },
-            { key: 'all', label: 'All' },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setStatusFilter(tab.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
-                statusFilter === tab.key
-                  ? 'border-white text-white'
-                  : 'border-transparent text-orange-300 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+         <div className="px-4 max-w-5xl mx-auto flex gap-1 flex-wrap">
+           {[
+             { key: 'open', label: 'Open' },
+             { key: 'completed', label: 'Completed' },
+             { key: 'all', label: 'All' },
+           ].map(tab => (
+             <button
+               key={tab.key}
+               onClick={() => setStatusFilter(tab.key)}
+               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
+                 statusFilter === tab.key
+                   ? 'border-white text-white'
+                   : 'border-transparent text-orange-300 hover:text-white'
+               }`}
+             >
+               {tab.label}
+             </button>
+           ))}
+           {maintenanceLogs.filter(m => m.status === 'completed').length > 0 && (
+             <span className="px-4 py-2.5 text-sm text-orange-300 ml-auto flex items-center gap-1">
+               <Zap className="w-4 h-4" /> {maintenanceLogs.filter(m => m.status === 'completed').length} repairs analyzed
+             </span>
+           )}
+         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -120,27 +135,120 @@ export default function ShopDashboard() {
         </div>
 
         {/* Work orders */}
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center text-gray-400 py-16 bg-white rounded-lg border text-sm">
-            No work orders found
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filtered.map(wo => (
-              <WorkOrderCard
-                key={wo.id}
-                workOrder={wo}
-                statusMeta={STATUS_META}
-                isEditing={editingId === wo.id}
-                onEdit={() => setEditingId(wo.id)}
-                onCancelEdit={() => setEditingId(null)}
-                onUpdate={(updates) => handleUpdate(wo.id, updates)}
-              />
-            ))}
+         {loading ? (
+           <div className="flex justify-center py-16">
+             <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+           </div>
+         ) : filtered.length === 0 ? (
+           <div className="text-center text-gray-400 py-16 bg-white rounded-lg border text-sm">
+             No work orders found
+           </div>
+         ) : (
+           <div className="space-y-4">
+             {filtered.map(wo => (
+               <WorkOrderCard
+                 key={wo.id}
+                 workOrder={wo}
+                 statusMeta={STATUS_META}
+                 isEditing={editingId === wo.id}
+                 onEdit={() => setEditingId(wo.id)}
+                 onCancelEdit={() => setEditingId(null)}
+                 onUpdate={(updates) => handleUpdate(wo.id, updates)}
+               />
+             ))}
+           </div>
+         )}
+
+        {/* Completed repairs with AI insights */}
+        {statusFilter !== 'open' && maintenanceLogs.filter(m => m.status === 'completed' && (branch === 'All Branches' || m.branch === branch)).length > 0 && (
+          <div className="mt-8 pt-8 border-t-2 border-orange-200">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-orange-600" />
+              Recently Completed Repairs
+            </h2>
+            <div className="space-y-3">
+              {maintenanceLogs.filter(m => m.status === 'completed' && (branch === 'All Branches' || m.branch === branch))
+                .sort((a, b) => new Date(b.completedDate) - new Date(a.completedDate))
+                .slice(0, 10)
+                .map(log => {
+                  const eq = equipment.find(e => e.id === log.equipmentId);
+                  const isExpanded = expandedAI === log.id;
+                  const hasAI = aiResults[log.id];
+
+                  return (
+                    <div key={log.id} className="bg-white rounded-lg border p-4 hover:border-orange-300 transition">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900">{eq?.name || log.equipmentName || 'Unknown'}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            <span className="inline-block mr-2">{log.type}</span>
+                            {log.completedDate && <span>{new Date(log.completedDate).toLocaleDateString()}</span>}
+                            {log.cost && <span className="inline-block ml-2 font-medium text-gray-700">${log.cost.toFixed(0)}</span>}
+                          </div>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (isExpanded) {
+                              setExpandedAI(null);
+                            } else {
+                              // Trigger AI analysis
+                              if (!hasAI) {
+                                const rentals = [];
+                                try {
+                                  const result = await base44.functions.invoke('analyzeRepairIntel', {
+                                    equipmentId: log.equipmentId,
+                                    equipmentName: log.equipmentName || eq?.name || 'Unknown',
+                                    equipmentCategory: eq?.category || '',
+                                    purchaseCost: eq?.purchaseCost || 0,
+                                    dailyRate: eq?.dailyRate || 0,
+                                    currentCondition: log.conditionAfter || 'Good',
+                                    maintenanceType: log.type,
+                                    rentalHistory: rentals,
+                                  });
+                                  setAiResults(prev => ({ ...prev, [log.id]: result }));
+                                } catch (err) {
+                                  setAiResults(prev => ({ ...prev, [log.id]: { error: err.message } }));
+                                }
+                              }
+                              setExpandedAI(log.id);
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded text-xs font-medium transition flex-shrink-0 ${
+                            isExpanded
+                              ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {isExpanded ? '− Hide' : '+ AI Insight'}
+                        </button>
+                      </div>
+
+                      {isExpanded && hasAI && !hasAI.error && (
+                        <div className="mt-4 pt-4 border-t space-y-3 text-xs">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-blue-50 p-2 rounded">
+                              <span className="font-semibold text-blue-900">Success Rate</span>
+                              <div className="text-lg font-bold text-blue-700 mt-1">{hasAI.successProbability}%</div>
+                            </div>
+                            <div className="bg-green-50 p-2 rounded">
+                              <span className="font-semibold text-green-900">Annual Recovery</span>
+                              <div className="text-lg font-bold text-green-700 mt-1">${hasAI.estimatedRecovery}</div>
+                            </div>
+                          </div>
+                          <div className="bg-amber-50 p-2 rounded">
+                            <span className="font-semibold text-amber-900">Impact</span>
+                            <p className="text-amber-800 mt-1">{hasAI.businessImpact}</p>
+                          </div>
+                          <div className="bg-purple-50 p-2 rounded">
+                            <span className="font-semibold text-purple-900">Recommendation</span>
+                            <p className="text-purple-800 mt-1">{hasAI.recommendation}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         )}
       </div>
