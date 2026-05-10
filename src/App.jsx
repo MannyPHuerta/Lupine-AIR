@@ -59,6 +59,7 @@ import AccountingDashboard from "./pages/AccountingDashboard";
 import DailyOps from "./pages/DailyOps";
 import PlannerQueue from "./pages/PlannerQueue";
 import ShopDashboard from "./pages/ShopDashboard";
+import GitHubPRDashboard from "./pages/GitHubPRDashboard";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -141,6 +142,7 @@ const AuthenticatedApp = () => {
       <Route path="/accounting" element={<AccountingDashboard />} />
       <Route path="/planner-queue" element={<PlannerQueue />} />
       <Route path="/shop" element={<ShopDashboard />} />
+      <Route path="/github-prs" element={<GitHubPRDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
