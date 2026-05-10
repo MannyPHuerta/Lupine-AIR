@@ -46,7 +46,28 @@
     },
     "assignedTo": {
       "type": "string",
-      "description": "Name/email of technician or vendor"
+      "description": "Email of assigned mechanic (links to MechanicProfile)"
+    },
+    "assignedAt": {
+      "type": "string",
+      "description": "ISO timestamp when assigned"
+    },
+    "assignmentScore": {
+      "type": "number",
+      "description": "Score used for automatic assignment recommendation (0-100)"
+    },
+    "canStartWithoutParts": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, job can start even if parts are on order"
+    },
+    "estimatedLaborCost": {
+      "type": "number",
+      "description": "Estimated cost for this repair (used for 'Value Untapped')"
+    },
+    "mechanicCompensation": {
+      "type": "number",
+      "description": "What mechanic will earn if they complete this job"
     },
     "createdAt": {
       "type": "string",

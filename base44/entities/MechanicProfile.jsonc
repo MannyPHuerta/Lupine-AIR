@@ -1,0 +1,68 @@
+{
+  "name": "MechanicProfile",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Mechanic email (links to User)"
+    },
+    "fullName": {
+      "type": "string",
+      "description": "Mechanic full name"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Equipment categories mechanic is certified for (e.g. 'Generator', 'Compressor')"
+    },
+    "hourlyRate": {
+      "type": "number",
+      "description": "Hourly rate if paid hourly (USD)"
+    },
+    "perJobRate": {
+      "type": "number",
+      "description": "Flat rate per job if paid per-job (USD)"
+    },
+    "paymentType": {
+      "type": "string",
+      "enum": [
+        "hourly",
+        "per_job"
+      ],
+      "default": "per_job",
+      "description": "How this mechanic is compensated"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Primary branch location"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether mechanic is currently available"
+    },
+    "maxConcurrentJobs": {
+      "type": "integer",
+      "default": 2,
+      "description": "Max jobs assigned at once (prevents overload)"
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of certifications (e.g. 'Forklift', 'Welding')"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Special notes about mechanic (e.g. availability constraints)"
+    }
+  },
+  "required": [
+    "email",
+    "fullName",
+    "branch"
+  ]
+}

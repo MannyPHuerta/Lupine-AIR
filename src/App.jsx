@@ -61,6 +61,7 @@ import PlannerQueue from "./pages/PlannerQueue";
 import AIRepair from "./pages/AIRepair";
 import GitHubPRDashboard from "./pages/GitHubPRDashboard";
 import RepairManagerReport from "./pages/RepairManagerReport";
+import ShopFloor from "./pages/ShopFloor";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -146,6 +147,7 @@ const AuthenticatedApp = () => {
 
       <Route path="/github-prs" element={<GitHubPRDashboard />} />
       <Route path="/repair-manager-report" element={<RepairManagerReport />} />
+      <Route path="/shop-floor" element={<ShopFloor />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

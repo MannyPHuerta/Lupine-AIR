@@ -77,6 +77,9 @@ export default function AIRepair() {
             <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-orange-800">
               <ArrowLeft className="w-5 h-5" />
             </button>
+            <button onClick={() => navigate('/shop-floor')} className="px-3 py-1.5 text-sm font-medium bg-orange-700 hover:bg-orange-600 rounded transition">
+              🔧 Shop Floor
+            </button>
             <button onClick={() => navigate('/repair-manager-report')} className="px-3 py-1.5 text-sm font-medium bg-orange-800 hover:bg-orange-700 rounded transition">
               📊 Performance Report
             </button>

@@ -1,0 +1,56 @@
+{
+  "name": "PartRequirement",
+  "type": "object",
+  "properties": {
+    "workOrderId": {
+      "type": "string",
+      "description": "Reference to WorkOrder"
+    },
+    "partName": {
+      "type": "string",
+      "description": "Part name (e.g. 'Spark plug', 'Hydraulic seal')"
+    },
+    "quantity": {
+      "type": "integer",
+      "default": 1,
+      "description": "Quantity needed"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "in_stock",
+        "on_order",
+        "unavailable",
+        "received"
+      ],
+      "default": "in_stock",
+      "description": "Availability status"
+    },
+    "eta": {
+      "type": "string",
+      "format": "date",
+      "description": "Expected arrival date if on_order"
+    },
+    "isCritical": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, job cannot start without this part"
+    },
+    "vendor": {
+      "type": "string",
+      "description": "Vendor name"
+    },
+    "cost": {
+      "type": "number",
+      "description": "Part cost (USD)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "workOrderId",
+    "partName"
+  ]
+}
