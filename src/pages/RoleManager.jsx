@@ -194,114 +194,193 @@ function RoleCard({ role, onEdit, onDelete }) {
   );
 }
 
-const USER_ROLES = ['admin', 'user', 'manager', 'accountant', 'counter', 'driver'];
-
+const USER_ROLES = ['admin', 'manager', 'accountant', 'counter', 'driver', 'user'];
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
-function EmployeeSection() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('counter');
-  const [inviting, setInviting] = useState(false);
-  const [updatingId, setUpdatingId] = useState(null);
+const EMPTY_STAFF = { fullName: '', email: '', phone: '', role: 'counter', branch: '01 McAllen', title: '', notes: '' };
 
-  const loadUsers = async () => {
+const INVITE_STATUS_COLORS = {
+  not_invited: 'bg-gray-100 text-gray-600',
+  invited: 'bg-amber-100 text-amber-700',
+  active: 'bg-green-100 text-green-700',
+};
+
+function StaffForm({ staff, onSave, onCancel }) {
+  const [form, setForm] = useState(staff ? { ...staff } : { ...EMPTY_STAFF });
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSave = async () => {
+    if (!form.fullName.trim()) { alert('Full name required'); return; }
+    setSaving(true);
+    if (staff) {
+      await base44.entities.StaffMember.update(staff.id, form);
+    } else {
+      await base44.entities.StaffMember.create({ ...form, inviteStatus: 'not_invited' });
+    }
+    setSaving(false);
+    onSave();
+  };
+
+  return (
+    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 space-y-4">
+      <div className="font-semibold text-indigo-900">{staff ? 'Edit Employee' : 'New Employee'}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-medium text-gray-600 block mb-1">Full Name *</label>
+          <Input value={form.fullName} onChange={e => set('fullName', e.target.value)} placeholder="Jane Smith" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-600 block mb-1">Job Title</label>
+          <Input value={form.title || ''} onChange={e => set('title', e.target.value)} placeholder="e.g. Counter Manager" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-600 block mb-1">Email</label>
+          <Input type="email" value={form.email || ''} onChange={e => set('email', e.target.value)} placeholder="jane@example.com" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-600 block mb-1">Phone</label>
+          <Input type="tel" value={form.phone || ''} onChange={e => set('phone', e.target.value)} placeholder="(956) 123-4567" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-600 block mb-1">App Role</label>
+          <select value={form.role} onChange={e => set('role', e.target.value)} className="w-full h-9 border border-input rounded-md px-3 text-sm bg-white">
+            {USER_ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-600 block mb-1">Branch</label>
+          <select value={form.branch || ''} onChange={e => set('branch', e.target.value)} className="w-full h-9 border border-input rounded-md px-3 text-sm bg-white">
+            <option value="">— Select branch —</option>
+            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs font-medium text-gray-600 block mb-1">Notes</label>
+          <Input value={form.notes || ''} onChange={e => set('notes', e.target.value)} placeholder="Optional internal notes" />
+        </div>
+      </div>
+      <div className="flex gap-2 justify-end pt-2 border-t">
+        <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+          {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Save Employee
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EmployeeSection() {
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [invitingId, setInvitingId] = useState(null);
+
+  const load = async () => {
     setLoading(true);
-    const u = await base44.entities.User.list('full_name', 200);
-    setUsers(u);
+    const s = await base44.entities.StaffMember.list('fullName', 200);
+    setStaff(s);
     setLoading(false);
   };
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { load(); }, []);
 
-  const handleInvite = async () => {
-    if (!inviteEmail.trim()) { alert('Enter an email address'); return; }
-    setInviting(true);
-    try {
-      await base44.users.inviteUser(inviteEmail.trim(), inviteRole);
-      setInviteEmail('');
-      alert(`Invitation sent to ${inviteEmail.trim()}`);
-      loadUsers();
-    } catch (err) {
-      alert(`Error: ${err.message}`);
-    } finally {
-      setInviting(false);
-    }
+  const handleDelete = async (id) => {
+    if (!confirm('Remove this employee record?')) return;
+    await base44.entities.StaffMember.delete(id);
+    load();
   };
 
-  const handleRoleChange = async (userId, newRole) => {
-    setUpdatingId(userId);
-    await base44.auth.updateMe ? null : null; // no-op to avoid lint
-    await base44.entities.User.update(userId, { role: newRole });
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-    setUpdatingId(null);
+  const handleSendInvite = async (member) => {
+    if (!member.email) { alert('Employee needs an email address before sending an invite.'); return; }
+    if (!confirm(`Send app invite to ${member.email}?`)) return;
+    setInvitingId(member.id);
+    try {
+      await base44.users.inviteUser(member.email, member.role || 'user');
+      await base44.entities.StaffMember.update(member.id, { inviteStatus: 'invited', invitedAt: new Date().toISOString() });
+      load();
+    } catch (err) {
+      alert(`Invite failed: ${err.message}`);
+    } finally {
+      setInvitingId(null);
+    }
   };
 
   return (
     <div className="space-y-4">
-      {/* Invite new employee */}
-      <div className="bg-white rounded-xl border shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <UserPlus className="w-5 h-5 text-indigo-600" />
-          <h3 className="font-semibold text-gray-900">Invite Employee</h3>
-        </div>
-        <div className="flex gap-3 flex-wrap">
-          <Input
-            className="flex-1 min-w-48"
-            placeholder="employee@example.com"
-            type="email"
-            value={inviteEmail}
-            onChange={e => setInviteEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleInvite()}
-          />
-          <select
-            value={inviteRole}
-            onChange={e => setInviteRole(e.target.value)}
-            className="h-9 border border-input rounded-md px-3 text-sm bg-white"
-          >
-            {USER_ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-          </select>
-          <Button onClick={handleInvite} disabled={inviting} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
-            {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-            Send Invite
-          </Button>
-        </div>
-      </div>
+      {showForm && (
+        <StaffForm
+          staff={editing}
+          onSave={() => { setShowForm(false); setEditing(null); load(); }}
+          onCancel={() => { setShowForm(false); setEditing(null); }}
+        />
+      )}
 
-      {/* Employee list */}
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-600" />
-            <h3 className="font-semibold text-gray-900">Employees ({users.length})</h3>
+            <h3 className="font-semibold text-gray-900">Employees ({staff.length})</h3>
           </div>
-          <button onClick={loadUsers} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded">
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex gap-2">
+            <button onClick={load} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            {!showForm && (
+              <Button size="sm" onClick={() => { setEditing(null); setShowForm(true); }} className="bg-indigo-600 hover:bg-indigo-700 gap-1.5">
+                <UserPlus className="w-3.5 h-3.5" /> Add Employee
+              </Button>
+            )}
+          </div>
         </div>
+
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-indigo-600 animate-spin" /></div>
-        ) : users.length === 0 ? (
-          <div className="text-center text-gray-400 py-8 text-sm">No employees yet</div>
+        ) : staff.length === 0 ? (
+          <div className="text-center text-gray-400 py-12 text-sm">
+            <UserPlus className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            No employees yet. Add one to get started.
+          </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {users.map(u => (
-              <div key={u.id} className="flex items-center gap-4 px-5 py-3">
+            {staff.map(s => (
+              <div key={s.id} className="flex items-center gap-4 px-5 py-3">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 text-sm">{u.full_name || '—'}</div>
-                  <div className="text-xs text-gray-500">{u.email}</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-gray-900 text-sm">{s.fullName}</span>
+                    {s.title && <span className="text-xs text-gray-500">· {s.title}</span>}
+                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${INVITE_STATUS_COLORS[s.inviteStatus || 'not_invited']}`}>
+                      {s.inviteStatus === 'active' ? 'Active' : s.inviteStatus === 'invited' ? 'Invited' : 'Not Invited'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5 flex-wrap">
+                    {s.email && <span>{s.email}</span>}
+                    {s.phone && <span>{s.phone}</span>}
+                    {s.branch && <span>{s.branch}</span>}
+                    <span className="capitalize font-medium text-indigo-600">{s.role}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {updatingId === u.id && <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />}
-                  <select
-                    value={u.role || 'user'}
-                    onChange={e => handleRoleChange(u.id, e.target.value)}
-                    disabled={updatingId === u.id}
-                    className="h-8 border border-input rounded-md px-2 text-xs bg-white"
-                  >
-                    {USER_ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-                  </select>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {s.inviteStatus !== 'active' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSendInvite(s)}
+                      disabled={invitingId === s.id || !s.email}
+                      className="text-xs gap-1 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                      title={!s.email ? 'Add email first' : 'Send app invite'}
+                    >
+                      {invitingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
+                      {s.inviteStatus === 'invited' ? 'Resend' : 'Invite'}
+                    </Button>
+                  )}
+                  <button onClick={() => { setEditing(s); setShowForm(true); }} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded hover:bg-gray-50">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(s.id)} className="text-gray-400 hover:text-red-500 p-1.5 rounded hover:bg-gray-50">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -355,6 +434,7 @@ export default function RoleManager() {
               <Plus className="w-4 h-4" /> New Role
             </Button>
           )}
+          {tab === 'employees' && <div />}
         </div>
         {/* Tabs */}
         <div className="px-4 max-w-5xl mx-auto flex gap-1">

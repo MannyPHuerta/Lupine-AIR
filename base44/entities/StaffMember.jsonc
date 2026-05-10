@@ -1,0 +1,60 @@
+{
+  "name": "StaffMember",
+  "type": "object",
+  "properties": {
+    "fullName": {
+      "type": "string",
+      "description": "Employee full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Work email address (used for app invite)"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Mobile phone number"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "manager",
+        "accountant",
+        "counter",
+        "driver",
+        "user"
+      ],
+      "default": "counter",
+      "description": "App role assigned to this employee"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Primary branch assignment"
+    },
+    "title": {
+      "type": "string",
+      "description": "Job title (e.g. Counter Manager, Delivery Driver)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes about this employee"
+    },
+    "inviteStatus": {
+      "type": "string",
+      "enum": [
+        "not_invited",
+        "invited",
+        "active"
+      ],
+      "default": "not_invited",
+      "description": "Whether the employee has been invited to the app"
+    },
+    "invitedAt": {
+      "type": "string",
+      "description": "ISO timestamp when invite was sent"
+    }
+  },
+  "required": [
+    "fullName"
+  ]
+}
