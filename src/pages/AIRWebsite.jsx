@@ -259,8 +259,8 @@ function AIRentalPreview() {
       </div>
       <div className="border-t border-white/10 pt-3 space-y-1">
         <div className="flex justify-between text-xs text-white/50"><span>Subtotal</span><span>$1,280.00</span></div>
-        <div className="flex justify-between text-xs text-white/50"><span>Tax (8.25%)</span><span>$105.60</span></div>
-        <div className="flex justify-between text-sm font-bold text-white mt-2"><span>Total Due</span><span className="text-cyan-400">$1,385.60</span></div>
+        <div className="flex justify-between text-xs text-white/50"><span>Tax Exempt</span><span>—</span></div>
+        <div className="flex justify-between text-sm font-bold text-white mt-2"><span>Total Due</span><span className="text-cyan-400">$1,280.00</span></div>
       </div>
       <div className="flex gap-2">
         <div className="flex-1 bg-slate-700 rounded-lg py-2 text-center text-xs text-white/50">Save Quote</div>
