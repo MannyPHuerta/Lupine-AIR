@@ -4,7 +4,7 @@ import { motion, useInView } from 'framer-motion';
 import {
   Zap, BarChart3, MapPin, Clock, Users, Calendar, FileText,
   DollarSign, CheckCircle, ChevronRight, ArrowRight, Menu, X,
-  Truck, Shield, Brain, Star, Play, Building2, TrendingUp, Package, AlertTriangle
+  Truck, Shield, Brain, Star, Play, Building2, TrendingUp, Package, AlertTriangle, Wrench
 } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
@@ -37,6 +37,7 @@ function Nav({ activeSection }) {
     { label: 'AIREvents', href: '#airevents' },
     { label: 'AIRfq', href: '#airfq' },
     { label: 'AIReports', href: '#aireports' },
+    { label: 'AIRepair', href: '#airepair' },
     { label: 'Platform', href: '#platform' },
     { label: 'Pricing', href: '#pricing' },
   ];
@@ -158,6 +159,7 @@ function Hero() {
             { name: 'AIREvents', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/693c6f98e_AIREvents_final.svg', anchor: '#airevents' },
             { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/0ce13a2ef_AIRfq_final.svg', anchor: '#airfq' },
             { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg', anchor: '#aireports' },
+            { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg', anchor: '#airepair' },
           ].map((p) => (
             <button key={p.name} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
@@ -412,6 +414,53 @@ function AIReportsPreview() {
       </div>
       <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 text-xs text-emerald-300">
         📈 Generator demand up 18% vs last May — consider adding 2 units before summer
+      </div>
+    </div>
+  );
+}
+
+// ─── AIRepair Preview ─────────────────────────────────────────────────────────
+function AIRepairPreview() {
+  return (
+    <div className="bg-slate-900 rounded-2xl border border-orange-500/20 p-6 space-y-4 shadow-2xl shadow-orange-500/5">
+      <div className="flex items-center justify-between">
+        <div className="text-white font-bold text-sm">Work Order Queue</div>
+        <div className="text-xs text-orange-400 bg-orange-500/10 px-2 py-1 rounded-full">🔧 Active</div>
+      </div>
+      <div className="space-y-2">
+        {[
+          { equip: 'Generator (Serial: GEN-4201)', status: 'In Progress', mech: 'Carlos M.', elapsed: '1h 24m' },
+          { equip: 'Boom Lift (BL-0847)', status: 'Awaiting Parts', mech: 'Unassigned', elapsed: '—' },
+          { equip: 'Air Compressor (AC-0152)', status: 'Scheduled', mech: 'Unassigned', elapsed: '—' },
+        ].map((wo, i) => (
+          <div key={i} className="bg-slate-800 rounded-lg px-3 py-2.5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-white text-xs font-medium">{wo.equip}</span>
+              <span className={`text-xs px-2 py-0.5 rounded ${wo.status === 'In Progress' ? 'bg-blue-500/20 text-blue-300' : wo.status === 'Awaiting Parts' ? 'bg-orange-500/20 text-orange-300' : 'bg-gray-500/20 text-gray-300'}`}>
+                {wo.status}
+              </span>
+            </div>
+            <div className="flex justify-between text-xs text-white/50">
+              <span>{wo.mech}</span>
+              <span className="font-mono">{wo.elapsed}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2 pt-2">
+        {[
+          { label: 'In Progress', val: '3', color: 'text-blue-400' },
+          { label: 'Awaiting Parts', val: '2', color: 'text-orange-400' },
+          { label: 'Scheduled', val: '5', color: 'text-gray-400' },
+        ].map((s, i) => (
+          <div key={i} className="bg-slate-800 rounded-lg py-2 text-center">
+            <div className={`font-bold text-sm ${s.color}`}>{s.val}</div>
+            <div className="text-white/40 text-xs">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg px-3 py-2 text-xs text-orange-300">
+        🚨 2 units blocked by parts — expedited delivery ETA Friday
       </div>
     </div>
   );
@@ -738,6 +787,24 @@ export default function AIRWebsite() {
         cta="Open AIReports"
         ctaRoute="/aireports"
         preview={<AIReportsPreview />}
+      />
+
+      <ProductSection
+        id="airepair"
+        tag="AIRepair · Shop Management"
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/271ea97d5_AIR.svg" alt="AIRepair" className="h-20 w-20 rounded-2xl" />}
+        tagline="From breakdown to backyard — automatically."
+        description="Equipment flagged by field ops flows directly into a work order queue. AI routes jobs to the right mechanic based on skills and availability. Track parts procurement, labor costs, condition before/after. Predict failures before they happen with automated preventive maintenance alerts."
+        color="orange"
+        features={[
+          { icon: <Wrench className="w-5 h-5" />, title: 'Smart Assignment', desc: 'AI recommends mechanics based on skills and workload.' },
+          { icon: <Package className="w-5 h-5" />, title: 'Parts Tracking', desc: 'Know which jobs are blocked by parts and ETA for delivery.' },
+          { icon: <AlertTriangle className="w-5 h-5" />, title: 'Predictive Alerts', desc: 'AI flags equipment likely to fail before breakdown.' },
+          { icon: <TrendingUp className="w-5 h-5" />, title: 'Labor Costing', desc: 'Per-job labor, parts, and ROI tracking for every repair.' },
+        ]}
+        cta="Open AIRepair"
+        ctaRoute="/airepair"
+        preview={<AIRepairPreview />}
       />
 
       <PlatformSection />
