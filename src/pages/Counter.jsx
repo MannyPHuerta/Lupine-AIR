@@ -47,6 +47,13 @@ export default function Counter() {
   }, []);
 
   const handleAddToCart = (item) => {
+    if (!item.consumable) {
+      // Non-consumables require a full rental contract — redirect to /availability
+      if (confirm(`"${item.name}" requires a rental contract.\n\nOpen the Full Form now?`)) {
+        navigate('/availability');
+      }
+      return;
+    }
     setCart(prev => [...prev, { ...item, lineId: Math.random(), quantity: 1 }]);
     setEquipmentSearchTerm('');
     setHighlightIndex(0);
@@ -203,7 +210,13 @@ export default function Counter() {
                       : 'border-transparent hover:bg-indigo-50 hover:border-indigo-200'
                   }`}
                 >
-                  <div className="font-medium text-gray-900 group-hover:text-indigo-700 text-sm">{e.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 group-hover:text-indigo-700 text-sm">{e.name}</span>
+                    {e.consumable
+                      ? <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">Counter Sale</span>
+                      : <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">Full Form ↗</span>
+                    }
+                  </div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     ${e.dailyRate}/day
                     {e.weeklyRate && <span className="ml-2 text-gray-400">· ${e.weeklyRate}/wk</span>}

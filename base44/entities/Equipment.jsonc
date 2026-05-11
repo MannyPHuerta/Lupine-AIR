@@ -14,6 +14,11 @@
       "type": "string",
       "description": "Equipment category"
     },
+    "consumable": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, this item can be sold at the counter without a rental contract (e.g. fuel, small supplies). Non-consumables require the full /availability rental form."
+    },
     "dailyRate": {
       "type": "number",
       "description": "Base rental rate per day (USD)"
