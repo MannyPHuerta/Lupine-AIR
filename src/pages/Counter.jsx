@@ -26,7 +26,7 @@ export default function Counter() {
   const [branch, setBranch] = useState('01 McAllen');
   const [dlScanResult, setDlScanResult] = useState(null);
   const [dlScanFlash, setDlScanFlash] = useState(null);
-  const [counterStep, setCounterStep] = useState('phone'); // 'phone' | 'dl'
+  const [counterStep, setCounterStep] = useState('dl'); // 'phone' | 'dl'
   const [phoneSearch, setPhoneSearch] = useState('');
 
   const handleDLScan = useCallback((parsed) => {
@@ -74,7 +74,7 @@ export default function Counter() {
     setSearchTerm('');
     setPhoneSearch('');
     setDlScanResult(null);
-    setCounterStep('phone');
+    setCounterStep('dl');
     setTimeout(() => searchRef.current?.focus(), 50);
   };
 
@@ -206,12 +206,12 @@ export default function Counter() {
 
               {/* Step indicators */}
               <div className="flex items-center gap-1 text-xs mb-1">
-                <button onClick={() => setCounterStep('phone')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'phone' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                  <Phone className="w-3 h-3" /> 1. Phone
+                <button onClick={() => setCounterStep('dl')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'dl' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <ScanLine className="w-3 h-3" /> 1. ID / Name
                 </button>
                 <ChevronRight className="w-3 h-3 text-gray-300" />
-                <button onClick={() => setCounterStep('dl')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'dl' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                  <ScanLine className="w-3 h-3" /> 2. ID / Name
+                <button onClick={() => setCounterStep('phone')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'phone' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <Phone className="w-3 h-3" /> 2. Phone
                 </button>
               </div>
 
