@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 import {
   X, AlertTriangle, Ban, ShieldCheck, Phone, Mail, MapPin,
   Edit2, Trash2, ScanLine, CheckCircle2, CreditCard,
-  FileText, User, Building2, Calendar, UserPlus, Users
+  FileText, User, Building2, Calendar, UserPlus, Users, Clock
 } from 'lucide-react';
 import { formatPhoneUS } from '@/lib/phoneUtils';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ const STATUS_COLORS = {
 const TABS = [
   { key: 'profile',   label: 'Profile' },
   { key: 'contacts',  label: 'Contacts' },
+  { key: 'activity',  label: 'Activity & Notes' },
   { key: 'id',        label: 'ID / Verification' },
   { key: 'rentals',   label: 'Rental History' },
   { key: 'flags',     label: 'Flags & Terms' },
@@ -47,8 +49,16 @@ export default function CustomerDetailModal({ customer, rentals = [], onClose, o
   const [form, setForm] = useState({ ...customer });
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [auditLog, setAuditLog] = useState([]);
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  // Fetch audit log on mount
+  useEffect(() => {
+    base44.entities.AuditLog.filter({ entityName: 'Customer', entityId: customer.id }, '-performedAt', 50)
+      .then(setAuditLog)
+      .catch(() => setAuditLog([]));
+  }, [customer.id]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -243,6 +253,103 @@ export default function CustomerDetailModal({ customer, rentals = [], onClose, o
                     <Button variant="outline" size="sm" onClick={() => { setEditing(false); setForm({ ...customer }); }}>Cancel</Button>
                     <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── ACTIVITY & NOTES TAB ── */}
+          {activeTab === 'activity' && (
+            <div className="space-y-4">
+              {/* Notes section */}
+              <div className="border rounded-xl p-4 bg-blue-50 border-blue-200">
+                <div className="flex items-center gap-2 font-semibold text-sm text-blue-900 mb-2">
+                  <FileText className="w-4 h-4" /> Internal Notes
+                </div>
+                {editing ? (
+                  <textarea
+                    value={form.notes || ''}
+                    onChange={e => set('notes', e.target.value)}
+                    rows={3}
+                    placeholder="Add notes about this customer..."
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                  />
+                ) : (
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {customer.notes || <span className="text-gray-400 italic">No notes yet</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* Credit hold/Blacklist context */}
+              {(customer.creditHold || customer.blacklisted) && (
+                <div className={`border rounded-xl p-4 ${customer.blacklisted ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+                  <div className="flex items-center gap-2 font-semibold text-sm mb-2">
+                    {customer.blacklisted ? (
+                      <><Ban className="w-4 h-4 text-red-500" /> Blacklist Reason</>
+                    ) : (
+                      <><AlertTriangle className="w-4 h-4 text-amber-500" /> Credit Hold Reason</>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    {customer.blacklisted ? customer.blacklistReason || '—' : customer.creditHoldReason || '—'}
+                  </p>
+                </div>
+              )}
+
+              {/* Recent activity */}
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center gap-2 font-semibold text-sm text-gray-900 mb-3">
+                  <Clock className="w-4 h-4" /> Recent Changes
+                </div>
+                {auditLog.length === 0 ? (
+                  <p className="text-sm text-gray-400">No activity history</p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {auditLog.map((log, idx) => (
+                      <div key={idx} className="border-l-2 border-indigo-300 pl-3 py-1.5 text-xs">
+                        <div className="font-medium text-gray-800">{log.action}</div>
+                        <div className="text-gray-500 flex items-center gap-2">
+                          <span>{log.performedBy || 'System'}</span>
+                          <span className="text-gray-400">·</span>
+                          <span>{new Date(log.performedAt).toLocaleString()}</span>
+                        </div>
+                        {log.changes && Object.keys(log.changes).length > 0 && (
+                          <div className="text-gray-600 mt-1 text-xs">
+                            {Object.entries(log.changes).map(([field, change]) => (
+                              <div key={field}>
+                                {field}: <span className="line-through text-red-600">{change.before}</span> → <span className="text-green-600">{change.after}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent rentals snippet */}
+              {sorted.length > 0 && (
+                <div className="border rounded-xl p-4 bg-gray-50">
+                  <div className="flex items-center gap-2 font-semibold text-sm text-gray-900 mb-3">
+                    <Calendar className="w-4 h-4" /> Recent Rentals
+                  </div>
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                    {sorted.slice(0, 5).map(r => (
+                      <div key={r.id} className="text-xs text-gray-700 flex items-center justify-between">
+                        <span className="font-medium">{r.equipmentName}</span>
+                        <span className="text-gray-500">{r.startDate}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {editing && (
+                <div className="flex justify-end gap-2 pt-2 border-t">
+                  <Button variant="outline" size="sm" onClick={() => { setEditing(false); setForm({ ...customer }); }}>Cancel</Button>
+                  <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Notes'}</Button>
                 </div>
               )}
             </div>
