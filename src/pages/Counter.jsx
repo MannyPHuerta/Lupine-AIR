@@ -329,11 +329,9 @@ export default function Counter() {
           {/* Right: Cart / invoice */}
           <RentalCartPanel
             cart={cart}
-            customer={WALKIN_CUSTOMER}
             branch={branch}
             branchSettings={branchSettings}
             companySettings={companySettings}
-            allEquipment={equipment}
             onRemoveItem={handleRemoveFromCart}
             onCompleteRental={handleCompleteRental}
             practiceMode={practiceMode}
