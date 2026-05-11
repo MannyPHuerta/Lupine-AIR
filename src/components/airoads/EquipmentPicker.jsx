@@ -19,11 +19,12 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
   }, [search, allEquipment, equipment]);
 
   const handleAddCatalogItem = (item) => {
+    const hasRealDims = item.footprintWidth && item.footprintLength;
     onAdd({
       id: item.id,
       name: item.name,
-      weight: item.footprintWidth && item.footprintLength ? ((item.footprintWidth * item.footprintLength) / 100) * 1500 : 0,
-      volume: item.footprintWidth && item.footprintLength ? item.footprintWidth * item.footprintLength : 0,
+      weight: hasRealDims ? ((item.footprintWidth * item.footprintLength) / 100) * 1500 : 500, // 500 lbs default
+      volume: hasRealDims ? item.footprintWidth * item.footprintLength : 10, // 10 cu ft default
     });
     setSearch('');
   };
@@ -33,8 +34,8 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
     onAdd({
       id: `manual-${Date.now()}`,
       name: manualName,
-      weight: parseInt(weight) || 0,
-      volume: parseInt(volume) || 0,
+      weight: parseInt(weight) || 500, // 500 lbs default if blank
+      volume: parseInt(volume) || 10, // 10 cu ft default if blank
     });
     setManualName('');
     setWeight('');
