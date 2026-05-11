@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Truck, Package, Trash2, GripVertical } from 'lucide-react';
+import { Package, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import VisualTruckContainer from './VisualTruckContainer';
+import EquipmentItem from './EquipmentItem';
 
 export default function LoadPlanner({
   eventEquipment,
@@ -124,101 +126,36 @@ export default function LoadPlanner({
         </div>
       </div>
 
-      {/* Trucks */}
+      {/* Trucks with Visual Containers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {loads.map(truck => {
           const { weight, volume, weightPct, volumePct, spec } = getTruckStats(truck);
-          const weightStatus = weightPct > 100 ? 'text-red-600' : weightPct > 85 ? 'text-amber-600' : 'text-green-600';
-          const volumeStatus = volumePct > 100 ? 'text-red-600' : volumePct > 85 ? 'text-amber-600' : 'text-green-600';
 
           return (
-            <div key={truck.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              {/* Header */}
-              <div className="bg-indigo-50 border-b p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-indigo-600" />
-                  <div>
-                    <div className="font-bold text-gray-900">{truck.name}</div>
-                    <div className="text-xs text-gray-500">{spec.name}</div>
-                  </div>
-                </div>
-                {loads.length > 1 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onRemoveTruck(truck.id)}
-                    className="text-gray-400 hover:text-red-600 h-8 w-8 p-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Stats */}
-              <div className="border-b p-3 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Weight:</span>
-                  <span className={`font-semibold ${weightStatus}`}>
-                    {(weight / 1000).toFixed(1)}k / {(spec.weightCapacity / 1000).toFixed(0)}k lbs ({weightPct}%)
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-full ${
-                      weightPct > 100 ? 'bg-red-500' : weightPct > 85 ? 'bg-amber-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min(weightPct, 100)}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-gray-600">Volume:</span>
-                  <span className={`font-semibold ${volumeStatus}`}>
-                    {volume} / {spec.volumeCapacity} cu ft ({volumePct}%)
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-full ${
-                      volumePct > 100 ? 'bg-red-500' : volumePct > 85 ? 'bg-amber-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min(volumePct, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Items */}
-              <div
-                onDragOver={handleDragOver}
-                onDrop={e => handleDropOnTruck(e, truck.id)}
-                className="p-4 space-y-2 min-h-48"
-              >
-                {truck.items?.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-8">Drag items here</p>
-                ) : (
-                  truck.items?.map(item => (
-                    <div
+            <VisualTruckContainer
+              key={truck.id}
+              truck={truck}
+              spec={spec}
+              weight={weight}
+              volume={volume}
+              weightPct={weightPct}
+              volumePct={volumePct}
+              onDragOver={handleDragOver}
+              onDrop={e => handleDropOnTruck(e, truck.id)}
+              onRemove={loads.length > 1 ? () => onRemoveTruck(truck.id) : null}
+            >
+              {truck.items?.length === 0 ? null : (
+                <div className="w-full flex flex-wrap gap-2">
+                  {truck.items?.map(item => (
+                    <EquipmentItem
                       key={item.id}
-                      draggable
+                      item={item}
                       onDragStart={e => handleDragStart(e, item, 'truck', truck.id)}
-                      className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 cursor-move hover:bg-indigo-100 transition group"
-                    >
-                      <div className="flex gap-2">
-                        <GripVertical className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900 truncate">{item.name}</div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {item.weight && <span>{(item.weight / 1000).toFixed(1)}k lbs</span>}
-                            {item.weight && item.volume && <span className="mx-1">•</span>}
-                            {item.volume && <span>{item.volume} cu ft</span>}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+                    />
+                  ))}
+                </div>
+              )}
+            </VisualTruckContainer>
           );
         })}
       </div>
