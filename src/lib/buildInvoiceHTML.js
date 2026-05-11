@@ -43,7 +43,7 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
 
   // Build rental agreement section if present
   const agreementHtml = order.rentalAgreement ? `
-  <div style="page-break-before:always;margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px">
+  <div id="agreement-section" style="page-break-before:always;margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px">
     <h2 style="font-size:16px;font-weight:700;color:#1e1b4b;margin-bottom:12px">Equipment Rental Agreement</h2>
     <div style="font-size:12px;line-height:1.8;color:#333;background:#f9fafb;border:1px solid #e5e7eb;padding:16px;border-radius:6px;white-space:pre-wrap;font-family:Georgia,serif">
       ${order.rentalAgreement.content || ''}
@@ -118,7 +118,11 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
   <title>${isPractice ? '[PRACTICE] ' : ''}Invoice – ${order.customer.name}</title>
   <style>
     body { font-family: sans-serif; font-size: 13px; color: #111; margin: 0; padding: 32px; }
-    @media print { body { padding: 16px; } #toolbar { display: none !important; } }
+    @media print { 
+      body { padding: 16px; } 
+      #toolbar { display: none !important; }
+      #agreement-section { page-break-before: always; break-before: page; }
+    }
     table { width: 100%; border-collapse: collapse; }
     th { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .05em; padding: 4px 6px 8px; border-bottom: 2px solid #e5e7eb; }
     #toolbar { display:flex; align-items:center; gap:12px; margin-bottom:24px; padding:12px 16px; background:#f1f5f9; border-radius:8px; flex-wrap:wrap; }
