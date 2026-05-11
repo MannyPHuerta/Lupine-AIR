@@ -66,6 +66,7 @@ import PartsProcurementReport from "./pages/PartsProcurementReport";
 import InspectionQueue from "./pages/InspectionQueue";
 import EmployeeProfileManager from "./pages/EmployeeProfileManager";
 import LaundryDashboard from "./pages/LaundryDashboard";
+import AppLayout from "./components/AppLayout";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -99,63 +100,64 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
-      <Route path="/" element={<DailyOps />} />
-      <Route path="/report-form" element={<ReportForm />} />
-      <Route path="/pending" element={<PendingReports />} />
-      <Route path="/history" element={<ReportHistory />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/marketplace" element={<Marketplace />} />
-      <Route path="/analytics" element={<Analytics />} />
-      <Route path="/converter" element={<DbfConverter />} />
-      <Route path="/legacy-mapper" element={<LegacyMapper />} />
-      <Route path="/contact-review" element={<ContactReview />} />
-      <Route path="/staff-phones" element={<StaffPhoneManager />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="/lupine" element={<LupinePlan />} />
-      <Route path="/catalog-review" element={<CatalogReview />} />
-      <Route path="/availability" element={<AvailabilityManager />} />
-      <Route path="/rental-history" element={<RentalHistory />} />
-      <Route path="/pricing-editor" element={<PricingEditor />} />
-      <Route path="/dependencies-editor" element={<DependenciesEditor />} />
-      <Route path="/branch-settings" element={<BranchSettingsPage />} />
-      <Route path="/company-settings" element={<CompanySettingsPage />} />
-      <Route path="/inventory-health" element={<InventoryHealth />} />
-      <Route path="/demand-patterns" element={<DemandPatterns />} />
-      <Route path="/equipment-status" element={<EquipmentStatusManager />} />
-      <Route path="/equipment/:id" element={<EquipmentDetail />} />
-      <Route path="/availability-calendar" element={<AvailabilityCalendar />} />
-      <Route path="/customers" element={<Customers />} />
-      <Route path="/delivery-matrix" element={<DeliveryMatrixPage />} />
-      <Route path="/discounts" element={<DiscountManager />} />
-      <Route path="/depreciation" element={<DepreciationReport />} />
-      <Route path="/categories" element={<CategoryManager />} />
-      <Route path="/availability-config" element={<AvailabilityConfigPage />} />
-      <Route path="/roles" element={<RoleManager />} />
-      <Route path="/audit-logs" element={<AuditLogDashboard />} />
-      <Route path="/branding" element={<BrandingSettings />} />
-      <Route path="/counter" element={<Counter />} />
-      <Route path="/manager" element={<ManagerDashboard />} />
-      <Route path="/driver" element={<DriverDashboard />} />
-      <Route path="/delivery/:id" element={<DeliveryDetail />} />
-      <Route path="/assign-deliveries" element={<DeliveryAssignment />} />
-      <Route path="/recovery/:id" element={<RecoveryDetail />} />
-      <Route path="/dispatch" element={<DispatchBoard />} />
-      <Route path="/aireports" element={<AIReports />} />
-      <Route path="/airepair" element={<AIRepair />} />
-      <Route path="/event-planner" element={<EventPlanner />} />
-      <Route path="/event-planner/:planId" element={<EventPlanner />} />
-      <Route path="/accounting" element={<AccountingDashboard />} />
-      <Route path="/planner-queue" element={<PlannerQueue />} />
-
-      <Route path="/github-prs" element={<GitHubPRDashboard />} />
-      <Route path="/repair-manager-report" element={<RepairManagerReport />} />
-      <Route path="/shop-floor" element={<ShopFloor />} />
-      <Route path="/parts-procurement" element={<PartsProcurementReport />} />
-      <Route path="/inspection-queue" element={<InspectionQueue />} />
-      <Route path="/employee-profiles" element={<EmployeeProfileManager />} />
-      <Route path="/laundry" element={<LaundryDashboard />} />
+      {/* All internal routes wrapped in sidebar layout */}
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<DailyOps />} />
+        <Route path="/report-form" element={<ReportForm />} />
+        <Route path="/pending" element={<PendingReports />} />
+        <Route path="/history" element={<ReportHistory />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/converter" element={<DbfConverter />} />
+        <Route path="/legacy-mapper" element={<LegacyMapper />} />
+        <Route path="/contact-review" element={<ContactReview />} />
+        <Route path="/staff-phones" element={<StaffPhoneManager />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/lupine" element={<LupinePlan />} />
+        <Route path="/catalog-review" element={<CatalogReview />} />
+        <Route path="/availability" element={<AvailabilityManager />} />
+        <Route path="/rental-history" element={<RentalHistory />} />
+        <Route path="/pricing-editor" element={<PricingEditor />} />
+        <Route path="/dependencies-editor" element={<DependenciesEditor />} />
+        <Route path="/branch-settings" element={<BranchSettingsPage />} />
+        <Route path="/company-settings" element={<CompanySettingsPage />} />
+        <Route path="/inventory-health" element={<InventoryHealth />} />
+        <Route path="/demand-patterns" element={<DemandPatterns />} />
+        <Route path="/equipment-status" element={<EquipmentStatusManager />} />
+        <Route path="/equipment/:id" element={<EquipmentDetail />} />
+        <Route path="/availability-calendar" element={<AvailabilityCalendar />} />
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/delivery-matrix" element={<DeliveryMatrixPage />} />
+        <Route path="/discounts" element={<DiscountManager />} />
+        <Route path="/depreciation" element={<DepreciationReport />} />
+        <Route path="/categories" element={<CategoryManager />} />
+        <Route path="/availability-config" element={<AvailabilityConfigPage />} />
+        <Route path="/roles" element={<RoleManager />} />
+        <Route path="/audit-logs" element={<AuditLogDashboard />} />
+        <Route path="/branding" element={<BrandingSettings />} />
+        <Route path="/counter" element={<Counter />} />
+        <Route path="/manager" element={<ManagerDashboard />} />
+        <Route path="/driver" element={<DriverDashboard />} />
+        <Route path="/delivery/:id" element={<DeliveryDetail />} />
+        <Route path="/assign-deliveries" element={<DeliveryAssignment />} />
+        <Route path="/recovery/:id" element={<RecoveryDetail />} />
+        <Route path="/dispatch" element={<DispatchBoard />} />
+        <Route path="/aireports" element={<AIReports />} />
+        <Route path="/airepair" element={<AIRepair />} />
+        <Route path="/event-planner" element={<EventPlanner />} />
+        <Route path="/event-planner/:planId" element={<EventPlanner />} />
+        <Route path="/accounting" element={<AccountingDashboard />} />
+        <Route path="/planner-queue" element={<PlannerQueue />} />
+        <Route path="/github-prs" element={<GitHubPRDashboard />} />
+        <Route path="/repair-manager-report" element={<RepairManagerReport />} />
+        <Route path="/shop-floor" element={<ShopFloor />} />
+        <Route path="/parts-procurement" element={<PartsProcurementReport />} />
+        <Route path="/inspection-queue" element={<InspectionQueue />} />
+        <Route path="/employee-profiles" element={<EmployeeProfileManager />} />
+        <Route path="/laundry" element={<LaundryDashboard />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
