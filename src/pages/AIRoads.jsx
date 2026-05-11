@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import LoadPlanner from '@/components/airoads/LoadPlanner';
 import LoadManifest from '@/components/airoads/LoadManifest';
 import EquipmentPicker from '@/components/airoads/EquipmentPicker';
+import ShippingLabels from '@/components/airoads/ShippingLabels';
+import TransitScanner from '@/components/airoads/TransitScanner';
 
 const TRUCK_SPECS = {
   '18wheeler': { name: '18-Wheeler', weightCapacity: 80000, volumeCapacity: 3000, costPerMile: 3.5 },
@@ -24,6 +26,8 @@ export default function AIRoads() {
   const [eventEquipment, setEventEquipment] = useState([]);
   const [loads, setLoads] = useState([]);
   const [activeTab, setActiveTab] = useState('planner');
+  const [selectedTruckForLabels, setSelectedTruckForLabels] = useState(null);
+  const [selectedTruckForScanner, setSelectedTruckForScanner] = useState(null);
   const [autoBalancing, setAutoBalancing] = useState(false);
   const [autoPacking, setAutoPacking] = useState(false);
   const [distance, setDistance] = useState(350);

@@ -3,6 +3,8 @@ import { Package, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VisualTruckContainer from './VisualTruckContainer';
 import EquipmentItem from './EquipmentItem';
+import ShippingLabelPrinter from './ShippingLabelPrinter';
+import LoadScanner from './LoadScanner';
 
 export default function LoadPlanner({
   eventEquipment,
@@ -13,6 +15,7 @@ export default function LoadPlanner({
   onRemoveTruck,
 }) {
   const [draggedItem, setDraggedItem] = useState(null);
+  const [scannerTruck, setScannerTruck] = useState(null);
 
   const handleDragStart = (e, item, sourceType, sourceId) => {
     setDraggedItem({ item, sourceType, sourceId });
@@ -132,33 +135,66 @@ export default function LoadPlanner({
           const { weight, volume, weightPct, volumePct, spec } = getTruckStats(truck);
 
           return (
-            <VisualTruckContainer
-              key={truck.id}
-              truck={truck}
-              spec={spec}
-              weight={weight}
-              volume={volume}
-              weightPct={weightPct}
-              volumePct={volumePct}
-              onDragOver={handleDragOver}
-              onDrop={e => handleDropOnTruck(e, truck.id)}
-              onRemove={loads.length > 1 ? () => onRemoveTruck(truck.id) : null}
-            >
-              {truck.items?.length === 0 ? null : (
-                <div className="w-full flex flex-wrap gap-2">
-                  {truck.items?.map(item => (
-                    <EquipmentItem
-                      key={item.id}
-                      item={item}
-                      onDragStart={e => handleDragStart(e, item, 'truck', truck.id)}
-                    />
-                  ))}
-                </div>
+            <div key={truck.id} className="space-y-3">
+              <VisualTruckContainer
+                truck={truck}
+                spec={spec}
+                weight={weight}
+                volume={volume}
+                weightPct={weightPct}
+                volumePct={volumePct}
+                onDragOver={handleDragOver}
+                onDrop={e => handleDropOnTruck(e, truck.id)}
+                onRemove={loads.length > 1 ? () => onRemoveTruck(truck.id) : null}
+              >
+                {truck.items?.length === 0 ? null : (
+                  <div className="w-full flex flex-wrap gap-2">
+                    {truck.items?.map(item => (
+                      <EquipmentItem
+                        key={item.id}
+                        item={item}
+                        onDragStart={e => handleDragStart(e, item, 'truck', truck.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </VisualTruckContainer>
+
+              {/* Truck-specific controls */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setScannerTruck(scannerTruck?.id === truck.id ? null : truck)}
+                  variant={scannerTruck?.id === truck.id ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1 gap-1"
+                >
+                  {scannerTruck?.id === truck.id ? '✓ Scanner Active' : 'Open Scanner'}
+                </Button>
+                <Button
+                  onClick={() => setScannerTruck(truck)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1"
+                >
+                  Print Labels
+                </Button>
+              </div>
+
+              {/* Scanner or labels */}
+              {scannerTruck?.id === truck.id && (
+                <LoadScanner truck={truck} onStatusUpdate={(update) => console.log('Status:', update)} />
               )}
-            </VisualTruckContainer>
+            </div>
           );
         })}
       </div>
+
+      {/* Floating label printer for selected truck */}
+      {scannerTruck && (
+        <div className="fixed bottom-4 right-4 bg-white rounded-xl shadow-lg border p-4 max-w-sm print:hidden">
+          <ShippingLabelPrinter truck={scannerTruck} />
+        </div>
+      )}
     </div>
   );
 }
