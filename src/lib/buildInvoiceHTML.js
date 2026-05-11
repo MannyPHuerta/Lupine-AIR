@@ -48,6 +48,16 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
     <div style="font-size:12px;line-height:1.8;color:#333;background:#f9fafb;border:1px solid #e5e7eb;padding:16px;border-radius:6px;white-space:pre-wrap;font-family:Georgia,serif">
       ${order.rentalAgreement.content || ''}
     </div>
+    <div style="margin-top:20px;display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap">
+      <div>
+        ${signatureDataUrl
+          ? `<img src="${signatureDataUrl}" style="width:220px;height:60px;border-bottom:1px solid #111;object-fit:contain;object-position:left bottom;display:block" />`
+          : `<div style="border-bottom:1px solid #111;width:220px;height:60px"></div>`
+        }
+        <div style="margin-top:4px;font-weight:600;color:#111;font-size:12px">Renter Signature</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Date: <span id="agreement-date">${new Date().toLocaleDateString('en-US')}</span></div>
+      </div>
+    </div>
   </div>` : '';
 
   const lineRows = lines.filter(l => l.equipmentId).map(l => {
