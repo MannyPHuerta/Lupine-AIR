@@ -63,7 +63,7 @@ export default function AvailabilityManager() {
   const [manualInvoiceNumber, setManualInvoiceNumber] = useState('');
   const [volumeRules, setVolumeRules] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
-  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -225,6 +225,7 @@ export default function AvailabilityManager() {
 
   const validate = () => {
     if (!customer.name) { alert('Please fill in customer name.'); return false; }
+    if (!customer.phone) { alert('Phone number is required.'); return false; }
     const validLines = lines.filter(l => l.equipmentId);
     if (validLines.length === 0) { alert('Please add at least one equipment item.'); return false; }
     if (validLines.some(l => !l.startDate || !l.endDate)) { alert('Please set dates for all equipment lines.'); return false; }
@@ -515,7 +516,7 @@ export default function AvailabilityManager() {
             </div>
             {/* Practice Mode toggle */}
             <button
-              onClick={() => setPracticeMode(p => !p)}
+              onClick={() => setPracticeMode(p => { const next = !p; localStorage.setItem('practiceMode', next); return next; })}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
                 practiceMode
                   ? 'bg-red-500 border-red-400 text-white animate-pulse'

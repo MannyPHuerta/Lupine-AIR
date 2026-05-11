@@ -327,26 +327,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* PHONE FIRST — primary lookup field */}
-        <div className="relative">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Phone *</label>
-          <Input
-            ref={phoneRef}
-            autoFocus
-            placeholder="(956) 123-4567"
-            value={customer.phone}
-            onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); }}
-            onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            onKeyDown={handleKeyDown}
-            inputMode="numeric"
-          />
-          {activeSearchField === 'phone' && showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
-          )}
-        </div>
-
-        {/* Name */}
+        {/* Name / DL FIRST */}
         <div className="relative">
           <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
             Customer Name *
@@ -355,6 +336,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             </span>
           </label>
           <Input
+            autoFocus
             placeholder="Search by name..."
             value={customer.name}
             onChange={e => { set('name', toTitleCase(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('name'); setAutoFilled(false); }}
@@ -378,6 +360,24 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             </div>
           )}
           {activeSearchField === 'name' && showSuggestions && suggestions.length > 0 && (
+            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
+          )}
+        </div>
+
+        {/* Phone — required */}
+        <div className="relative">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Phone *</label>
+          <Input
+            ref={phoneRef}
+            placeholder="(956) 123-4567"
+            value={customer.phone}
+            onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); }}
+            onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={handleKeyDown}
+            inputMode="numeric"
+          />
+          {activeSearchField === 'phone' && showSuggestions && suggestions.length > 0 && (
             <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
           )}
         </div>
