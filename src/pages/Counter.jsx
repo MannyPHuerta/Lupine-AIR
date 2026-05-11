@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X, ScanLine } from 'lucide-react';
+import { Search, Loader2, X, ScanLine, Phone, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
@@ -26,6 +26,8 @@ export default function Counter() {
   const [branch, setBranch] = useState('01 McAllen');
   const [dlScanResult, setDlScanResult] = useState(null);
   const [dlScanFlash, setDlScanFlash] = useState(null);
+  const [counterStep, setCounterStep] = useState('phone'); // 'phone' | 'dl'
+  const [phoneSearch, setPhoneSearch] = useState('');
 
   const handleDLScan = useCallback((parsed) => {
     setDlScanResult(parsed);
@@ -70,6 +72,9 @@ export default function Counter() {
     setCart([]);
     setSelectedCustomer(null);
     setSearchTerm('');
+    setPhoneSearch('');
+    setDlScanResult(null);
+    setCounterStep('phone');
     setTimeout(() => searchRef.current?.focus(), 50);
   };
 
@@ -198,34 +203,96 @@ export default function Counter() {
             </>
           ) : (
             <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  ref={searchRef}
-                  placeholder="Search customer... (Ctrl+K)"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-9 text-sm"
-                  autoFocus
-                />
+
+              {/* Step indicators */}
+              <div className="flex items-center gap-1 text-xs mb-1">
+                <button onClick={() => setCounterStep('phone')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'phone' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <Phone className="w-3 h-3" /> 1. Phone
+                </button>
+                <ChevronRight className="w-3 h-3 text-gray-300" />
+                <button onClick={() => setCounterStep('dl')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'dl' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <ScanLine className="w-3 h-3" /> 2. ID / Name
+                </button>
               </div>
-              {dlScanResult && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
-                <ScanLine className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>DL scanned: <strong>{dlScanResult.fullName}</strong> — select or create below</span>
-                <button onClick={() => setDlScanResult(null)} className="ml-auto text-green-600 hover:text-green-900"><X className="w-3 h-3" /></button>
-              </div>
-            )}
-            <CustomerSearchPanel
-              searchTerm={searchTerm}
-              customers={customers}
-              scannedDL={dlScanResult}
-              onSelect={(c) => {
-                setSelectedCustomer(c);
-                setSearchTerm('');
-                setDlScanResult(null);
-              }}
-            />
+
+              {counterStep === 'phone' ? (
+                <>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      ref={searchRef}
+                      placeholder="Enter phone number..."
+                      value={phoneSearch}
+                      onChange={e => {
+                        setPhoneSearch(e.target.value);
+                        setSearchTerm(e.target.value);
+                      }}
+                      className="pl-9 text-sm"
+                      type="tel"
+                      autoFocus
+                    />
+                  </div>
+                  <CustomerSearchPanel
+                    searchTerm={phoneSearch}
+                    customers={customers}
+                    scannedDL={null}
+                    onSelect={(c) => {
+                      setSelectedCustomer(c);
+                      setPhoneSearch('');
+                      setSearchTerm('');
+                    }}
+                  />
+                  <button
+                    onClick={() => setCounterStep('dl')}
+                    className="w-full text-xs text-indigo-600 hover:text-indigo-800 font-medium py-2 border border-indigo-200 rounded hover:bg-indigo-50 transition"
+                  >
+                    New customer — scan ID →
+                  </button>
+                </>
+              ) : (
+                <>
+                  {dlScanResult && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                      <ScanLine className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>DL scanned: <strong>{dlScanResult.fullName}</strong></span>
+                      <button onClick={() => setDlScanResult(null)} className="ml-auto text-green-600 hover:text-green-900"><X className="w-3 h-3" /></button>
+                    </div>
+                  )}
+                  {!dlScanResult && (
+                    <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700">
+                      <ScanLine className="w-5 h-5 flex-shrink-0" />
+                      <span>Scan the customer's driver's license now, or search by name below.</span>
+                    </div>
+                  )}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by name..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="pl-9 text-sm"
+                    />
+                  </div>
+                  <CustomerSearchPanel
+                    searchTerm={searchTerm}
+                    customers={customers}
+                    scannedDL={dlScanResult}
+                    onSelect={(c) => {
+                      setSelectedCustomer(c);
+                      setSearchTerm('');
+                      setPhoneSearch('');
+                      setDlScanResult(null);
+                      setCounterStep('phone');
+                    }}
+                  />
+                  <button
+                    onClick={() => setCounterStep('phone')}
+                    className="w-full text-xs text-gray-500 hover:text-gray-700 font-medium py-1"
+                  >
+                    ← Back to phone lookup
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
