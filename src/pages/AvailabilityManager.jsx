@@ -353,8 +353,8 @@ export default function AvailabilityManager() {
     const validLines = validate();
     if (!validLines) return;
 
-    // Verify email before proceeding if auto-send is enabled
-    if (autoSendCommunications && !customer.email) {
+    // Verify email before proceeding if auto-send is enabled (skip in practice mode)
+    if (!practiceMode && autoSendCommunications && !customer.email) {
       alert('Please enter a customer email address to enable automatic confirmation emails.');
       return;
     }
