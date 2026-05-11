@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -23,6 +23,13 @@ export default function PricingEditor() {
     setEdited(prev => ({
       ...prev,
       [id]: { ...prev[id], [field]: parseFloat(value) || 0 }
+    }));
+  };
+
+  const handleBoolChange = (id, field, value) => {
+    setEdited(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value }
     }));
   };
 
@@ -89,6 +96,8 @@ export default function PricingEditor() {
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Weekly</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Monthly</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Deposit</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Consumable</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Specs</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Action</th>
                 </tr>
               </thead>
@@ -139,6 +148,24 @@ export default function PricingEditor() {
                         onChange={(e) => handleFieldChange(eq.id, 'depositRequired', e.target.value)}
                         className="w-24 text-right"
                       />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={edited[eq.id]?.consumable ?? eq.consumable ?? false}
+                        onChange={e => handleBoolChange(eq.id, 'consumable', e.target.checked)}
+                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                        title="Counter sale — no contract required"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => navigate(`/equipment-specs?id=${eq.id}`)}
+                        className="text-indigo-500 hover:text-indigo-700 p-1"
+                        title="Edit specs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {hasChanges(eq.id) ? (
