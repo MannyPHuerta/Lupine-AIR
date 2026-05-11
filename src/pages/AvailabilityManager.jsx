@@ -236,9 +236,25 @@ export default function AvailabilityManager() {
     const validLines = validate();
     if (!validLines) return [];
 
-    // PRACTICE MODE — skip all DB writes, return fake IDs
+    // PRACTICE MODE — skip all DB writes, reset form, return fake IDs
     if (practiceMode) {
       setSaved(true);
+      setCustomer(EMPTY_CUSTOMER);
+      setLines([newLine()]);
+      setDiscount('');
+      setTaxRate('8.25');
+      setAmountPaid('');
+      setPaymentMethod('');
+      setReturnMethod('customer_return');
+      setDeliveryMethod('customer_pickup');
+      setWorksiteAddress('');
+      setWorksiteCity('');
+      setWorksiteState('TX');
+      setWorksiteZip('');
+      setSignatureDataUrl(null);
+      setAppliedPromo(null);
+      setLoyaltyDiscount(null);
+      setManualInvoiceNumber('');
       setTimeout(() => setSaved(false), 3000);
       return ['practice-id'];
     }
