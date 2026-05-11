@@ -71,6 +71,7 @@ import InventoryExport from "./pages/InventoryExport";
 import EquipmentSpecsEditor from "./pages/EquipmentSpecsEditor";
 import RentalAgreementManager from "./pages/RentalAgreementManager";
 import LoyaltyManager from "./pages/LoyaltyManager";
+import AIRoads from "./pages/AIRoads";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -165,6 +166,7 @@ const AuthenticatedApp = () => {
         <Route path="/equipment-specs" element={<EquipmentSpecsEditor />} />
         <Route path="/rental-agreement" element={<RentalAgreementManager />} />
         <Route path="/loyalty-manager" element={<LoyaltyManager />} />
+        <Route path="/airoads" element={<AIRoads />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
