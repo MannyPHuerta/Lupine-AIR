@@ -34,6 +34,7 @@ export default function Counter() {
     setDlScanFlash(parsed?.isExpired ? 'expired' : 'success');
     if (parsed?.fullName) {
       setSearchTerm(parsed.lastName || parsed.fullName);
+      setCounterStep('dl');
     }
     setTimeout(() => setDlScanFlash(null), 4000);
   }, []);
@@ -282,7 +283,7 @@ export default function Counter() {
                       setSearchTerm('');
                       setPhoneSearch('');
                       setDlScanResult(null);
-                      setCounterStep('phone');
+                      setCounterStep('dl');
                     }}
                   />
                   <button
