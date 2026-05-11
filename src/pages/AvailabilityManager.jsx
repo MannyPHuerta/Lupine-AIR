@@ -70,6 +70,7 @@ export default function AvailabilityManager() {
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
   const [deliveryMatrices, setDeliveryMatrices] = useState({});
+  const [rentalAgreements, setRentalAgreements] = useState({});
 
   // NOTE: Auto-restore on mount removed — use the Restore button (↺) in the header to intentionally recover a saved form.
 
@@ -93,7 +94,8 @@ export default function AvailabilityManager() {
       base44.entities.DeliveryMatrix.list(),
       base44.entities.VolumeDiscountRule.filter({ active: true }),
       base44.entities.PromoCode.list('-created_date', 200),
-    ]).then(([eq, rent, company, branches, matrices, volRules, promoCodes]) => {
+      base44.entities.RentalAgreement.list(),
+    ]).then(([eq, rent, company, branches, matrices, volRules, promoCodes, agreements]) => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setRentals(rent);
       setCompanyInfo(company[0] || null);
@@ -103,6 +105,9 @@ export default function AvailabilityManager() {
       const matrixMap = {};
       matrices.forEach(m => { matrixMap[m.branch] = m; });
       setDeliveryMatrices(matrixMap);
+      const agreementMap = {};
+      agreements.forEach(a => { agreementMap[a.branch] = a; });
+      setRentalAgreements(agreementMap);
       setVolumeRules(volRules);
       setPromoCodes(promoCodes);
       setLoading(false);
@@ -413,6 +418,7 @@ export default function AvailabilityManager() {
           logoUrl: companyInfo.logoUrl || '',
           invoiceFooter: companyInfo.invoiceFooter || '',
         } : {},
+        rentalAgreement: rentalAgreements[customer.branch] || null,
         paymentMethod,
         deliveryFee: dFee,
         returnFee: rFee,
@@ -468,13 +474,13 @@ export default function AvailabilityManager() {
     if (!pendingInvoice) return;
 
     try {
-      // Save the rental records
-      const rentalIds = await handleSave('confirmed');
-      
-      // Open invoice window and print
-      const paid = parseFloat(amountPaid) || pendingInvoice.totalDue;
-      const win = openInvoiceWindow();
-      writeInvoiceToWindow(win, pendingInvoice.invoiceOrder, paid, signatureDataUrl, practiceMode);
+    // Save the rental records
+    const rentalIds = await handleSave('confirmed');
+
+    // Open invoice window and print
+    const paid = parseFloat(amountPaid) || pendingInvoice.totalDue;
+    const win = openInvoiceWindow();
+    writeInvoiceToWindow(win, { ...pendingInvoice.invoiceOrder, rentalAgreement: rentalAgreements[customer.branch] || null }, paid, signatureDataUrl, practiceMode);
 
       // Send email/SMS if enabled
       if (autoSendCommunications && customer.email && rentalIds.length > 0) {

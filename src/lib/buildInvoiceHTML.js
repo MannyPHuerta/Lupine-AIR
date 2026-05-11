@@ -41,6 +41,15 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
     ? new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  // Build rental agreement section if present
+  const agreementHtml = order.rentalAgreement ? `
+  <div style="page-break-before:always;margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px">
+    <h2 style="font-size:16px;font-weight:700;color:#1e1b4b;margin-bottom:12px">Equipment Rental Agreement</h2>
+    <div style="font-size:12px;line-height:1.8;color:#333;background:#f9fafb;border:1px solid #e5e7eb;padding:16px;border-radius:6px;white-space:pre-wrap;font-family:Georgia,serif">
+      ${order.rentalAgreement.content || ''}
+    </div>
+  </div>` : '';
+
   const lineRows = lines.filter(l => l.equipmentId).map(l => {
     const taxable = l.taxable !== false;
     const tax = taxable ? Math.round((l.baseAmount || 0) * taxRateDecimal * 100) / 100 : 0;
@@ -226,6 +235,8 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
       </div>
     </div>` : ''}
   </div>
+
+  ${agreementHtml}
 
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
     ${company.invoiceFooter || `Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.`}
