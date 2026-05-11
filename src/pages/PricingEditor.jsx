@@ -110,44 +110,24 @@ export default function PricingEditor() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{eq.category}</td>
                     <td className="px-4 py-3">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={getDisplayValue(eq, 'dailyRate')}
-                        onChange={(e) => handleFieldChange(eq.id, 'dailyRate', e.target.value)}
-                        className="w-24 text-right"
-                      />
+                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'dailyRate')} onChange={(e) => handleFieldChange(eq.id, 'dailyRate', e.target.value)} className="w-24 text-right" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={getDisplayValue(eq, 'weeklyRate')}
-                        onChange={(e) => handleFieldChange(eq.id, 'weeklyRate', e.target.value)}
-                        className="w-24 text-right"
-                      />
+                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'weeklyRate')} onChange={(e) => handleFieldChange(eq.id, 'weeklyRate', e.target.value)} className="w-24 text-right" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={getDisplayValue(eq, 'monthlyRate')}
-                        onChange={(e) => handleFieldChange(eq.id, 'monthlyRate', e.target.value)}
-                        className="w-24 text-right"
-                      />
+                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'monthlyRate')} onChange={(e) => handleFieldChange(eq.id, 'monthlyRate', e.target.value)} className="w-24 text-right" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={getDisplayValue(eq, 'depositRequired')}
-                        onChange={(e) => handleFieldChange(eq.id, 'depositRequired', e.target.value)}
-                        className="w-24 text-right"
-                      />
+                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'depositRequired')} onChange={(e) => handleFieldChange(eq.id, 'depositRequired', e.target.value)} className="w-24 text-right" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <input
