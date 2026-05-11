@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LoadPlanner from '@/components/airoads/LoadPlanner';
 import LoadManifest from '@/components/airoads/LoadManifest';
+import EquipmentPicker from '@/components/airoads/EquipmentPicker';
 
 const TRUCK_SPECS = {
   '18wheeler': { name: '18-Wheeler', weightCapacity: 80000, volumeCapacity: 3000, costPerMile: 3.5 },
@@ -28,23 +29,29 @@ export default function AIRoads() {
   const [loading, setLoading] = useState(true);
   const [numTrucks, setNumTrucks] = useState(2);
   const [truckType, setTruckType] = useState('18wheeler');
+  const [allEquipment, setAllEquipment] = useState([]);
+  const [eventPlans, setEventPlans] = useState([]);
 
-  // Load event plan if provided
+  // Load event plan, equipment catalog, and event plans on mount
   useEffect(() => {
-    if (planId) {
-      base44.entities.EventPlan.filter({ id: planId }).then(plans => {
-        if (plans[0]) {
-          setEventPlan(plans[0]);
-          // Load equipment from the plan
-          if (plans[0].equipment && Array.isArray(plans[0].equipment)) {
-            setEventEquipment(plans[0].equipment);
+    Promise.all([
+      base44.entities.Equipment.list('name', 2000),
+      base44.entities.EventPlan.list('-created_date', 100),
+    ]).then(([eq, plans]) => {
+      setAllEquipment(eq);
+      setEventPlans(plans);
+
+      if (planId) {
+        const plan = plans.find(p => p.id === planId);
+        if (plan) {
+          setEventPlan(plan);
+          if (plan.equipment && Array.isArray(plan.equipment)) {
+            setEventEquipment(plan.equipment);
           }
         }
-        setLoading(false);
-      });
-    } else {
+      }
       setLoading(false);
-    }
+    });
   }, [planId]);
 
   // Sync loads with numTrucks input
@@ -168,6 +175,35 @@ export default function AIRoads() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {/* EventPlan Selector */}
+        {eventPlans.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <label className="block text-xs font-semibold text-blue-900 mb-2">Load from EventPlan</label>
+            <select
+              onChange={e => {
+                if (e.target.value) {
+                  const plan = eventPlans.find(p => p.id === e.target.value);
+                  if (plan) {
+                    setEventPlan(plan);
+                    if (plan.equipment && Array.isArray(plan.equipment)) {
+                      setEventEquipment(plan.equipment);
+                    }
+                  }
+                }
+              }}
+              className="w-full h-9 border border-blue-300 rounded-md px-3 bg-white text-sm"
+              defaultValue=""
+            >
+              <option value="">— Select a plan —</option>
+              {eventPlans.map(plan => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.eventName} ({plan.equipment?.length || 0} items)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Settings & Stats */}
         <div className="bg-white rounded-xl border shadow-sm p-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
           {/* Truck config */}
@@ -244,6 +280,13 @@ export default function AIRoads() {
             <div className="text-xs text-indigo-500 mt-1">{loads.length} trucks</div>
           </div>
         </div>
+
+        {/* Equipment Picker */}
+        <EquipmentPicker
+          equipment={eventEquipment}
+          allEquipment={allEquipment}
+          onAdd={(item) => setEventEquipment([...eventEquipment, item])}
+        />
 
         {/* Main content */}
         {activeTab === 'planner' && (
