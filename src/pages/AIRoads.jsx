@@ -9,6 +9,7 @@ import LoadManifest from '@/components/airoads/LoadManifest';
 import EquipmentPicker from '@/components/airoads/EquipmentPicker';
 import ShippingLabels from '@/components/airoads/ShippingLabels';
 import TransitScanner from '@/components/airoads/TransitScanner';
+import LabelStockSelector from '@/components/airoads/LabelStockSelector';
 
 const TRUCK_SPECS = {
   '18wheeler': { name: '18-Wheeler', weightCapacity: 80000, volumeCapacity: 3000, costPerMile: 3.5 },
@@ -28,6 +29,8 @@ export default function AIRoads() {
   const [activeTab, setActiveTab] = useState('planner');
   const [selectedTruckForLabels, setSelectedTruckForLabels] = useState(null);
   const [selectedTruckForScanner, setSelectedTruckForScanner] = useState(null);
+  const [labelStock, setLabelStock] = useState(null);
+  const [showStockSelector, setShowStockSelector] = useState(false);
   const [autoBalancing, setAutoBalancing] = useState(false);
   const [autoPacking, setAutoPacking] = useState(false);
   const [distance, setDistance] = useState(350);
@@ -374,23 +377,57 @@ export default function AIRoads() {
                 No trucks loaded yet. Create and load a truck first.
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {loads.map(truck => (
-                    <Button
-                      key={truck.id}
-                      onClick={() => setSelectedTruckForLabels(truck)}
-                      variant={selectedTruckForLabels?.id === truck.id ? 'default' : 'outline'}
-                      className="justify-start"
-                    >
-                      {truck.name} ({truck.items?.length || 0} items)
-                    </Button>
-                  ))}
-                </div>
-                {selectedTruckForLabels && (
-                  <ShippingLabels truck={selectedTruckForLabels} />
+              <>
+                {showStockSelector && (
+                  <LabelStockSelector
+                    onSelect={(stock) => {
+                      setLabelStock(stock);
+                      setShowStockSelector(false);
+                    }}
+                    onCancel={() => setShowStockSelector(false)}
+                  />
                 )}
-              </div>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">Select Truck & Label Stock</h3>
+                    {labelStock && (
+                      <Button
+                        onClick={() => setShowStockSelector(true)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Change Stock
+                      </Button>
+                    )}
+                  </div>
+                  {!labelStock ? (
+                    <Button
+                      onClick={() => setShowStockSelector(true)}
+                      className="w-full"
+                    >
+                      Choose Label Stock Format
+                    </Button>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {loads.map(truck => (
+                          <Button
+                            key={truck.id}
+                            onClick={() => setSelectedTruckForLabels(truck)}
+                            variant={selectedTruckForLabels?.id === truck.id ? 'default' : 'outline'}
+                            className="justify-start"
+                          >
+                            {truck.name} ({truck.items?.length || 0} items)
+                          </Button>
+                        ))}
+                      </div>
+                      {selectedTruckForLabels && (
+                        <ShippingLabels truck={selectedTruckForLabels} labelStock={labelStock} />
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}

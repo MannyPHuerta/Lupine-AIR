@@ -2,8 +2,16 @@ import { useState } from 'react';
 import { Printer, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function ShippingLabels({ truck, onClose }) {
+export default function ShippingLabels({ truck, labelStock, onClose }) {
   const [printing, setPrinting] = useState(false);
+
+  const LABEL_STOCKS = {
+    '4x6_thermal': { width: '4in', height: '6in', columnsPerPage: 1 },
+    '8.5x11_4up': { width: '4in', height: '5.25in', columnsPerPage: 2 },
+    '8.5x11_2up': { width: '8in', height: '5.25in', columnsPerPage: 1 },
+  };
+
+  const stock = LABEL_STOCKS[labelStock] || LABEL_STOCKS['4x6_thermal'];
 
   const handlePrint = () => {
     setPrinting(true);
@@ -51,7 +59,7 @@ export default function ShippingLabels({ truck, onClose }) {
       </div>
 
       {/* Labels Grid */}
-      <div className="print:space-y-0 space-y-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className={`print:space-y-0 space-y-6 grid grid-cols-1 ${stock.columnsPerPage === 2 ? 'sm:grid-cols-2' : ''} gap-6`}>
         {truck.items && truck.items.length > 0 ? (
           truck.items.map((item, idx) => {
             const qrData = `truck:${truck.id}|item:${item.id}|name:${item.name}`;
@@ -61,7 +69,7 @@ export default function ShippingLabels({ truck, onClose }) {
               <div
                 key={item.id}
                 className="bg-white border-2 border-gray-800 p-4 print:break-inside-avoid print:page-break-inside-avoid"
-                style={{ width: '4in', height: '6in' }}
+                style={{ width: stock.width, height: stock.height }}
               >
                 {/* Sequence */}
                 <div className="text-center mb-2">
