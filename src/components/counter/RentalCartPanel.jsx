@@ -27,7 +27,7 @@ export default function RentalCartPanel({
   const tax = subtotal * TAX_RATE;
   const totalDue = subtotal + tax;
   const paid = parseFloat(amountPaid) || 0;
-  const balance = totalDue - paid;
+  const balance = Math.round((totalDue - paid) * 100) / 100;
 
   const handleComplete = async () => {
     setCompleting(true);
