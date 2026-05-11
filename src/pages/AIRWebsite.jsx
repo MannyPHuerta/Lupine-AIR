@@ -4,7 +4,7 @@ import { motion, useInView } from 'framer-motion';
 import {
   Zap, BarChart3, MapPin, Clock, Users, Calendar, FileText,
   DollarSign, CheckCircle, ChevronRight, ArrowRight, Menu, X,
-  Truck, Shield, Brain, Star, Play, Building2, TrendingUp, Package, AlertTriangle, Wrench
+  Truck, Shield, Brain, Star, Play, Building2, TrendingUp, Package, AlertTriangle, Wrench, Route
 } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
@@ -38,6 +38,7 @@ function Nav({ activeSection }) {
     { label: 'AIRfq', href: '#airfq' },
     { label: 'AIReports', href: '#aireports' },
     { label: 'AIRepair', href: '#airepair' },
+    { label: 'AIRoads', href: '#airoads' },
     { label: 'Platform', href: '#platform' },
     { label: 'Pricing', href: '#pricing' },
   ];
@@ -150,6 +151,7 @@ function Hero() {
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f288b892e_AIRfqBlack-01.svg', anchor: '#airfq' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg', anchor: '#aireports' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg', anchor: '#airepair' },
+            { icon: '🚚', anchor: '#airoads' },
           ].map((p, idx) => (
             <button key={idx} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
@@ -407,6 +409,51 @@ function AIReportsPreview() {
   );
 }
 
+// ─── AIRoads Preview ──────────────────────────────────────────────────────────
+function AIRoadsPreview() {
+  return (
+    <div className="bg-slate-900 rounded-2xl border border-indigo-500/20 p-6 space-y-4 shadow-2xl shadow-indigo-500/5">
+      <div className="flex items-center justify-between">
+        <div className="text-white font-bold text-sm">Load Planner — 3 Trucks</div>
+        <div className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full">🚚 Active</div>
+      </div>
+      <div className="space-y-2.5">
+        {[
+          { name: '18-Wheeler #1', items: 14, weight: '42,500 lbs', vol: '2,100 cu ft', util: 85 },
+          { name: '26ft Box #2', items: 8, weight: '18,200 lbs', vol: '840 cu ft', util: 72 },
+          { name: 'Sprinter #3', items: 4, weight: '3,800 lbs', vol: '180 cu ft', util: 58 },
+        ].map((truck, i) => (
+          <div key={i} className="bg-slate-800 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-white text-xs font-semibold">{truck.name}</span>
+              <span className="text-indigo-400 text-xs font-bold">{truck.util}%</span>
+            </div>
+            <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mb-2">
+              <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${truck.util}%` }} />
+            </div>
+            <div className="text-xs text-white/40">{truck.items} items • {truck.weight} • {truck.vol}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2 pt-2">
+        {[
+          { label: 'Total Cost', val: '$2,450', color: 'text-indigo-400' },
+          { label: 'Distance', val: '350 mi', color: 'text-cyan-400' },
+          { label: 'Status', val: 'Ready', color: 'text-green-400' },
+        ].map((s, i) => (
+          <div key={i} className="bg-slate-800 rounded-lg py-2 text-center">
+            <div className={`font-bold text-sm ${s.color}`}>{s.val}</div>
+            <div className="text-white/40 text-xs">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-3 py-2 text-xs text-indigo-300">
+        📍 All trucks optimized — QR codes ready to print for logistics.
+      </div>
+    </div>
+  );
+}
+
 // ─── AIRepair Preview ─────────────────────────────────────────────────────────
 function AIRepairPreview() {
   return (
@@ -658,6 +705,7 @@ function Footer() {
                 { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f288b892e_AIRfqBlack-01.svg' },
                 { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg' },
                 { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg' },
+                { name: 'AIRoads', icon: '🚚' },
               ].map(p => (
                 <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
                   className="text-white/50 hover:text-white transition">
@@ -793,6 +841,24 @@ export default function AIRWebsite() {
         cta="Open AIRepair"
         ctaRoute="/airepair"
         preview={<AIRepairPreview />}
+      />
+
+      <ProductSection
+        id="airoads"
+        tag="AIRoads · Logistics"
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIRoads" className="h-20 w-20 rounded-2xl" />}
+        tagline="Optimize every route. Ship faster."
+        description="Multi-truck load planner with auto-balancing and bin-packing algorithms. Drag items onto virtual trucks, print QR-coded shipping labels, and track deliveries with real-time transit scanning. Minimize cost-per-mile while respecting capacity constraints."
+        color="blue"
+        features={[
+          { icon: <Route className="w-5 h-5" />, title: 'Smart Optimization', desc: 'Auto-balance by weight & volume or minimize truck count.' },
+          { icon: <Truck className="w-5 h-5" />, title: 'Multi-Truck Planner', desc: 'Drag-drop interface with live capacity visualization.' },
+          { icon: <Package className="w-5 h-5" />, title: 'QR Labels', desc: 'Print thermal or sheet labels for every item instantly.' },
+          { icon: <CheckCircle className="w-5 h-5" />, title: 'Transit Scanning', desc: 'Mobile QR scanner to confirm loads and deliveries.' },
+        ]}
+        cta="Open AIRoads"
+        ctaRoute="/airoads"
+        preview={<AIRoadsPreview />}
       />
 
       <PlatformSection />
