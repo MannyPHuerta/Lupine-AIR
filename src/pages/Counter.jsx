@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X, ScanLine, Phone, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical } from 'lucide-react';
+import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
-import { useDLScanner } from '@/hooks/useDLScanner';
 import PracticeModeWatermark from '@/components/PracticeModeWatermark';
 
-// Steps: 'equipment' → 'scan' → 'phone' → 'checkout'
+// Steps: 'equipment' → 'checkout'
+const WALKIN_CUSTOMER = { fullName: 'Walk-in', phone: '', address: '', city: '', state: '', zip: '', id: 'walkin' };
 
 export default function Counter() {
   const navigate = useNavigate();
@@ -16,7 +16,6 @@ export default function Counter() {
   const phoneRef = useRef(null);
 
   const [equipment, setEquipment] = useState([]);
-  const [customers, setCustomers] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [branchSettings, setBranchSettings] = useState(null);
   const [companySettings, setCompanySettings] = useState(null);
@@ -24,36 +23,21 @@ export default function Counter() {
 
   const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
 
-  const [step, setStep] = useState('equipment'); // 'equipment' | 'scan' | 'phone' | 'checkout'
+  const [step, setStep] = useState('equipment'); // 'equipment' | 'checkout'
   const [cart, setCart] = useState([]);
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState('');
+  const [highlightIndex, setHighlightIndex] = useState(0);
   const [branch, setBranch] = useState('01 McAllen');
-
-  // Customer state — built up progressively
-  const [customer, setCustomer] = useState(null); // final customer object
-  const [dlScanResult, setDlScanResult] = useState(null);
-  const [phone, setPhone] = useState('');
-  const [savingPhone, setSavingPhone] = useState(false);
-
-  const handleDLScan = useCallback((parsed) => {
-    if (!parsed?.fullName) return;
-    setDlScanResult(parsed);
-    // Auto-advance if we're on the scan step
-    setStep(s => s === 'scan' ? 'phone' : s);
-  }, []);
-
-  useDLScanner(handleDLScan);
+  const listRef = useRef(null);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Equipment.list('-updated_date', 500),
-      base44.entities.Customer.list('-updated_date', 500),
       base44.entities.Rental.list('-created_date', 200),
       base44.entities.BranchSettings.list(),
       base44.entities.CompanySettings.list(),
-    ]).then(([eq, cust, rent, bs, cs]) => {
+    ]).then(([eq, rent, bs, cs]) => {
       setEquipment(eq);
-      setCustomers(cust);
       setRentals(rent);
       setBranchSettings(bs[0]);
       setCompanySettings(cs[0]);
@@ -65,66 +49,47 @@ export default function Counter() {
   const handleAddToCart = (item) => {
     setCart(prev => [...prev, { ...item, lineId: Math.random(), quantity: 1 }]);
     setEquipmentSearchTerm('');
+    setHighlightIndex(0);
+    setTimeout(() => equipSearchRef.current?.focus(), 50);
   };
 
   const handleRemoveFromCart = (lineId) => {
     setCart(prev => prev.filter(i => i.lineId !== lineId));
   };
 
-  // After DL scan, create/find customer and ask for phone
-  const handleConfirmPhone = async () => {
-    // PRACTICE MODE — skip all DB writes
-    if (practiceMode) {
-      setCustomer({ fullName: dlScanResult?.fullName || 'Practice Customer', phone, address: dlScanResult?.address || '', city: dlScanResult?.city || '', state: dlScanResult?.state || '', zip: dlScanResult?.zip || '', id: 'practice' });
-      setStep('checkout');
-      return;
-    }
-    setSavingPhone(true);
-    let finalCustomer;
-    if (dlScanResult) {
-      // Try to find existing customer by name
-      const match = customers.find(c =>
-        c.fullName?.toLowerCase() === dlScanResult.fullName?.toLowerCase()
-      );
-      if (match) {
-        finalCustomer = await base44.entities.Customer.update(match.id, { phone });
-        finalCustomer = { ...match, phone };
-      } else {
-        finalCustomer = await base44.entities.Customer.create({
-          fullName: dlScanResult.fullName,
-          address: dlScanResult.address,
-          city: dlScanResult.city,
-          state: dlScanResult.state,
-          zip: dlScanResult.zip,
-          idVerified: true,
-          idType: `${dlScanResult.state} Driver's License`,
-          idNumber: dlScanResult.dlLast4,
-          phone,
-          source: 'manual',
-        });
-      }
-    } else {
-      // No DL scan — just a name-entered customer
-      finalCustomer = { fullName: 'Walk-in Customer', phone };
-    }
-    setSavingPhone(false);
-    setCustomer(finalCustomer);
-    setStep('checkout');
-  };
-
   const handleCompleteRental = () => {
     setCart([]);
-    setCustomer(null);
-    setDlScanResult(null);
-    setPhone('');
     setStep('equipment');
+    setEquipmentSearchTerm('');
+    setHighlightIndex(0);
     setTimeout(() => equipSearchRef.current?.focus(), 50);
   };
 
-  const filteredEquipment = equipment.filter(e =>
-    e.status !== 'retired' &&
-    e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
-  ).slice(0, 30);
+  const filteredEquipment = equipment
+    .filter(e =>
+      e.status !== 'retired' &&
+      e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 50);
+
+  const handleSearchKeyDown = (e) => {
+    if (filteredEquipment.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = Math.min(highlightIndex + 1, filteredEquipment.length - 1);
+      setHighlightIndex(next);
+      listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const next = Math.max(highlightIndex - 1, 0);
+      setHighlightIndex(next);
+      listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredEquipment[highlightIndex]) handleAddToCart(filteredEquipment[highlightIndex]);
+    }
+  };
 
   // Quick subtotal for the verbal quote
   const quickTotal = cart.reduce((sum, item) => sum + (item.dailyRate || 0), 0);
@@ -180,9 +145,7 @@ export default function Counter() {
           <div className="hidden sm:flex items-center gap-1 text-xs">
             {[
               { key: 'equipment', label: '1. Equipment' },
-              { key: 'scan', label: '2. Scan ID' },
-              { key: 'phone', label: '3. Phone' },
-              { key: 'checkout', label: '4. Checkout' },
+              { key: 'checkout', label: '2. Checkout' },
             ].map((s, i, arr) => (
               <span key={s.key} className="flex items-center gap-1">
                 <span className={`px-2 py-1 rounded font-semibold ${step === s.key ? 'bg-cyan-500 text-black' : 'text-indigo-400'}`}>
@@ -205,7 +168,7 @@ export default function Counter() {
         </div>
       </div>
 
-      {/* ── STEP 1: Equipment search ── */}
+      {/* ── STEP 1: Equipment search + cart ── */}
       {step === 'equipment' && (
         <div className="flex flex-1 h-[calc(100vh-60px)]">
           {/* Left: search */}
@@ -215,26 +178,30 @@ export default function Counter() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   ref={equipSearchRef}
-                  placeholder="Search equipment by name..."
+                  placeholder="Search equipment by name…"
                   value={equipmentSearchTerm}
-                  onChange={e => setEquipmentSearchTerm(e.target.value)}
+                  onChange={e => { setEquipmentSearchTerm(e.target.value); setHighlightIndex(0); }}
+                  onKeyDown={handleSearchKeyDown}
                   className="pl-9"
                   autoFocus
                 />
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {filteredEquipment.length === 0 && equipmentSearchTerm && (
-                <div className="text-center text-gray-400 text-sm py-8">No equipment found</div>
+            <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1">
+              {filteredEquipment.length === 0 && (
+                <div className="text-center text-gray-400 text-sm py-8">
+                  {equipmentSearchTerm ? 'No equipment found' : 'Start typing to search equipment'}
+                </div>
               )}
-              {filteredEquipment.length === 0 && !equipmentSearchTerm && (
-                <div className="text-center text-gray-400 text-sm py-8">Type to search available equipment</div>
-              )}
-              {filteredEquipment.map(e => (
+              {filteredEquipment.map((e, idx) => (
                 <button
                   key={e.id}
                   onClick={() => handleAddToCart(e)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition group"
+                  className={`w-full text-left p-3 rounded-lg border transition group ${
+                    idx === highlightIndex
+                      ? 'bg-indigo-100 border-indigo-300'
+                      : 'border-transparent hover:bg-indigo-50 hover:border-indigo-200'
+                  }`}
                 >
                   <div className="font-medium text-gray-900 group-hover:text-indigo-700 text-sm">{e.name}</div>
                   <div className="text-xs text-gray-500 mt-0.5">
@@ -247,164 +214,70 @@ export default function Counter() {
             </div>
           </div>
 
-          {/* Right: cart / quote */}
+          {/* Right: cart + action button on top, then empty state */}
           <div className="w-1/2 flex flex-col bg-gray-50">
-            <div className="p-4 border-b bg-white">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-gray-900 flex items-center gap-2">
-                  <ShoppingCart className="w-4 h-4 text-indigo-600" />
-                  Quote ({cart.length} {cart.length === 1 ? 'item' : 'items'})
-                </div>
-                {quickTotal > 0 && (
-                  <div className="text-sm font-bold text-indigo-600">${quickTotal.toFixed(2)}/day</div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {cart.length === 0 && (
-                <div className="text-center text-gray-400 text-sm py-12">
+            {/* Cart items */}
+            <div className="p-3 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+              {cart.length === 0 ? (
+                <div className="text-center text-gray-400 text-sm py-8">
                   <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   Add equipment from the left
                 </div>
-              )}
-              {cart.map(item => (
-                <div key={item.lineId} className="bg-white rounded-lg border p-3 flex items-center justify-between gap-2">
-                  <div>
-                    <div className="font-medium text-gray-900 text-sm">{item.name}</div>
-                    <div className="text-xs text-gray-500">${item.dailyRate}/day</div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between pb-1">
+                    <div className="font-semibold text-gray-900 flex items-center gap-2 text-sm">
+                      <ShoppingCart className="w-4 h-4 text-indigo-600" />
+                      {cart.length} {cart.length === 1 ? 'item' : 'items'}
+                    </div>
+                    {quickTotal > 0 && (
+                      <div className="text-sm font-bold text-indigo-600">${quickTotal.toFixed(2)}/day</div>
+                    )}
                   </div>
-                  <button onClick={() => handleRemoveFromCart(item.lineId)} className="text-gray-400 hover:text-red-600 p-1">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
+                  {cart.map(item => (
+                    <div key={item.lineId} className="bg-white rounded-lg border p-3 flex items-center justify-between gap-2">
+                      <div>
+                        <div className="font-medium text-gray-900 text-sm">{item.name}</div>
+                        <div className="text-xs text-gray-500">${item.dailyRate}/day</div>
+                      </div>
+                      <button onClick={() => handleRemoveFromCart(item.lineId)} className="text-gray-400 hover:text-red-600 p-1">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
 
-            <div className="p-4 border-t bg-white">
+            {/* Action button — sticky at bottom */}
+            <div className="mt-auto p-4 border-t bg-white">
               <Button
-                onClick={() => setStep('scan')}
+                onClick={() => setStep('checkout')}
                 disabled={cart.length === 0}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
               >
-                Customer agreed — Scan ID <ChevronRight className="w-4 h-4" />
+                <DollarSign className="w-4 h-4" /> Customer Agreed — Checkout
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── STEP 2: Scan ID ── */}
-      {step === 'scan' && (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-md w-full space-y-6">
-            <div className="text-center">
-              <ScanLine className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-gray-900">Scan Customer's ID</h2>
-              <p className="text-sm text-gray-500 mt-1">Swipe or scan the driver's license now</p>
-            </div>
-
-            {dlScanResult ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-2">
-                <div className="text-green-800 font-semibold flex items-center gap-2">
-                  ✅ ID Scanned
-                </div>
-                <div className="text-sm text-green-900 font-medium">{dlScanResult.fullName}</div>
-                <div className="text-xs text-green-700">{dlScanResult.address}, {dlScanResult.city}, {dlScanResult.state}</div>
-                <Button onClick={() => setStep('phone')} className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2 gap-2">
-                  Continue — Enter Phone <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="bg-indigo-50 border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center text-indigo-600 text-sm">
-                Waiting for ID scan…
-              </div>
-            )}
-
-            <button
-              onClick={() => setStep('phone')}
-              className="w-full text-xs text-gray-400 hover:text-gray-600 text-center py-2"
-            >
-              Skip — enter name manually
-            </button>
-
-            <button onClick={() => setStep('equipment')} className="w-full text-xs text-indigo-600 hover:text-indigo-800 text-center">
-              ← Back to equipment
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── STEP 3: Phone number ── */}
-      {step === 'phone' && (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-md w-full space-y-6">
-            <div className="text-center">
-              <Phone className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-gray-900">Phone Number</h2>
-              {dlScanResult && (
-                <p className="text-sm text-gray-600 mt-1">
-                  <strong>{dlScanResult.fullName}</strong> — one more field
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {!dlScanResult && (
-                <Input
-                  placeholder="Customer full name"
-                  className="text-sm"
-                />
-              )}
-              <Input
-                ref={phoneRef}
-                type="tel"
-                placeholder="(956) 555-0100"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && phone && handleConfirmPhone()}
-                className="text-lg text-center tracking-wider"
-                autoFocus
-              />
-              <Button
-                onClick={handleConfirmPhone}
-                disabled={!phone || savingPhone}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
-              >
-                {savingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
-                {savingPhone ? 'Saving…' : 'Go to Checkout'}
-              </Button>
-            </div>
-
-            <button onClick={() => setStep('scan')} className="w-full text-xs text-indigo-600 hover:text-indigo-800 text-center">
-              ← Back to ID scan
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── STEP 4: Checkout (RentalCartPanel) ── */}
-      {step === 'checkout' && customer && (
+      {/* ── STEP 2: Checkout (RentalCartPanel) ── */}
+      {step === 'checkout' && (
         <div className="flex flex-1 h-[calc(100vh-60px)]">
-          {/* Customer summary + equipment add */}
+          {/* Left sidebar: add more equipment */}
           <div className="w-1/3 border-r bg-white overflow-y-auto flex flex-col">
             <div className="p-4 space-y-4 flex-1 overflow-y-auto">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="font-bold text-gray-900">{customer.fullName}</div>
-                  <div className="text-xs text-gray-500 mt-1">{customer.phone}</div>
-                  {customer.address && <div className="text-xs text-gray-400">{customer.city}, {customer.state}</div>}
+                  <div className="font-bold text-gray-900">Walk-in</div>
+                  <div className="text-xs text-gray-400 mt-1">Counter sale — no customer record</div>
                 </div>
-                <button onClick={() => { setCustomer(null); setStep('scan'); }} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setStep('equipment')} className="text-gray-400 hover:text-gray-600">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
-              {customer.creditHold && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-xs">
-                  <strong>Credit Hold:</strong> {customer.creditHoldReason}
-                </div>
-              )}
 
               <div className="border-t pt-4">
                 <div className="text-xs font-semibold text-gray-700 mb-3">Add Equipment</div>
@@ -442,7 +315,7 @@ export default function Counter() {
           {/* Right: Cart / invoice */}
           <RentalCartPanel
             cart={cart}
-            customer={customer}
+            customer={WALKIN_CUSTOMER}
             branch={branch}
             branchSettings={branchSettings}
             companySettings={companySettings}
