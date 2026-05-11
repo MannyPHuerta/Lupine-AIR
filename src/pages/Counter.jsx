@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X, ScanLine, Phone, ChevronRight } from 'lucide-react';
+import { Search, Loader2, X, ScanLine, Phone, ShoppingCart, ChevronRight, Trash2, DollarSign } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
+import { Button } from '@/components/ui/button';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
 import { useDLScanner } from '@/hooks/useDLScanner';
 
+// Steps: 'equipment' → 'scan' → 'phone' → 'checkout'
+
 export default function Counter() {
   const navigate = useNavigate();
-  const searchRef = useRef(null);
+  const equipSearchRef = useRef(null);
+  const phoneRef = useRef(null);
 
   const [equipment, setEquipment] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -19,24 +21,22 @@ export default function Counter() {
   const [companySettings, setCompanySettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [step, setStep] = useState('equipment'); // 'equipment' | 'scan' | 'phone' | 'checkout'
   const [cart, setCart] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState('');
   const [branch, setBranch] = useState('01 McAllen');
+
+  // Customer state — built up progressively
+  const [customer, setCustomer] = useState(null); // final customer object
   const [dlScanResult, setDlScanResult] = useState(null);
-  const [dlScanFlash, setDlScanFlash] = useState(null);
-  const [counterStep, setCounterStep] = useState('dl'); // 'phone' | 'dl'
-  const [phoneSearch, setPhoneSearch] = useState('');
+  const [phone, setPhone] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
 
   const handleDLScan = useCallback((parsed) => {
+    if (!parsed?.fullName) return;
     setDlScanResult(parsed);
-    setDlScanFlash(parsed?.isExpired ? 'expired' : 'success');
-    if (parsed?.fullName) {
-      setSearchTerm(parsed.lastName || parsed.fullName);
-      setCounterStep('dl');
-    }
-    setTimeout(() => setDlScanFlash(null), 4000);
+    // Auto-advance if we're on the scan step
+    setStep(s => s === 'scan' ? 'phone' : s);
   }, []);
 
   useDLScanner(handleDLScan);
@@ -56,38 +56,70 @@ export default function Counter() {
       setCompanySettings(cs[0]);
       setLoading(false);
     });
-
-    setTimeout(() => searchRef.current?.focus(), 100);
+    setTimeout(() => equipSearchRef.current?.focus(), 100);
   }, []);
 
   const handleAddToCart = (item) => {
-    const lineId = Math.random();
-    setCart([...cart, { ...item, lineId, quantity: 1 }]);
+    setCart(prev => [...prev, { ...item, lineId: Math.random(), quantity: 1 }]);
+    setEquipmentSearchTerm('');
   };
 
   const handleRemoveFromCart = (lineId) => {
-    setCart(cart.filter(item => item.lineId !== lineId));
+    setCart(prev => prev.filter(i => i.lineId !== lineId));
+  };
+
+  // After DL scan, create/find customer and ask for phone
+  const handleConfirmPhone = async () => {
+    setSavingPhone(true);
+    let finalCustomer;
+    if (dlScanResult) {
+      // Try to find existing customer by name
+      const match = customers.find(c =>
+        c.fullName?.toLowerCase() === dlScanResult.fullName?.toLowerCase()
+      );
+      if (match) {
+        finalCustomer = await base44.entities.Customer.update(match.id, { phone });
+        finalCustomer = { ...match, phone };
+      } else {
+        finalCustomer = await base44.entities.Customer.create({
+          fullName: dlScanResult.fullName,
+          address: dlScanResult.address,
+          city: dlScanResult.city,
+          state: dlScanResult.state,
+          zip: dlScanResult.zip,
+          idVerified: true,
+          idType: `${dlScanResult.state} Driver's License`,
+          idNumber: dlScanResult.dlLast4,
+          phone,
+          source: 'manual',
+        });
+      }
+    } else {
+      // No DL scan — just a name-entered customer
+      finalCustomer = { fullName: 'Walk-in Customer', phone };
+    }
+    setSavingPhone(false);
+    setCustomer(finalCustomer);
+    setStep('checkout');
   };
 
   const handleCompleteRental = () => {
     setCart([]);
-    setSelectedCustomer(null);
-    setSearchTerm('');
-    setPhoneSearch('');
+    setCustomer(null);
     setDlScanResult(null);
-    setCounterStep('dl');
-    setTimeout(() => searchRef.current?.focus(), 50);
+    setPhone('');
+    setStep('equipment');
+    setTimeout(() => equipSearchRef.current?.focus(), 50);
   };
 
-  const handleKeyDown = (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      searchRef.current?.focus();
-    }
-    if (e.key === 'Escape' && selectedCustomer) {
-      setSelectedCustomer(null);
-    }
-  };
+  const filteredEquipment = equipment.filter(e =>
+    e.status === 'available' &&
+    e.location === branch &&
+    e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
+  ).slice(0, 30);
+
+  // Quick subtotal for the verbal quote
+  const quickTotal = cart.reduce((sum, item) => sum + (item.dailyRate || 0), 0);
 
   if (loading) {
     return (
@@ -98,17 +130,35 @@ export default function Counter() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" onKeyDown={handleKeyDown} tabIndex={-1}>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-20 shadow-lg">
         <div className="px-4 py-2 flex items-center gap-3">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded hover:bg-indigo-800">
+          <button onClick={() => navigate('/')} className="p-2 rounded hover:bg-indigo-800 text-sm">
             ← Back
           </button>
           <div className="flex-1">
             <div className="text-lg font-bold">Counter</div>
             <div className="text-indigo-300 text-xs">{branch}</div>
           </div>
+
+          {/* Step pills */}
+          <div className="hidden sm:flex items-center gap-1 text-xs">
+            {[
+              { key: 'equipment', label: '1. Equipment' },
+              { key: 'scan', label: '2. Scan ID' },
+              { key: 'phone', label: '3. Phone' },
+              { key: 'checkout', label: '4. Checkout' },
+            ].map((s, i, arr) => (
+              <span key={s.key} className="flex items-center gap-1">
+                <span className={`px-2 py-1 rounded font-semibold ${step === s.key ? 'bg-cyan-500 text-black' : 'text-indigo-400'}`}>
+                  {s.label}
+                </span>
+                {i < arr.length - 1 && <ChevronRight className="w-3 h-3 text-indigo-600" />}
+              </span>
+            ))}
+          </div>
+
           <select
             value={branch}
             onChange={e => setBranch(e.target.value)}
@@ -121,195 +171,245 @@ export default function Counter() {
         </div>
       </div>
 
-
-
-      <div className="flex h-[calc(100vh-60px)]">
-        {/* Left: Customer & Equipment Search */}
-        <div className="w-1/3 border-r bg-white overflow-y-auto flex flex-col">
-          {selectedCustomer ? (
-            <>
-              <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-bold text-gray-900">{selectedCustomer.fullName}</div>
-                    {selectedCustomer.companyName && (
-                      <div className="text-sm text-gray-600">{selectedCustomer.companyName}</div>
-                    )}
-                    <div className="text-xs text-gray-500 mt-1">{selectedCustomer.phone}</div>
-                    <div className="text-xs text-gray-500">{selectedCustomer.email}</div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedCustomer(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                {selectedCustomer.creditHold && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-xs">
-                    <strong>Credit Hold:</strong> {selectedCustomer.creditHoldReason}
-                  </div>
-                )}
-
-                <div className="border-t pt-4">
-                  <div className="text-xs font-semibold text-gray-700 mb-3">Add Equipment</div>
-                  <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      placeholder="Search equipment..."
-                      value={equipmentSearchTerm}
-                      onChange={e => setEquipmentSearchTerm(e.target.value)}
-                      className="pl-9 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1 max-h-64 overflow-y-auto">
-                    {equipment
-                      .filter(e => 
-                        e.status === 'available' && 
-                        e.location === branch &&
-                        e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
-                      )
-                      .slice(0, 20)
-                      .map(e => (
-                        <button
-                          key={e.id}
-                          onClick={() => {
-                            handleAddToCart(e);
-                            setEquipmentSearchTerm('');
-                          }}
-                          className="w-full text-left p-2 rounded hover:bg-indigo-50 text-xs border border-transparent hover:border-indigo-300 transition group"
-                        >
-                          <div className="font-medium text-gray-900 group-hover:text-indigo-700">{e.name}</div>
-                          <div className="text-gray-500">${e.dailyRate}/day</div>
-                        </button>
-                      ))}
-                    {equipmentSearchTerm && equipment.filter(e => 
-                      e.status === 'available' && 
-                      e.location === branch &&
-                      e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
-                    ).length === 0 && (
-                      <div className="text-xs text-gray-400 text-center py-3">No equipment found</div>
-                    )}
-                  </div>
-                </div>
+      {/* ── STEP 1: Equipment search ── */}
+      {step === 'equipment' && (
+        <div className="flex flex-1 h-[calc(100vh-60px)]">
+          {/* Left: search */}
+          <div className="w-1/2 border-r bg-white flex flex-col overflow-hidden">
+            <div className="p-4 border-b">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  ref={equipSearchRef}
+                  placeholder="Search equipment by name..."
+                  value={equipmentSearchTerm}
+                  onChange={e => setEquipmentSearchTerm(e.target.value)}
+                  className="pl-9"
+                  autoFocus
+                />
               </div>
-              <div className="p-4 border-t">
-                <button
-                  onClick={() => setSelectedCustomer(null)}
-                  className="w-full text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                >
-                  Change Customer
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-
-              {/* Step indicators */}
-              <div className="flex items-center gap-1 text-xs mb-1">
-                <button onClick={() => setCounterStep('dl')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'dl' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                  <ScanLine className="w-3 h-3" /> 1. ID / Name
-                </button>
-                <ChevronRight className="w-3 h-3 text-gray-300" />
-                <button onClick={() => setCounterStep('phone')} className={`flex items-center gap-1 px-2 py-1 rounded font-semibold transition ${counterStep === 'phone' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                  <Phone className="w-3 h-3" /> 2. Phone
-                </button>
-              </div>
-
-              {counterStep === 'phone' ? (
-                <>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      ref={searchRef}
-                      placeholder="Enter phone number..."
-                      value={phoneSearch}
-                      onChange={e => {
-                        setPhoneSearch(e.target.value);
-                        setSearchTerm(e.target.value);
-                      }}
-                      className="pl-9 text-sm"
-                      type="tel"
-                      autoFocus
-                    />
-                  </div>
-                  <CustomerSearchPanel
-                    searchTerm={phoneSearch}
-                    customers={customers}
-                    scannedDL={null}
-                    onSelect={(c) => {
-                      setSelectedCustomer(c);
-                      setPhoneSearch('');
-                      setSearchTerm('');
-                    }}
-                  />
-                  <button
-                    onClick={() => setCounterStep('dl')}
-                    className="w-full text-xs text-indigo-600 hover:text-indigo-800 font-medium py-2 border border-indigo-200 rounded hover:bg-indigo-50 transition"
-                  >
-                    New customer — scan ID →
-                  </button>
-                </>
-              ) : (
-                <>
-                  {dlScanResult && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
-                      <ScanLine className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>DL scanned: <strong>{dlScanResult.fullName}</strong></span>
-                      <button onClick={() => setDlScanResult(null)} className="ml-auto text-green-600 hover:text-green-900"><X className="w-3 h-3" /></button>
-                    </div>
-                  )}
-                  {!dlScanResult && (
-                    <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700">
-                      <ScanLine className="w-5 h-5 flex-shrink-0" />
-                      <span>Scan the customer's driver's license now, or search by name below.</span>
-                    </div>
-                  )}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      placeholder="Search by name..."
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
-                      className="pl-9 text-sm"
-                    />
-                  </div>
-                  <CustomerSearchPanel
-                    searchTerm={searchTerm}
-                    customers={customers}
-                    scannedDL={dlScanResult}
-                    onSelect={(c) => {
-                      setSelectedCustomer(c);
-                      setSearchTerm('');
-                      setPhoneSearch('');
-                      setDlScanResult(null);
-                      setCounterStep('dl');
-                    }}
-                  />
-                  <button
-                    onClick={() => setCounterStep('phone')}
-                    className="w-full text-xs text-gray-500 hover:text-gray-700 font-medium py-1"
-                  >
-                    ← Back to phone lookup
-                  </button>
-                </>
-              )}
             </div>
-          )}
-        </div>
-
-        {/* Right: Equipment or Cart */}
-        {!selectedCustomer ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-center p-4">
-            <div>
-              <div className="text-lg font-medium mb-2">Select a customer to start</div>
-              <div className="text-sm text-gray-400">Search on the left to find or create</div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {filteredEquipment.length === 0 && equipmentSearchTerm && (
+                <div className="text-center text-gray-400 text-sm py-8">No equipment found</div>
+              )}
+              {filteredEquipment.length === 0 && !equipmentSearchTerm && (
+                <div className="text-center text-gray-400 text-sm py-8">Type to search available equipment</div>
+              )}
+              {filteredEquipment.map(e => (
+                <button
+                  key={e.id}
+                  onClick={() => handleAddToCart(e)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition group"
+                >
+                  <div className="font-medium text-gray-900 group-hover:text-indigo-700 text-sm">{e.name}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    ${e.dailyRate}/day
+                    {e.weeklyRate && <span className="ml-2 text-gray-400">· ${e.weeklyRate}/wk</span>}
+                    {e.category && <span className="ml-2 text-gray-400">· {e.category}</span>}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
-        ) : (
+
+          {/* Right: cart / quote */}
+          <div className="w-1/2 flex flex-col bg-gray-50">
+            <div className="p-4 border-b bg-white">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-gray-900 flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4 text-indigo-600" />
+                  Quote ({cart.length} {cart.length === 1 ? 'item' : 'items'})
+                </div>
+                {quickTotal > 0 && (
+                  <div className="text-sm font-bold text-indigo-600">${quickTotal.toFixed(2)}/day</div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {cart.length === 0 && (
+                <div className="text-center text-gray-400 text-sm py-12">
+                  <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  Add equipment from the left
+                </div>
+              )}
+              {cart.map(item => (
+                <div key={item.lineId} className="bg-white rounded-lg border p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <div className="font-medium text-gray-900 text-sm">{item.name}</div>
+                    <div className="text-xs text-gray-500">${item.dailyRate}/day</div>
+                  </div>
+                  <button onClick={() => handleRemoveFromCart(item.lineId)} className="text-gray-400 hover:text-red-600 p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 border-t bg-white">
+              <Button
+                onClick={() => setStep('scan')}
+                disabled={cart.length === 0}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
+              >
+                Customer agreed — Scan ID <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 2: Scan ID ── */}
+      {step === 'scan' && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-md w-full space-y-6">
+            <div className="text-center">
+              <ScanLine className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
+              <h2 className="text-xl font-bold text-gray-900">Scan Customer's ID</h2>
+              <p className="text-sm text-gray-500 mt-1">Swipe or scan the driver's license now</p>
+            </div>
+
+            {dlScanResult ? (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-2">
+                <div className="text-green-800 font-semibold flex items-center gap-2">
+                  ✅ ID Scanned
+                </div>
+                <div className="text-sm text-green-900 font-medium">{dlScanResult.fullName}</div>
+                <div className="text-xs text-green-700">{dlScanResult.address}, {dlScanResult.city}, {dlScanResult.state}</div>
+                <Button onClick={() => setStep('phone')} className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2 gap-2">
+                  Continue — Enter Phone <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-indigo-50 border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center text-indigo-600 text-sm">
+                Waiting for ID scan…
+              </div>
+            )}
+
+            <button
+              onClick={() => setStep('phone')}
+              className="w-full text-xs text-gray-400 hover:text-gray-600 text-center py-2"
+            >
+              Skip — enter name manually
+            </button>
+
+            <button onClick={() => setStep('equipment')} className="w-full text-xs text-indigo-600 hover:text-indigo-800 text-center">
+              ← Back to equipment
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3: Phone number ── */}
+      {step === 'phone' && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-md w-full space-y-6">
+            <div className="text-center">
+              <Phone className="w-12 h-12 text-indigo-600 mx-auto mb-3" />
+              <h2 className="text-xl font-bold text-gray-900">Phone Number</h2>
+              {dlScanResult && (
+                <p className="text-sm text-gray-600 mt-1">
+                  <strong>{dlScanResult.fullName}</strong> — one more field
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {!dlScanResult && (
+                <Input
+                  placeholder="Customer full name"
+                  className="text-sm"
+                />
+              )}
+              <Input
+                ref={phoneRef}
+                type="tel"
+                placeholder="(956) 555-0100"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && phone && handleConfirmPhone()}
+                className="text-lg text-center tracking-wider"
+                autoFocus
+              />
+              <Button
+                onClick={handleConfirmPhone}
+                disabled={!phone || savingPhone}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
+              >
+                {savingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                {savingPhone ? 'Saving…' : 'Go to Checkout'}
+              </Button>
+            </div>
+
+            <button onClick={() => setStep('scan')} className="w-full text-xs text-indigo-600 hover:text-indigo-800 text-center">
+              ← Back to ID scan
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 4: Checkout (RentalCartPanel) ── */}
+      {step === 'checkout' && customer && (
+        <div className="flex flex-1 h-[calc(100vh-60px)]">
+          {/* Customer summary + equipment add */}
+          <div className="w-1/3 border-r bg-white overflow-y-auto flex flex-col">
+            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-bold text-gray-900">{customer.fullName}</div>
+                  <div className="text-xs text-gray-500 mt-1">{customer.phone}</div>
+                  {customer.address && <div className="text-xs text-gray-400">{customer.city}, {customer.state}</div>}
+                </div>
+                <button onClick={() => { setCustomer(null); setStep('scan'); }} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {customer.creditHold && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-xs">
+                  <strong>Credit Hold:</strong> {customer.creditHoldReason}
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <div className="text-xs font-semibold text-gray-700 mb-3">Add Equipment</div>
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Search equipment..."
+                    value={equipmentSearchTerm}
+                    onChange={e => setEquipmentSearchTerm(e.target.value)}
+                    className="pl-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {equipment
+                    .filter(e =>
+                      e.status === 'available' &&
+                      e.location === branch &&
+                      e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
+                    )
+                    .slice(0, 20)
+                    .map(e => (
+                      <button
+                        key={e.id}
+                        onClick={() => { handleAddToCart(e); setEquipmentSearchTerm(''); }}
+                        className="w-full text-left p-2 rounded hover:bg-indigo-50 text-xs border border-transparent hover:border-indigo-300 transition group"
+                      >
+                        <div className="font-medium text-gray-900 group-hover:text-indigo-700">{e.name}</div>
+                        <div className="text-gray-500">${e.dailyRate}/day</div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Cart / invoice */}
           <RentalCartPanel
             cart={cart}
-            customer={selectedCustomer}
+            customer={customer}
             branch={branch}
             branchSettings={branchSettings}
             companySettings={companySettings}
@@ -317,8 +417,8 @@ export default function Counter() {
             onRemoveItem={handleRemoveFromCart}
             onCompleteRental={handleCompleteRental}
           />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
