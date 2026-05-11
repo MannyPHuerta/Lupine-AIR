@@ -228,17 +228,34 @@ export default function AvailabilityManager() {
     }),
   });
 
-  const validate = () => {
+  const validate = async () => {
     if (!customer.name) { alert('Please fill in customer name.'); return false; }
     if (!customer.phone) { alert('Phone number is required.'); return false; }
     const validLines = lines.filter(l => l.equipmentId);
     if (validLines.length === 0) { alert('Please add at least one equipment item.'); return false; }
     if (validLines.some(l => !l.startDate || !l.endDate)) { alert('Please set dates for all equipment lines.'); return false; }
+    
+    // Check customer status if we have a customer ID
+    if (customer.id && customer.id !== 'walkin') {
+      const custList = await base44.entities.Customer.filter({ id: customer.id });
+      const cust = custList[0];
+      if (cust) {
+        if (cust.blacklisted) {
+          alert('⛔ This customer is blacklisted. Please contact management before proceeding.');
+          return false;
+        }
+        if (cust.creditHold) {
+          const proceed = confirm(`⚠️ ${cust.fullName} has a credit hold on their account.\n\nThey may have an outstanding balance due. Would you like to note this and proceed, or would you prefer to contact them first?\n\nTap OK to proceed with caution, or Cancel to address payment.`);
+          if (!proceed) return false;
+        }
+      }
+    }
+    
     return validLines;
   };
 
   const handleSave = async (status = 'pending') => {
-    const validLines = validate();
+    const validLines = await validate();
     if (!validLines) return [];
 
     // PRACTICE MODE — skip all DB writes, reset form, return fake IDs
@@ -371,7 +388,7 @@ export default function AvailabilityManager() {
   };
 
   const handlePrintAndConfirm = async () => {
-    const validLines = validate();
+    const validLines = await validate();
     if (!validLines) return;
 
     // Verify email before proceeding if auto-send is enabled (skip in practice mode)
