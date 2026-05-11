@@ -214,10 +214,22 @@ export default function Counter() {
             </div>
           </div>
 
-          {/* Right: cart + action button on top, then empty state */}
+          {/* Right: action button pinned at top, cart scrolls below */}
           <div className="w-1/2 flex flex-col bg-gray-50">
-            {/* Cart items */}
-            <div className="p-3 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+            {/* Action button — always visible at top */}
+            <div className="p-3 border-b bg-white">
+              <Button
+                tabIndex={0}
+                onClick={() => setStep('checkout')}
+                disabled={cart.length === 0}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 text-base font-bold"
+              >
+                <DollarSign className="w-5 h-5" /> Customer Agreed — Checkout
+              </Button>
+            </div>
+
+            {/* Cart items — scrollable */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {cart.length === 0 ? (
                 <div className="text-center text-gray-400 text-sm py-8">
                   <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -247,17 +259,6 @@ export default function Counter() {
                   ))}
                 </>
               )}
-            </div>
-
-            {/* Action button — sticky at bottom */}
-            <div className="mt-auto p-4 border-t bg-white">
-              <Button
-                onClick={() => setStep('checkout')}
-                disabled={cart.length === 0}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2"
-              >
-                <DollarSign className="w-4 h-4" /> Customer Agreed — Checkout
-              </Button>
             </div>
           </div>
         </div>
@@ -322,6 +323,7 @@ export default function Counter() {
             allEquipment={equipment}
             onRemoveItem={handleRemoveFromCart}
             onCompleteRental={handleCompleteRental}
+            practiceMode={practiceMode}
           />
         </div>
       )}

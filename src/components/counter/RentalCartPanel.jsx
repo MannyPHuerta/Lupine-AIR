@@ -22,6 +22,7 @@ import BundleNudges from './BundleNudges';
 import DiscountCalc from './DiscountCalc';
 import SignaturePad from './SignaturePad';
 import PromoNudge from './PromoNudge';
+import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 
 export default function RentalCartPanel({
   cart,
@@ -32,6 +33,7 @@ export default function RentalCartPanel({
   allEquipment,
   onRemoveItem,
   onCompleteRental,
+  practiceMode = false,
 }) {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
@@ -125,69 +127,102 @@ export default function RentalCartPanel({
 
     setCompleting(true);
     try {
-      // Fetch and increment invoice number
-      const branchSettingsList = await base44.entities.BranchSettings.filter({ branch });
-      const bs = branchSettingsList[0];
-      let invoiceNumber = '';
-      if (bs) {
-        const num = bs.nextInvoiceNumber || 1000;
-        invoiceNumber = `${bs.invoicePrefix || ''}-${String(num).padStart(4, '0')}`;
-        await base44.entities.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
-      }
-
       const taxRateDecimal = 0.0825;
       const totalDays = days;
-
-      // Create one rental record per cart item — billing address always stays as customer's home address
+      let invoiceNumber = 'PRACTICE' + Date.now();
       const createdIds = [];
-      for (const item of cart) {
-        const itemBase = item.dailyRate * days;
-        const itemTax = itemBase * taxRateDecimal;
-        const rental = await base44.entities.Rental.create({
+
+      if (!practiceMode) {
+        // Fetch and increment invoice number
+        const branchSettingsList = await base44.entities.BranchSettings.filter({ branch });
+        const bs = branchSettingsList[0];
+        if (bs) {
+          const num = bs.nextInvoiceNumber || 1000;
+          invoiceNumber = `${bs.invoicePrefix || ''}-${String(num).padStart(4, '0')}`;
+          await base44.entities.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
+        }
+
+        // Create one rental record per cart item
+        for (const item of cart) {
+          const itemBase = item.dailyRate * days;
+          const itemTax = itemBase * taxRateDecimal;
+          const rental = await base44.entities.Rental.create({
+            equipmentId: item.id,
+            equipmentName: item.name,
+            startDate,
+            endDate,
+            totalDays,
+            customerName: customer.fullName,
+            customerEmail: customer.email,
+            customerPhone: customer.phone,
+            customerAddress: customer.address,
+            customerCity: customer.city,
+            customerState: customer.state,
+            customerZip: customer.zip,
+            customerId: customer.id,
+            branch,
+            baseAmount: itemBase,
+            taxRate: taxRateDecimal,
+            taxAmount: itemTax,
+            deposit: item.depositRequired || 0,
+            amountPaid: itemBase + itemTax,
+            invoiceNumber,
+            status: 'contract',
+            deliveryMethod,
+            returnMethod,
+            worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
+            worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
+            worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
+            worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
+            signatureDataUrl: signature,
+          });
+          createdIds.push(rental.id);
+        }
+
+        // Send confirmation if applicable
+        if (sendEmail && customer.email) {
+          base44.functions.invoke('sendRentalConfirmation', {
+            rentalIds: createdIds,
+            customerEmail: customer.email,
+            customerPhone: customer.phone,
+            invoiceNumber,
+            autoSendCommunications: true,
+          }).catch(() => {});
+        }
+      }
+
+      // Build and print invoice for both real and practice modes
+      const invoiceOrder = {
+        id: invoiceNumber,
+        createdAt: new Date().toISOString(),
+        taxRate: taxRateDecimal * 100,
+        discount: discountAmount,
+        autoDiscount: 0,
+        paymentMethod,
+        deliveryMethod,
+        returnMethod,
+        customer: { name: customer.fullName, phone: customer.phone, email: customer.email, branch },
+        branchInfo: branchSettings
+          ? { name: branchSettings.branch, address: branchSettings.address || '', phone: branchSettings.phone || '', email: branchSettings.email || '' }
+          : { name: branch, address: '', phone: '', email: '' },
+        companyInfo: companySettings
+          ? { companyName: companySettings.companyName || '', logoUrl: companySettings.logoUrl || '', invoiceFooter: companySettings.invoiceFooter || '' }
+          : {},
+        lines: cart.map(item => ({
           equipmentId: item.id,
           equipmentName: item.name,
+          quantity: 1,
+          rate: item.dailyRate,
+          baseAmount: item.dailyRate * days,
+          taxable: item.taxable !== false,
+          deposit: item.depositRequired || 0,
           startDate,
           endDate,
-          totalDays,
-          customerName: customer.fullName,
-          customerEmail: customer.email,
-          customerPhone: customer.phone,
-          // Billing address — always the customer's home address
-          customerAddress: customer.address,
-          customerCity: customer.city,
-          customerState: customer.state,
-          customerZip: customer.zip,
-          customerId: customer.id,
-          branch,
-          baseAmount: itemBase,
-          taxRate: taxRateDecimal,
-          taxAmount: itemTax,
-          deposit: item.depositRequired || 0,
-          amountPaid: itemBase + itemTax,
-          invoiceNumber,
-          status: 'contract',
-          deliveryMethod,
-          returnMethod,
-          // Worksite address — where equipment is actually delivered (may differ from billing)
-          worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
-          worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
-          worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
-          worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
-          signatureDataUrl: signature,
-        });
-        createdIds.push(rental.id);
-      }
+        })),
+      };
 
-      // Optionally send confirmation
-      if ((sendEmail && customer.email) || sendSMS) {
-        base44.functions.invoke('sendRentalConfirmation', {
-          rentalIds: createdIds,
-          customerEmail: customer.email,
-          customerPhone: customer.phone,
-          invoiceNumber,
-          autoSendCommunications: sendEmail,
-        }).catch(() => {});
-      }
+      const win = openInvoiceWindow();
+      writeInvoiceToWindow(win, invoiceOrder, total, signature, practiceMode);
 
       setCompleted(true);
       setTimeout(() => {
