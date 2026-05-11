@@ -151,7 +151,7 @@ function Hero() {
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f288b892e_AIRfqBlack-01.svg', anchor: '#airfq' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg', anchor: '#aireports' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg', anchor: '#airepair' },
-            { icon: '🚚', anchor: '#airoads' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/aea5997d3_AIRoads_black.png', anchor: '#airoads' },
           ].map((p, idx) => (
             <button key={idx} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
@@ -705,7 +705,7 @@ function Footer() {
                 { name: 'AIRfq', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/f288b892e_AIRfqBlack-01.svg' },
                 { name: 'AIReports', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg' },
                 { name: 'AIRepair', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg' },
-                { name: 'AIRoads', icon: '🚚' },
+                { name: 'AIRoads', icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/aea5997d3_AIRoads_black.png' },
               ].map(p => (
                 <button key={p.name} onClick={() => document.querySelector(`#${p.name.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth' })}
                   className="text-white/50 hover:text-white transition">
@@ -846,7 +846,7 @@ export default function AIRWebsite() {
       <ProductSection
         id="airoads"
         tag="AIRoads · Logistics"
-        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIRoads" className="h-20 w-20 rounded-2xl" />}
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/aea5997d3_AIRoads_black.png" alt="AIRoads" className="h-20 w-20 rounded-2xl" />}
         tagline="Optimize every route. Ship faster."
         description="Multi-truck load planner with auto-balancing and bin-packing algorithms. Drag items onto virtual trucks, print QR-coded shipping labels, and track deliveries with real-time transit scanning. Minimize cost-per-mile while respecting capacity constraints."
         color="blue"
