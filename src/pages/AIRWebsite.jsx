@@ -115,7 +115,7 @@ function Hero() {
                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
                className="flex justify-center pointer-events-none">
                <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden">
-                 <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIR" className="w-full h-full rounded-3xl" />
+                 <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIR" className="w-full h-full rounded-3xl object-cover" />
                  <motion.div
                    className="absolute inset-0 rounded-3xl pointer-events-none"
                    style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)' }}
