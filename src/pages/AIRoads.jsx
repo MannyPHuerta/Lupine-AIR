@@ -25,6 +25,7 @@ export default function AIRoads() {
   const [loads, setLoads] = useState([]);
   const [activeTab, setActiveTab] = useState('planner');
   const [autoBalancing, setAutoBalancing] = useState(false);
+  const [autoPacking, setAutoPacking] = useState(false);
   const [distance, setDistance] = useState(350);
   const [loading, setLoading] = useState(true);
   const [numTrucks, setNumTrucks] = useState(2);
@@ -96,6 +97,29 @@ export default function AIRoads() {
       alert(`Error: ${err.message}`);
     } finally {
       setAutoBalancing(false);
+    }
+  };
+
+  const handleAutoPack = async () => {
+    if (eventEquipment.length === 0) {
+      alert('Add equipment first before packing.');
+      return;
+    }
+    setAutoPacking(true);
+    try {
+      const res = await base44.functions.invoke('autoPackEquipment', {
+        equipment: eventEquipment,
+        numTrucks,
+        truckType,
+      });
+      if (res.data?.loads) {
+        setLoads(res.data.loads);
+        setEventEquipment([]); // Clear unassigned after pack
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAutoPacking(false);
     }
   };
 
@@ -252,12 +276,22 @@ export default function AIRoads() {
           </div>
           <div className="flex items-end gap-2">
             <Button
+              onClick={handleAutoPack}
+              disabled={autoPacking || eventEquipment.length === 0}
+              className="flex-1 bg-amber-600 hover:bg-amber-700 gap-2 h-9 text-sm"
+              title="Balance weight distribution across trucks"
+            >
+              {autoPacking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
+              Auto Pack
+            </Button>
+            <Button
               onClick={handleAutoBalance}
               disabled={autoBalancing || eventEquipment.length === 0}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-2 h-9 text-sm"
+              title="Minimize trucks while respecting limits"
             >
               {autoBalancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
-              Auto Balance
+              Optimize
             </Button>
           </div>
         </div>
