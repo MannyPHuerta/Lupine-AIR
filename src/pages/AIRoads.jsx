@@ -47,17 +47,27 @@ export default function AIRoads() {
     }
   }, [planId]);
 
-  // Initialize loads with empty trucks
+  // Sync loads with numTrucks input
   useEffect(() => {
-    if (loads.length === 0 && numTrucks > 0) {
-      setLoads(Array.from({ length: numTrucks }).map((_, i) => ({
-        id: `truck-${i}`,
-        name: `Truck ${i + 1}`,
+    if (numTrucks > loads.length) {
+      // Add trucks
+      const toAdd = numTrucks - loads.length;
+      const newTrucks = Array.from({ length: toAdd }).map((_, i) => ({
+        id: `truck-${Date.now()}-${i}`,
+        name: `Truck ${loads.length + i + 1}`,
         type: truckType,
         items: [],
-      })));
+      }));
+      setLoads([...loads, ...newTrucks]);
+    } else if (numTrucks < loads.length) {
+      // Remove trucks (move items back to unassigned)
+      const removed = loads.slice(numTrucks);
+      removed.forEach(t => {
+        if (t.items) setEventEquipment(prev => [...prev, ...t.items]);
+      });
+      setLoads(loads.slice(0, numTrucks));
     }
-  }, [numTrucks, truckType]);
+  }, [numTrucks]);
 
   const handleAutoBalance = async () => {
     setAutoBalancing(true);
