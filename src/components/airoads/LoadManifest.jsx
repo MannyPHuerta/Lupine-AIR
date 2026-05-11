@@ -1,9 +1,35 @@
-import { Printer } from 'lucide-react';
+import { useState } from 'react';
+import { Printer, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 
 export default function LoadManifest({ loads, truckSpecs, distance }) {
+  const [downloadingId, setDownloadingId] = useState(null);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPDF = async (truck) => {
+    setDownloadingId(truck.id);
+    try {
+      const res = await base44.functions.invoke('generateLoadPDF', {
+        truck,
+        distance,
+      });
+      if (res.data?.pdf) {
+        const link = document.createElement('a');
+        link.href = res.data.pdf;
+        link.download = res.data.fileName || `${truck.name}_manifest.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      alert(`Error generating PDF: ${err.message}`);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const getTruckStats = (truck) => {
@@ -46,7 +72,7 @@ export default function LoadManifest({ loads, truckSpecs, distance }) {
                 </div>
               </div>
 
-              {/* Stats */}
+              {/* Stats & Download */}
               <div className="grid grid-cols-3 gap-4 mb-6 text-center">
                 <div className="border rounded-lg p-4">
                   <div className="text-gray-600 text-xs uppercase font-semibold">Total Items</div>
@@ -62,6 +88,24 @@ export default function LoadManifest({ loads, truckSpecs, distance }) {
                   <div className="text-3xl font-bold text-gray-900">{volume}</div>
                   <div className="text-xs text-gray-500">of {spec.volumeCapacity} cu ft</div>
                 </div>
+              </div>
+
+              {/* Download Button */}
+              <div className="flex justify-end mb-6 print:hidden">
+                <Button
+                  onClick={() => handleDownloadPDF(truck)}
+                  disabled={downloadingId === truck.id}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  {downloadingId === truck.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  Download PDF
+                </Button>
               </div>
 
               {/* Items Table */}
