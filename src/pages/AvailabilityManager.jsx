@@ -493,6 +493,11 @@ export default function AvailabilityManager() {
             <div className="text-indigo-300 text-xs">{equipment.length} items in catalog</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center gap-1 bg-indigo-800 rounded-lg p-0.5 text-xs mr-1">
+              <button onClick={() => navigate('/counter')} className="px-3 py-1.5 rounded-md text-indigo-300 hover:text-white font-semibold transition">Quick</button>
+              <button className="px-3 py-1.5 rounded-md bg-white text-indigo-900 font-semibold">Full Form</button>
+            </div>
             <button
               onClick={() => {
                 if (confirm('Restore last saved form state?')) {
