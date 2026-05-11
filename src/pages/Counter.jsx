@@ -122,8 +122,7 @@ export default function Counter() {
   };
 
   const filteredEquipment = equipment.filter(e =>
-    e.status === 'available' &&
-    e.location === branch &&
+    e.status !== 'retired' &&
     e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
   ).slice(0, 30);
 
@@ -421,8 +420,7 @@ export default function Counter() {
                 <div className="space-y-1 max-h-64 overflow-y-auto">
                   {equipment
                     .filter(e =>
-                      e.status === 'available' &&
-                      e.location === branch &&
+                      e.status !== 'retired' &&
                       e.name?.toLowerCase().includes(equipmentSearchTerm.toLowerCase())
                     )
                     .slice(0, 20)
