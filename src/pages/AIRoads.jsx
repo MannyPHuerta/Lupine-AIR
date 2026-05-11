@@ -77,6 +77,10 @@ export default function AIRoads() {
   }, [numTrucks]);
 
   const handleAutoBalance = async () => {
+    if (eventEquipment.length === 0) {
+      alert('Add equipment first before balancing.');
+      return;
+    }
     setAutoBalancing(true);
     try {
       const res = await base44.functions.invoke('optimizeLoadDistribution', {
@@ -86,6 +90,7 @@ export default function AIRoads() {
       });
       if (res.data?.loads) {
         setLoads(res.data.loads);
+        setEventEquipment([]); // Clear unassigned after balance
       }
     } catch (err) {
       alert(`Error: ${err.message}`);
