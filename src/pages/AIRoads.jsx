@@ -203,6 +203,26 @@ export default function AIRoads() {
             >
               Manifest
             </button>
+            <button
+              onClick={() => setActiveTab('labels')}
+              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
+                activeTab === 'labels'
+                  ? 'bg-white text-indigo-900'
+                  : 'text-indigo-200 hover:bg-indigo-800'
+              }`}
+            >
+              Labels
+            </button>
+            <button
+              onClick={() => setActiveTab('scanner')}
+              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
+                activeTab === 'scanner'
+                  ? 'bg-white text-indigo-900'
+                  : 'text-indigo-200 hover:bg-indigo-800'
+              }`}
+            >
+              Scanner
+            </button>
           </div>
         </div>
       </div>
@@ -345,6 +365,62 @@ export default function AIRoads() {
 
         {activeTab === 'manifest' && (
           <LoadManifest loads={loads} truckSpecs={TRUCK_SPECS} distance={distance} />
+        )}
+
+        {activeTab === 'labels' && (
+          <div className="space-y-6">
+            {loads.length === 0 ? (
+              <div className="bg-white rounded-xl border p-8 text-center text-gray-400">
+                No trucks loaded yet. Create and load a truck first.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {loads.map(truck => (
+                    <Button
+                      key={truck.id}
+                      onClick={() => setSelectedTruckForLabels(truck)}
+                      variant={selectedTruckForLabels?.id === truck.id ? 'default' : 'outline'}
+                      className="justify-start"
+                    >
+                      {truck.name} ({truck.items?.length || 0} items)
+                    </Button>
+                  ))}
+                </div>
+                {selectedTruckForLabels && (
+                  <ShippingLabels truck={selectedTruckForLabels} />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'scanner' && (
+          <div className="space-y-6">
+            {loads.length === 0 ? (
+              <div className="bg-white rounded-xl border p-8 text-center text-gray-400">
+                No trucks loaded yet. Create and load a truck first.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {loads.map(truck => (
+                    <Button
+                      key={truck.id}
+                      onClick={() => setSelectedTruckForScanner(truck)}
+                      variant={selectedTruckForScanner?.id === truck.id ? 'default' : 'outline'}
+                      className="justify-start"
+                    >
+                      {truck.name} ({truck.items?.length || 0} items)
+                    </Button>
+                  ))}
+                </div>
+                {selectedTruckForScanner && (
+                  <TransitScanner truck={selectedTruckForScanner} />
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
