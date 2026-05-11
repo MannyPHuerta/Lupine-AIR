@@ -402,9 +402,9 @@ export default function AvailabilityManager() {
       };
 
       const rentalIds = await handleSave('confirmed');
-      writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl);
+      writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl, practiceMode);
 
-      if (autoSendCommunications && customer.email && rentalIds.length > 0) {
+      if (!practiceMode && autoSendCommunications && customer.email && rentalIds.length > 0) {
         try {
           await base44.functions.invoke('sendRentalConfirmation', {
             rentalIds,
@@ -457,7 +457,7 @@ export default function AvailabilityManager() {
       // Open invoice window and print
       const paid = parseFloat(amountPaid) || pendingInvoice.totalDue;
       const win = openInvoiceWindow();
-      writeInvoiceToWindow(win, pendingInvoice.invoiceOrder, paid, signatureDataUrl);
+      writeInvoiceToWindow(win, pendingInvoice.invoiceOrder, paid, signatureDataUrl, practiceMode);
 
       // Send email/SMS if enabled
       if (autoSendCommunications && customer.email && rentalIds.length > 0) {

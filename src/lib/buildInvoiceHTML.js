@@ -17,7 +17,7 @@ const RETURN_LABELS = {
  * @param {object} order - { customer, lines, taxRate, id, createdAt, branchInfo, companyInfo }
  * @param {number} amountPaid
  */
-export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null) {
+export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null, isPractice = false) {
   // Use passed-in branch/company info, fallback to defaults
   const branch = order.branchInfo || { name: 'Rental World LLC', address: '', phone: '', email: '' };
   const company = order.companyInfo || { companyName: 'Rental World LLC', logoUrl: '', invoiceFooter: '' };
@@ -78,11 +78,25 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:2px solid #e5e7eb;padding-top:8px;margin-top:4px"><span>Balance</span><span style="color:${grandTotal - paid <= 0 ? '#16a34a' : '#dc2626'}">$${fmt(grandTotal - paid)}</span></div>`
     : '';
 
+  const practiceWatermark = isPractice ? `
+    <div style="position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999">
+      ${Array.from({ length: 20 }).map((_, i) => `
+        <div style="position:absolute;white-space:nowrap;color:#ef4444;font-weight:900;opacity:0.10;font-size:48px;letter-spacing:4px;
+          top:${(i % 5) * 22 - 5}%;left:${Math.floor(i / 5) * 28 - 5}%;transform:rotate(-35deg)">PRACTICE MODE</div>
+      `).join('')}
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+        <div style="color:#ef4444;font-weight:900;font-size:80px;opacity:0.12;letter-spacing:6px;transform:rotate(-35deg)">PRACTICE MODE</div>
+      </div>
+    </div>
+    <div style="background:#dc2626;color:#fff;text-align:center;font-weight:900;font-size:13px;letter-spacing:4px;padding:8px;position:relative;z-index:100">
+      ⚠ PRACTICE MODE — THIS IS NOT A REAL INVOICE ⚠
+    </div>` : '';
+
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Invoice – ${order.customer.name}</title>
+  <title>${isPractice ? '[PRACTICE] ' : ''}Invoice – ${order.customer.name}</title>
   <style>
     body { font-family: sans-serif; font-size: 13px; color: #111; margin: 0; padding: 32px; }
     @media print { body { padding: 16px; } #toolbar { display: none !important; } }
@@ -98,6 +112,7 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null)
   </style>
 </head>
 <body>
+  ${practiceWatermark}
   <div id="toolbar">
     <label style="font-weight:600;font-size:14px">Amount Paid: $</label>
     <input id="paid-input" type="number" min="0" step="0.01" value="${paid}" oninput="updateTotals()" />
@@ -253,9 +268,9 @@ export function openInvoiceWindow() {
   return win;
 }
 
-export function writeInvoiceToWindow(win, order, amountPaid = 0, signatureDataUrl = null) {
+export function writeInvoiceToWindow(win, order, amountPaid = 0, signatureDataUrl = null, isPractice = false) {
   if (!win) return;
-  const html = buildInvoiceHTML(order, amountPaid, signatureDataUrl);
+  const html = buildInvoiceHTML(order, amountPaid, signatureDataUrl, isPractice);
   win.document.open();
   win.document.write(html);
   win.document.close();

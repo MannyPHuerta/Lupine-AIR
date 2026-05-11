@@ -28,6 +28,7 @@ const navGroups = [
       { label: 'Categories', path: '/categories', icon: Layers },
       { label: 'Inventory Health', path: '/inventory-health', icon: AlertTriangle },
       { label: 'Inventory Export', path: '/inventory-export', icon: FileText },
+      { label: 'Equipment Specs', path: '/equipment-specs', icon: Settings },
     ],
   },
   {
