@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench, FlaskConical } from 'lucide-react';
+import PracticeModeWatermark from '@/components/PracticeModeWatermark';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { calcDeliveryFee } from '@/lib/deliveryFee';
 import SignaturePad from '@/components/invoice/SignaturePad';
@@ -62,6 +63,7 @@ export default function AvailabilityManager() {
   const [manualInvoiceNumber, setManualInvoiceNumber] = useState('');
   const [volumeRules, setVolumeRules] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
+  const [practiceMode, setPracticeMode] = useState(false);
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -232,6 +234,13 @@ export default function AvailabilityManager() {
   const handleSave = async (status = 'pending') => {
     const validLines = validate();
     if (!validLines) return [];
+
+    // PRACTICE MODE — skip all DB writes, return fake IDs
+    if (practiceMode) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      return ['practice-id'];
+    }
 
     const taxRateDecimal = (parseFloat(taxRate) || 8.25) / 100;
     const paid = parseFloat(amountPaid) || 0;
@@ -482,6 +491,12 @@ export default function AvailabilityManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {practiceMode && <PracticeModeWatermark />}
+      {practiceMode && (
+        <div className="bg-red-600 text-white text-center text-xs font-bold py-1.5 tracking-widest z-40 relative print:block">
+          ⚠ PRACTICE MODE — Nothing will be saved ⚠
+        </div>
+      )}
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg print:hidden">
         <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
@@ -498,6 +513,19 @@ export default function AvailabilityManager() {
               <button onClick={() => navigate('/counter')} className="px-3 py-1.5 rounded-md text-indigo-300 hover:text-white font-semibold transition">Quick</button>
               <button className="px-3 py-1.5 rounded-md bg-white text-indigo-900 font-semibold">Full Form</button>
             </div>
+            {/* Practice Mode toggle */}
+            <button
+              onClick={() => setPracticeMode(p => !p)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
+                practiceMode
+                  ? 'bg-red-500 border-red-400 text-white animate-pulse'
+                  : 'bg-indigo-800 border-indigo-600 text-indigo-300 hover:text-white'
+              }`}
+              title="Toggle Practice Mode — no data is saved"
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              {practiceMode ? 'PRACTICE ON' : 'Practice'}
+            </button>
             <button
               onClick={() => {
                 if (confirm('Restore last saved form state?')) {

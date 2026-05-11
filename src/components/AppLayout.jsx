@@ -27,6 +27,7 @@ const navGroups = [
       { label: 'Pricing Editor', path: '/pricing-editor', icon: DollarSign },
       { label: 'Categories', path: '/categories', icon: Layers },
       { label: 'Inventory Health', path: '/inventory-health', icon: AlertTriangle },
+      { label: 'Inventory Export', path: '/inventory-export', icon: FileText },
     ],
   },
   {

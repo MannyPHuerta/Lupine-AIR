@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, CheckCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle, RefreshCw, ExternalLink, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import UnitStatusBadge, { STATUS_CONFIG } from '@/components/equipment/UnitStatusBadge';
 
@@ -167,9 +167,17 @@ export default function EquipmentStatusManager() {
             <div className="text-lg font-bold">Equipment Status</div>
             <div className="text-indigo-300 text-xs">{equipment.length} units in catalog</div>
           </div>
-          <button onClick={load} disabled={loading} className="ml-auto p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => navigate('/inventory-export')}
+              className="flex items-center gap-1.5 text-xs bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-3 py-1.5 rounded-lg transition"
+            >
+              <Download className="w-3.5 h-3.5" /> Export CSV
+            </button>
+            <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 

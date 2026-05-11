@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X, ScanLine, Phone, ShoppingCart, ChevronRight, Trash2, DollarSign } from 'lucide-react';
+import { Search, Loader2, X, ScanLine, Phone, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
 import { useDLScanner } from '@/hooks/useDLScanner';
+import PracticeModeWatermark from '@/components/PracticeModeWatermark';
 
 // Steps: 'equipment' → 'scan' → 'phone' → 'checkout'
 
@@ -20,6 +21,8 @@ export default function Counter() {
   const [branchSettings, setBranchSettings] = useState(null);
   const [companySettings, setCompanySettings] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [practiceMode, setPracticeMode] = useState(false);
 
   const [step, setStep] = useState('equipment'); // 'equipment' | 'scan' | 'phone' | 'checkout'
   const [cart, setCart] = useState([]);
@@ -70,6 +73,12 @@ export default function Counter() {
 
   // After DL scan, create/find customer and ask for phone
   const handleConfirmPhone = async () => {
+    // PRACTICE MODE — skip all DB writes
+    if (practiceMode) {
+      setCustomer({ fullName: dlScanResult?.fullName || 'Practice Customer', phone, address: dlScanResult?.address || '', city: dlScanResult?.city || '', state: dlScanResult?.state || '', zip: dlScanResult?.zip || '', id: 'practice' });
+      setStep('checkout');
+      return;
+    }
     setSavingPhone(true);
     let finalCustomer;
     if (dlScanResult) {
@@ -131,6 +140,12 @@ export default function Counter() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {practiceMode && <PracticeModeWatermark />}
+      {practiceMode && (
+        <div className="bg-red-600 text-white text-center text-xs font-bold py-1.5 tracking-widest z-40 relative">
+          ⚠ PRACTICE MODE — Nothing will be saved ⚠
+        </div>
+      )}
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-20 shadow-lg">
         <div className="px-4 py-2 flex items-center gap-3">
@@ -147,6 +162,20 @@ export default function Counter() {
             <button className="px-3 py-1.5 rounded-md bg-white text-indigo-900 font-semibold">Quick</button>
             <button onClick={() => navigate('/availability')} className="px-3 py-1.5 rounded-md text-indigo-300 hover:text-white font-semibold transition">Full Form</button>
           </div>
+
+          {/* Practice Mode toggle */}
+          <button
+            onClick={() => setPracticeMode(p => !p)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
+              practiceMode
+                ? 'bg-red-500 border-red-400 text-white animate-pulse'
+                : 'bg-indigo-800 border-indigo-600 text-indigo-300 hover:text-white'
+            }`}
+            title="Toggle Practice Mode — no data is saved"
+          >
+            <FlaskConical className="w-3.5 h-3.5" />
+            {practiceMode ? 'PRACTICE ON' : 'Practice'}
+          </button>
 
           {/* Step pills */}
           <div className="hidden sm:flex items-center gap-1 text-xs">
