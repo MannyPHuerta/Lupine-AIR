@@ -187,6 +187,7 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
   </div>
 
   <div style="margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px;font-size:12px">
+    ${!order.isCounterSale ? `
     <div style="display:flex;justify-content:space-between;gap:40px;margin-bottom:32px;flex-wrap:wrap">
       <div>
         ${signatureDataUrl
@@ -204,7 +205,12 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
     
     <div style="font-size:11px;line-height:1.6;color:#333;background:#f9fafb;padding:12px;border-radius:6px;margin-bottom:12px">
       <strong>AGREEMENT TO PAY:</strong> The undersigned agrees to pay the amount due as shown on this invoice in full according to the terms specified. Equipment must be returned by the end date listed above in good condition. Customer acknowledges acceptance of all rental terms and conditions.
-    </div>
+    </div>` : `
+    ${order.paymentMethod ? `<div style="margin-bottom:16px;text-align:right">
+      <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Payment Method</div>
+      <div style="font-size:15px;font-weight:700;color:#1e1b4b">${order.paymentMethod}</div>
+    </div>` : ''}
+    `}
 
     ${lines.filter(l => l.equipmentId && l.specs && Object.entries(l.specs).filter(([, v]) => v && String(v).trim()).length > 0).length > 0 ? `
     <div style="font-size:11px;line-height:1.7;color:#333;background:#f0f4ff;border:1px solid #c7d2fe;padding:12px;border-radius:6px;margin-bottom:12px">

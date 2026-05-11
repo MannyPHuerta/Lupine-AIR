@@ -76,6 +76,7 @@ export default function RentalCartPanel({
         discount: 0,
         autoDiscount: 0,
         paymentMethod,
+        isCounterSale: true,
         deliveryMethod: 'customer_pickup',
         returnMethod: 'customer_return',
         customer: { name: 'Walk-in', phone: '', email: '', branch },
@@ -190,8 +191,12 @@ export default function RentalCartPanel({
             )}
           </div>
         </div>
-        <button type="button" onClick={() => setAmountPaid(totalDue.toFixed(2))} className="text-xs text-indigo-600 underline">
-          Apply exact amount
+        <button
+          type="button"
+          onClick={() => setAmountPaid(totalDue.toFixed(2))}
+          className="w-full text-xs font-semibold text-indigo-600 border border-indigo-300 rounded-md py-1.5 hover:bg-indigo-50 transition"
+        >
+          Apply Exact Amount (${totalDue.toFixed(2)})
         </button>
 
         {/* Complete */}
