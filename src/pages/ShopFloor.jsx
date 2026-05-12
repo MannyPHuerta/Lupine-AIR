@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Clock, User, Zap, Plus, Loader2, Check, Send, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
+
 const STATUS_COLORS = {
   scheduled: 'bg-gray-100 text-gray-700',
   in_progress: 'bg-blue-100 text-blue-700',
@@ -23,6 +25,7 @@ export default function ShopFloor() {
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(null);
   const [buyerEmail, setBuyerEmail] = useState('');
+  const [branchFilter, setBranchFilter] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -51,19 +54,21 @@ export default function ShopFloor() {
     mechanics.forEach(m => {
       grouped[m.email] = workOrders.filter(wo =>
         wo.assignedTo === m.email &&
-        ['scheduled', 'in_progress', 'awaiting_parts'].includes(wo.status)
+        ['scheduled', 'in_progress', 'awaiting_parts'].includes(wo.status) &&
+        (!branchFilter || wo.branch === branchFilter)
       );
     });
     return grouped;
-  }, [workOrders, mechanics]);
+  }, [workOrders, mechanics, branchFilter]);
 
   // Unassigned work orders
   const unassigned = useMemo(() =>
     workOrders.filter(wo =>
       !wo.assignedTo &&
-      ['scheduled', 'in_progress'].includes(wo.status)
+      ['scheduled', 'in_progress'].includes(wo.status) &&
+      (!branchFilter || wo.branch === branchFilter)
     ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
-    [workOrders]
+    [workOrders, branchFilter]
   );
 
   // Get parts for a work order
@@ -131,6 +136,14 @@ export default function ShopFloor() {
           <button onClick={() => navigate('/parts-procurement')} className="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
             <Package className="w-4 h-4" /> Procurement Report
           </button>
+          <select
+            value={branchFilter}
+            onChange={e => setBranchFilter(e.target.value)}
+            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
+          >
+            <option value="">All Branches</option>
+            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
           <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
             ↻
           </button>

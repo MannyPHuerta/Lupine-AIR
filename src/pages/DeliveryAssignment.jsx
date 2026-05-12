@@ -4,6 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
+const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
+
 export default function DeliveryAssignment() {
   const navigate = useNavigate();
   const [rentals, setRentals] = useState([]);
@@ -11,6 +13,7 @@ export default function DeliveryAssignment() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [branchFilter, setBranchFilter] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -30,10 +33,11 @@ export default function DeliveryAssignment() {
     return rentals.filter(r => {
       if (r.deliveryMethod !== 'company_delivery') return false;
       if (r.status === 'cancelled' || r.status === 'quote') return false;
+      if (branchFilter && r.branch !== branchFilter) return false;
       const hasDelivery = deliveries.some(d => d.rentalId === r.id);
       return !hasDelivery;
     });
-  }, [rentals, deliveries]);
+  }, [rentals, deliveries, branchFilter]);
 
   const handleCreateDelivery = async (rental, driverId, driverName) => {
     setCreating(true);
@@ -94,6 +98,14 @@ export default function DeliveryAssignment() {
             <div className="text-lg font-bold">📦 Delivery Assignment</div>
             <div className="text-indigo-300 text-xs">{pendingDeliveries.length} rental(s) need delivery</div>
           </div>
+          <select
+            value={branchFilter}
+            onChange={e => setBranchFilter(e.target.value)}
+            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
+          >
+            <option value="">All Branches</option>
+            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
         </div>
       </div>
 
