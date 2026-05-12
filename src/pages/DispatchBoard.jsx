@@ -46,6 +46,8 @@ async function geocode(address, city, state, zip) {
   return null;
 }
 
+const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
+
 export default function DispatchBoard() {
   const navigate = useNavigate();
   const [deliveries, setDeliveries] = useState([]);
@@ -55,6 +57,7 @@ export default function DispatchBoard() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('map');
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+  const [branchFilter, setBranchFilter] = useState('');
 
   // Geocoded pins shared between map and list
   const [pins, setPins] = useState([]);
@@ -78,8 +81,14 @@ export default function DispatchBoard() {
 
   useEffect(() => { load(); }, []);
 
-  const filteredDeliveries = deliveries.filter(d => !dateFilter || d.scheduledDate === dateFilter);
-  const filteredRecoveries = recoveries.filter(r => !dateFilter || r.scheduledDate === dateFilter);
+  const filteredDeliveries = deliveries.filter(d =>
+    (!dateFilter || d.scheduledDate === dateFilter) &&
+    (!branchFilter || d.branch === branchFilter)
+  );
+  const filteredRecoveries = recoveries.filter(r =>
+    (!dateFilter || r.scheduledDate === dateFilter) &&
+    (!branchFilter || r.branch === branchFilter)
+  );
 
   // Geocode filtered items whenever date filter or data changes
   useEffect(() => {
@@ -149,6 +158,14 @@ export default function DispatchBoard() {
             <div className="text-lg font-bold">Dispatch Board</div>
             <div className="text-indigo-300 text-xs">{inProgress} in progress · {completed} completed</div>
           </div>
+          <select
+            value={branchFilter}
+            onChange={e => setBranchFilter(e.target.value)}
+            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
+          >
+            <option value="">All Branches</option>
+            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
           <input
             type="date"
             value={dateFilter}
