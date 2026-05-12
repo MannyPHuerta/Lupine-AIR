@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
-import { Search, Plus, X } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, Plus, X, Loader2, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useAIEquipmentSearch } from '@/hooks/useAIEquipmentSearch';
 
 export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] }) {
   const [search, setSearch] = useState('');
@@ -9,6 +10,8 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
   const [volume, setVolume] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [manualName, setManualName] = useState('');
+  const timerRef = useRef(null);
+  const { aiSuggestions, isSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(allEquipment);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return [];
@@ -17,6 +20,16 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
       .filter(e => e.name?.toLowerCase().includes(search.toLowerCase()))
       .slice(0, 10);
   }, [search, allEquipment, equipment]);
+
+  useEffect(() => {
+    clearTimeout(timerRef.current);
+    if (search.trim().length >= 3 && filtered.length === 0) {
+      timerRef.current = setTimeout(() => triggerAISearch(search.trim()), 600);
+    } else {
+      clearAISuggestions();
+    }
+    return () => clearTimeout(timerRef.current);
+  }, [search, filtered.length]);
 
   const handleAddCatalogItem = (item) => {
     const hasRealDims = item.footprintWidth && item.footprintLength;
@@ -61,7 +74,7 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
             className="pl-10"
             icon={<Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />}
           />
-          {filtered.length > 0 && (
+          {(filtered.length > 0 || isSearching || aiSuggestions.length > 0) && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
               {filtered.map(item => (
                 <button
@@ -76,6 +89,31 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
                   <Plus className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
                 </button>
               ))}
+              {filtered.length === 0 && isSearching && (
+                <div className="flex items-center gap-2 px-4 py-3 text-sm text-indigo-500">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching by alternate names…
+                </div>
+              )}
+              {filtered.length === 0 && !isSearching && aiSuggestions.length > 0 && (
+                <>
+                  <div className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border-b">
+                    <Sparkles className="w-3 h-3" /> Did you mean…
+                  </div>
+                  {aiSuggestions.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleAddCatalogItem(item)}
+                      className="w-full text-left px-4 py-2 hover:bg-indigo-50 border-b last:border-b-0 transition flex items-center justify-between group"
+                    >
+                      <div>
+                        <div className="font-medium text-sm text-gray-900">{item.name}</div>
+                        <div className="text-xs text-gray-500">{item.category || '—'}</div>
+                      </div>
+                      <Plus className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
