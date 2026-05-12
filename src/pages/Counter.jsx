@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical } from 'lucide-react';
+import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
 import PracticeModeWatermark from '@/components/PracticeModeWatermark';
+import { useAIEquipmentSearch } from '@/hooks/useAIEquipmentSearch';
 
 // Steps: 'equipment' → 'checkout'
 const WALKIN_CUSTOMER = { fullName: 'Walk-in', phone: '', address: '', city: '', state: '', zip: '', id: 'walkin' };
@@ -22,6 +23,8 @@ export default function Counter() {
   const [loading, setLoading] = useState(true);
 
   const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
+  const { aiSuggestions, isSearching: aiSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(equipment);
+  const aiTimerRef = useRef(null);
 
   const [step, setStep] = useState('equipment'); // 'equipment' | 'checkout'
   const [cart, setCart] = useState([]);
@@ -79,6 +82,17 @@ export default function Counter() {
     )
     .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, 50);
+
+  // Trigger AI synonym search when no local results found
+  useEffect(() => {
+    clearTimeout(aiTimerRef.current);
+    if (equipmentSearchTerm.trim().length >= 3 && filteredEquipment.length === 0) {
+      aiTimerRef.current = setTimeout(() => triggerAISearch(equipmentSearchTerm.trim()), 600);
+    } else {
+      clearAISuggestions();
+    }
+    return () => clearTimeout(aiTimerRef.current);
+  }, [equipmentSearchTerm, filteredEquipment.length]);
 
   const handleSearchKeyDown = (e) => {
     if (filteredEquipment.length === 0) return;
@@ -195,9 +209,38 @@ export default function Counter() {
               </div>
             </div>
             <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1">
-              {filteredEquipment.length === 0 && (
+              {filteredEquipment.length === 0 && !aiSearching && aiSuggestions.length === 0 && (
                 <div className="text-center text-gray-400 text-sm py-8">
                   {equipmentSearchTerm ? 'No equipment found' : 'Start typing to search equipment'}
+                </div>
+              )}
+              {filteredEquipment.length === 0 && aiSearching && (
+                <div className="flex items-center justify-center gap-2 text-indigo-500 text-sm py-8">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Searching by alternate names…
+                </div>
+              )}
+              {filteredEquipment.length === 0 && !aiSearching && aiSuggestions.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 px-3 py-2 bg-indigo-50 rounded-lg">
+                    <Sparkles className="w-3.5 h-3.5" /> Did you mean…
+                  </div>
+                  {aiSuggestions.map((e, idx) => (
+                    <button
+                      key={e.id}
+                      onClick={() => handleAddToCart(e)}
+                      className="w-full text-left p-3 rounded-lg border border-indigo-200 hover:bg-indigo-50 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 text-sm">{e.name}</span>
+                        {e.consumable
+                          ? <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">Counter Sale</span>
+                          : <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">Full Form ↗</span>
+                        }
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">${e.dailyRate}/day{e.category && ` · ${e.category}`}</div>
+                    </button>
+                  ))}
                 </div>
               )}
               {filteredEquipment.map((e, idx) => (
