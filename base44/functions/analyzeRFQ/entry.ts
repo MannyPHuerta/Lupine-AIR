@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     }
 
     const docContext = extractedText
-      ? `RFQ TEXT:\n${extractedText.slice(0, 12000)}`
+      ? `RFQ TEXT:\n${extractedText.slice(0, 8000)}`
       : 'The RFQ document is attached as a file. Read and analyze its full contents.';
 
     const companyContext = companyInfo ? `
@@ -98,7 +98,7 @@ Required fields:
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,
-      model: 'gpt_5_4',
+      model: 'claude_sonnet_4_6',
       // Only pass file_url if text extraction failed (fallback)
       file_urls: (!extractedText && fileUrl) ? [fileUrl] : undefined,
       response_json_schema: {
