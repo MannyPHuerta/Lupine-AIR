@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Upload, Wand2, Save, Printer, Send, Loader2, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Upload, Wand2, Save, Printer, Send, Loader2, Trash2, X, Eye, Pencil, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import ReactMarkdown from 'react-markdown';
 import RFQComplianceMatrix from '@/components/rfq/RFQComplianceMatrix';
 import RFQLineItems from '@/components/rfq/RFQLineItems';
 import RFQPrintExport from '@/components/rfq/RFQPrintExport';
@@ -422,16 +423,7 @@ export default function RFQDetail() {
 
         {/* RESPONSE DRAFT TAB */}
         {activeTab === 'response' && (
-          <div className="space-y-4">
-            <Section title="Response Narrative / Cover Letter">
-              <textarea
-                value={rfq.responseNarrative}
-                onChange={e => update('responseNarrative', e.target.value)}
-                className="w-full border rounded-md p-3 text-sm min-h-96 resize-y font-mono focus:outline-none focus:ring-1 focus:ring-green-500"
-                placeholder="AI-generated response will appear here after analysis. You can edit freely."
-              />
-            </Section>
-          </div>
+          <ResponseDraftTab value={rfq.responseNarrative} onChange={v => update('responseNarrative', v)} />
         )}
       </div>
 
@@ -487,6 +479,67 @@ function EditableText({ value, onChange }) {
       onChange={e => onChange(e.target.value)}
       className="w-full border rounded-md p-3 text-sm min-h-32 resize-y focus:outline-none focus:ring-1 focus:ring-green-500"
     />
+  );
+}
+
+function ResponseDraftTab({ value, onChange }) {
+  const [editing, setEditing] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value || '');
+  };
+
+  if (!value) {
+    return (
+      <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
+        <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
+        <div>Run AI analysis on the Intake tab first to generate the response draft.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg border">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50 rounded-t-lg">
+        <span className="text-sm font-semibold text-gray-700">Response Narrative / Cover Letter</span>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleCopy} className="gap-1 text-xs">
+            <Copy className="w-3.5 h-3.5" /> Copy
+          </Button>
+          <Button
+            size="sm"
+            variant={editing ? 'default' : 'outline'}
+            onClick={() => setEditing(e => !e)}
+            className="gap-1 text-xs"
+          >
+            {editing ? <><Eye className="w-3.5 h-3.5" /> Preview</> : <><Pencil className="w-3.5 h-3.5" /> Edit</>}
+          </Button>
+        </div>
+      </div>
+
+      {editing ? (
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full p-5 text-sm min-h-[600px] resize-y font-mono focus:outline-none rounded-b-lg"
+          placeholder="Response narrative will appear here after analysis..."
+        />
+      ) : (
+        <div className="p-6 md:p-10 prose prose-sm max-w-none text-gray-900 min-h-[600px]
+          [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4
+          [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-2
+          [&_p]:mb-3 [&_p]:leading-relaxed
+          [&_ul]:mb-3 [&_ul]:ml-5 [&_ul]:list-disc
+          [&_ol]:mb-3 [&_ol]:ml-5 [&_ol]:list-decimal
+          [&_strong]:font-semibold
+          [&_hr]:my-6 [&_hr]:border-gray-200
+          [&_blockquote]:border-l-4 [&_blockquote]:border-green-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600
+        ">
+          <ReactMarkdown>{value}</ReactMarkdown>
+        </div>
+      )}
+    </div>
   );
 }
 
