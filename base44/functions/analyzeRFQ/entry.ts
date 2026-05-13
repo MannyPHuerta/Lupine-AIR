@@ -28,21 +28,17 @@ Deno.serve(async (req) => {
         ).join('\n')
       : 'No previous RFQ history found for this organization.';
 
-    const sourceText = rfqText || `[Uploaded file at: ${fileUrl} — extract and analyze its contents]`;
-
-    const systemPrompt = `You are an expert government procurement analyst and equipment rental bid specialist. 
+    const userPrompt = `You are an expert government procurement analyst and equipment rental bid specialist.
 You help equipment rental companies prepare precise, compliant responses to RFQs from municipal, county, state, and federal agencies.
-You understand that Engineers review these documents and expect: section-by-section compliance, exact spec matching, no ambiguity, and every deviation explicitly noted.`;
 
-    const userPrompt = `Analyze the following RFQ and generate a complete structured response package.
+Analyze the following RFQ document and generate a complete structured response package.
 
-ISSUING ORGANIZATION: ${issuingOrg || 'Unknown'}
+ISSUING ORGANIZATION (if known): ${issuingOrg || 'Extract from document'}
 
 PAST HISTORY WITH THIS ORG:
 ${historyContext}
 
-RFQ CONTENT:
-${sourceText}
+${rfqText ? `RFQ TEXT CONTENT:\n${rfqText}` : 'The RFQ document is attached as a file. Please read and analyze its full contents.'}
 
 Return a JSON object with exactly these fields:
 
@@ -98,37 +94,40 @@ Return a JSON object with exactly these fields:
   "responseNarrative": "Full professional cover letter / response narrative. Mirror the RFQ's section structure. Use formal government procurement language. For each section of the RFQ, provide a direct compliant response. Note any exceptions explicitly."
 }`;
 
+    const jsonSchema = {
+      type: 'object',
+      properties: {
+        issuingOrg: { type: 'string' },
+        rfqNumber: { type: 'string' },
+        title: { type: 'string' },
+        orgType: { type: 'string' },
+        dueDate: { type: 'string' },
+        dueTime: { type: 'string' },
+        submissionMethod: { type: 'string' },
+        submissionAddress: { type: 'string' },
+        contactName: { type: 'string' },
+        contactEmail: { type: 'string' },
+        contactPhone: { type: 'string' },
+        suggestedFileName: { type: 'string' },
+        aiAnalysisSummary: { type: 'string' },
+        orgHistorySummary: { type: 'string' },
+        suggestedResponseFormat: { type: 'string' },
+        extractedRequirements: { type: 'array', items: { type: 'object' } },
+        complianceMatrix: { type: 'array', items: { type: 'object' } },
+        proposedLineItems: { type: 'array', items: { type: 'object' } },
+        estimatedTotalValue: { type: 'number' },
+        responseNarrative: { type: 'string' }
+      }
+    };
+
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: userPrompt,
       model: 'claude_sonnet_4_6',
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          issuingOrg: { type: 'string' },
-          rfqNumber: { type: 'string' },
-          title: { type: 'string' },
-          orgType: { type: 'string' },
-          dueDate: { type: 'string' },
-          dueTime: { type: 'string' },
-          submissionMethod: { type: 'string' },
-          submissionAddress: { type: 'string' },
-          contactName: { type: 'string' },
-          contactEmail: { type: 'string' },
-          contactPhone: { type: 'string' },
-          suggestedFileName: { type: 'string' },
-          aiAnalysisSummary: { type: 'string' },
-          orgHistorySummary: { type: 'string' },
-          suggestedResponseFormat: { type: 'string' },
-          extractedRequirements: { type: 'array', items: { type: 'object' } },
-          complianceMatrix: { type: 'array', items: { type: 'object' } },
-          proposedLineItems: { type: 'array', items: { type: 'object' } },
-          estimatedTotalValue: { type: 'number' },
-          responseNarrative: { type: 'string' }
-        }
-      }
+      file_urls: fileUrl ? [fileUrl] : undefined,
+      response_json_schema: jsonSchema,
     });
 
-    console.log('RFQ analysis complete for org:', issuingOrg);
+    console.log('RFQ analysis complete for org:', result.issuingOrg || issuingOrg);
     return Response.json({ success: true, analysis: result });
 
   } catch (error) {

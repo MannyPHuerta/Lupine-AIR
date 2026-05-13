@@ -66,25 +66,25 @@ export default function RFQDetail() {
       const res = await base44.functions.invoke('analyzeRFQ', {
         rfqText: rfq.rawRfqText || null,
         fileUrl: rfq.uploadedFileUrl || null,
-        issuingOrg: rfq.issuingOrg || 'Unknown — extract from document',
+        issuingOrg: rfq.issuingOrg || null,
         rfqId: isNew ? null : id,
       });
 
       const a = res.data.analysis;
-      setRfq(prev => ({
-        ...prev,
-        issuingOrg: a.issuingOrg || prev.issuingOrg,
-        rfqNumber: a.rfqNumber || prev.rfqNumber,
-        title: a.title || prev.title,
-        orgType: a.orgType || prev.orgType,
-        dueDate: a.dueDate || prev.dueDate,
-        dueTime: a.dueTime || prev.dueTime,
-        submissionMethod: a.submissionMethod || prev.submissionMethod,
-        submissionAddress: a.submissionAddress || prev.submissionAddress,
-        contactName: a.contactName || prev.contactName,
-        contactEmail: a.contactEmail || prev.contactEmail,
-        contactPhone: a.contactPhone || prev.contactPhone,
-        suggestedFileName: a.suggestedFileName || prev.suggestedFileName,
+      const updatedRfq = {
+        ...rfq,
+        issuingOrg: a.issuingOrg || rfq.issuingOrg,
+        rfqNumber: a.rfqNumber || rfq.rfqNumber,
+        title: a.title || rfq.title,
+        orgType: a.orgType || rfq.orgType,
+        dueDate: a.dueDate || rfq.dueDate,
+        dueTime: a.dueTime || rfq.dueTime,
+        submissionMethod: a.submissionMethod || rfq.submissionMethod,
+        submissionAddress: a.submissionAddress || rfq.submissionAddress,
+        contactName: a.contactName || rfq.contactName,
+        contactEmail: a.contactEmail || rfq.contactEmail,
+        contactPhone: a.contactPhone || rfq.contactPhone,
+        suggestedFileName: a.suggestedFileName || rfq.suggestedFileName,
         aiAnalysisSummary: a.aiAnalysisSummary || '',
         orgHistorySummary: a.orgHistorySummary || '',
         suggestedResponseFormat: a.suggestedResponseFormat || '',
@@ -94,7 +94,16 @@ export default function RFQDetail() {
         estimatedTotalValue: a.estimatedTotalValue || 0,
         responseNarrative: a.responseNarrative || '',
         status: 'draft',
-      }));
+      };
+
+      // Update state and auto-save
+      setRfq(updatedRfq);
+      if (isNew) {
+        const created = await base44.entities.RFQRecord.create(updatedRfq);
+        navigate(`/rfq/${created.id}`, { replace: true });
+      } else {
+        await base44.entities.RFQRecord.update(id, updatedRfq);
+      }
       setActiveTab('compliance');
     } catch (err) {
       alert('Analysis failed: ' + err.message);
