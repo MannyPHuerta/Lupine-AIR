@@ -58,8 +58,7 @@ export default function RFQDetail() {
   };
 
   const handleAnalyze = async () => {
-    if (!rfq.issuingOrg) { alert('Please enter the Issuing Organization first.'); return; }
-    if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please paste the RFQ text or upload a file first.'); return; }
+    if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please upload a file or paste RFQ text first.'); return; }
 
     setAnalyzing(true);
     update('status', 'analyzing');
@@ -67,13 +66,14 @@ export default function RFQDetail() {
       const res = await base44.functions.invoke('analyzeRFQ', {
         rfqText: rfq.rawRfqText || null,
         fileUrl: rfq.uploadedFileUrl || null,
-        issuingOrg: rfq.issuingOrg,
+        issuingOrg: rfq.issuingOrg || 'Unknown — extract from document',
         rfqId: isNew ? null : id,
       });
 
       const a = res.data.analysis;
       setRfq(prev => ({
         ...prev,
+        issuingOrg: a.issuingOrg || prev.issuingOrg,
         rfqNumber: a.rfqNumber || prev.rfqNumber,
         title: a.title || prev.title,
         orgType: a.orgType || prev.orgType,
@@ -197,50 +197,18 @@ export default function RFQDetail() {
         {/* INTAKE TAB */}
         {activeTab === 'intake' && (
           <div className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Left: RFQ metadata */}
-              <div className="bg-white rounded-lg border p-5 space-y-4">
-                <div className="font-semibold text-gray-900 border-b pb-2">RFQ Information</div>
-                <Field label="Issuing Organization *" value={rfq.issuingOrg} onChange={v => update('issuingOrg', v)} placeholder="e.g. City of McAllen, Texas DOT" />
-                <Field label="RFQ / IFB / ITB Number" value={rfq.rfqNumber} onChange={v => update('rfqNumber', v)} placeholder="e.g. RFQ-2026-COA-4421" />
-                <Field label="Title" value={rfq.title} onChange={v => update('title', v)} placeholder="Official RFQ title" />
-                <div className="grid grid-cols-2 gap-3">
-                  <SelectField label="Org Type" value={rfq.orgType} onChange={v => update('orgType', v)}
-                    options={['municipal','county','state','federal','private','nonprofit','other']} />
-                  <SelectField label="Source" value={rfq.source} onChange={v => update('source', v)}
-                    options={['email','mail','web','phone','event_planner','other']} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Received Date" type="date" value={rfq.receivedDate} onChange={v => update('receivedDate', v)} />
-                  <Field label="Due Date *" type="date" value={rfq.dueDate} onChange={v => update('dueDate', v)} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Due Time" value={rfq.dueTime} onChange={v => update('dueTime', v)} placeholder="e.g. 2:00 PM CST" />
-                  <SelectField label="Branch" value={rfq.branch} onChange={v => update('branch', v)} options={BRANCHES} />
-                </div>
-              </div>
 
-              {/* Right: Contact & submission */}
-              <div className="bg-white rounded-lg border p-5 space-y-4">
-                <div className="font-semibold text-gray-900 border-b pb-2">Contact & Submission</div>
-                <Field label="Contact Name" value={rfq.contactName} onChange={v => update('contactName', v)} />
-                <Field label="Contact Email" value={rfq.contactEmail} onChange={v => update('contactEmail', v)} />
-                <Field label="Contact Phone" value={rfq.contactPhone} onChange={v => update('contactPhone', v)} />
-                <SelectField label="Submission Method" value={rfq.submissionMethod} onChange={v => update('submissionMethod', v)}
-                  options={['email','mail','portal','hand_delivery','fax']} />
-                <Field label="Submission Address / Portal URL" value={rfq.submissionAddress} onChange={v => update('submissionAddress', v)} />
-                <Field label="Internal Notes" value={rfq.internalNotes} onChange={v => update('internalNotes', v)} multiline />
+            {/* STEP 1: Upload / Paste */}
+            <div className="bg-white rounded-lg border-2 border-green-200 p-5 space-y-4">
+              <div className="flex items-center gap-2 border-b pb-2">
+                <span className="bg-green-700 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">1</span>
+                <span className="font-semibold text-gray-900">Upload or Paste RFQ Document</span>
               </div>
-            </div>
-
-            {/* RFQ Document input */}
-            <div className="bg-white rounded-lg border p-5 space-y-4">
-              <div className="font-semibold text-gray-900 border-b pb-2">RFQ Document</div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Upload File (PDF, image, Word)</label>
-                  <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-500 transition">
-                    <Upload className="w-5 h-5 text-gray-400" />
+                  <label className="flex items-center gap-3 cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-5 hover:border-green-500 transition">
+                    <Upload className="w-6 h-6 text-gray-400 flex-shrink-0" />
                     <span className="text-sm text-gray-500">
                       {uploading ? 'Uploading...' : rfq.uploadedFileName || 'Click to upload RFQ document'}
                     </span>
@@ -248,12 +216,12 @@ export default function RFQDetail() {
                   </label>
                   {rfq.uploadedFileUrl && (
                     <a href={rfq.uploadedFileUrl} target="_blank" rel="noreferrer" className="text-xs text-green-700 underline mt-1 block">
-                      View uploaded file
+                      ✓ File uploaded — view it
                     </a>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Paste RFQ Text (or type requirements)</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">— or paste RFQ text directly</label>
                   <textarea
                     value={rfq.rawRfqText}
                     onChange={e => update('rawRfqText', e.target.value)}
@@ -265,20 +233,65 @@ export default function RFQDetail() {
 
               <Button
                 onClick={handleAnalyze}
-                disabled={analyzing || (!rfq.rawRfqText && !rfq.uploadedFileUrl) || !rfq.issuingOrg}
-                className="w-full bg-green-700 hover:bg-green-800 text-white"
+                disabled={analyzing || (!rfq.rawRfqText && !rfq.uploadedFileUrl)}
+                className="w-full bg-green-700 hover:bg-green-800 text-white text-base py-5"
               >
                 {analyzing ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing RFQ — this takes ~30 seconds...</>
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing RFQ — extracting all fields, building compliance matrix...</>
                 ) : (
-                  <><Wand2 className="w-4 h-4 mr-2" /> Analyze with AI & Generate Response</>
+                  <><Wand2 className="w-5 h-5 mr-2" /> Analyze with AI &amp; Auto-Fill All Fields</>
                 )}
               </Button>
               {analyzing && (
                 <p className="text-xs text-gray-500 text-center">
-                  AI is extracting requirements, researching org history, building compliance matrix, and drafting response...
+                  Extracting org name, RFQ number, due dates, contacts, requirements, compliance matrix, line items, and drafting response...
                 </p>
               )}
+            </div>
+
+            {/* STEP 2: Review / Edit extracted fields — always visible for corrections */}
+            <div className={`space-y-4 transition-opacity ${analyzing ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+              <div className="flex items-center gap-2 px-1">
+                <span className="bg-gray-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">2</span>
+                <span className="font-semibold text-gray-700 text-sm">Review &amp; Correct Extracted Fields</span>
+                {rfq.aiAnalysisSummary && <span className="text-xs text-green-600 font-medium">✓ AI-filled</span>}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Left: RFQ metadata */}
+                <div className="bg-white rounded-lg border p-5 space-y-4">
+                  <div className="font-semibold text-gray-900 border-b pb-2 text-sm">RFQ Information</div>
+                  <Field label="Issuing Organization" value={rfq.issuingOrg} onChange={v => update('issuingOrg', v)} placeholder="e.g. City of McAllen, Texas DOT" />
+                  <Field label="RFQ / IFB / ITB Number" value={rfq.rfqNumber} onChange={v => update('rfqNumber', v)} placeholder="e.g. RFQ-2026-COA-4421" />
+                  <Field label="Title" value={rfq.title} onChange={v => update('title', v)} placeholder="Official RFQ title" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <SelectField label="Org Type" value={rfq.orgType} onChange={v => update('orgType', v)}
+                      options={['municipal','county','state','federal','private','nonprofit','other']} />
+                    <SelectField label="Source" value={rfq.source} onChange={v => update('source', v)}
+                      options={['email','mail','web','phone','event_planner','other']} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Received Date" type="date" value={rfq.receivedDate} onChange={v => update('receivedDate', v)} />
+                    <Field label="Due Date" type="date" value={rfq.dueDate} onChange={v => update('dueDate', v)} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Due Time" value={rfq.dueTime} onChange={v => update('dueTime', v)} placeholder="e.g. 2:00 PM CST" />
+                    <SelectField label="Branch" value={rfq.branch} onChange={v => update('branch', v)} options={BRANCHES} />
+                  </div>
+                </div>
+
+                {/* Right: Contact & submission */}
+                <div className="bg-white rounded-lg border p-5 space-y-4">
+                  <div className="font-semibold text-gray-900 border-b pb-2 text-sm">Contact &amp; Submission</div>
+                  <Field label="Contact Name" value={rfq.contactName} onChange={v => update('contactName', v)} />
+                  <Field label="Contact Email" value={rfq.contactEmail} onChange={v => update('contactEmail', v)} />
+                  <Field label="Contact Phone" value={rfq.contactPhone} onChange={v => update('contactPhone', v)} />
+                  <SelectField label="Submission Method" value={rfq.submissionMethod} onChange={v => update('submissionMethod', v)}
+                    options={['email','mail','portal','hand_delivery','fax']} />
+                  <Field label="Submission Address / Portal URL" value={rfq.submissionAddress} onChange={v => update('submissionAddress', v)} />
+                  <Field label="Internal Notes" value={rfq.internalNotes} onChange={v => update('internalNotes', v)} multiline />
+                </div>
+              </div>
             </div>
           </div>
         )}

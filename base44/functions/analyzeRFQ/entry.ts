@@ -6,11 +6,13 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { rfqText, fileUrl, issuingOrg, rfqId } = await req.json();
+    const { rfqText, fileUrl, issuingOrg: inputOrg, rfqId } = await req.json();
 
     if (!rfqText && !fileUrl) {
       return Response.json({ error: 'Must provide rfqText or fileUrl' }, { status: 400 });
     }
+
+    const issuingOrg = (!inputOrg || inputOrg.startsWith('Unknown')) ? null : inputOrg;
 
     // Fetch past RFQ history for this org
     let orgHistory = [];
@@ -45,6 +47,7 @@ ${sourceText}
 Return a JSON object with exactly these fields:
 
 {
+  "issuingOrg": "full name of the issuing organization extracted from document",
   "rfqNumber": "official RFQ number extracted from document",
   "title": "official title of the RFQ",
   "orgType": "municipal|county|state|federal|private|nonprofit|other",
@@ -101,6 +104,7 @@ Return a JSON object with exactly these fields:
       response_json_schema: {
         type: 'object',
         properties: {
+          issuingOrg: { type: 'string' },
           rfqNumber: { type: 'string' },
           title: { type: 'string' },
           orgType: { type: 'string' },
