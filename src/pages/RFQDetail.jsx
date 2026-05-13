@@ -69,6 +69,14 @@ export default function RFQDetail() {
   const handleAnalyze = async () => {
     if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please upload a file or paste RFQ text first.'); return; }
 
+    // Ensure company settings are loaded before analyzing
+    let settings = companySettings;
+    if (!settings) {
+      const results = await base44.entities.CompanySettings.list();
+      settings = results[0] || null;
+      if (settings) setCompanySettings(settings);
+    }
+
     setAnalyzing(true);
     update('status', 'analyzing');
     try {
@@ -77,14 +85,14 @@ export default function RFQDetail() {
         fileUrl: rfq.uploadedFileUrl || null,
         issuingOrg: rfq.issuingOrg || null,
         rfqId: isNew ? null : id,
-        companyInfo: companySettings ? {
-          name: companySettings.companyName,
-          address: companySettings.address,
-          phone: companySettings.phone,
-          email: companySettings.email,
-          website: companySettings.website,
-          licenseNumber: companySettings.licenseNumber,
-          insuranceInfo: companySettings.insuranceInfo,
+        companyInfo: settings ? {
+          name: settings.companyName,
+          address: settings.address,
+          phone: settings.phone,
+          email: settings.email,
+          website: settings.website,
+          licenseNumber: settings.licenseNumber,
+          insuranceInfo: settings.insuranceInfo,
         } : null,
       });
 
