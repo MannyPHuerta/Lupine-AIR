@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw } from 'lucide-react';
+import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw, FileBarChart } from 'lucide-react';
 
 const STATUS_COLORS = {
   scheduled: 'bg-blue-50 border-blue-200 text-blue-900',
@@ -80,7 +80,12 @@ export default function DriverDashboard() {
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-4 max-w-4xl mx-auto">
-          <div className="text-lg font-bold">🚚 Driver Dashboard</div>
+          <div className="flex items-center justify-between">
+            <div className="text-lg font-bold">🚚 Driver Dashboard</div>
+            <button onClick={() => navigate('/driver-report')} className="p-2 rounded-lg hover:bg-indigo-800" title="Performance Report">
+              <FileBarChart className="w-5 h-5" />
+            </button>
+          </div>
           <div className="text-indigo-300 text-xs mt-1">{driver?.full_name} • {driver?.email}</div>
           <div className="mt-2 text-sm text-indigo-200">
             {todaysDeliveries.length} deliveries · {todaysRecoveries.length} recoveries today

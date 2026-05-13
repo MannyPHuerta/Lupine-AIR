@@ -72,6 +72,8 @@ import EquipmentSpecsEditor from "./pages/EquipmentSpecsEditor";
 import RentalAgreementManager from "./pages/RentalAgreementManager";
 import LoyaltyManager from "./pages/LoyaltyManager";
 import AIRoads from "./pages/AIRoads";
+import LaundryReport from "./pages/LaundryReport";
+import DriverReport from "./pages/DriverReport";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -167,6 +169,8 @@ const AuthenticatedApp = () => {
         <Route path="/rental-agreement" element={<RentalAgreementManager />} />
         <Route path="/loyalty-manager" element={<LoyaltyManager />} />
         <Route path="/airoads" element={<AIRoads />} />
+        <Route path="/laundry-report" element={<LaundryReport />} />
+        <Route path="/driver-report" element={<DriverReport />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Clock, CheckCircle2, AlertTriangle, Zap, TrendingUp, Droplets } from 'lucide-react';
+import { ArrowLeft, Loader2, Clock, CheckCircle2, AlertTriangle, Zap, TrendingUp, Droplets, FileBarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
@@ -133,6 +133,9 @@ export default function LaundryDashboard() {
           >
             {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
+          <button onClick={() => navigate('/laundry-report')} className="p-2 rounded-lg hover:bg-indigo-800" title="Monthly Report">
+            <FileBarChart className="w-5 h-5" />
+          </button>
           <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
             ↻
           </button>
