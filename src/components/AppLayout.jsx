@@ -133,10 +133,10 @@ function NavGroup({ group, location, onNavigate }) {
                 key={item.path}
                 to={item.path}
                 onClick={onNavigate}
-                className={`flex items-center gap-2.5 px-4 py-1.5 text-sm transition ${
+                className={`flex items-center gap-2.5 px-4 py-1.5 text-sm transition border-l-2 ${
                   active
-                    ? `font-semibold ${group.color} bg-slate-700/60`
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40'
+                    ? `font-semibold ${group.color} bg-slate-700/60 border-current`
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 border-transparent'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5 flex-shrink-0" />
