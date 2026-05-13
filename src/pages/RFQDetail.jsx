@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Upload, Wand2, Save, Printer, Send, FileDown, Loader2, CheckCircle2, AlertTriangle, XCircle, Clock, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
+import { ArrowLeft, Upload, Wand2, Save, Printer, Send, Loader2, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -143,6 +143,33 @@ export default function RFQDetail() {
     setSaving(false);
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this RFQ permanently? This cannot be undone.')) return;
+    if (!isNew) await base44.entities.RFQRecord.delete(id);
+    navigate('/rfq', { replace: true });
+  };
+
+  const handleClearAnalysis = () => {
+    if (!window.confirm('Clear all AI analysis, requirements, compliance matrix, and line items?')) return;
+    setRfq(prev => ({
+      ...prev,
+      aiAnalysisSummary: '',
+      orgHistorySummary: '',
+      suggestedResponseFormat: '',
+      extractedRequirements: [],
+      complianceMatrix: [],
+      proposedLineItems: [],
+      estimatedTotalValue: 0,
+      responseNarrative: '',
+      suggestedFileName: '',
+      status: 'received',
+    }));
+  };
+
+  const handleClearFile = () => {
+    setRfq(prev => ({ ...prev, uploadedFileUrl: '', uploadedFileName: '', rawRfqText: '' }));
+  };
+
   const handleSend = async () => {
     if (!rfq.contactEmail) { alert('No contact email found. Please fill in the contact email.'); return; }
     setSaving(true);
@@ -201,6 +228,9 @@ export default function RFQDetail() {
                 <Send className="w-4 h-4 mr-1" /> Send
               </Button>
             )}
+            <Button onClick={handleDelete} size="sm" variant="outline" className="border-red-500 text-red-300 hover:bg-red-900 hover:text-white">
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
@@ -244,9 +274,14 @@ export default function RFQDetail() {
                     <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onChange={handleFileUpload} />
                   </label>
                   {rfq.uploadedFileUrl && (
-                    <a href={rfq.uploadedFileUrl} target="_blank" rel="noreferrer" className="text-xs text-green-700 underline mt-1 block">
-                      ✓ File uploaded — view it
-                    </a>
+                    <div className="flex items-center gap-3 mt-1">
+                      <a href={rfq.uploadedFileUrl} target="_blank" rel="noreferrer" className="text-xs text-green-700 underline">
+                        ✓ File uploaded — view it
+                      </a>
+                      <button onClick={handleClearFile} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-0.5">
+                        <X className="w-3 h-3" /> Remove
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div>
@@ -283,7 +318,14 @@ export default function RFQDetail() {
               <div className="flex items-center gap-2 px-1">
                 <span className="bg-gray-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">2</span>
                 <span className="font-semibold text-gray-700 text-sm">Review &amp; Correct Extracted Fields</span>
-                {rfq.aiAnalysisSummary && <span className="text-xs text-green-600 font-medium">✓ AI-filled</span>}
+                {rfq.aiAnalysisSummary && (
+                  <>
+                    <span className="text-xs text-green-600 font-medium">✓ AI-filled</span>
+                    <button onClick={handleClearAnalysis} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-0.5 ml-1">
+                      <X className="w-3 h-3" /> Clear analysis
+                    </button>
+                  </>
+                )}
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
