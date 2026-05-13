@@ -98,7 +98,7 @@ Then include ALL of these sections with full detail:
 9. **Acceptance & Signature Block** — formal closing
 
 Write in formal government procurement language. Be specific, detailed, and professional throughout. Minimum 1000 words.`,
-    model: 'claude_sonnet_4_6',
+    model: 'gemini_3_flash',
       response_json_schema: {
         type: 'object',
         properties: {
