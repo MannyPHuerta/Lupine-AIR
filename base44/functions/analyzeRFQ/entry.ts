@@ -26,8 +26,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    const docContext = rfqText
-      ? `RFQ TEXT:\n${rfqText.slice(0, 8000)}`
+    // If a file was uploaded, extract its text first so we don't pass the file_url
+    // directly to the LLM (which causes 502 timeouts on large PDFs)
+    let extractedText = rfqText || null;
+    if (!extractedText && fileUrl) {
+      console.log('Extracting text from uploaded file...');
+      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: fileUrl,
+        json_schema: {
+          type: 'object',
+          properties: {
+            full_text: { type: 'string', description: 'The complete text content of the document' }
+          }
+        }
+      });
+      if (extracted.status === 'success' && extracted.output?.full_text) {
+        extractedText = extracted.output.full_text;
+        console.log('Extracted', extractedText.length, 'chars from file');
+      } else {
+        console.log('Extraction failed or empty, will use file_url as fallback');
+      }
+    }
+
+    const docContext = extractedText
+      ? `RFQ TEXT:\n${extractedText.slice(0, 12000)}`
       : 'The RFQ document is attached as a file. Read and analyze its full contents.';
 
     const companyContext = companyInfo ? `
@@ -77,7 +99,8 @@ Required fields:
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,
       model: 'gpt_5_4',
-      file_urls: fileUrl ? [fileUrl] : undefined,
+      // Only pass file_url if text extraction failed (fallback)
+      file_urls: (!extractedText && fileUrl) ? [fileUrl] : undefined,
       response_json_schema: {
         type: 'object',
         properties: {
