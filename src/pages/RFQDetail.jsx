@@ -35,9 +35,18 @@ export default function RFQDetail() {
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('intake');
   const [showPrint, setShowPrint] = useState(false);
+  const [companySettings, setCompanySettings] = useState(null);
+
+  useEffect(() => {
+    // Load company settings for use in AI prompt
+    base44.entities.CompanySettings.list().then(results => {
+      if (results[0]) setCompanySettings(results[0]);
+    });
+  }, []);
 
   useEffect(() => {
     if (!isNew) {
+      setLoading(true);
       base44.entities.RFQRecord.filter({ id }).then(results => {
         if (results[0]) setRfq(results[0]);
         setLoading(false);
@@ -68,6 +77,15 @@ export default function RFQDetail() {
         fileUrl: rfq.uploadedFileUrl || null,
         issuingOrg: rfq.issuingOrg || null,
         rfqId: isNew ? null : id,
+        companyInfo: companySettings ? {
+          name: companySettings.companyName,
+          address: companySettings.address,
+          phone: companySettings.phone,
+          email: companySettings.email,
+          website: companySettings.website,
+          licenseNumber: companySettings.licenseNumber,
+          insuranceInfo: companySettings.insuranceInfo,
+        } : null,
       });
 
       const a = res.data.analysis;
@@ -100,6 +118,8 @@ export default function RFQDetail() {
       setRfq(updatedRfq);
       if (isNew) {
         const created = await base44.entities.RFQRecord.create(updatedRfq);
+        // Set rfq with the created id so useEffect reload doesn't wipe data
+        setRfq({ ...updatedRfq, id: created.id });
         navigate(`/rfq/${created.id}`, { replace: true });
       } else {
         await base44.entities.RFQRecord.update(id, updatedRfq);

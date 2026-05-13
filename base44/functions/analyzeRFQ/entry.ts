@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { rfqText, fileUrl, issuingOrg: inputOrg, rfqId } = await req.json();
+    const { rfqText, fileUrl, issuingOrg: inputOrg, rfqId, companyInfo } = await req.json();
 
     if (!rfqText && !fileUrl) {
       return Response.json({ error: 'Must provide rfqText or fileUrl' }, { status: 400 });
@@ -30,7 +30,20 @@ Deno.serve(async (req) => {
       ? `RFQ TEXT:\n${rfqText.slice(0, 8000)}`
       : 'The RFQ document is attached as a file. Read and analyze its full contents.';
 
+    const companyContext = companyInfo ? `
+OUR COMPANY INFORMATION (use this when writing the response narrative and compliance matrix):
+Company Name: ${companyInfo.name || 'AIR Equipment Rental'}
+Address: ${companyInfo.address || ''}
+Phone: ${companyInfo.phone || ''}
+Email: ${companyInfo.email || ''}
+Website: ${companyInfo.website || ''}
+License: ${companyInfo.licenseNumber || ''}
+Insurance: ${companyInfo.insuranceInfo || ''}
+` : `OUR COMPANY: AIR Equipment Rental (use as the responding vendor in all response text)`;
+
     const prompt = `You are a government procurement analyst for an equipment rental company.
+
+${companyContext}
 
 ${docContext}
 
