@@ -92,8 +92,8 @@ export default function RFQDetail() {
         await base44.entities.RFQRecord.update(recordId, { status: 'analyzing' });
       }
 
-      // Step 2: Kick off async analysis (backend returns immediately, does work in background)
-      await base44.functions.invoke('analyzeRFQ', {
+      // Step 2: Run analysis synchronously — function returns when complete
+      const result = await base44.functions.invoke('analyzeRFQ', {
         rfqText: rfq.rawRfqText || null,
         fileUrl: rfq.uploadedFileUrl || null,
         issuingOrg: rfq.issuingOrg || null,
@@ -109,25 +109,16 @@ export default function RFQDetail() {
         } : null,
       });
 
-      // Step 3: Poll every 4s until status changes away from 'analyzing'
-      const poll = setInterval(async () => {
-        try {
-          const results = await base44.entities.RFQRecord.filter({ id: recordId });
-          const latest = results[0];
-          if (latest && latest.status !== 'analyzing') {
-            clearInterval(poll);
-            setRfq(latest);
-            setAnalyzing(false);
-            setActiveTab('compliance');
-          }
-        } catch (e) {
-          clearInterval(poll);
-          setAnalyzing(false);
-        }
-      }, 4000);
+      if (result.data?.error) {
+        throw new Error(result.data.error);
+      }
 
-      // Safety timeout after 3 minutes
-      setTimeout(() => { clearInterval(poll); setAnalyzing(false); }, 180000);
+      // Step 3: Reload the record to get all AI-filled fields
+      const results = await base44.entities.RFQRecord.filter({ id: recordId });
+      if (results[0]) {
+        setRfq(results[0]);
+      }
+      setActiveTab('compliance');
 
     } catch (err) {
       alert('Analysis failed: ' + err.message);
