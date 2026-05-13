@@ -149,7 +149,9 @@ export default function RFQDetail() {
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this RFQ permanently? This cannot be undone.')) return;
-    if (!isNew) await base44.entities.RFQRecord.delete(id);
+    if (!isNew) {
+      try { await base44.entities.RFQRecord.delete(id); } catch (_) {}
+    }
     navigate('/rfq', { replace: true });
   };
 
