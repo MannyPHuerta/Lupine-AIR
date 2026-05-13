@@ -14,142 +14,86 @@ Deno.serve(async (req) => {
 
     const issuingOrg = (!inputOrg || inputOrg.startsWith('Unknown')) ? null : inputOrg;
 
-    // Fetch past RFQ history for this org
-    let orgHistory = [];
+    // Fetch past RFQ history for this org (only if we already know who it is)
+    let historyContext = 'No previous history.';
     if (issuingOrg) {
-      orgHistory = await base44.asServiceRole.entities.RFQRecord.filter({ issuingOrg });
+      let orgHistory = await base44.asServiceRole.entities.RFQRecord.filter({ issuingOrg });
       if (rfqId) orgHistory = orgHistory.filter(r => r.id !== rfqId);
+      if (orgHistory.length > 0) {
+        historyContext = orgHistory.map(r =>
+          `- RFQ ${r.rfqNumber || 'N/A'} | Status: ${r.status} | Value: $${r.estimatedTotalValue || 0}`
+        ).join('\n');
+      }
     }
-
-    const historyContext = orgHistory.length > 0
-      ? orgHistory.map(r =>
-          `- RFQ: ${r.rfqNumber || 'N/A'} | Status: ${r.status} | Value: $${r.estimatedTotalValue || 0} | Outcome: ${r.outcome || 'N/A'}`
-        ).join('\n')
-      : 'No previous RFQ history found for this organization.';
 
     const docContext = rfqText
-      ? `RFQ TEXT CONTENT:\n${rfqText}`
-      : 'The RFQ document is attached as a file. Please read and analyze its full contents.';
+      ? `RFQ TEXT:\n${rfqText.slice(0, 8000)}`
+      : 'The RFQ document is attached as a file. Read and analyze its full contents.';
 
-    // --- CALL 1: Extract metadata + compliance matrix + line items ---
-    const metadataPrompt = `You are a government procurement analyst. Analyze this RFQ document and extract structured data.
+    const prompt = `You are a government procurement analyst for an equipment rental company.
 
-ISSUING ORGANIZATION (if known): ${issuingOrg || 'Extract from document'}
 ${docContext}
 
-Return a JSON object with these fields:
-{
-  "issuingOrg": "full name of the issuing organization",
-  "rfqNumber": "official RFQ/IFB/ITB number",
-  "title": "official title of the RFQ",
-  "orgType": "municipal|county|state|federal|private|nonprofit|other",
-  "dueDate": "YYYY-MM-DD if found, else null",
-  "dueTime": "time string if found, else null",
-  "submissionMethod": "email|mail|portal|hand_delivery|fax",
-  "submissionAddress": "address or URL if found",
-  "contactName": "contact person name if found",
-  "contactEmail": "contact email if found",
-  "contactPhone": "contact phone if found",
-  "suggestedFileName": "RFQ-[YEAR]-[ORG_ABBREV]-[NUMBER]_AIR-Response.pdf",
-  "extractedRequirements": [
-    {
-      "sectionNumber": "e.g. 3.1",
-      "sectionTitle": "section title",
-      "requirementText": "verbatim or close paraphrase",
-      "requirementType": "equipment|delivery|insurance|bonding|certification|pricing|timeline|documentation|other",
-      "isMandatory": true
-    }
-  ],
-  "complianceMatrix": [
-    {
-      "sectionNumber": "e.g. 3.1",
-      "requirementSummary": "brief summary",
-      "complianceStatus": "compliant|pending_review",
-      "responseText": "proposed response text",
-      "exceptionNote": "",
-      "documentReference": ""
-    }
-  ],
-  "proposedLineItems": [
-    {
-      "lineNumber": "1",
-      "description": "equipment or service description",
-      "equipmentCategory": "category",
-      "quantity": 1,
-      "unit": "each|day|week|month|lot",
-      "unitPrice": 0,
-      "totalPrice": 0,
-      "specs": "technical specifications",
-      "notes": ""
-    }
-  ],
-  "estimatedTotalValue": 0
-}`;
-
-    // --- CALL 2: Generate narrative and summaries ---
-    const narrativePrompt = `You are an expert government procurement writer for an equipment rental company.
-
-ISSUING ORGANIZATION (if known): ${issuingOrg || 'Extract from document'}
 PAST HISTORY WITH THIS ORG:
 ${historyContext}
 
-${docContext}
+Extract all available data from this RFQ and return a JSON object with these exact fields. If a value is not found, use null for strings and [] for arrays.
 
-Write the following three sections and return as JSON:
-{
-  "aiAnalysisSummary": "2-3 paragraph executive summary of this RFQ: key equipment needed, critical deadlines, insurance/bonding requirements, risks, and recommended approach.",
-  "orgHistorySummary": "Based on the history data provided, summarize patterns, preferences, and past outcomes. If no history, recommend best practices for this org type.",
-  "suggestedResponseFormat": "Recommended response document structure that mirrors the RFQ's own section numbering system.",
-  "responseNarrative": "Full professional cover letter / response narrative using formal government procurement language. Mirror the RFQ's section structure. For each requirement section provide a direct compliant response."
-}`;
+Required fields:
+- issuingOrg (string): full name of issuing organization
+- rfqNumber (string): official RFQ/IFB/ITB number
+- title (string): official RFQ title
+- orgType (string): one of municipal|county|state|federal|private|nonprofit|other
+- dueDate (string): YYYY-MM-DD format
+- dueTime (string): e.g. "2:00 PM CST"
+- submissionMethod (string): one of email|mail|portal|hand_delivery|fax
+- submissionAddress (string): address or portal URL
+- contactName (string)
+- contactEmail (string)
+- contactPhone (string)
+- suggestedFileName (string): format "RFQ-YEAR-ORGABBREV-NUMBER_AIR-Response.pdf"
+- aiAnalysisSummary (string): 2-3 paragraph summary of key requirements, deadlines, and approach
+- orgHistorySummary (string): summary based on history data, or best practices if no history
+- suggestedResponseFormat (string): recommended response structure
+- estimatedTotalValue (number): estimated total bid value in USD
+- responseNarrative (string): professional cover letter response using formal procurement language
+- extractedRequirements (array of objects with: sectionNumber, sectionTitle, requirementText, requirementType, isMandatory)
+- complianceMatrix (array of objects with: sectionNumber, requirementSummary, complianceStatus, responseText)
+- proposedLineItems (array of objects with: lineNumber, description, equipmentCategory, quantity, unit, unitPrice, totalPrice, specs)`;
 
-    // Run both calls in parallel
-    const [metaResult, narrativeResult] = await Promise.all([
-      base44.integrations.Core.InvokeLLM({
-        prompt: metadataPrompt,
-        model: 'claude_sonnet_4_6',
-        file_urls: fileUrl ? [fileUrl] : undefined,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            issuingOrg: { type: 'string' },
-            rfqNumber: { type: 'string' },
-            title: { type: 'string' },
-            orgType: { type: 'string' },
-            dueDate: { type: 'string' },
-            dueTime: { type: 'string' },
-            submissionMethod: { type: 'string' },
-            submissionAddress: { type: 'string' },
-            contactName: { type: 'string' },
-            contactEmail: { type: 'string' },
-            contactPhone: { type: 'string' },
-            suggestedFileName: { type: 'string' },
-            extractedRequirements: { type: 'array', items: { type: 'object' } },
-            complianceMatrix: { type: 'array', items: { type: 'object' } },
-            proposedLineItems: { type: 'array', items: { type: 'object' } },
-            estimatedTotalValue: { type: 'number' },
-          }
-        },
-      }),
-      base44.integrations.Core.InvokeLLM({
-        prompt: narrativePrompt,
-        model: 'claude_sonnet_4_6',
-        file_urls: fileUrl ? [fileUrl] : undefined,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            aiAnalysisSummary: { type: 'string' },
-            orgHistorySummary: { type: 'string' },
-            suggestedResponseFormat: { type: 'string' },
-            responseNarrative: { type: 'string' },
-          }
-        },
-      }),
-    ]);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      model: 'gpt_5_4',
+      file_urls: fileUrl ? [fileUrl] : undefined,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          issuingOrg: { type: 'string' },
+          rfqNumber: { type: 'string' },
+          title: { type: 'string' },
+          orgType: { type: 'string' },
+          dueDate: { type: 'string' },
+          dueTime: { type: 'string' },
+          submissionMethod: { type: 'string' },
+          submissionAddress: { type: 'string' },
+          contactName: { type: 'string' },
+          contactEmail: { type: 'string' },
+          contactPhone: { type: 'string' },
+          suggestedFileName: { type: 'string' },
+          aiAnalysisSummary: { type: 'string' },
+          orgHistorySummary: { type: 'string' },
+          suggestedResponseFormat: { type: 'string' },
+          extractedRequirements: { type: 'array', items: { type: 'object' } },
+          complianceMatrix: { type: 'array', items: { type: 'object' } },
+          proposedLineItems: { type: 'array', items: { type: 'object' } },
+          estimatedTotalValue: { type: 'number' },
+          responseNarrative: { type: 'string' },
+        }
+      },
+    });
 
-    const analysis = { ...metaResult, ...narrativeResult };
-    console.log('RFQ analysis complete for org:', analysis.issuingOrg || issuingOrg);
-    return Response.json({ success: true, analysis });
+    console.log('RFQ analysis complete. Org:', result.issuingOrg, '| RFQ#:', result.rfqNumber);
+    return Response.json({ success: true, analysis: result });
 
   } catch (error) {
     console.error('analyzeRFQ error:', error.message);
