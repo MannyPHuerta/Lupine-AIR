@@ -14,20 +14,19 @@ Deno.serve(async (req) => {
 
     const issuingOrg = (!inputOrg || inputOrg.startsWith('Unknown')) ? null : inputOrg;
 
-    // Fetch past RFQ history for this org (only if we already know who it is)
+    // Fetch past RFQ history for this org
     let historyContext = 'No previous history.';
     if (issuingOrg) {
       let orgHistory = await base44.asServiceRole.entities.RFQRecord.filter({ issuingOrg });
       if (rfqId) orgHistory = orgHistory.filter(r => r.id !== rfqId);
       if (orgHistory.length > 0) {
-        historyContext = orgHistory.map(r =>
+        historyContext = orgHistory.slice(0, 5).map(r =>
           `- RFQ ${r.rfqNumber || 'N/A'} | Status: ${r.status} | Value: $${r.estimatedTotalValue || 0}`
         ).join('\n');
       }
     }
 
-    // If a file was uploaded, extract its text first so we don't pass the file_url
-    // directly to the LLM (which causes 502 timeouts on large PDFs)
+    // Extract text from uploaded file if needed
     let extractedText = rfqText || null;
     if (!extractedText && fileUrl) {
       console.log('Extracting text from uploaded file...');
@@ -43,93 +42,92 @@ Deno.serve(async (req) => {
       if (extracted.status === 'success' && extracted.output?.full_text) {
         extractedText = extracted.output.full_text;
         console.log('Extracted', extractedText.length, 'chars from file');
-      } else {
-        console.log('Extraction failed or empty, will use file_url as fallback');
       }
     }
 
-    const docContext = extractedText
-      ? `RFQ TEXT:\n${extractedText.slice(0, 8000)}`
-      : 'The RFQ document is attached as a file. Read and analyze its full contents.';
+    if (!extractedText) {
+      return Response.json({ error: 'Could not extract text from file. Please paste the RFQ text directly.' }, { status: 400 });
+    }
 
-    const companyContext = companyInfo ? `
-OUR COMPANY INFORMATION (use this when writing the response narrative and compliance matrix):
-Company Name: ${companyInfo.name || 'AIR Equipment Rental'}
-Address: ${companyInfo.address || ''}
-Phone: ${companyInfo.phone || ''}
-Email: ${companyInfo.email || ''}
-Website: ${companyInfo.website || ''}
-License: ${companyInfo.licenseNumber || ''}
-Insurance: ${companyInfo.insuranceInfo || ''}
-` : `OUR COMPANY: AIR Equipment Rental (use as the responding vendor in all response text)`;
+    // Truncate text to keep calls fast
+    const docText = extractedText.slice(0, 6000);
 
-    const prompt = `You are a government procurement analyst for an equipment rental company.
+    const companyName = companyInfo?.name || 'AIR Equipment Rental';
+    const companyAddress = companyInfo?.address || '';
+    const companyPhone = companyInfo?.phone || '';
+    const companyEmail = companyInfo?.email || '';
+    const companyInsurance = companyInfo?.insuranceInfo || '';
 
-${companyContext}
+    // Run two parallel LLM calls: one for metadata, one for arrays + narrative
+    console.log('Running parallel LLM analysis...');
+    const [metaResult, detailResult] = await Promise.all([
+      // Call 1: fast metadata extraction
+      base44.integrations.Core.InvokeLLM({
+        prompt: `Extract key metadata from this RFQ document. Return null for any field not found.
 
-${docContext}
+RFQ TEXT:
+${docText}
 
-PAST HISTORY WITH THIS ORG:
-${historyContext}
-
-Extract all available data from this RFQ and return a JSON object with these exact fields. If a value is not found, use null for strings and [] for arrays.
-
-Required fields:
-- issuingOrg (string): full name of issuing organization
-- rfqNumber (string): official RFQ/IFB/ITB number
-- title (string): official RFQ title
-- orgType (string): one of municipal|county|state|federal|private|nonprofit|other
-- dueDate (string): YYYY-MM-DD format
-- dueTime (string): e.g. "2:00 PM CST"
-- submissionMethod (string): one of email|mail|portal|hand_delivery|fax
-- submissionAddress (string): address or portal URL
-- contactName (string)
-- contactEmail (string)
-- contactPhone (string)
-- suggestedFileName (string): format "RFQ-YEAR-ORGABBREV-NUMBER_AIR-Response.pdf"
-- aiAnalysisSummary (string): 2-3 paragraph summary of key requirements, deadlines, and approach
-- orgHistorySummary (string): summary based on history data, or best practices if no history
-- suggestedResponseFormat (string): recommended response structure
-- estimatedTotalValue (number): estimated total bid value in USD
-- responseNarrative (string): professional cover letter response using formal procurement language
-- extractedRequirements (array of objects with: sectionNumber, sectionTitle, requirementText, requirementType, isMandatory)
-- complianceMatrix (array of objects with: sectionNumber, requirementSummary, complianceStatus, responseText)
-- proposedLineItems (array of objects with: lineNumber, description, equipmentCategory, quantity, unit, unitPrice, totalPrice, specs)`;
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      model: 'claude_sonnet_4_6',
-      // Only pass file_url if text extraction failed (fallback)
-      file_urls: (!extractedText && fileUrl) ? [fileUrl] : undefined,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          issuingOrg: { type: 'string' },
-          rfqNumber: { type: 'string' },
-          title: { type: 'string' },
-          orgType: { type: 'string' },
-          dueDate: { type: 'string' },
-          dueTime: { type: 'string' },
-          submissionMethod: { type: 'string' },
-          submissionAddress: { type: 'string' },
-          contactName: { type: 'string' },
-          contactEmail: { type: 'string' },
-          contactPhone: { type: 'string' },
-          suggestedFileName: { type: 'string' },
-          aiAnalysisSummary: { type: 'string' },
-          orgHistorySummary: { type: 'string' },
-          suggestedResponseFormat: { type: 'string' },
-          extractedRequirements: { type: 'array', items: { type: 'object' } },
-          complianceMatrix: { type: 'array', items: { type: 'object' } },
-          proposedLineItems: { type: 'array', items: { type: 'object' } },
-          estimatedTotalValue: { type: 'number' },
-          responseNarrative: { type: 'string' },
+Return JSON with: issuingOrg, rfqNumber, title, orgType (municipal|county|state|federal|private|nonprofit|other), dueDate (YYYY-MM-DD), dueTime, submissionMethod (email|mail|portal|hand_delivery|fax), submissionAddress, contactName, contactEmail, contactPhone, suggestedFileName (format: "RFQ-YEAR-ORGABBREV-NUMBER_AIR-Response.pdf"), estimatedTotalValue (number in USD)`,
+        model: 'gemini_3_flash',
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            issuingOrg: { type: 'string' },
+            rfqNumber: { type: 'string' },
+            title: { type: 'string' },
+            orgType: { type: 'string' },
+            dueDate: { type: 'string' },
+            dueTime: { type: 'string' },
+            submissionMethod: { type: 'string' },
+            submissionAddress: { type: 'string' },
+            contactName: { type: 'string' },
+            contactEmail: { type: 'string' },
+            contactPhone: { type: 'string' },
+            suggestedFileName: { type: 'string' },
+            estimatedTotalValue: { type: 'number' },
+          }
         }
-      },
-    });
+      }),
 
-    console.log('RFQ analysis complete. Org:', result.issuingOrg, '| RFQ#:', result.rfqNumber);
-    return Response.json({ success: true, analysis: result });
+      // Call 2: deeper analysis — requirements, compliance, line items, narrative
+      base44.integrations.Core.InvokeLLM({
+        prompt: `You are a government procurement analyst for ${companyName}, an equipment rental company.
+Company: ${companyName} | ${companyAddress} | ${companyPhone} | ${companyEmail}
+Insurance: ${companyInsurance}
+
+RFQ TEXT:
+${docText}
+
+Past history with this org: ${historyContext}
+
+Analyze this RFQ and return JSON with:
+- aiAnalysisSummary: 2-3 paragraph summary of key requirements, deadlines, and recommended approach
+- orgHistorySummary: brief summary of org history or best practices if no history
+- suggestedResponseFormat: recommended response document structure
+- extractedRequirements: array of { sectionNumber, sectionTitle, requirementText, requirementType (equipment|delivery|insurance|bonding|certification|pricing|timeline|documentation|other), isMandatory }
+- complianceMatrix: array of { sectionNumber, requirementSummary, complianceStatus (compliant|compliant_with_exception|non_compliant|not_applicable|pending_review), responseText }
+- proposedLineItems: array of { lineNumber, description, equipmentCategory, quantity, unit, unitPrice, totalPrice, specs }
+- responseNarrative: professional cover letter / response narrative using formal procurement language, written on behalf of ${companyName}`,
+        model: 'gemini_3_flash',
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            aiAnalysisSummary: { type: 'string' },
+            orgHistorySummary: { type: 'string' },
+            suggestedResponseFormat: { type: 'string' },
+            extractedRequirements: { type: 'array', items: { type: 'object' } },
+            complianceMatrix: { type: 'array', items: { type: 'object' } },
+            proposedLineItems: { type: 'array', items: { type: 'object' } },
+            responseNarrative: { type: 'string' },
+          }
+        }
+      }),
+    ]);
+
+    const analysis = { ...metaResult, ...detailResult };
+    console.log('RFQ analysis complete. Org:', analysis.issuingOrg, '| RFQ#:', analysis.rfqNumber);
+    return Response.json({ success: true, analysis });
 
   } catch (error) {
     console.error('analyzeRFQ error:', error.message);
