@@ -74,6 +74,8 @@ import LoyaltyManager from "./pages/LoyaltyManager";
 import AIRoads from "./pages/AIRoads";
 import LaundryReport from "./pages/LaundryReport";
 import DriverReport from "./pages/DriverReport";
+import RFQManager from "./pages/RFQManager";
+import RFQDetail from "./pages/RFQDetail";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -171,6 +173,8 @@ const AuthenticatedApp = () => {
         <Route path="/airoads" element={<AIRoads />} />
         <Route path="/laundry-report" element={<LaundryReport />} />
         <Route path="/driver-report" element={<DriverReport />} />
+        <Route path="/rfq" element={<RFQManager />} />
+        <Route path="/rfq/:id" element={<RFQDetail />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

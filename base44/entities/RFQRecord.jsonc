@@ -1,0 +1,275 @@
+{
+  "name": "RFQRecord",
+  "type": "object",
+  "properties": {
+    "rfqNumber": {
+      "type": "string",
+      "description": "Official RFQ/IFB/ITB number from the issuing organization (e.g. RFQ-2026-TXDOT-4421)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Official title of the RFQ"
+    },
+    "issuingOrg": {
+      "type": "string",
+      "description": "Name of the issuing organization (e.g. Texas DOT, City of McAllen)"
+    },
+    "orgType": {
+      "type": "string",
+      "enum": [
+        "municipal",
+        "county",
+        "state",
+        "federal",
+        "private",
+        "nonprofit",
+        "other"
+      ],
+      "default": "municipal",
+      "description": "Type of issuing organization"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "email",
+        "mail",
+        "web",
+        "phone",
+        "event_planner",
+        "other"
+      ],
+      "default": "email",
+      "description": "How the RFQ was received"
+    },
+    "receivedDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date RFQ was received"
+    },
+    "dueDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Response due date"
+    },
+    "dueTime": {
+      "type": "string",
+      "description": "Response due time (e.g. 2:00 PM CST)"
+    },
+    "submissionMethod": {
+      "type": "string",
+      "enum": [
+        "email",
+        "mail",
+        "portal",
+        "hand_delivery",
+        "fax"
+      ],
+      "description": "How the response must be submitted"
+    },
+    "submissionAddress": {
+      "type": "string",
+      "description": "Submission address or portal URL"
+    },
+    "contactName": {
+      "type": "string",
+      "description": "Issuing org contact person name"
+    },
+    "contactEmail": {
+      "type": "string",
+      "description": "Issuing org contact email"
+    },
+    "contactPhone": {
+      "type": "string",
+      "description": "Issuing org contact phone"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Responding branch"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "received",
+        "analyzing",
+        "draft",
+        "review",
+        "submitted",
+        "won",
+        "lost",
+        "no_bid"
+      ],
+      "default": "received",
+      "description": "Current status of the RFQ response"
+    },
+    "uploadedFileUrl": {
+      "type": "string",
+      "description": "URL of the uploaded RFQ document"
+    },
+    "uploadedFileName": {
+      "type": "string",
+      "description": "Original file name of the uploaded RFQ"
+    },
+    "rawRfqText": {
+      "type": "string",
+      "description": "Extracted or pasted raw text of the RFQ"
+    },
+    "extractedRequirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sectionNumber": {
+            "type": "string"
+          },
+          "sectionTitle": {
+            "type": "string"
+          },
+          "requirementText": {
+            "type": "string"
+          },
+          "requirementType": {
+            "type": "string",
+            "enum": [
+              "equipment",
+              "delivery",
+              "insurance",
+              "bonding",
+              "certification",
+              "pricing",
+              "timeline",
+              "documentation",
+              "other"
+            ]
+          },
+          "isMandatory": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "description": "AI-extracted requirements from the RFQ, section by section"
+    },
+    "complianceMatrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sectionNumber": {
+            "type": "string"
+          },
+          "requirementSummary": {
+            "type": "string"
+          },
+          "complianceStatus": {
+            "type": "string",
+            "enum": [
+              "compliant",
+              "compliant_with_exception",
+              "non_compliant",
+              "not_applicable",
+              "pending_review"
+            ]
+          },
+          "responseText": {
+            "type": "string"
+          },
+          "exceptionNote": {
+            "type": "string"
+          },
+          "documentReference": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Compliance matrix \u2014 one row per RFQ requirement"
+    },
+    "proposedLineItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "equipmentCategory": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "totalPrice": {
+            "type": "number"
+          },
+          "specs": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Proposed equipment line items for the bid"
+    },
+    "estimatedTotalValue": {
+      "type": "number",
+      "description": "Total estimated bid value (USD)"
+    },
+    "aiAnalysisSummary": {
+      "type": "string",
+      "description": "AI-generated summary of the RFQ and suggested approach"
+    },
+    "orgHistorySummary": {
+      "type": "string",
+      "description": "AI summary of past RFQ history with this organization"
+    },
+    "suggestedResponseFormat": {
+      "type": "string",
+      "description": "AI-recommended response format/structure based on org type"
+    },
+    "responseNarrative": {
+      "type": "string",
+      "description": "Full response narrative / cover letter text"
+    },
+    "internalNotes": {
+      "type": "string",
+      "description": "Internal notes (not included in response)"
+    },
+    "suggestedFileName": {
+      "type": "string",
+      "description": "Suggested file name for the response document"
+    },
+    "submittedAt": {
+      "type": "string",
+      "description": "ISO timestamp when response was submitted"
+    },
+    "submittedBy": {
+      "type": "string",
+      "description": "Email of staff who submitted the response"
+    },
+    "outcome": {
+      "type": "string",
+      "description": "Outcome notes (win/loss reason, awarded value, competitor info)"
+    },
+    "awardedValue": {
+      "type": "number",
+      "description": "Actual awarded contract value if won"
+    },
+    "linkedEventPlanId": {
+      "type": "string",
+      "description": "Reference to EventPlan if originated from event planner"
+    }
+  },
+  "required": [
+    "issuingOrg",
+    "receivedDate"
+  ]
+}
