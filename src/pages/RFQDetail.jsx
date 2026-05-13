@@ -69,7 +69,7 @@ export default function RFQDetail() {
   const handleAnalyze = async () => {
     if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please upload a file or paste RFQ text first.'); return; }
 
-    // Ensure company settings are loaded before analyzing
+    // Ensure company settings are loaded
     let settings = companySettings;
     if (!settings) {
       const results = await base44.entities.CompanySettings.list();
@@ -78,13 +78,25 @@ export default function RFQDetail() {
     }
 
     setAnalyzing(true);
-    update('status', 'analyzing');
     try {
-      const res = await base44.functions.invoke('analyzeRFQ', {
+      // Step 1: Save the record first to get an ID
+      let recordId = id;
+      if (isNew) {
+        const created = await base44.entities.RFQRecord.create({ ...rfq, status: 'analyzing' });
+        recordId = created.id;
+        setRfq(prev => ({ ...prev, id: recordId, status: 'analyzing' }));
+        navigate(`/rfq/${recordId}`, { replace: true });
+      } else {
+        update('status', 'analyzing');
+        await base44.entities.RFQRecord.update(recordId, { status: 'analyzing' });
+      }
+
+      // Step 2: Kick off async analysis (backend returns immediately, does work in background)
+      await base44.functions.invoke('analyzeRFQ', {
         rfqText: rfq.rawRfqText || null,
         fileUrl: rfq.uploadedFileUrl || null,
         issuingOrg: rfq.issuingOrg || null,
-        rfqId: isNew ? null : id,
+        rfqId: recordId,
         companyInfo: settings ? {
           name: settings.companyName,
           address: settings.address,
@@ -96,48 +108,31 @@ export default function RFQDetail() {
         } : null,
       });
 
-      const a = res.data.analysis;
-      const updatedRfq = {
-        ...rfq,
-        issuingOrg: a.issuingOrg || rfq.issuingOrg,
-        rfqNumber: a.rfqNumber || rfq.rfqNumber,
-        title: a.title || rfq.title,
-        orgType: a.orgType || rfq.orgType,
-        dueDate: a.dueDate || rfq.dueDate,
-        dueTime: a.dueTime || rfq.dueTime,
-        submissionMethod: a.submissionMethod || rfq.submissionMethod,
-        submissionAddress: a.submissionAddress || rfq.submissionAddress,
-        contactName: a.contactName || rfq.contactName,
-        contactEmail: a.contactEmail || rfq.contactEmail,
-        contactPhone: a.contactPhone || rfq.contactPhone,
-        suggestedFileName: a.suggestedFileName || rfq.suggestedFileName,
-        aiAnalysisSummary: a.aiAnalysisSummary || '',
-        orgHistorySummary: a.orgHistorySummary || '',
-        suggestedResponseFormat: a.suggestedResponseFormat || '',
-        extractedRequirements: a.extractedRequirements || [],
-        complianceMatrix: a.complianceMatrix || [],
-        proposedLineItems: a.proposedLineItems || [],
-        estimatedTotalValue: a.estimatedTotalValue || 0,
-        responseNarrative: a.responseNarrative || '',
-        status: 'draft',
-      };
+      // Step 3: Poll every 4s until status changes away from 'analyzing'
+      const poll = setInterval(async () => {
+        try {
+          const results = await base44.entities.RFQRecord.filter({ id: recordId });
+          const latest = results[0];
+          if (latest && latest.status !== 'analyzing') {
+            clearInterval(poll);
+            setRfq(latest);
+            setAnalyzing(false);
+            setActiveTab('compliance');
+          }
+        } catch (e) {
+          clearInterval(poll);
+          setAnalyzing(false);
+        }
+      }, 4000);
 
-      // Update state and auto-save
-      setRfq(updatedRfq);
-      if (isNew) {
-        const created = await base44.entities.RFQRecord.create(updatedRfq);
-        // Set rfq with the created id so useEffect reload doesn't wipe data
-        setRfq({ ...updatedRfq, id: created.id });
-        navigate(`/rfq/${created.id}`, { replace: true });
-      } else {
-        await base44.entities.RFQRecord.update(id, updatedRfq);
-      }
-      setActiveTab('compliance');
+      // Safety timeout after 3 minutes
+      setTimeout(() => { clearInterval(poll); setAnalyzing(false); }, 180000);
+
     } catch (err) {
       alert('Analysis failed: ' + err.message);
       update('status', 'received');
+      setAnalyzing(false);
     }
-    setAnalyzing(false);
   };
 
   const handleSave = async () => {
