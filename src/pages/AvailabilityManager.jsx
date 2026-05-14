@@ -711,6 +711,7 @@ export default function AvailabilityManager() {
                 onRemove={() => removeLine(line.id)}
                 qtyRef={qtyRefs.current[line.id]}
                 onAddLine={handleAddSuggestedItem}
+                afterDatesRef={addButtonRef}
               />
             );
           })}

@@ -107,14 +107,14 @@ function LineDateInput({ label, value, onChange, nextFocusRef, triggerRef: exter
   );
 }
 
-export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef, onAddLine }) {
+export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef, onAddLine, afterDatesRef }) {
   const [search, setSearch] = useState(line.equipmentName || '');
   const [open, setOpen] = useState(!line.equipmentId);
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const toTriggerRef = useRef(null);  // "To" date button — From calendar advances here
-  const afterToRef = qtyRef;          // after "To" calendar, advance to qty
+  const afterToRef = afterDatesRef || null;  // after "To" calendar, advance to next element (e.g. Add Equipment button)
   const aiSearchTimer = useRef(null);
   const { aiSuggestions, isSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(equipment);
 
