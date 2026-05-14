@@ -41,10 +41,12 @@ Deno.serve(async (req) => {
 
     const docText = extractedText.slice(0, 8000);
     const companyName = companyInfo?.name || 'AIR Equipment Rental';
-    const companyAddress = companyInfo?.address || '';
-    const companyPhone = companyInfo?.phone || '';
-    const companyEmail = companyInfo?.email || '';
-    const companyInsurance = companyInfo?.insuranceInfo || '';
+    const companyAddress = companyInfo?.address || '123 Industrial Dr, McAllen, TX 78501';
+    const companyPhone = companyInfo?.phone || '(956) 555-0100';
+    const companyEmail = companyInfo?.email || 'bids@airequipmentrental.com';
+    const companyWebsite = companyInfo?.website || '';
+    const companyLicense = companyInfo?.licenseNumber || '';
+    const companyInsurance = companyInfo?.insuranceInfo || 'General Liability $1M/$2M, Auto Liability $1M, Workers Comp statutory limits';
     const issuingOrg = (!inputOrg || inputOrg.startsWith('Unknown')) ? '' : inputOrg;
 
     // Step 2: Fetch org history
@@ -59,132 +61,105 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('Running LLM analysis...');
+    console.log('Running parallel LLM calls...');
 
-    // Step 3: Call A — extract metadata (fast, gemini)
-    console.log('Call A: extracting metadata...');
-    const metaResult = await base44.integrations.Core.InvokeLLM({
-      model: 'gemini_3_flash',
-      prompt: `Extract key metadata from this RFQ document. Return null for any field not found.
+    // Run metadata extraction (gemini) and full analysis (claude) in parallel
+    const [metaResult, detailResult] = await Promise.all([
 
-RFQ TEXT:
-${docText}
-
-Return JSON with: issuingOrg, rfqNumber, title, orgType (municipal|county|state|federal|private|nonprofit|other), dueDate (YYYY-MM-DD or null), dueTime, submissionMethod (email|mail|portal|hand_delivery|fax), submissionAddress, contactName, contactEmail, contactPhone, suggestedFileName (format: RFQYEAR-ORGABBREV_AIR-Response.pdf), estimatedTotalValue (total USD value of the bid as a number)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          issuingOrg: { type: 'string' },
-          rfqNumber: { type: 'string' },
-          title: { type: 'string' },
-          orgType: { type: 'string' },
-          dueDate: { type: 'string' },
-          dueTime: { type: 'string' },
-          submissionMethod: { type: 'string' },
-          submissionAddress: { type: 'string' },
-          contactName: { type: 'string' },
-          contactEmail: { type: 'string' },
-          contactPhone: { type: 'string' },
-          suggestedFileName: { type: 'string' },
-          estimatedTotalValue: { type: 'number' },
-        }
-      }
-    });
-    console.log('Call A done. Org:', metaResult.issuingOrg);
-
-    // Step 4: Call B — analysis + compliance + line items (focused, no narrative)
-    console.log('Call B: requirements, compliance, line items...');
-    const structuredResult = await base44.integrations.Core.InvokeLLM({
-      model: 'claude_sonnet_4_6',
-      prompt: `You are a senior government procurement specialist. Analyze this RFQ for ${companyName}, an equipment rental company (tents, generators, tables, chairs, staging, event/construction equipment) in South Texas.
+      // Call A: metadata only — fast gemini
+      base44.integrations.Core.InvokeLLM({
+        model: 'gemini_3_flash',
+        prompt: `Extract key metadata from this RFQ document. Return null for any field not found.
 
 RFQ TEXT:
 ${docText}
 
-Return JSON with exactly these fields:
-
-aiAnalysisSummary: 3 paragraphs: (1) what is requested and event context, (2) key mandatory requirements and any risky clauses, (3) our competitive strategy and win approach.
-
-orgHistorySummary: 1-2 paragraphs on past history or best practices for bidding to this org type.
-
-suggestedResponseFormat: Bulleted outline of the response document sections.
-
-extractedRequirements: Array of ALL explicit requirements found. Each item: { sectionNumber (string), sectionTitle (string), requirementText (string), requirementType (one of: equipment|delivery|insurance|bonding|certification|pricing|timeline|documentation|other), isMandatory (boolean) }
-
-complianceMatrix: One entry per extracted requirement. Each item: { sectionNumber (string), requirementSummary (string, max 20 words), complianceStatus (one of: compliant|compliant_with_exception|non_compliant|not_applicable|pending_review), responseText (string, 1-2 sentences stating how we comply), exceptionNote (string or null), documentReference (string or null, e.g. "Certificate of Insurance attached") }
-
-proposedLineItems: All equipment/service line items the RFQ requires. Each item: { lineNumber (string), description (string, full spec), equipmentCategory (string), quantity (number), unit (string: each|day|week|month|event|lot), unitPrice (number, realistic South Texas market rate), totalPrice (number, quantity × unitPrice), specs (string, technical details), notes (string or null) }`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          aiAnalysisSummary: { type: 'string' },
-          orgHistorySummary: { type: 'string' },
-          suggestedResponseFormat: { type: 'string' },
-          extractedRequirements: { type: 'array', items: { type: 'object' } },
-          complianceMatrix: { type: 'array', items: { type: 'object' } },
-          proposedLineItems: { type: 'array', items: { type: 'object' } },
+Return JSON with: issuingOrg, rfqNumber, title, orgType (municipal|county|state|federal|private|nonprofit|other), dueDate (YYYY-MM-DD or null), dueTime, submissionMethod (email|mail|portal|hand_delivery|fax), submissionAddress, contactName, contactEmail, contactPhone, suggestedFileName (format: RFQYEAR-ORGABBREV_AIR-Response.pdf)`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            issuingOrg: { type: 'string' },
+            rfqNumber: { type: 'string' },
+            title: { type: 'string' },
+            orgType: { type: 'string' },
+            dueDate: { type: 'string' },
+            dueTime: { type: 'string' },
+            submissionMethod: { type: 'string' },
+            submissionAddress: { type: 'string' },
+            contactName: { type: 'string' },
+            contactEmail: { type: 'string' },
+            contactPhone: { type: 'string' },
+            suggestedFileName: { type: 'string' },
+          }
         }
-      }
-    });
-    console.log('Call B done. Requirements:', structuredResult.extractedRequirements?.length, '| Line items:', structuredResult.proposedLineItems?.length);
+      }),
 
-    // Step 5: Call C — response narrative only, with line items for accurate pricing table
-    console.log('Call C: drafting response narrative...');
-    const lineItemsForPrompt = (structuredResult.proposedLineItems || [])
-      .map(i => `| ${i.lineNumber} | ${i.description} | ${i.quantity} | ${i.unit} | $${i.unitPrice} | $${i.totalPrice} |`)
-      .join('\n');
-    const totalValue = (structuredResult.proposedLineItems || []).reduce((s, i) => s + (i.totalPrice || 0), 0);
+      // Call B: full analysis + compliance + line items + narrative — claude
+      base44.integrations.Core.InvokeLLM({
+        model: 'claude_sonnet_4_6',
+        prompt: `You are a senior government procurement specialist preparing a complete bid response for the following equipment rental company:
 
-    const narrativeResult = await base44.integrations.Core.InvokeLLM({
-      model: 'claude_sonnet_4_6',
-      prompt: `Write a complete, professional government bid response document in Markdown for ${companyName}.
-
-Company: ${companyName}
+RESPONDING COMPANY:
+Name: ${companyName}
 Address: ${companyAddress}
 Phone: ${companyPhone}
 Email: ${companyEmail}
+${companyWebsite ? `Website: ${companyWebsite}` : ''}
+${companyLicense ? `License: ${companyLicense}` : ''}
 Insurance/Bonding: ${companyInsurance}
 
-RFQ: ${metaResult.rfqNumber || 'See RFQ'} — ${metaResult.title || ''}
-Issuing Org: ${metaResult.issuingOrg || issuingOrg}
-Contact: ${metaResult.contactName || ''} | ${metaResult.contactEmail || ''}
-Due: ${metaResult.dueDate || ''} ${metaResult.dueTime || ''}
+Past history with issuing org: ${historyContext}
 
-RFQ SUMMARY:
-${docText.slice(0, 3000)}
+RFQ TEXT:
+${docText}
 
-PRICING TABLE (use exactly these line items — do not invent new ones):
-| Line | Description | Qty | Unit | Unit Price | Total |
-|------|-------------|-----|------|------------|-------|
-${lineItemsForPrompt}
-| | **TOTAL** | | | | **$${totalValue.toLocaleString()}** |
+Return JSON with ALL of these fields populated:
 
-Write the full response document with these sections:
-1. Header with company name, date, RFQ reference, submitted to/by
-2. Executive Summary (3 paragraphs, compelling, professional)
-3. Company Overview (who we are, years in business, South Texas service territory, certifications)
-4. Technical Approach & Equipment Specifications (address each major requirement specifically)
-5. Delivery, Setup & Teardown Plan (logistics, timeline, crew, safety)
-6. Pricing Schedule (reproduce the exact Markdown table above — do not modify it)
-7. Insurance & Bonding Compliance
-8. References (2-3 placeholder entries)
-9. Certifications & Representations
-10. Acceptance & Signature Block
+aiAnalysisSummary: 3 paragraphs: (1) what is requested and event context, (2) key mandatory requirements and any risky clauses, (3) our competitive strategy and win approach.
 
-Use formal government procurement language. Be specific and detailed. Minimum 1000 words.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          responseNarrative: { type: 'string' }
+orgHistorySummary: 1-2 paragraphs on past bid history or best practices for this org type.
+
+suggestedResponseFormat: Bulleted outline of the response document sections.
+
+extractedRequirements: Array of ALL explicit requirements. Each: { sectionNumber, sectionTitle, requirementText, requirementType (equipment|delivery|insurance|bonding|certification|pricing|timeline|documentation|other), isMandatory (boolean) }
+
+complianceMatrix: One row per requirement. Each: { sectionNumber, requirementSummary (max 20 words), complianceStatus (compliant|compliant_with_exception|non_compliant|not_applicable|pending_review), responseText (1-2 sentences), exceptionNote (null if none), documentReference (null if none) }
+
+proposedLineItems: All equipment/service items required. Each: { lineNumber, description, equipmentCategory, quantity (number), unit (each|day|week|month|event|lot), unitPrice (number, realistic South Texas rate), totalPrice (number = quantity × unitPrice), specs, notes }
+
+responseNarrative: A complete, professional bid response document in Markdown. IMPORTANT: Use the actual company details above throughout — company name header, address, phone, email in the letterhead. Include these sections:
+1. Letterhead (${companyName}, ${companyAddress}, ${companyPhone}, ${companyEmail})
+2. Date and submission details
+3. Executive Summary
+4. Company Overview (use ${companyName} — describe as South Texas equipment rental company)
+5. Technical Approach & Equipment Specifications
+6. Delivery, Setup & Teardown Plan
+7. Pricing Schedule (build a clean Markdown table from proposedLineItems with totals)
+8. Insurance & Bonding (reference: ${companyInsurance})
+9. References
+10. Certifications & Signature Block (signed by ${companyName})
+Write minimum 800 words in formal government procurement language.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            aiAnalysisSummary: { type: 'string' },
+            orgHistorySummary: { type: 'string' },
+            suggestedResponseFormat: { type: 'string' },
+            extractedRequirements: { type: 'array', items: { type: 'object' } },
+            complianceMatrix: { type: 'array', items: { type: 'object' } },
+            proposedLineItems: { type: 'array', items: { type: 'object' } },
+            responseNarrative: { type: 'string' },
+          }
         }
-      }
-    });
-    console.log('Call C done. Narrative length:', narrativeResult.responseNarrative?.length);
+      }),
+    ]);
 
-    const analysis = { ...metaResult, ...structuredResult, ...narrativeResult };
-    console.log('All calls complete. Saving to record', rfqId);
+    console.log('Both calls done. Requirements:', detailResult.extractedRequirements?.length, '| Line items:', detailResult.proposedLineItems?.length);
 
-    // Step 4: Save all results
+    const totalValue = (detailResult.proposedLineItems || []).reduce((s, i) => s + (i.totalPrice || 0), 0);
+    const analysis = { ...metaResult, ...detailResult };
+
+    // Save all results
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
       ...(analysis.issuingOrg && { issuingOrg: analysis.issuingOrg }),
       ...(analysis.rfqNumber && { rfqNumber: analysis.rfqNumber }),
@@ -198,7 +173,7 @@ Use formal government procurement language. Be specific and detailed. Minimum 10
       ...(analysis.contactEmail && { contactEmail: analysis.contactEmail }),
       ...(analysis.contactPhone && { contactPhone: analysis.contactPhone }),
       ...(analysis.suggestedFileName && { suggestedFileName: analysis.suggestedFileName }),
-      estimatedTotalValue: totalValue || analysis.estimatedTotalValue || 0,
+      estimatedTotalValue: totalValue || 0,
       aiAnalysisSummary: analysis.aiAnalysisSummary || '',
       orgHistorySummary: analysis.orgHistorySummary || '',
       suggestedResponseFormat: analysis.suggestedResponseFormat || '',
