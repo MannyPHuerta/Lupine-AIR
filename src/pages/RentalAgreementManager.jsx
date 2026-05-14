@@ -1,68 +1,74 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Copy, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
-const DEFAULT_AGREEMENT = `EQUIPMENT RENTAL AGREEMENT
+// ARA-based standard equipment rental agreement
+const ARA_AGREEMENT = `EQUIPMENT RENTAL AGREEMENT
 
-This Equipment Rental Agreement ("Agreement") is entered into between Rental World LLC ("Company") and the Customer named on the invoice ("Renter").
+This Equipment Rental Agreement ("Agreement") is entered into between the Company identified on the rental invoice ("Lessor") and the Customer named on the rental invoice ("Lessee").
 
-TERMS & CONDITIONS
+1. RENTAL PERIOD
+Equipment is rented for the period stated on the invoice. Rental charges begin upon delivery or pickup and continue until equipment is returned and accepted by Lessor. Lessee shall return equipment on or before the return date stated on the invoice.
 
-1. EQUIPMENT CONDITION & INSPECTION
-The Renter acknowledges receipt of the equipment listed on the attached invoice in the condition described. The equipment has been inspected and accepted by the Renter. The Renter is responsible for the safekeeping and proper operation of the equipment during the rental period.
+2. RATES AND CHARGES
+Lessee agrees to pay the rental rate stated on the invoice. Minimum rental charges apply. Time rates are based on time out, not time used. Rental charges continue until equipment is returned to Lessor. Lessee is responsible for all delivery and pickup charges.
 
-2. LIABILITY & DAMAGE
-The Renter assumes full responsibility for any damage, loss, or theft of the equipment while in the Renter's possession, including:
-- Damage from misuse, negligence, or improper operation
-- Damage from weather, fire, or natural disasters
-- Mechanical failure due to lack of maintenance
-- Normal wear and tear beyond reasonable use
+3. CONDITION OF EQUIPMENT
+Lessee acknowledges receipt of the equipment in good working order and agrees to return it in the same condition, normal wear and tear excepted. Lessee shall inspect the equipment before use and report any defects to Lessor immediately.
 
-The Renter shall pay for all repairs or replacement costs at the Company's standard rates plus 20% service charge.
+4. USE OF EQUIPMENT
+Lessee shall use equipment only for its intended purpose and in a safe and lawful manner. Lessee shall not:
+- Permit unlicensed or unqualified operators to use the equipment
+- Use equipment for any illegal purpose
+- Remove, alter, or deface any labels or safety markings
+- Sublet or transfer equipment to any third party
 
-3. RENTAL PERIOD & LATE RETURNS
-The equipment must be returned by the date and time specified on the invoice. Late returns will be charged:
-- First 4 hours: 50% of daily rental rate
-- 5–24 hours: Full daily rental rate
-- Each additional day: Full daily rental rate plus 20% late fee
+5. LESSEE'S RESPONSIBILITY FOR LOSS AND DAMAGE
+Lessee assumes full risk of loss, theft, or damage to the equipment from any cause whatsoever, including but not limited to: collision, overturn, fire, theft, vandalism, flood, and acts of God. Lessee shall pay Lessor for all costs to repair or replace equipment, including loss of rental revenue during repair or replacement.
 
-4. FUEL & MAINTENANCE
-The Renter shall:
-- Return equipment with a full fuel tank (or at current market rate + 20% markup)
-- Keep equipment clean and free of debris
-- Perform routine maintenance per manufacturer guidelines
-- Report any mechanical issues to the Company immediately
+6. FUEL AND MAINTENANCE
+Equipment shall be returned with the same fuel level as when rented. Lessee is responsible for checking and maintaining fluid levels during the rental period. Fuel will be charged at current market rate plus a service charge if not returned full.
 
-5. DEPOSIT
-A security deposit equal to the equipment's depreciated value has been collected. The deposit will be refunded within 5 business days of equipment return and inspection, less any damage charges or fuel costs.
+7. OPERATOR RESPONSIBILITY
+Lessee is solely responsible for the safe and proper operation of the equipment. Lessor is not responsible for any damage, injury, or loss caused by Lessee's operation of the equipment. Lessee shall comply with all applicable federal, state, and local laws and regulations.
 
-6. INSURANCE
-The Renter is responsible for insuring the equipment. The Company is not liable for any damage to third-party property caused by the Renter's use of the equipment.
+8. INDEMNIFICATION
+Lessee agrees to indemnify, defend, and hold harmless Lessor and its officers, employees, and agents from and against any and all claims, damages, losses, costs, and expenses (including attorney's fees) arising out of or related to Lessee's use or possession of the equipment.
 
-7. TERMINATION
-The Company reserves the right to terminate this Agreement and retrieve the equipment at any time if:
-- Rental payments are not made as agreed
-- Equipment is being operated in violation of this Agreement
-- Equipment is being transported without authorization
+9. INSURANCE
+Lessee shall maintain adequate insurance coverage for the equipment during the rental period. Lessee shall provide proof of insurance upon request. If Lessee fails to maintain insurance, Lessee remains fully liable for all loss or damage.
 
-8. ACKNOWLEDGMENT
-By signing below, the Renter acknowledges having read, understood, and agreed to all terms and conditions of this Agreement.`;
+10. DEFAULT AND REPOSSESSION
+If Lessee fails to pay any rental charges when due, returns equipment damaged beyond normal wear and tear, or breaches any provision of this Agreement, Lessor may immediately retake possession of the equipment. Lessee grants Lessor the right to enter Lessee's premises for this purpose.
+
+11. LIMITATION OF LIABILITY
+Lessor's liability to Lessee for any claim arising from this Agreement shall not exceed the total rental charges paid for the specific equipment giving rise to the claim. Lessor shall not be liable for any indirect, incidental, or consequential damages.
+
+12. GOVERNING LAW
+This Agreement shall be governed by the laws of the state where the Lessor is located. Any disputes shall be resolved in the courts of that jurisdiction.
+
+13. ENTIRE AGREEMENT
+This Agreement, together with the rental invoice, constitutes the entire agreement between the parties. No modification shall be valid unless in writing and signed by both parties.
+
+14. ACKNOWLEDGMENT
+By signing this Agreement, Lessee acknowledges reading and understanding all terms and conditions and agrees to be bound by them.`;
 
 export default function RentalAgreementManager() {
   const navigate = useNavigate();
   const [branch, setBranch] = useState('01 McAllen');
   const [agreements, setAgreements] = useState({});
   const [title, setTitle] = useState('Equipment Rental Agreement');
-  const [content, setContent] = useState(DEFAULT_AGREEMENT);
+  const [content, setContent] = useState(ARA_AGREEMENT);
   const [pages, setPages] = useState(1);
   const [requiresInitials, setRequiresInitials] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     base44.entities.RentalAgreement.list().then(data => {
@@ -71,12 +77,12 @@ export default function RentalAgreementManager() {
       setAgreements(map);
       if (map[branch]) {
         setTitle(map[branch].title || 'Equipment Rental Agreement');
-        setContent(map[branch].content || DEFAULT_AGREEMENT);
+        setContent(map[branch].content || ARA_AGREEMENT);
         setPages(map[branch].pages || 1);
         setRequiresInitials(map[branch].requiresInitials !== false);
       } else {
         setTitle('Equipment Rental Agreement');
-        setContent(DEFAULT_AGREEMENT);
+        setContent(ARA_AGREEMENT);
         setPages(1);
         setRequiresInitials(true);
       }
@@ -84,16 +90,62 @@ export default function RentalAgreementManager() {
     });
   }, []);
 
+  const handleAIGenerate = async () => {
+    setGenerating(true);
+    try {
+      const settings = await base44.entities.CompanySettings.list();
+      const co = settings[0] || {};
+      const branchSettings = await base44.entities.BranchSettings.filter({ branch });
+      const bs = branchSettings[0] || {};
+
+      const companyName = co.companyName || 'the Company';
+      const state = bs.address ? bs.address.split(',').slice(-2).join(',').trim() : 'Texas';
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a legal document specialist. Generate a complete, professional Equipment Rental Agreement for the following company:
+
+Company Name: ${companyName}
+Branch: ${branch}
+Address: ${bs.address || co.address || ''}
+Phone: ${bs.phone || co.phone || ''}
+Email: ${bs.email || co.email || ''}
+State: ${state}
+
+Requirements:
+- Use the company's actual name throughout (not placeholders)
+- Reference the correct state for governing law
+- Include all standard ARA (American Rental Association) recommended sections
+- Professional legal language appropriate for an equipment rental company
+- Sections: Rental Period, Rates & Charges, Equipment Condition, Permitted Use, Loss & Damage Responsibility, Fuel & Maintenance, Operator Responsibility, Indemnification, Insurance, Default & Repossession, Limitation of Liability, Governing Law, Entire Agreement, Acknowledgment
+- Return ONLY the agreement text, no preamble or explanation`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            content: { type: 'string' }
+          }
+        }
+      });
+
+      if (result.content) setContent(result.content);
+      if (result.title) setTitle(result.title);
+    } catch (err) {
+      alert('AI generation failed: ' + err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleBranchChange = (newBranch) => {
     setBranch(newBranch);
     if (agreements[newBranch]) {
       setTitle(agreements[newBranch].title || 'Equipment Rental Agreement');
-      setContent(agreements[newBranch].content || DEFAULT_AGREEMENT);
+      setContent(agreements[newBranch].content || ARA_AGREEMENT);
       setPages(agreements[newBranch].pages || 1);
       setRequiresInitials(agreements[newBranch].requiresInitials !== false);
     } else {
       setTitle('Equipment Rental Agreement');
-      setContent(DEFAULT_AGREEMENT);
+      setContent(ARA_AGREEMENT);
       setPages(1);
       setRequiresInitials(true);
     }
@@ -225,14 +277,26 @@ export default function RentalAgreementManager() {
 
         {/* Agreement content */}
         <div className="bg-white rounded-xl border shadow-sm p-6 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <label className="text-sm font-semibold text-gray-700">Agreement Text</label>
-            <button
-              onClick={() => setContent(DEFAULT_AGREEMENT)}
-              className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-            >
-              <Copy className="w-3 h-3" /> Reset to Default
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setContent(ARA_AGREEMENT); setTitle('Equipment Rental Agreement'); }}
+                className="text-xs text-slate-600 hover:text-slate-800 flex items-center gap-1 border border-slate-200 rounded px-2 py-1 bg-white"
+              >
+                <RotateCcw className="w-3 h-3" /> Load ARA Standard
+              </button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAIGenerate}
+                disabled={generating}
+                className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50 gap-1"
+              >
+                {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                {generating ? 'Generating...' : 'AI Generate for This Branch'}
+              </Button>
+            </div>
           </div>
           <Textarea
             value={content}
