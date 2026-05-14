@@ -65,7 +65,8 @@ export default function AvailabilityManager() {
   const [volumeRules, setVolumeRules] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
   const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
-  const [aiDeliveryRec, setAiDeliveryRec] = useState(null); // { crewCount, vehicleCount, vehicleType, recommendedFee }
+  const [aiDeliveryRec, setAiDeliveryRec] = useState(null); // { addedFee: number } when AI fee was applied
+  const [aiDeliveryFee, setAiDeliveryFee] = useState(null); // overrides matrix delivery fee when set
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -279,6 +280,8 @@ export default function AvailabilityManager() {
       setAppliedPromo(null);
       setLoyaltyDiscount(null);
       setManualInvoiceNumber('');
+      setAiDeliveryFee(null);
+      setAiDeliveryRec(null);
       setTimeout(() => setSaved(false), 3000);
       return ['practice-id'];
     }
@@ -324,8 +327,9 @@ export default function AvailabilityManager() {
       const totalDays = Math.floor((new Date(line.endDate) - new Date(line.startDate)) / (1000 * 60 * 60 * 24)) + 1;
 
       // Calculate delivery/return fees — only charge once per order, not per line
-      const dFee = createdIds.length === 0 && deliveryMethod === 'company_delivery' ? calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip) : 0;
-      const rFee = createdIds.length === 0 && returnMethod === 'company_pickup' ? calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip) : 0;
+      const matrixFee = calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip);
+      const dFee = createdIds.length === 0 && deliveryMethod === 'company_delivery' ? (aiDeliveryFee ?? matrixFee) : 0;
+      const rFee = createdIds.length === 0 && returnMethod === 'company_pickup' ? matrixFee : 0;
 
       const rental = await base44.entities.Rental.create({
         equipmentId: line.equipmentId,
@@ -380,6 +384,8 @@ export default function AvailabilityManager() {
       setAppliedPromo(null);
       setLoyaltyDiscount(null);
       setManualInvoiceNumber('');
+      setAiDeliveryFee(null);
+      setAiDeliveryRec(null);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -415,8 +421,9 @@ export default function AvailabilityManager() {
     const depositTotal = validLines.reduce((s, l) => s + ((l.deposit || 0) * (l.quantity || 1)), 0);
     const discountAmount = parseFloat(discount) || 0;
     const matrix = deliveryMatrices[customer.branch];
-    const dFee = deliveryMethod === 'company_delivery' ? calcDeliveryFee(matrix, customer.zip) : 0;
-    const rFee = returnMethod === 'company_pickup' ? calcDeliveryFee(matrix, customer.zip) : 0;
+    const matrixDeliveryFee = calcDeliveryFee(matrix, customer.zip);
+    const dFee = deliveryMethod === 'company_delivery' ? (aiDeliveryFee ?? matrixDeliveryFee) : 0;
+    const rFee = returnMethod === 'company_pickup' ? matrixDeliveryFee : 0;
     const totalDue = Math.max(0, subtotal + taxAmount + depositTotal - discountAmount + dFee + rFee);
 
     // If non-card payment method, skip payment processor and go straight to confirmation
@@ -840,7 +847,8 @@ export default function AvailabilityManager() {
                   zip: worksiteZip || customer.zip,
                 }}
                 onAddDeliveryFee={(fee) => {
-                  setAiDeliveryRec({ crewCount: null, vehicleCount: null, addedFee: fee });
+                  setAiDeliveryRec({ addedFee: fee });
+                  setAiDeliveryFee(fee);
                 }}
               />
             </div>
@@ -864,7 +872,7 @@ export default function AvailabilityManager() {
               onAutoSendChange={setAutoSendCommunications}
               deliveryMethod={deliveryMethod}
               returnMethod={returnMethod}
-              deliveryFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
+              deliveryFee={aiDeliveryFee ?? calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
               returnFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
               appliedPromo={appliedPromo}
               onPromoApply={(promo) => {
