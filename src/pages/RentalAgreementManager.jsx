@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -69,6 +69,7 @@ export default function RentalAgreementManager() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [extracting, setExtracting] = useState(false);
 
   useEffect(() => {
     base44.entities.RentalAgreement.list().then(data => {
@@ -133,6 +134,36 @@ Requirements:
       alert('AI generation failed: ' + err.message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleUploadAgreement = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setExtracting(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: 'The title or heading of the agreement document' },
+            content: { type: 'string', description: 'The full text content of the rental agreement, preserving section headings and numbering' }
+          }
+        }
+      });
+      if (result.status === 'success' && result.output?.content) {
+        setContent(result.output.content);
+        if (result.output.title) setTitle(result.output.title);
+      } else {
+        alert('Could not extract text from the document. Please try a different file or paste the text manually.');
+      }
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    } finally {
+      setExtracting(false);
+      e.target.value = '';
     }
   };
 
@@ -286,6 +317,11 @@ Requirements:
               >
                 <RotateCcw className="w-3 h-3" /> Load ARA Standard
               </button>
+              <label className={`cursor-pointer text-xs flex items-center gap-1 border border-slate-200 rounded px-2 py-1 bg-white text-slate-600 hover:text-slate-800 ${extracting ? 'opacity-50 pointer-events-none' : ''}`}>
+                {extracting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                {extracting ? 'Extracting...' : 'Upload Existing'}
+                <input type="file" className="hidden" accept=".pdf,.doc,.docx,.txt" onChange={handleUploadAgreement} />
+              </label>
               <Button
                 size="sm"
                 variant="outline"
