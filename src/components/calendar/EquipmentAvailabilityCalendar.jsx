@@ -1,9 +1,10 @@
-import { useState, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Search, X, Info } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Search, X, Loader2, UserPlus, Truck, CheckCircle } from 'lucide-react';
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
-  eachDayOfInterval, isToday, parseISO, isBefore, isAfter, isEqual
+  eachDayOfInterval, isToday, parseISO
 } from 'date-fns';
+import { base44 } from '@/api/base44Client';
 
 const STATUS_COLORS = {
   out:         { bg: 'bg-red-500',    label: 'Out' },
@@ -22,11 +23,133 @@ function dateInRange(date, startStr, endStr) {
   return d >= s && d <= e;
 }
 
-function RentalTooltip({ rental, onClose }) {
+function AssignDeliveryPanel({ rental, users, deliveries, currentUser, onAssigned, onClose }) {
+  const [selectedDrivers, setSelectedDrivers] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  const existingDelivery = deliveries.find(d => d.rentalId === rental.id);
+  const drivers = users.filter(u => u.role !== 'admin');
+
+  const toggleDriver = (driverId) => {
+    setSelectedDrivers(prev =>
+      prev.includes(driverId) ? prev.filter(id => id !== driverId) : [...prev, driverId]
+    );
+  };
+
+  const handleAssign = async () => {
+    if (selectedDrivers.length === 0) { alert('Select at least one driver'); return; }
+    setSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const assignedDrivers = selectedDrivers.map(id => {
+        const u = users.find(u => u.id === id);
+        return { driverId: u.email, driverName: u.full_name };
+      });
+
+      const primaryDriver = assignedDrivers[0];
+      const teamNote = assignedDrivers.length > 1
+        ? `Team: ${assignedDrivers.map(d => d.driverName).join(', ')}`
+        : '';
+
+      const payload = {
+        rentalId: rental.id,
+        customerId: rental.customerId,
+        customerName: rental.customerName,
+        customerPhone: rental.customerPhone,
+        customerAddress: rental.customerAddress,
+        customerCity: rental.customerCity,
+        customerState: rental.customerState,
+        customerZip: rental.customerZip,
+        driverId: primaryDriver.driverId,
+        driverName: primaryDriver.driverName,
+        branch: rental.branch || '01 McAllen',
+        status: 'scheduled',
+        items: [{ equipmentId: rental.equipmentId, equipmentName: rental.equipmentName, quantity: 1, checked: false }],
+        scheduledDate: rental.startDate || new Date().toISOString().split('T')[0],
+        notes: [rental.notes, teamNote].filter(Boolean).join('\n'),
+        assignedAt: now,
+        assignedBy: currentUser?.email || 'manager',
+        teamDrivers: assignedDrivers,
+      };
+
+      let result;
+      if (existingDelivery) {
+        result = await base44.entities.Delivery.update(existingDelivery.id, {
+          driverId: primaryDriver.driverId,
+          driverName: primaryDriver.driverName,
+          teamDrivers: assignedDrivers,
+          notes: payload.notes,
+          assignedAt: now,
+          assignedBy: currentUser?.email || 'manager',
+          status: existingDelivery.status === 'completed' ? 'completed' : 'scheduled',
+        });
+      } else {
+        result = await base44.entities.Delivery.create(payload);
+      }
+
+      onAssigned(result);
+      onClose();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <div className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+        <UserPlus className="w-3 h-3" />
+        {existingDelivery ? 'Reassign Delivery Team' : 'Assign Delivery'}
+      </div>
+      {existingDelivery && (
+        <div className="text-xs text-green-700 bg-green-50 rounded px-2 py-1 mb-2 flex items-center gap-1">
+          <Truck className="w-3 h-3" />
+          Currently: {existingDelivery.driverName || 'Unassigned'}
+          {existingDelivery.assignedAt && (
+            <span className="text-green-500 ml-1">
+              · {format(parseISO(existingDelivery.assignedAt), 'MM/dd HH:mm')}
+            </span>
+          )}
+        </div>
+      )}
+      <div className="max-h-28 overflow-y-auto space-y-1 mb-2">
+        {drivers.length === 0 ? (
+          <div className="text-xs text-gray-400">No drivers available</div>
+        ) : drivers.map(d => (
+          <label key={d.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5">
+            <input
+              type="checkbox"
+              checked={selectedDrivers.includes(d.id)}
+              onChange={() => toggleDriver(d.id)}
+              className="accent-indigo-600"
+            />
+            <span>{d.full_name}</span>
+            <span className="text-gray-400">({d.email})</span>
+          </label>
+        ))}
+      </div>
+      <button
+        onClick={handleAssign}
+        disabled={saving || selectedDrivers.length === 0}
+        className="w-full h-7 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1"
+      >
+        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+        {saving ? 'Saving...' : `Assign ${selectedDrivers.length > 1 ? `Team (${selectedDrivers.length})` : 'Driver'}`}
+      </button>
+    </div>
+  );
+}
+
+function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onClose, onAssigned }) {
+  const [showAssign, setShowAssign] = useState(false);
   if (!rental) return null;
   const color = STATUS_COLORS[rental.status] || STATUS_COLORS.quote;
+  const delivery = deliveries?.find(d => d.rentalId === rental.id);
+  const needsDelivery = rental.deliveryMethod === 'company_delivery';
+
   return (
-    <div className="absolute z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 w-64 text-sm" style={{ top: '100%', left: 0 }}>
+    <div className="absolute z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 w-72 text-sm" style={{ top: '100%', left: 0 }}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="font-semibold text-gray-900 leading-tight">{rental.customerName}</div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0"><X className="w-3.5 h-3.5" /></button>
@@ -37,23 +160,88 @@ function RentalTooltip({ rental, onClose }) {
         {rental.customerPhone && <div><span className="text-gray-400">Phone:</span> {rental.customerPhone}</div>}
         {rental.invoiceNumber && <div><span className="text-gray-400">Invoice:</span> {rental.invoiceNumber}</div>}
         {rental.branch && <div><span className="text-gray-400">Branch:</span> {rental.branch}</div>}
+        {needsDelivery && (
+          <div className="mt-1 flex items-center gap-1">
+            <Truck className="w-3 h-3 text-indigo-500" />
+            {delivery ? (
+              <span className="text-indigo-700 font-medium">
+                Assigned: {delivery.driverName}
+                {delivery.teamDrivers?.length > 1 && ` +${delivery.teamDrivers.length - 1} more`}
+                {delivery.assignedAt && (
+                  <span className="text-indigo-400 ml-1">· {format(parseISO(delivery.assignedAt), 'MM/dd HH:mm')}</span>
+                )}
+              </span>
+            ) : (
+              <span className="text-amber-600 font-medium">Delivery not assigned</span>
+            )}
+          </div>
+        )}
+        {delivery?.receivedAt && (
+          <div className="text-green-700 flex items-center gap-1 text-xs">
+            <CheckCircle className="w-3 h-3" />
+            Driver confirmed {format(parseISO(delivery.receivedAt), 'MM/dd HH:mm')}
+          </div>
+        )}
         <div className="mt-2">
           <span className={`inline-block px-2 py-0.5 rounded-full text-white font-medium ${color.bg}`}>
             {color.label}
           </span>
         </div>
       </div>
+
+      {isManager && needsDelivery && (
+        <div className="mt-2">
+          {!showAssign ? (
+            <button
+              onClick={() => setShowAssign(true)}
+              className="w-full text-xs border border-indigo-300 text-indigo-700 rounded px-2 py-1 hover:bg-indigo-50 flex items-center justify-center gap-1"
+            >
+              <UserPlus className="w-3 h-3" />
+              {delivery ? 'Reassign Delivery' : 'Assign Delivery'}
+            </button>
+          ) : (
+            <AssignDeliveryPanel
+              rental={rental}
+              users={users}
+              deliveries={deliveries}
+              currentUser={currentUser}
+              onAssigned={onAssigned}
+              onClose={() => setShowAssign(false)}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-export default function EquipmentAvailabilityCalendar({ equipment = [], rentals = [], onDateSelect }) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export default function EquipmentAvailabilityCalendar({
+  equipment = [], rentals = [], deliveries = [], users = [],
+  currentUser, isManager = false, focusRentalId, focusDate,
+  onDateSelect, onDeliveryAssigned
+}) {
+  const [currentDate, setCurrentDate] = useState(() => {
+    if (focusDate) {
+      try { return parseISO(focusDate); } catch { return new Date(); }
+    }
+    return new Date();
+  });
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [selectedRental, setSelectedRental] = useState(null);
   const [tooltipEqId, setTooltipEqId] = useState(null);
-  const tooltipRef = useRef(null);
+
+  // Auto-highlight the rental coming from DailyOps
+  useEffect(() => {
+    if (focusRentalId && rentals.length > 0) {
+      const rental = rentals.find(r => r.id === focusRentalId);
+      if (rental) {
+        setSelectedRental(rental);
+        setTooltipEqId(rental.equipmentId + (rental.startDate || ''));
+        setSearch('');
+      }
+    }
+  }, [focusRentalId, rentals]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd   = endOfMonth(currentDate);
@@ -78,18 +266,14 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
     });
   }, [equipment, search, categoryFilter, activeRentals]);
 
-  // For each equipment, get rentals in this month
   const getRentalsForEquipment = (eqId) =>
     activeRentals.filter(r => r.equipmentId === eqId);
 
-  // Which days are booked for an equipment item
   const getBookedInfo = (eqId, date) => {
     const eqRentals = getRentalsForEquipment(eqId);
-    const hit = eqRentals.find(r => dateInRange(date, r.startDate, r.endDate));
-    return hit || null;
+    return eqRentals.find(r => dateInRange(date, r.startDate, r.endDate)) || null;
   };
 
-  // Is this day the start of a rental block?
   const isRentalStart = (eqId, date) => {
     const eqRentals = getRentalsForEquipment(eqId);
     return eqRentals.some(r => {
@@ -101,10 +285,18 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
 
   const handleDayClick = (eqId, date) => {
     const rental = getBookedInfo(eqId, date);
+    const tooltipKey = eqId + format(date, 'yyyy-MM-dd');
     if (rental) {
-      setSelectedRental(rental);
-      setTooltipEqId(eqId + format(date, 'yyyy-MM-dd'));
+      if (selectedRental?.id === rental.id && tooltipEqId === tooltipKey) {
+        setSelectedRental(null);
+        setTooltipEqId(null);
+      } else {
+        setSelectedRental(rental);
+        setTooltipEqId(tooltipKey);
+      }
     } else {
+      setSelectedRental(null);
+      setTooltipEqId(null);
       onDateSelect?.(date);
     }
   };
@@ -116,6 +308,9 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
       return s <= monthEnd && e >= monthStart;
     })
   ).length;
+
+  // Has delivery assigned indicator
+  const rentalHasDelivery = (rentalId) => deliveries.some(d => d.rentalId === rentalId && d.driverId);
 
   return (
     <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
@@ -144,7 +339,6 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
           {categories.map(c => <option key={c}>{c}</option>)}
         </select>
 
-        {/* Month navigation */}
         <div className="flex items-center gap-2 ml-auto">
           <button onClick={() => setCurrentDate(subMonths(currentDate, 1))}
             className="p-1.5 hover:bg-gray-200 rounded-lg transition">
@@ -167,8 +361,8 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
       {/* Stats bar */}
       <div className="px-4 py-2 bg-gray-50 border-b flex items-center gap-4 text-xs text-gray-500">
         <span><strong className="text-gray-800">{totalEquipment}</strong> items shown</span>
-        <span><strong className="text-red-600">{bookedEquipmentCount}</strong> with bookings this month</span>
-        <span><strong className="text-green-600">{totalEquipment - bookedEquipmentCount}</strong> fully available</span>
+        <span><strong className="text-red-600">{bookedEquipmentCount}</strong> with bookings</span>
+        <span><strong className="text-green-600">{totalEquipment - bookedEquipmentCount}</strong> available</span>
         <div className="ml-auto flex items-center gap-3">
           {Object.entries(STATUS_COLORS).filter(([k]) => ['out','contract','reservation','quote'].includes(k)).map(([k, v]) => (
             <span key={k} className="flex items-center gap-1">
@@ -176,6 +370,10 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
               {v.label}
             </span>
           ))}
+          <span className="flex items-center gap-1">
+            <Truck className="w-3 h-3 text-indigo-500" />
+            Assigned
+          </span>
         </div>
       </div>
 
@@ -209,19 +407,18 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
               </tr>
             ) : filteredEquipment.map((eq, idx) => (
               <tr key={eq.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                {/* Equipment name cell */}
                 <td className="sticky left-0 z-10 border-r border-gray-200 px-3 py-1 font-medium text-gray-800 text-xs truncate max-w-[176px]"
                   style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f9fafb' }}>
                   <div className="truncate" title={eq.name}>{eq.name}</div>
                   {eq.category && <div className="text-gray-400 font-normal text-[10px] truncate">{eq.category}</div>}
                 </td>
-                {/* Day cells */}
                 {days.map(day => {
                   const rental = getBookedInfo(eq.id, day);
                   const isStart = rental && isRentalStart(eq.id, day);
                   const tooltipKey = eq.id + format(day, 'yyyy-MM-dd');
                   const color = rental ? (STATUS_COLORS[rental.status] || STATUS_COLORS.quote) : null;
                   const isTodayCol = isToday(day);
+                  const hasDelivery = rental && rentalHasDelivery(rental.id);
 
                   return (
                     <td
@@ -236,8 +433,9 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
                           title={`${rental.customerName} · ${rental.startDate} – ${rental.endDate}`}
                         >
                           {isStart && (
-                            <span className="text-white font-semibold text-[10px] truncate leading-none px-1 whitespace-nowrap overflow-hidden">
+                            <span className="text-white font-semibold text-[10px] truncate leading-none px-1 whitespace-nowrap overflow-hidden flex items-center gap-0.5">
                               {rental.customerName?.split(' ')[0]}
+                              {hasDelivery && <Truck className="w-2 h-2 flex-shrink-0 opacity-80" />}
                             </span>
                           )}
                         </div>
@@ -246,8 +444,18 @@ export default function EquipmentAvailabilityCalendar({ equipment = [], rentals 
                       )}
                       {/* Tooltip */}
                       {selectedRental && tooltipEqId === tooltipKey && (
-                        <div ref={tooltipRef} className="relative">
-                          <RentalTooltip rental={selectedRental} onClose={() => { setSelectedRental(null); setTooltipEqId(null); }} />
+                        <div className="relative">
+                          <RentalTooltip
+                            rental={selectedRental}
+                            deliveries={deliveries}
+                            users={users}
+                            currentUser={currentUser}
+                            isManager={isManager}
+                            onClose={() => { setSelectedRental(null); setTooltipEqId(null); }}
+                            onAssigned={(delivery) => {
+                              onDeliveryAssigned?.(delivery);
+                            }}
+                          />
                         </div>
                       )}
                     </td>

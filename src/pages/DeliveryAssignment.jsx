@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { ArrowLeft, Loader2, CheckCircle, Truck, Clock } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
 
@@ -28,27 +28,26 @@ export default function DeliveryAssignment() {
     });
   }, []);
 
-  // Find rentals that need company delivery but don't have a delivery record yet
+  // Find rentals that need company delivery (assigned or not)
   const pendingDeliveries = useMemo(() => {
     return rentals.filter(r => {
       if (r.deliveryMethod !== 'company_delivery') return false;
-      if (r.status === 'cancelled' || r.status === 'quote') return false;
+      if (r.status === 'cancelled' || r.status === 'completed' || r.status === 'quote') return false;
       if (branchFilter && r.branch !== branchFilter) return false;
-      const hasDelivery = deliveries.some(d => d.rentalId === r.id);
-      return !hasDelivery;
-    });
+      return true;
+    }).sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
   }, [rentals, deliveries, branchFilter]);
 
-  const handleCreateDelivery = async (rental, driverId, driverName) => {
+  const handleCreateDelivery = async (rental, teamDriverIds) => {
     setCreating(true);
     try {
-      // Build items list from rental — one line per rental record (each rental = one equipment item)
-      const items = [{
-        equipmentId: rental.equipmentId,
-        equipmentName: rental.equipmentName,
-        quantity: 1,
-        checked: false,
-      }];
+      const now = new Date().toISOString();
+      const me = await base44.auth.me();
+      const teamDrivers = teamDriverIds.map(id => {
+        const u = users.find(u => u.id === id);
+        return { driverId: u.email, driverName: u.full_name };
+      });
+      const primary = teamDrivers[0];
 
       await base44.entities.Delivery.create({
         rentalId: rental.id,
@@ -59,16 +58,18 @@ export default function DeliveryAssignment() {
         customerCity: rental.customerCity,
         customerState: rental.customerState,
         customerZip: rental.customerZip,
-        driverId,
-        driverName,
+        driverId: primary.driverId,
+        driverName: primary.driverName,
+        teamDrivers,
+        assignedAt: now,
+        assignedBy: me?.email || 'manager',
         branch: rental.branch || '01 McAllen',
         status: 'scheduled',
-        items,
+        items: [{ equipmentId: rental.equipmentId, equipmentName: rental.equipmentName, quantity: 1, checked: false }],
         scheduledDate: rental.startDate || new Date().toISOString().split('T')[0],
         notes: rental.notes || '',
       });
 
-      // Refresh deliveries
       const dels = await base44.entities.Delivery.list('-created_date', 500);
       setDeliveries(dels);
     } catch (err) {
@@ -96,7 +97,9 @@ export default function DeliveryAssignment() {
           </button>
           <div className="flex-1">
             <div className="text-lg font-bold">📦 Delivery Assignment</div>
-            <div className="text-indigo-300 text-xs">{pendingDeliveries.length} rental(s) need delivery</div>
+            <div className="text-indigo-300 text-xs">
+              {pendingDeliveries.filter(r => !deliveries.some(d => d.rentalId === r.id)).length} unassigned · {pendingDeliveries.length} total deliveries
+            </div>
           </div>
           <select
             value={branchFilter}
@@ -122,6 +125,7 @@ export default function DeliveryAssignment() {
                 key={rental.id}
                 rental={rental}
                 drivers={users.filter(u => u.role !== 'admin')}
+                deliveries={deliveries}
                 onAssign={handleCreateDelivery}
                 isCreating={creating}
               />
@@ -133,55 +137,74 @@ export default function DeliveryAssignment() {
   );
 }
 
-function DeliveryAssignmentCard({ rental, drivers, onAssign, isCreating }) {
-  const [selectedDriver, setSelectedDriver] = useState('');
+function DeliveryAssignmentCard({ rental, drivers, deliveries, onAssign, isCreating }) {
+  const [selectedDrivers, setSelectedDrivers] = useState([]);
+  const existingDelivery = deliveries.find(d => d.rentalId === rental.id);
+
+  const toggleDriver = (id) => {
+    setSelectedDrivers(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   const handleAssign = () => {
-    if (!selectedDriver) {
-      alert('Select a driver');
-      return;
-    }
-    const driver = drivers.find(d => d.id === selectedDriver);
-    onAssign(rental, driver.email, driver.full_name);
+    if (selectedDrivers.length === 0) { alert('Select at least one driver'); return; }
+    onAssign(rental, selectedDrivers);
   };
 
   return (
     <div className="bg-white rounded-lg border shadow-sm p-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-        <div className="min-w-0">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0 flex-1">
           <div className="font-bold text-gray-900">{rental.customerName}</div>
           <div className="text-xs text-gray-600 mt-1">
             {rental.customerAddress}, {rental.customerCity}, {rental.customerState} {rental.customerZip}
           </div>
-          <div className="text-xs text-gray-500 mt-2">
-            Invoice: <strong>{rental.invoiceNumber || rental.id}</strong>
+          <div className="text-xs text-gray-500 mt-1">
+            Invoice: <strong>{rental.invoiceNumber || rental.id}</strong> · {rental.startDate}
           </div>
+          {existingDelivery && (
+            <div className="text-xs text-green-700 flex items-center gap-1 mt-1">
+              <Truck className="w-3 h-3" />
+              Assigned: {existingDelivery.driverName}
+              {existingDelivery.teamDrivers?.length > 1 && ` +${existingDelivery.teamDrivers.length - 1} more`}
+              {existingDelivery.assignedAt && (
+                <span className="text-green-500 ml-1 flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  {format(parseISO(existingDelivery.assignedAt), 'MM/dd HH:mm')}
+                </span>
+              )}
+              {existingDelivery.receivedAt && (
+                <span className="text-indigo-600 ml-1">· Driver confirmed {format(parseISO(existingDelivery.receivedAt), 'HH:mm')}</span>
+              )}
+            </div>
+          )}
         </div>
 
-        <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Assign Driver</label>
-          <select
-            value={selectedDriver}
-            onChange={e => setSelectedDriver(e.target.value)}
-            disabled={isCreating}
-            className="w-full h-8 border border-input rounded px-2 text-xs bg-white"
-          >
-            <option value="">— Select driver —</option>
+        <div className="w-full md:w-72">
+          <label className="text-xs font-medium text-gray-600 block mb-1">
+            Assign Team (select one or more)
+          </label>
+          <div className="border rounded max-h-28 overflow-y-auto divide-y text-xs">
             {drivers.map(d => (
-              <option key={d.id} value={d.id}>
-                {d.full_name} ({d.email})
-              </option>
+              <label key={d.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedDrivers.includes(d.id)}
+                  onChange={() => toggleDriver(d.id)}
+                  disabled={isCreating}
+                  className="accent-indigo-600"
+                />
+                <span className="font-medium">{d.full_name}</span>
+                <span className="text-gray-400 text-[10px]">{d.email}</span>
+              </label>
             ))}
-          </select>
-        </div>
-
-        <div>
+          </div>
           <button
             onClick={handleAssign}
-            disabled={isCreating || !selectedDriver}
-            className="w-full h-8 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isCreating || selectedDrivers.length === 0}
+            className="mt-2 w-full h-8 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
           >
-            {isCreating ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Create Delivery'}
+            {isCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Truck className="w-3 h-3" />}
+            {existingDelivery ? 'Reassign' : `Assign${selectedDrivers.length > 1 ? ` Team (${selectedDrivers.length})` : ''}`}
           </button>
         </div>
       </div>

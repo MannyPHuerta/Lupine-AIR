@@ -36,11 +36,42 @@
     },
     "driverId": {
       "type": "string",
-      "description": "Email/ID of assigned driver"
+      "description": "Email/ID of primary assigned driver"
     },
     "driverName": {
       "type": "string",
-      "description": "Driver name (denormalized)"
+      "description": "Primary driver name (denormalized)"
+    },
+    "teamDrivers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "driverId": {
+            "type": "string"
+          },
+          "driverName": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Full team of drivers assigned to this delivery"
+    },
+    "assignedAt": {
+      "type": "string",
+      "description": "ISO timestamp when delivery was assigned by manager"
+    },
+    "assignedBy": {
+      "type": "string",
+      "description": "Email of manager who assigned the delivery"
+    },
+    "receivedAt": {
+      "type": "string",
+      "description": "ISO timestamp when driver acknowledged/received the assignment"
+    },
+    "receivedBy": {
+      "type": "string",
+      "description": "Email of driver who acknowledged the assignment"
     },
     "branch": {
       "type": "string",
@@ -98,7 +129,7 @@
     },
     "arrivedAt": {
       "type": "string",
-      "description": "ISO timestamp when driver arrived at location (geofence-triggered)"
+      "description": "ISO timestamp when driver arrived at location"
     },
     "completedAt": {
       "type": "string",

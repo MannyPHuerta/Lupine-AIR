@@ -6,18 +6,31 @@ import EquipmentAvailabilityCalendar from '@/components/calendar/EquipmentAvaila
 
 export default function AvailabilityCalendar() {
   const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
+  const focusRentalId = urlParams.get('rentalId');
+  const focusDate = urlParams.get('date');
+
   const [equipment, setEquipment] = useState([]);
   const [rentals, setRentals] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => {
-    const [eq, rent] = await Promise.all([
+    const [me, eq, rent, dels, usrs] = await Promise.all([
+      base44.auth.me(),
       base44.entities.Equipment.list('-created_date', 500),
       base44.entities.Rental.list('-startDate', 2000),
+      base44.entities.Delivery.list('-created_date', 1000),
+      base44.entities.User.list(),
     ]);
+    setCurrentUser(me);
     setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
     setRentals(rent);
+    setDeliveries(dels);
+    setUsers(usrs);
   };
 
   useEffect(() => {
@@ -30,6 +43,14 @@ export default function AvailabilityCalendar() {
     setRefreshing(false);
   };
 
+  const handleDeliveryAssigned = (newDelivery) => {
+    setDeliveries(prev => {
+      const exists = prev.find(d => d.id === newDelivery.id);
+      if (exists) return prev.map(d => d.id === newDelivery.id ? newDelivery : d);
+      return [...prev, newDelivery];
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -38,12 +59,14 @@ export default function AvailabilityCalendar() {
     );
   }
 
+  const isManager = currentUser?.role === 'admin' || currentUser?.role === 'manager';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3 max-w-full mx-auto">
-          <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
@@ -67,14 +90,18 @@ export default function AvailabilityCalendar() {
         <EquipmentAvailabilityCalendar
           equipment={equipment}
           rentals={rentals}
-          onDateSelect={(date) => {
-            // Navigate to new rental with that date pre-selected — future enhancement
-          }}
+          deliveries={deliveries}
+          users={users}
+          currentUser={currentUser}
+          isManager={isManager}
+          focusRentalId={focusRentalId}
+          focusDate={focusDate}
+          onDateSelect={(date) => {}}
+          onDeliveryAssigned={handleDeliveryAssigned}
         />
 
-        {/* Legend / Help */}
         <div className="mt-4 text-xs text-gray-400 text-center">
-          Click any booking bar to see customer details · Click an empty day to create a rental
+          Click any booking bar to see details · {isManager ? 'As manager, you can assign deliveries from the booking popup.' : ''}
         </div>
       </div>
     </div>

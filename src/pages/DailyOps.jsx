@@ -23,7 +23,10 @@ function SectionHeader({ icon, label, count, color }) {
 
 function RentalRow({ rental, badge, badgeColor, navigate }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b last:border-0 transition">
+    <div
+      className="flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 border-b last:border-0 transition cursor-pointer"
+      onClick={() => navigate(`/availability-calendar?rentalId=${rental.id}&date=${rental.startDate || rental.endDate}`)}
+    >
       <div className="flex-1 min-w-0">
         <div className="font-semibold text-gray-900 text-sm truncate">{rental.customerName}</div>
         <div className="text-xs text-gray-500 truncate">{rental.equipmentName || 'Multiple items'}</div>
@@ -35,6 +38,7 @@ function RentalRow({ rental, badge, badgeColor, navigate }) {
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
         {rental.customerPhone && (
           <a href={`tel:${rental.customerPhone}`}
+            onClick={e => e.stopPropagation()}
             className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition">
             <Phone className="w-3 h-3" /> {rental.customerPhone}
           </a>
