@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench, FlaskConical } from 'lucide-react';
+import DeliveryRecommendation from '@/components/counter/DeliveryRecommendation';
 import PracticeModeWatermark from '@/components/PracticeModeWatermark';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { calcDeliveryFee } from '@/lib/deliveryFee';
@@ -64,6 +65,7 @@ export default function AvailabilityManager() {
   const [volumeRules, setVolumeRules] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
   const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
+  const [aiDeliveryRec, setAiDeliveryRec] = useState(null); // { crewCount, vehicleCount, vehicleType, recommendedFee }
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -823,6 +825,23 @@ export default function AvailabilityManager() {
                   onChange={e => setWorksiteZip(e.target.value)}
                 />
               </div>
+
+              {/* AI Delivery Recommendation */}
+              <DeliveryRecommendation
+                cartItems={lines.filter(l => l.equipmentId).map(l => {
+                  const eq = equipment.find(e => e.id === l.equipmentId);
+                  return { name: l.equipmentName, category: eq?.category, weight: null };
+                })}
+                deliveryAddress={{
+                  address: worksiteAddress || customer.address,
+                  city: worksiteCity || customer.city,
+                  state: worksiteState || customer.state,
+                  zip: worksiteZip || customer.zip,
+                }}
+                onAddDeliveryFee={(fee) => {
+                  setAiDeliveryRec({ crewCount: null, vehicleCount: null, addedFee: fee });
+                }}
+              />
             </div>
           )}
         </div>

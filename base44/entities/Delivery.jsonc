@@ -91,6 +91,22 @@
       "default": "scheduled",
       "description": "Current delivery status"
     },
+    "recommendedCrew": {
+      "type": "integer",
+      "description": "AI-recommended number of crew members for this delivery"
+    },
+    "recommendedVehicles": {
+      "type": "integer",
+      "description": "AI-recommended number of vehicles"
+    },
+    "recommendedVehicleType": {
+      "type": "string",
+      "description": "AI-recommended vehicle type (e.g. flatbed, box truck)"
+    },
+    "recommendedDeliveryFee": {
+      "type": "number",
+      "description": "AI-recommended delivery fee in USD"
+    },
     "items": {
       "type": "array",
       "items": {

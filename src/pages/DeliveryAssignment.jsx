@@ -162,18 +162,27 @@ function DeliveryAssignmentCard({ rental, drivers, deliveries, onAssign, isCreat
             Invoice: <strong>{rental.invoiceNumber || rental.id}</strong> · {rental.startDate}
           </div>
           {existingDelivery && (
-            <div className="text-xs text-green-700 flex items-center gap-1 mt-1">
-              <Truck className="w-3 h-3" />
-              Assigned: {existingDelivery.driverName}
-              {existingDelivery.teamDrivers?.length > 1 && ` +${existingDelivery.teamDrivers.length - 1} more`}
-              {existingDelivery.assignedAt && (
-                <span className="text-green-500 ml-1 flex items-center gap-0.5">
-                  <Clock className="w-2.5 h-2.5" />
-                  {format(parseISO(existingDelivery.assignedAt), 'MM/dd HH:mm')}
-                </span>
-              )}
-              {existingDelivery.receivedAt && (
-                <span className="text-indigo-600 ml-1">· Driver confirmed {format(parseISO(existingDelivery.receivedAt), 'HH:mm')}</span>
+            <div className="space-y-0.5 mt-1">
+              <div className="text-xs text-green-700 flex items-center gap-1">
+                <Truck className="w-3 h-3" />
+                Assigned: {existingDelivery.driverName}
+                {existingDelivery.teamDrivers?.length > 1 && ` +${existingDelivery.teamDrivers.length - 1} more`}
+                {existingDelivery.assignedAt && (
+                  <span className="text-green-500 ml-1 flex items-center gap-0.5">
+                    <Clock className="w-2.5 h-2.5" />
+                    {format(parseISO(existingDelivery.assignedAt), 'MM/dd HH:mm')}
+                  </span>
+                )}
+                {existingDelivery.receivedAt && (
+                  <span className="text-indigo-600 ml-1">· Confirmed {format(parseISO(existingDelivery.receivedAt), 'HH:mm')}</span>
+                )}
+              </div>
+              {(existingDelivery.recommendedCrew || existingDelivery.recommendedVehicles) && (
+                <div className="text-[10px] text-indigo-600 flex items-center gap-2 bg-indigo-50 rounded px-2 py-0.5">
+                  {existingDelivery.recommendedCrew && <span>👥 {existingDelivery.recommendedCrew} crew</span>}
+                  {existingDelivery.recommendedVehicles && <span>🚛 {existingDelivery.recommendedVehicles} {existingDelivery.recommendedVehicleType || 'vehicle'}</span>}
+                  {existingDelivery.recommendedDeliveryFee && <span className="text-green-700 font-semibold">${existingDelivery.recommendedDeliveryFee} fee</span>}
+                </div>
               )}
             </div>
           )}

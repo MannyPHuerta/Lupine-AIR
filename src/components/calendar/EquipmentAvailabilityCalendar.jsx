@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, X, Loader2, UserPlus, Truck, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X, Loader2, UserPlus, Truck, CheckCircle, Users, Sparkles } from 'lucide-react';
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, isToday, parseISO
@@ -26,9 +26,34 @@ function dateInRange(date, startStr, endStr) {
 function AssignDeliveryPanel({ rental, users, deliveries, currentUser, onAssigned, onClose }) {
   const [selectedDrivers, setSelectedDrivers] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [aiRec, setAiRec] = useState(null);
+  const [loadingRec, setLoadingRec] = useState(false);
 
   const existingDelivery = deliveries.find(d => d.rentalId === rental.id);
   const drivers = users.filter(u => u.role !== 'admin');
+
+  const fetchAIRec = async () => {
+    setLoadingRec(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Equipment rental logistics: recommend crew and vehicles for delivering "${rental.equipmentName}" to ${rental.customerCity || 'local'}, ${rental.customerState || 'TX'}. Return JSON only.`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            crewCount: { type: 'integer' },
+            vehicleCount: { type: 'integer' },
+            vehicleType: { type: 'string' },
+            recommendedFee: { type: 'number' }
+          }
+        }
+      });
+      setAiRec(result);
+    } catch (e) {
+      setAiRec({ error: e.message });
+    } finally {
+      setLoadingRec(false);
+    }
+  };
 
   const toggleDriver = (driverId) => {
     setSelectedDrivers(prev =>
@@ -70,6 +95,12 @@ function AssignDeliveryPanel({ rental, users, deliveries, currentUser, onAssigne
         assignedAt: now,
         assignedBy: currentUser?.email || 'manager',
         teamDrivers: assignedDrivers,
+        ...(aiRec && !aiRec.error ? {
+          recommendedCrew: aiRec.crewCount,
+          recommendedVehicles: aiRec.vehicleCount,
+          recommendedVehicleType: aiRec.vehicleType,
+          recommendedDeliveryFee: aiRec.recommendedFee,
+        } : {}),
       };
 
       let result;
@@ -129,6 +160,27 @@ function AssignDeliveryPanel({ rental, users, deliveries, currentUser, onAssigne
           </label>
         ))}
       </div>
+      {/* AI Crew Recommendation */}
+      {!aiRec && !loadingRec && (
+        <button
+          onClick={fetchAIRec}
+          className="w-full text-[10px] flex items-center justify-center gap-1 text-indigo-600 border border-indigo-200 rounded px-1 py-1 hover:bg-indigo-50 mb-1"
+        >
+          <Sparkles className="w-3 h-3" /> Get AI crew recommendation
+        </button>
+      )}
+      {loadingRec && (
+        <div className="flex items-center justify-center gap-1 text-[10px] text-indigo-500 py-1">
+          <Loader2 className="w-3 h-3 animate-spin" /> Analyzing…
+        </div>
+      )}
+      {aiRec && !aiRec.error && (
+        <div className="text-[10px] bg-indigo-50 border border-indigo-100 rounded px-2 py-1 mb-1 flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-0.5 text-indigo-700"><Users className="w-3 h-3" /> {aiRec.crewCount} crew</span>
+          <span className="flex items-center gap-0.5 text-indigo-700"><Truck className="w-3 h-3" /> {aiRec.vehicleCount} {aiRec.vehicleType || 'vehicle'}</span>
+          {aiRec.recommendedFee && <span className="text-green-700 font-semibold">${aiRec.recommendedFee} fee</span>}
+        </div>
+      )}
       <button
         onClick={handleAssign}
         disabled={saving || selectedDrivers.length === 0}
@@ -161,18 +213,37 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
         {rental.invoiceNumber && <div><span className="text-gray-400">Invoice:</span> {rental.invoiceNumber}</div>}
         {rental.branch && <div><span className="text-gray-400">Branch:</span> {rental.branch}</div>}
         {needsDelivery && (
-          <div className="mt-1 flex items-center gap-1">
-            <Truck className="w-3 h-3 text-indigo-500" />
-            {delivery ? (
-              <span className="text-indigo-700 font-medium">
-                Assigned: {delivery.driverName}
-                {delivery.teamDrivers?.length > 1 && ` +${delivery.teamDrivers.length - 1} more`}
-                {delivery.assignedAt && (
-                  <span className="text-indigo-400 ml-1">· {format(parseISO(delivery.assignedAt), 'MM/dd HH:mm')}</span>
+          <div className="mt-1 space-y-1">
+            <div className="flex items-center gap-1">
+              <Truck className="w-3 h-3 text-indigo-500" />
+              {delivery ? (
+                <span className="text-indigo-700 font-medium">
+                  Assigned: {delivery.driverName}
+                  {delivery.teamDrivers?.length > 1 && ` +${delivery.teamDrivers.length - 1} more`}
+                  {delivery.assignedAt && (
+                    <span className="text-indigo-400 ml-1">· {format(parseISO(delivery.assignedAt), 'MM/dd HH:mm')}</span>
+                  )}
+                </span>
+              ) : (
+                <span className="text-amber-600 font-medium">Delivery not assigned</span>
+              )}
+            </div>
+            {delivery && (delivery.recommendedCrew || delivery.recommendedVehicles) && (
+              <div className="flex items-center gap-2 text-[10px] bg-indigo-50 rounded px-2 py-1">
+                {delivery.recommendedCrew && (
+                  <span className="flex items-center gap-0.5 text-indigo-600">
+                    <Users className="w-3 h-3" /> {delivery.recommendedCrew} crew
+                  </span>
                 )}
-              </span>
-            ) : (
-              <span className="text-amber-600 font-medium">Delivery not assigned</span>
+                {delivery.recommendedVehicles && (
+                  <span className="flex items-center gap-0.5 text-indigo-600">
+                    <Truck className="w-3 h-3" /> {delivery.recommendedVehicles} vehicle{delivery.recommendedVehicles !== 1 ? 's' : ''}
+                  </span>
+                )}
+                {delivery.recommendedVehicleType && (
+                  <span className="text-indigo-400">· {delivery.recommendedVehicleType}</span>
+                )}
+              </div>
             )}
           </div>
         )}
