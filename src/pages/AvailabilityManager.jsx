@@ -830,7 +830,7 @@ export default function AvailabilityManager() {
               <DeliveryRecommendation
                 cartItems={lines.filter(l => l.equipmentId).map(l => {
                   const eq = equipment.find(e => e.id === l.equipmentId);
-                  return { name: l.equipmentName, category: eq?.category, weight: null };
+                  return { name: l.equipmentName, category: eq?.category, quantity: l.quantity || 1, weight: null };
                 })}
                 deliveryAddress={{
                   address: worksiteAddress || customer.address,
