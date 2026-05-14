@@ -171,6 +171,10 @@ Return ONLY a JSON object.`,
                 </div>
               )}
 
+              <div className="text-[11px] text-gray-500 bg-blue-50 border border-blue-100 rounded px-2 py-1.5">
+                📋 Do you have questions about this AI-generated recommendation? Please consult your manager.
+              </div>
+
               {/* Action buttons */}
               <div className="flex gap-1.5">
                 <button
