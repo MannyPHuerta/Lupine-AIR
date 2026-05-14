@@ -93,9 +93,9 @@ Return JSON with: issuingOrg, rfqNumber, title, orgType (municipal|county|state|
         }
       }),
 
-      // Call B: Full analysis + response draft
+      // Call B: Full analysis + response draft — claude handles complex nested arrays reliably
       base44.integrations.Core.InvokeLLM({
-        model: 'gemini_3_flash',
+        model: 'claude_sonnet_4_6',
         prompt: `You are a senior government procurement specialist. Analyze this RFQ and generate a complete bid response for ${companyName}, an equipment rental company (tents, generators, tables, chairs, staging, event/construction equipment) in South Texas.
 
 Company: ${companyName} | ${companyAddress} | ${companyPhone} | ${companyEmail}

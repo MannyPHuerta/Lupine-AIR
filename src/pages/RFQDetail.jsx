@@ -123,6 +123,7 @@ export default function RFQDetail() {
     } catch (err) {
       alert('Analysis failed: ' + err.message);
       update('status', 'received');
+    } finally {
       setAnalyzing(false);
     }
   };
