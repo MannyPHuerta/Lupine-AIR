@@ -78,9 +78,8 @@ const navGroups = [
     color: 'text-pink-400',
     description: 'Events & marketing',
     items: [
-      { label: 'Events Website', path: '/airevents', icon: Globe },
-      { label: 'Asset Reports', path: '/pending', icon: FileText },
-      { label: 'Marketplace', path: '/marketplace', icon: TrendingUp },
+      { label: 'Event Planner', path: '/event-planner', icon: Calendar },
+      { label: 'Planner Queue', path: '/planner-queue', icon: ClipboardList },
     ],
   },
   {
