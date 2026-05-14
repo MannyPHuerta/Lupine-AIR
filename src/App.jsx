@@ -76,6 +76,7 @@ import LaundryReport from "./pages/LaundryReport";
 import DriverReport from "./pages/DriverReport";
 import RFQManager from "./pages/RFQManager";
 import RFQDetail from "./pages/RFQDetail";
+import AgreementSigningFlow from "./pages/AgreementSigningFlow";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -175,6 +176,7 @@ const AuthenticatedApp = () => {
         <Route path="/driver-report" element={<DriverReport />} />
         <Route path="/rfq" element={<RFQManager />} />
         <Route path="/rfq/:id" element={<RFQDetail />} />
+        <Route path="/agreement-signing" element={<AgreementSigningFlow />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

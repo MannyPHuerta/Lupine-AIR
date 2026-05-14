@@ -70,6 +70,8 @@ export default function RentalAgreementManager() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [agreementId, setAgreementId] = useState(null);
 
   useEffect(() => {
     base44.entities.RentalAgreement.list().then(data => {
@@ -195,6 +197,7 @@ Requirements:
           lastUpdatedAt: new Date().toISOString(),
           lastUpdatedBy: (await base44.auth.me())?.email || 'unknown',
         });
+        setAgreementId(existing.id);
       } else {
         const created = await base44.entities.RentalAgreement.create({
           branch,
@@ -207,6 +210,7 @@ Requirements:
           lastUpdatedBy: (await base44.auth.me())?.email || 'unknown',
         });
         setAgreements(prev => ({ ...prev, [branch]: created }));
+        setAgreementId(created.id);
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -214,6 +218,44 @@ Requirements:
       alert(`Error: ${err.message}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleEnrichAndSign = async () => {
+    if (!agreementId) {
+      alert('Please save the agreement first.');
+      return;
+    }
+
+    setEnriching(true);
+    try {
+      const settings = await base44.entities.CompanySettings.list();
+      const co = settings[0] || {};
+      const branchSettings = await base44.entities.BranchSettings.filter({ branch });
+      const bs = branchSettings[0] || {};
+
+      const companyName = co.companyName || 'AIR Equipment Rental';
+      const companyAddress = bs.address || co.address || '';
+      const companyPhone = bs.phone || co.phone || '';
+      const companyEmail = bs.email || co.email || '';
+
+      const result = await base44.functions.invoke('enrichAgreementWithSignatures', {
+        content,
+        branch,
+        companyName,
+        companyAddress,
+        companyPhone,
+        companyEmail,
+      });
+
+      if (result.enriched_content) {
+        setContent(result.enriched_content);
+        window.open(`/agreement-signing?id=${agreementId}&branch=${branch}`, '_blank');
+      }
+    } catch (err) {
+      alert('Enrichment failed: ' + err.message);
+    } finally {
+      setEnriching(false);
     }
   };
 
@@ -353,7 +395,7 @@ Requirements:
           </div>
         </div>
 
-        {/* Save button */}
+        {/* Save & Sign buttons */}
         <div className="flex justify-end gap-3">
           <Button
             onClick={handleSave}
@@ -363,6 +405,16 @@ Requirements:
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Agreement
           </Button>
+          {agreementId && (
+            <Button
+              onClick={handleEnrichAndSign}
+              disabled={enriching}
+              className="bg-green-600 hover:bg-green-700 gap-2"
+            >
+              {enriching ? <Loader2 className="w-4 h-4 animate-spin" /> : '✓'}
+              {enriching ? 'Preparing...' : 'Sign & Print'}
+            </Button>
+          )}
         </div>
       </div>
     </div>
