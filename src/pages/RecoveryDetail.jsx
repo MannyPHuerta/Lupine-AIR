@@ -60,6 +60,16 @@ export default function RecoveryDetail() {
 
     await base44.entities.Recovery.update(id, updates);
     setRecovery({ ...recovery, ...updates });
+
+    // Auto-advance Rental status based on recovery milestones
+    if (recovery.rentalId) {
+      if (newStatus === 'returned_to_branch') {
+        await base44.entities.Rental.update(recovery.rentalId, { status: 'returned' });
+      } else if (newStatus === 'completed') {
+        await base44.entities.Rental.update(recovery.rentalId, { status: 'completed' });
+      }
+    }
+
     setUpdating(false);
   };
 

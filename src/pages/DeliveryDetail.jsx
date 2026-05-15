@@ -67,6 +67,12 @@ export default function DeliveryDetail() {
     try {
       await base44.entities.Delivery.update(id, updates);
       setDelivery({ ...delivery, ...updates });
+
+      // Auto-advance Rental status when driver departs (equipment is now "out")
+      if (newStatus === 'departed' && rental?.id && ['contract', 'reservation', 'quote'].includes(rental.status)) {
+        await base44.entities.Rental.update(rental.id, { status: 'out' });
+        setRental(r => ({ ...r, status: 'out' }));
+      }
     } catch (err) {
       alert(`Error: ${err.message}`);
     } finally {
