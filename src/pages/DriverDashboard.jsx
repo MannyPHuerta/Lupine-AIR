@@ -500,90 +500,72 @@ function StatusBadge({ status }) {
 function PrintPreviewModal({ filterDate, driver, deliveries, recoveries, onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl max-w-2xl max-h-[90vh] overflow-auto w-full">
+      <div className="bg-white rounded-lg shadow-2xl max-w-4xl max-h-[90vh] overflow-auto w-full">
         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
           <h2 className="font-bold text-lg">Print Preview</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold">×</button>
         </div>
         
-        <div className="p-8">
-          <div className="border-b-2 border-black pb-4 mb-6">
-            <h1 className="text-2xl font-bold">Driver Manifest</h1>
-            <p className="text-sm text-gray-700 mt-1">{format(parseISO(filterDate), 'MMMM d, yyyy')}</p>
-            <p className="text-sm text-gray-700">Driver: {driver?.full_name}</p>
+        <div className="p-6" style={{ fontSize: '11pt', fontFamily: 'monospace' }}>
+          <div className="mb-4 border-b pb-3">
+            <div className="font-bold text-base">DRIVER MANIFEST — {format(parseISO(filterDate), 'MMM d, yyyy')}</div>
+            <div className="text-sm">Driver: {driver?.full_name}</div>
           </div>
 
           {deliveries.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-lg font-bold border-b border-gray-300 pb-2 mb-4">DELIVERIES ({deliveries.length})</h2>
-              <div className="space-y-6">
-                {deliveries.map((d, idx) => (
-                  <div key={d.id} className="border border-gray-300 p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="font-bold text-lg">Stop #{idx + 1}: {d.customerName}</div>
-                      <span className="text-sm font-semibold px-2 py-1 bg-gray-100">{d.scheduledTime || d.scheduledDate}</span>
-                    </div>
-                    <div className="text-sm space-y-1 mb-3">
-                      <p>{d.customerAddress}</p>
-                      <p>{d.customerCity}, {d.customerState} {d.customerZip}</p>
-                      {d.customerPhone && <p>📞 {d.customerPhone}</p>}
-                    </div>
-                    <div className="mb-3">
-                      <p className="font-semibold text-sm mb-1">Equipment:</p>
-                      <ul className="text-sm space-y-1 ml-4">
+            <div className="mb-6">
+              <div className="font-bold mb-2 underline">DELIVERIES ({deliveries.length})</div>
+              <table className="w-full text-xs border-collapse">
+                <tbody>
+                  {deliveries.map((d, idx) => (
+                    <tr key={d.id} className="border-b">
+                      <td className="p-2 font-bold align-top w-8">{idx + 1}</td>
+                      <td className="p-2 align-top">
+                        <div className="font-bold">{d.customerName}</div>
+                        <div>{d.customerAddress}</div>
+                        <div>{d.customerCity}, {d.customerState} {d.customerZip}</div>
+                        {d.customerPhone && <div>Phone: {d.customerPhone}</div>}
+                        <div className="mt-1 font-bold">Equipment:</div>
                         {d.items?.map((item, i) => (
-                          <li key={i}>• {item.quantity}x {item.equipmentName}</li>
+                          <div key={i} className="ml-2">{item.quantity}x {item.equipmentName}</div>
                         ))}
-                      </ul>
-                    </div>
-                    {d.notes && (
-                      <div className="text-sm bg-yellow-50 border border-yellow-200 rounded p-2">
-                        <p className="font-semibold">Notes:</p>
-                        <p>{d.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                        {d.notes && <div className="mt-1 italic text-gray-700">Notes: {d.notes}</div>}
+                      </td>
+                      <td className="p-2 text-right align-top whitespace-nowrap">{d.scheduledTime || d.scheduledDate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
           {recoveries.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-lg font-bold border-b border-gray-300 pb-2 mb-4">RECOVERIES ({recoveries.length})</h2>
-              <div className="space-y-6">
-                {recoveries.map((r, idx) => (
-                  <div key={r.id} className="border border-gray-300 p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="font-bold text-lg">Stop #{deliveries.length + idx + 1}: {r.customerName}</div>
-                      <span className="text-sm font-semibold px-2 py-1 bg-gray-100">{r.scheduledDate}</span>
-                    </div>
-                    <div className="text-sm space-y-1 mb-3">
-                      <p>{r.customerName}</p>
-                      {r.customerPhone && <p>📞 {r.customerPhone}</p>}
-                    </div>
-                    <div className="mb-3">
-                      <p className="font-semibold text-sm mb-1">Items to Recover:</p>
-                      <ul className="text-sm space-y-1 ml-4">
+            <div className="mb-6">
+              <div className="font-bold mb-2 underline">RECOVERIES ({recoveries.length})</div>
+              <table className="w-full text-xs border-collapse">
+                <tbody>
+                  {recoveries.map((r, idx) => (
+                    <tr key={r.id} className="border-b">
+                      <td className="p-2 font-bold align-top w-8">{deliveries.length + idx + 1}</td>
+                      <td className="p-2 align-top">
+                        <div className="font-bold">{r.customerName}</div>
+                        {r.customerPhone && <div>Phone: {r.customerPhone}</div>}
+                        <div className="mt-1 font-bold">Items to Recover:</div>
                         {r.items?.map((item, i) => (
-                          <li key={i}>• {item.quantity}x {item.equipmentName}</li>
+                          <div key={i} className="ml-2">{item.quantity}x {item.equipmentName}</div>
                         ))}
-                      </ul>
-                    </div>
-                    {r.notes && (
-                      <div className="text-sm bg-yellow-50 border border-yellow-200 rounded p-2">
-                        <p className="font-semibold">Notes:</p>
-                        <p>{r.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                        {r.notes && <div className="mt-1 italic text-gray-700">Notes: {r.notes}</div>}
+                      </td>
+                      <td className="p-2 text-right align-top whitespace-nowrap">{r.scheduledDate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
           {deliveries.length === 0 && recoveries.length === 0 && (
-            <p className="text-center text-gray-500">No activities on {format(parseISO(filterDate), 'MMM d')}</p>
+            <p className="text-sm text-gray-500">No activities on {format(parseISO(filterDate), 'MMM d')}</p>
           )}
         </div>
 
