@@ -28,21 +28,23 @@ Deno.serve(async (req) => {
 
     const result = await base44.integrations.Core.InvokeLLM({
       model: 'gemini_3_flash',
-      prompt: `You are a pricing specialist for a South Texas equipment rental and sales company. Generate a pricing schedule for this RFQ.
+      prompt: `You are a pricing specialist for a South Texas equipment rental/sales company. Read this RFQ and generate a detailed line-item pricing schedule.
 
-RFQ TEXT (first 4000 chars):
-${docText.slice(0, 4000)}
+RFQ TEXT:
+${docText.slice(0, 5000)}
 
-EXTRACTED REQUIREMENTS:
-${allRequirements.slice(0, 2000)}
+REQUIREMENTS EXTRACTED:
+${allRequirements.slice(0, 1500)}
 
-Rules:
-- Identify every piece of equipment or service requested.
-- Price at realistic South Texas market rates (purchase price if buying, rental rate if renting).
-- Every unitPrice MUST be > 0.
-- Include delivery/setup fees if mentioned.
+CRITICAL RULES:
+1. Generate AT LEAST 5 line items. More is better.
+2. Every single unitPrice MUST be a positive number greater than zero. Example: 45000, 1200, 350.
+3. If buying equipment: use realistic purchase prices (e.g. excavator = $85000, generator = $12000).
+4. If renting: use daily/weekly rates (e.g. excavator/day = $1200, generator/day = $250).
+5. totalPrice = quantity * unitPrice. Never leave either as 0.
+6. Include ALL equipment, vehicles, and services mentioned.
 
-Return JSON: proposedLineItems array. Each item: { lineNumber, description, equipmentCategory, quantity, unit (each|day|week|month|lot), unitPrice, totalPrice, specs, notes }`,
+Return JSON with proposedLineItems array. Each item must have: lineNumber (string), description (string), equipmentCategory (string), quantity (number > 0), unit (string: each/day/week/month/lot), unitPrice (number > 0), totalPrice (number > 0), specs (string), notes (string)`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -55,12 +57,19 @@ Return JSON: proposedLineItems array. Each item: { lineNumber, description, equi
     const data = (result && typeof result === 'object' && result.proposedLineItems)
       ? result
       : (result?.data || {});
-    const items = (data.proposedLineItems || []).map((item, idx) => ({
-      ...item,
-      lineNumber: item.lineNumber || String(idx + 1),
-      unitPrice: item.unitPrice || 0,
-      totalPrice: item.totalPrice || ((item.quantity || 1) * (item.unitPrice || 0)),
-    }));
+    const items = (data.proposedLineItems || []).map((item, idx) => {
+      const qty = parseFloat(item.quantity) || 1;
+      const unitPrice = parseFloat(item.unitPrice) || parseFloat(item.unit_price) || 0;
+      const totalPrice = parseFloat(item.totalPrice) || parseFloat(item.total_price) || (qty * unitPrice);
+      console.log(`  Item ${idx+1}: "${item.description}" qty=${qty} unitPrice=${unitPrice} total=${totalPrice}`);
+      return {
+        ...item,
+        lineNumber: item.lineNumber || String(idx + 1),
+        quantity: qty,
+        unitPrice,
+        totalPrice,
+      };
+    });
     const totalValue = items.reduce((s, i) => s + (i.totalPrice || 0), 0);
     console.log('Step 3 complete. Line items:', items.length, '| Total: $', totalValue);
 
