@@ -193,10 +193,35 @@ function AssignDeliveryPanel({ rental, users, deliveries, currentUser, onAssigne
   );
 }
 
-function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onClose, onAssigned }) {
+function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onClose, onAssigned, onStatusChange }) {
   const [showAssign, setShowAssign] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
   if (!rental) return null;
   const color = STATUS_COLORS[rental.status] || STATUS_COLORS.quote;
+
+  const STATUS_TRANSITIONS = {
+    quote:       [{ value: 'reservation', label: 'Mark Reserved' }, { value: 'contract', label: 'Mark Contract' }],
+    reservation: [{ value: 'contract', label: 'Mark Contract' }, { value: 'out', label: 'Mark Out' }],
+    contract:    [{ value: 'out', label: 'Mark Out' }, { value: 'reservation', label: 'Back to Reserved' }],
+    out:         [{ value: 'returned', label: 'Mark Returned' }],
+    returned:    [{ value: 'completed', label: 'Mark Completed' }],
+  };
+
+  const transitions = STATUS_TRANSITIONS[rental.status] || [];
+
+  const handleStatusChange = async (newStatus) => {
+    if (!confirm(`Change status to "${newStatus}"?`)) return;
+    setChangingStatus(true);
+    try {
+      await base44.entities.Rental.update(rental.id, { status: newStatus });
+      onStatusChange?.({ ...rental, status: newStatus });
+      onClose();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setChangingStatus(false);
+    }
+  };
   const delivery = deliveries?.find(d => d.rentalId === rental.id);
   const needsDelivery = rental.deliveryMethod === 'company_delivery';
 
@@ -260,10 +285,20 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
               Driver confirmed {format(parseISO(delivery.receivedAt), 'MM/dd HH:mm')}
             </div>
           )}
-          <div className="mt-2">
-            <span className={`inline-block px-2 py-0.5 rounded-full text-white font-medium ${color.bg}`}>
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <span className={`inline-block px-2 py-0.5 rounded-full text-white font-medium text-xs ${color.bg}`}>
               {color.label}
             </span>
+            {isManager && transitions.map(t => (
+              <button
+                key={t.value}
+                onClick={() => handleStatusChange(t.value)}
+                disabled={changingStatus}
+                className="text-[11px] px-2 py-0.5 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
+              >
+                {changingStatus ? '...' : t.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -541,6 +576,7 @@ export default function EquipmentAvailabilityCalendar({
           isManager={isManager}
           onClose={() => { setSelectedRental(null); setTooltipEqId(null); }}
           onAssigned={(delivery) => { onDeliveryAssigned?.(delivery); }}
+          onStatusChange={() => { setSelectedRental(null); setTooltipEqId(null); onDeliveryAssigned?.(); }}
         />
       )}
     </div>
