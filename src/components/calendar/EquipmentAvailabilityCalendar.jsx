@@ -336,7 +336,11 @@ export default function EquipmentAvailabilityCalendar({
 }) {
   const [currentDate, setCurrentDate] = useState(() => {
     if (focusDate) {
-      try { return parseISO(focusDate); } catch { return new Date(); }
+      try {
+        const d = parseISO(focusDate);
+        if (isNaN(d.getTime())) return new Date();
+        return d;
+      } catch { return new Date(); }
     }
     return new Date();
   });
@@ -348,7 +352,7 @@ export default function EquipmentAvailabilityCalendar({
   // Auto-highlight the rental coming from DailyOps
   useEffect(() => {
     if (focusRentalId && rentals.length > 0) {
-      const rental = rentals.find(r => r.id === focusRentalId);
+      const rental = rentals.find(r => r && r.id === focusRentalId);
       if (rental) {
         setSelectedRental(rental);
         setTooltipEqId(rental.equipmentId + (rental.startDate || ''));
