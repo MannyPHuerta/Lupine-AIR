@@ -94,11 +94,13 @@ export default function DriverDashboard() {
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const todaysDeliveries = deliveries.filter(d => d.scheduledDate === today);
-  const upcomingDeliveries = deliveries.filter(d => d.scheduledDate > today);
+  const activeStatuses = ['scheduled', 'departed', 'arrived', 'setup_complete', 'signed'];
+  const todaysDeliveries = deliveries.filter(d => d.scheduledDate === today && activeStatuses.includes(d.status));
+  const overdueDeliveries = deliveries.filter(d => d.scheduledDate < today && activeStatuses.includes(d.status));
+  const upcomingDeliveries = deliveries.filter(d => d.scheduledDate > today && activeStatuses.includes(d.status));
   const completedDeliveries = deliveries.filter(d => d.status === 'completed');
   const todaysRecoveries = recoveries.filter(r => r.scheduledDate === today && r.status !== 'completed');
-  const upcomingRecoveries = recoveries.filter(r => r.scheduledDate > today);
+  const upcomingRecoveries = recoveries.filter(r => r.scheduledDate > today && r.status !== 'completed');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,12 +115,29 @@ export default function DriverDashboard() {
           </div>
           <div className="text-indigo-300 text-xs mt-1">{driver?.full_name} • {driver?.email}</div>
           <div className="mt-2 text-sm text-indigo-200">
-            {todaysDeliveries.length} deliveries · {todaysRecoveries.length} recoveries today
+            {todaysDeliveries.length + overdueDeliveries.length} deliveries · {todaysRecoveries.length} recoveries today
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Overdue / Past-scheduled Deliveries */}
+        {overdueDeliveries.length > 0 && (
+          <section>
+            <h2 className="text-lg font-bold text-red-700 mb-4 flex items-center gap-2">⚠️ Pending (Past Scheduled Date)</h2>
+            <div className="space-y-3">
+              {overdueDeliveries.map(d => (
+                <DeliveryCard key={d.id} delivery={d}
+                  onSelect={() => navigate(`/delivery/${d.id}`)}
+                  onMarkReceived={handleMarkReceived}
+                  markingReceived={markingReceived}
+                  currentDriver={driver}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Today's Deliveries */}
         {todaysDeliveries.length > 0 && (
           <section>
@@ -193,7 +212,7 @@ export default function DriverDashboard() {
           </section>
         )}
 
-        {todaysDeliveries.length === 0 && upcomingDeliveries.length === 0 && todaysRecoveries.length === 0 && upcomingRecoveries.length === 0 && (
+        {todaysDeliveries.length === 0 && overdueDeliveries.length === 0 && upcomingDeliveries.length === 0 && todaysRecoveries.length === 0 && upcomingRecoveries.length === 0 && (
           <div className="text-center text-gray-500 py-12">
             <div className="text-lg font-medium">No assignments for today</div>
           </div>
