@@ -506,61 +506,36 @@ function PrintPreviewModal({ filterDate, driver, deliveries, recoveries, onClose
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold">×</button>
         </div>
         
-        <div className="p-6" style={{ fontSize: '11pt', fontFamily: 'monospace' }}>
-          <div className="mb-4 border-b pb-3">
-            <div className="font-bold text-base">DRIVER MANIFEST — {format(parseISO(filterDate), 'MMM d, yyyy')}</div>
-            <div className="text-sm">Driver: {driver?.full_name}</div>
-          </div>
+        <div className="p-4" style={{ fontSize: '10pt', fontFamily: 'monospace', lineHeight: '1.3' }}>
+          <div className="mb-2 font-bold">DRIVER MANIFEST — {format(parseISO(filterDate), 'MMM d, yyyy')} — {driver?.full_name}</div>
 
           {deliveries.length > 0 && (
-            <div className="mb-6">
-              <div className="font-bold mb-2 underline">DELIVERIES ({deliveries.length})</div>
-              <table className="w-full text-xs border-collapse">
-                <tbody>
-                  {deliveries.map((d, idx) => (
-                    <tr key={d.id} className="border-b">
-                      <td className="p-2 font-bold align-top w-8">{idx + 1}</td>
-                      <td className="p-2 align-top">
-                        <div className="font-bold">{d.customerName}</div>
-                        <div>{d.customerAddress}</div>
-                        <div>{d.customerCity}, {d.customerState} {d.customerZip}</div>
-                        {d.customerPhone && <div>Phone: {d.customerPhone}</div>}
-                        <div className="mt-1 font-bold">Equipment:</div>
-                        {d.items?.map((item, i) => (
-                          <div key={i} className="ml-2">{item.quantity}x {item.equipmentName}</div>
-                        ))}
-                        {d.notes && <div className="mt-1 italic text-gray-700">Notes: {d.notes}</div>}
-                      </td>
-                      <td className="p-2 text-right align-top whitespace-nowrap">{d.scheduledTime || d.scheduledDate}</td>
-                    </tr>
+            <div className="mb-4">
+              <div className="font-bold mb-1">DELIVERIES</div>
+              {deliveries.map((d, idx) => (
+                <div key={d.id} className="mb-3 border-l-2 border-gray-300 pl-2">
+                  <div className="font-bold">{idx + 1}. {d.customerName}, {d.customerAddress}, {d.customerCity}, {d.customerState} {d.customerZip}.  {d.customerPhone || ''}</div>
+                  <div>{d.notes ? 'Contact ' + (d.notes.split(',')[0] || d.customerName) + ', ' : ''}Time needed: {d.scheduledTime || d.scheduledDate}</div>
+                  {d.items?.map((item, i) => (
+                    <div key={i}>{item.quantity > 1 ? item.quantity + 'x ' : ''}{item.equipmentName}</div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ))}
             </div>
           )}
 
           {recoveries.length > 0 && (
-            <div className="mb-6">
-              <div className="font-bold mb-2 underline">RECOVERIES ({recoveries.length})</div>
-              <table className="w-full text-xs border-collapse">
-                <tbody>
-                  {recoveries.map((r, idx) => (
-                    <tr key={r.id} className="border-b">
-                      <td className="p-2 font-bold align-top w-8">{deliveries.length + idx + 1}</td>
-                      <td className="p-2 align-top">
-                        <div className="font-bold">{r.customerName}</div>
-                        {r.customerPhone && <div>Phone: {r.customerPhone}</div>}
-                        <div className="mt-1 font-bold">Items to Recover:</div>
-                        {r.items?.map((item, i) => (
-                          <div key={i} className="ml-2">{item.quantity}x {item.equipmentName}</div>
-                        ))}
-                        {r.notes && <div className="mt-1 italic text-gray-700">Notes: {r.notes}</div>}
-                      </td>
-                      <td className="p-2 text-right align-top whitespace-nowrap">{r.scheduledDate}</td>
-                    </tr>
+            <div>
+              <div className="font-bold mb-1">RECOVERIES</div>
+              {recoveries.map((r, idx) => (
+                <div key={r.id} className="mb-3 border-l-2 border-gray-300 pl-2">
+                  <div className="font-bold">{deliveries.length + idx + 1}. {r.customerName}.  {r.customerPhone || ''}</div>
+                  {r.notes && <div>Notes: {r.notes}</div>}
+                  {r.items?.map((item, i) => (
+                    <div key={i}>{item.quantity > 1 ? item.quantity + 'x ' : ''}{item.equipmentName}</div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ))}
             </div>
           )}
 
