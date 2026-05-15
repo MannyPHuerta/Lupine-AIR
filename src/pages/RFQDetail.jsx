@@ -332,7 +332,11 @@ export default function RFQDetail() {
             <Button onClick={handleSave} disabled={saving} size="sm" variant="outline" className="border-green-600 text-white hover:bg-green-800">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             </Button>
-            <Button onClick={() => setShowPrint(true)} size="sm" variant="outline" className="border-green-600 text-white hover:bg-green-800">
+            <Button onClick={async () => {
+              setShowPrint(true);
+              // Trigger print dialog after modal opens (slight delay for PDF generation)
+              setTimeout(() => window.print(), 500);
+            }} size="sm" variant="outline" className="border-green-600 text-white hover:bg-green-800">
               <Printer className="w-4 h-4" />
             </Button>
             {!isNew && rfq.contactEmail && (
