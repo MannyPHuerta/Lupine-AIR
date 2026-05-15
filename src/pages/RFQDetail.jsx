@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Upload, Wand2, Save, Printer, Send, Loader2, Trash2, X, Eye, Pencil, Copy } from 'lucide-react';
+import { ArrowLeft, Upload, Wand2, Save, Printer, Send, Loader2, Trash2, X, Eye, Pencil, Copy, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,7 +32,7 @@ export default function RFQDetail() {
   const [rfq, setRfq] = useState(BLANK_RFQ);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [stepRunning, setStepRunning] = useState(null); // null | 1 | 2 | 3 | 4
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('intake');
   const [showPrint, setShowPrint] = useState(false);
@@ -68,64 +68,102 @@ export default function RFQDetail() {
     setUploading(false);
   };
 
-  const handleAnalyze = async () => {
-    if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please upload a file or paste RFQ text first.'); return; }
-
-    // Ensure company settings are loaded
+  const getCompanyInfo = async () => {
     let settings = companySettings;
     if (!settings) {
       const results = await base44.entities.CompanySettings.list();
       settings = results[0] || null;
       if (settings) setCompanySettings(settings);
     }
+    return settings ? {
+      name: settings.companyName,
+      address: settings.address,
+      phone: settings.phone,
+      email: settings.email,
+      website: settings.website,
+      licenseNumber: settings.licenseNumber,
+      insuranceInfo: settings.insuranceInfo,
+    } : null;
+  };
 
-    setAnalyzing(true);
+  const ensureSaved = async () => {
+    if (isNew) {
+      const created = await base44.entities.RFQRecord.create({ ...rfq, status: 'analyzing' });
+      setRfq(prev => ({ ...prev, id: created.id, status: 'analyzing' }));
+      navigate(`/rfq/${created.id}`, { replace: true });
+      return created.id;
+    }
+    return id;
+  };
+
+  const reloadRfq = async (recordId) => {
+    const all = await base44.entities.RFQRecord.list('-created_date', 500);
+    const found = all.find(r => r.id === recordId);
+    if (found) setRfq(found);
+  };
+
+  const handleStep1 = async () => {
+    if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please upload a file or paste RFQ text first.'); return; }
+    const companyInfo = await getCompanyInfo();
+    setStepRunning(1);
     try {
-      // Step 1: Save the record first to get an ID
-      let recordId = id;
-      if (isNew) {
-        const created = await base44.entities.RFQRecord.create({ ...rfq, status: 'analyzing' });
-        recordId = created.id;
-        setRfq(prev => ({ ...prev, id: recordId, status: 'analyzing' }));
-        navigate(`/rfq/${recordId}`, { replace: true });
-      } else {
-        update('status', 'analyzing');
-        await base44.entities.RFQRecord.update(recordId, { status: 'analyzing' });
-      }
-
-      // Step 2: Run analysis synchronously — function returns when complete
-      const result = await base44.functions.invoke('analyzeRFQ', {
+      const recordId = await ensureSaved();
+      const result = await base44.functions.invoke('rfqStep1Analyze', {
         rfqText: rfq.rawRfqText || null,
         fileUrl: rfq.uploadedFileUrl || null,
-        issuingOrg: rfq.issuingOrg || null,
         rfqId: recordId,
-        companyInfo: settings ? {
-          name: settings.companyName,
-          address: settings.address,
-          phone: settings.phone,
-          email: settings.email,
-          website: settings.website,
-          licenseNumber: settings.licenseNumber,
-          insuranceInfo: settings.insuranceInfo,
-        } : null,
+        companyInfo,
       });
-
-      if (result.data?.error) {
-        throw new Error(result.data.error);
-      }
-
-      // Step 3: Reload the record to get all AI-filled fields
-      const results = await base44.entities.RFQRecord.filter({ id: recordId });
-      if (results[0]) {
-        setRfq(results[0]);
-      }
-      setActiveTab('compliance');
-
+      if (result.data?.error) throw new Error(result.data.error);
+      await reloadRfq(recordId);
+      setActiveTab('analysis');
     } catch (err) {
-      alert('Analysis failed: ' + err.message);
-      update('status', 'received');
+      alert('Step 1 failed: ' + err.message);
     } finally {
-      setAnalyzing(false);
+      setStepRunning(null);
+    }
+  };
+
+  const handleStep2 = async () => {
+    setStepRunning(2);
+    try {
+      const result = await base44.functions.invoke('rfqStep2Compliance', { rfqId: id });
+      if (result.data?.error) throw new Error(result.data.error);
+      await reloadRfq(id);
+      setActiveTab('compliance');
+    } catch (err) {
+      alert('Step 2 failed: ' + err.message);
+    } finally {
+      setStepRunning(null);
+    }
+  };
+
+  const handleStep3 = async () => {
+    setStepRunning(3);
+    try {
+      const result = await base44.functions.invoke('rfqStep3LineItems', { rfqId: id });
+      if (result.data?.error) throw new Error(result.data.error);
+      await reloadRfq(id);
+      setActiveTab('lineitems');
+    } catch (err) {
+      alert('Step 3 failed: ' + err.message);
+    } finally {
+      setStepRunning(null);
+    }
+  };
+
+  const handleStep4 = async () => {
+    const companyInfo = await getCompanyInfo();
+    setStepRunning(4);
+    try {
+      const result = await base44.functions.invoke('rfqStep4Response', { rfqId: id, companyInfo });
+      if (result.data?.error) throw new Error(result.data.error);
+      await reloadRfq(id);
+      setActiveTab('response');
+    } catch (err) {
+      alert('Step 4 failed: ' + err.message);
+    } finally {
+      setStepRunning(null);
     }
   };
 
@@ -190,13 +228,18 @@ export default function RFQDetail() {
     </div>
   );
 
+  const step1Done = !!rfq.aiAnalysisSummary;
+  const step2Done = (rfq.complianceMatrix?.length || 0) > 0;
+  const step3Done = (rfq.proposedLineItems?.length || 0) > 0;
+  const step4Done = !!rfq.responseNarrative;
+
   const tabs = [
-    { id: 'intake', label: 'Intake' },
-    { id: 'analysis', label: 'AI Analysis', badge: rfq.aiAnalysisSummary ? '✓' : null },
-    { id: 'compliance', label: 'Compliance Matrix', badge: rfq.complianceMatrix?.length || null },
-    { id: 'lineitems', label: 'Line Items', badge: rfq.proposedLineItems?.length || null },
-    { id: 'response', label: 'Response Draft' },
-    { id: 'outcome', label: 'Outcome', badge: rfq.status === 'won' ? '🏆' : rfq.status === 'lost' ? '✗' : null },
+    { id: 'intake', label: '1. Intake' },
+    { id: 'analysis', label: '2. Analysis', badge: step1Done ? '✓' : null },
+    { id: 'compliance', label: '3. Compliance', badge: step2Done ? rfq.complianceMatrix.length : null },
+    { id: 'lineitems', label: '4. Line Items', badge: step3Done ? rfq.proposedLineItems.length : null },
+    { id: 'response', label: '5. Response', badge: step4Done ? '✓' : null },
+    { id: 'outcome', label: '6. Outcome', badge: rfq.status === 'won' ? '🏆' : rfq.status === 'lost' ? '✗' : null },
   ];
 
   const handleTabChange = async (tabId) => {
@@ -304,25 +347,30 @@ export default function RFQDetail() {
               </div>
 
               <Button
-                onClick={handleAnalyze}
-                disabled={analyzing || (!rfq.rawRfqText && !rfq.uploadedFileUrl)}
+                onClick={handleStep1}
+                disabled={stepRunning !== null || (!rfq.rawRfqText && !rfq.uploadedFileUrl)}
                 className="w-full bg-green-700 hover:bg-green-800 text-white text-base py-5"
               >
-                {analyzing ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing RFQ — extracting all fields, building compliance matrix...</>
+                {stepRunning === 1 ? (
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing RFQ — extracting fields &amp; writing AI summary...</>
                 ) : (
-                  <><Wand2 className="w-5 h-5 mr-2" /> Analyze with AI &amp; Auto-Fill All Fields</>
+                  <><Wand2 className="w-5 h-5 mr-2" /> Step 1: Analyze &amp; Extract Metadata</>
                 )}
               </Button>
-              {analyzing && (
+              {stepRunning === 1 && (
                 <p className="text-xs text-gray-500 text-center">
-                  Extracting org name, RFQ number, due dates, contacts, requirements, compliance matrix, line items, and drafting response...
+                  Extracting org name, RFQ number, due dates, contacts, and writing strategic analysis summary (~15–20 seconds)...
+                </p>
+              )}
+              {step1Done && stepRunning === null && (
+                <p className="text-xs text-green-600 text-center font-medium">
+                  ✓ Analysis complete — review on the Analysis tab, then proceed to Step 2.
                 </p>
               )}
             </div>
 
             {/* STEP 2: Review / Edit extracted fields — always visible for corrections */}
-            <div className={`space-y-4 transition-opacity ${analyzing ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`space-y-4 transition-opacity ${stepRunning === 1 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
               <div className="flex items-center gap-2 px-1">
                 <span className="bg-gray-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">2</span>
                 <span className="font-semibold text-gray-700 text-sm">Review &amp; Correct Extracted Fields</span>
@@ -381,7 +429,7 @@ export default function RFQDetail() {
             {!rfq.aiAnalysisSummary ? (
               <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
                 <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <div>Run AI analysis on the Intake tab first</div>
+                <div>Complete Step 1 on the Intake tab first.</div>
               </div>
             ) : (
               <>
@@ -399,6 +447,14 @@ export default function RFQDetail() {
                     <Input value={rfq.suggestedFileName} onChange={e => update('suggestedFileName', e.target.value)} className="font-mono text-sm" />
                   </Section>
                 )}
+                <StepCTA
+                  label="Step 2: Build Compliance Matrix"
+                  description="AI will extract every requirement and map our compliance status. Review the analysis above first, make any corrections, then click to continue."
+                  done={step2Done}
+                  doneLabel={`Compliance matrix built (${rfq.complianceMatrix?.length} rows) — go to Compliance tab to review.`}
+                  running={stepRunning === 2}
+                  onClick={handleStep2}
+                />
               </>
             )}
           </div>
@@ -406,23 +462,61 @@ export default function RFQDetail() {
 
         {/* COMPLIANCE MATRIX TAB */}
         {activeTab === 'compliance' && (
-          <RFQComplianceMatrix
-            matrix={rfq.complianceMatrix}
-            onChange={m => update('complianceMatrix', m)}
-          />
+          <div className="space-y-4">
+            {!step2Done ? (
+              <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
+                <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <div>Complete Step 2 on the Analysis tab first.</div>
+              </div>
+            ) : (
+              <>
+                <RFQComplianceMatrix
+                  matrix={rfq.complianceMatrix}
+                  onChange={m => update('complianceMatrix', m)}
+                />
+                <StepCTA
+                  label="Step 3: Generate Pricing / Line Items"
+                  description="AI will generate a complete pricing schedule based on the requirements above. Review the compliance matrix, make any corrections, then click to continue."
+                  done={step3Done}
+                  doneLabel={`${rfq.proposedLineItems?.length} line items generated (Est. $${(rfq.estimatedTotalValue||0).toLocaleString()}) — go to Line Items tab to review.`}
+                  running={stepRunning === 3}
+                  onClick={handleStep3}
+                />
+              </>
+            )}
+          </div>
         )}
 
         {/* LINE ITEMS TAB */}
         {activeTab === 'lineitems' && (
-          <RFQLineItems
-            items={rfq.proposedLineItems}
-            onChange={items => {
-              const total = items.reduce((sum, i) => sum + (i.totalPrice || 0), 0);
-              update('proposedLineItems', items);
-              update('estimatedTotalValue', total);
-            }}
-            totalValue={rfq.estimatedTotalValue}
-          />
+          <div className="space-y-4">
+            {!step3Done ? (
+              <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
+                <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <div>Complete Step 3 on the Compliance tab first.</div>
+              </div>
+            ) : (
+              <>
+                <RFQLineItems
+                  items={rfq.proposedLineItems}
+                  onChange={items => {
+                    const total = items.reduce((sum, i) => sum + (i.totalPrice || 0), 0);
+                    update('proposedLineItems', items);
+                    update('estimatedTotalValue', total);
+                  }}
+                  totalValue={rfq.estimatedTotalValue}
+                />
+                <StepCTA
+                  label="Step 4: Draft Response Narrative"
+                  description="AI will write the complete formal bid response document using your pricing above. Review and adjust the line items first, then click to draft."
+                  done={step4Done}
+                  doneLabel="Response draft ready — go to the Response tab to review and edit."
+                  running={stepRunning === 4}
+                  onClick={handleStep4}
+                />
+              </>
+            )}
+          </div>
         )}
 
         {/* RESPONSE DRAFT TAB */}
@@ -587,7 +681,7 @@ function ResponseDraftTab({ value, onChange }) {
     return (
       <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
         <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-        <div>Run AI analysis on the Intake tab first to generate the response draft.</div>
+        <div>Complete Steps 1–3, then click "Draft Response Narrative" on the Line Items tab.</div>
       </div>
     );
   }
@@ -633,6 +727,44 @@ function ResponseDraftTab({ value, onChange }) {
           <ReactMarkdown>{value}</ReactMarkdown>
         </div>
       )}
+    </div>
+  );
+}
+
+function StepCTA({ label, description, done, doneLabel, running, onClick }) {
+  return (
+    <div className={`rounded-xl border-2 p-5 ${done ? 'border-green-300 bg-green-50' : 'border-blue-200 bg-blue-50'}`}>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5">
+          {done
+            ? <CheckCircle2 className="w-5 h-5 text-green-600" />
+            : <Circle className="w-5 h-5 text-blue-400" />
+          }
+        </div>
+        <div className="flex-1">
+          {done ? (
+            <div className="text-sm font-semibold text-green-700">{doneLabel}</div>
+          ) : (
+            <>
+              <div className="text-sm font-semibold text-gray-800 mb-1">{label}</div>
+              <div className="text-xs text-gray-500 mb-3">{description}</div>
+              <Button
+                onClick={onClick}
+                disabled={running}
+                className="bg-blue-700 hover:bg-blue-800 text-white gap-2"
+              >
+                {running
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Running AI — please wait...</>
+                  : <><Wand2 className="w-4 h-4" /> {label} <ChevronRight className="w-4 h-4" /></>
+                }
+              </Button>
+              {running && (
+                <p className="text-xs text-blue-600 mt-2">This typically takes 15–30 seconds...</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
