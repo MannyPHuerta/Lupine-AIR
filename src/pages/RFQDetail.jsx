@@ -37,6 +37,8 @@ export default function RFQDetail() {
   const [activeTab, setActiveTab] = useState('intake');
   const [showPrint, setShowPrint] = useState(false);
   const [companySettings, setCompanySettings] = useState(null);
+  // Track the live record ID separately so steps 2-4 always have it even after ensureSaved navigates
+  const [recordId, setRecordId] = useState(isNew ? null : id);
 
   useEffect(() => {
     // Load company settings for use in AI prompt
@@ -48,6 +50,7 @@ export default function RFQDetail() {
   useEffect(() => {
     if (!isNew) {
       setLoading(true);
+      setRecordId(id);
       base44.entities.RFQRecord.list('-created_date', 500).then(all => {
         const found = all.find(r => r.id === id);
         if (found) setRfq(found);
@@ -87,13 +90,14 @@ export default function RFQDetail() {
   };
 
   const ensureSaved = async () => {
-    if (isNew) {
+    if (!recordId) {
       const created = await base44.entities.RFQRecord.create({ ...rfq, status: 'analyzing' });
       setRfq(prev => ({ ...prev, id: created.id, status: 'analyzing' }));
+      setRecordId(created.id);
       navigate(`/rfq/${created.id}`, { replace: true });
       return created.id;
     }
-    return id;
+    return recordId;
   };
 
   const reloadRfq = async (recordId) => {
@@ -125,11 +129,12 @@ export default function RFQDetail() {
   };
 
   const handleStep2 = async () => {
+    const rid = await ensureSaved();
     setStepRunning(2);
     try {
-      const result = await base44.functions.invoke('rfqStep2Compliance', { rfqId: id });
+      const result = await base44.functions.invoke('rfqStep2Compliance', { rfqId: rid });
       if (result.data?.error) throw new Error(result.data.error);
-      await reloadRfq(id);
+      await reloadRfq(rid);
       setActiveTab('compliance');
     } catch (err) {
       alert('Step 2 failed: ' + err.message);
@@ -139,11 +144,12 @@ export default function RFQDetail() {
   };
 
   const handleStep3 = async () => {
+    const rid = await ensureSaved();
     setStepRunning(3);
     try {
-      const result = await base44.functions.invoke('rfqStep3LineItems', { rfqId: id });
+      const result = await base44.functions.invoke('rfqStep3LineItems', { rfqId: rid });
       if (result.data?.error) throw new Error(result.data.error);
-      await reloadRfq(id);
+      await reloadRfq(rid);
       setActiveTab('lineitems');
     } catch (err) {
       alert('Step 3 failed: ' + err.message);
@@ -154,11 +160,12 @@ export default function RFQDetail() {
 
   const handleStep4 = async () => {
     const companyInfo = await getCompanyInfo();
+    const rid = await ensureSaved();
     setStepRunning(4);
     try {
-      const result = await base44.functions.invoke('rfqStep4Response', { rfqId: id, companyInfo });
+      const result = await base44.functions.invoke('rfqStep4Response', { rfqId: rid, companyInfo });
       if (result.data?.error) throw new Error(result.data.error);
-      await reloadRfq(id);
+      await reloadRfq(rid);
       setActiveTab('response');
     } catch (err) {
       alert('Step 4 failed: ' + err.message);
@@ -216,10 +223,9 @@ export default function RFQDetail() {
     navigate('/rfq', { replace: true });
   };
 
-  const handleClearAnalysis = () => {
+  const handleClearAnalysis = async () => {
     if (!window.confirm('Clear all AI analysis, requirements, compliance matrix, and line items?')) return;
-    setRfq(prev => ({
-      ...prev,
+    const cleared = {
       aiAnalysisSummary: '',
       orgHistorySummary: '',
       suggestedResponseFormat: '',
@@ -230,7 +236,11 @@ export default function RFQDetail() {
       responseNarrative: '',
       suggestedFileName: '',
       status: 'received',
-    }));
+    };
+    setRfq(prev => ({ ...prev, ...cleared }));
+    if (recordId) {
+      await base44.entities.RFQRecord.update(recordId, cleared);
+    }
   };
 
   const handleClearFile = () => {
