@@ -561,6 +561,19 @@ export default function RFQDetail() {
         {/* LINE ITEMS TAB */}
         {activeTab === 'lineitems' && (
           <div className="space-y-4">
+            {step3Done && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleStep3}
+                  disabled={stepRunning !== null}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  {stepRunning === 3 ? <><Loader2 className="w-4 h-4 animate-spin" /> Re-running...</> : <><Wand2 className="w-4 h-4" /> Re-run Line Items</>}
+                </Button>
+              </div>
+            )}
             {step3Done ? (
               <RFQLineItems
                 items={rfq.proposedLineItems}
