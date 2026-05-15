@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     console.log('Step 4: Drafting response narrative...');
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const narrative = await base44.integrations.Core.InvokeLLM({
       model: 'claude_sonnet_4_6',
       prompt: `You are a senior government procurement writer. Write a complete, professional bid response for this RFQ.
 
@@ -70,28 +70,12 @@ Write a complete bid response in Markdown with these sections:
 10. Certifications & Signature Block
 
 Write minimum 900 words in formal government procurement language. Address the issuing organization by name throughout.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          responseNarrative: { type: 'string' }
-        }
-      }
     });
 
-    // InvokeLLM with response_json_schema returns the parsed object directly
-    // Handle: { responseNarrative: "..." } OR plain string fallback
-    let narrative = '';
-    if (result && typeof result === 'object' && result.responseNarrative) {
-      narrative = result.responseNarrative;
-    } else if (result && typeof result === 'object' && result.data?.responseNarrative) {
-      narrative = result.data.responseNarrative;
-    } else if (typeof result === 'string') {
-      narrative = result;
-    }
-    console.log('Step 4 complete. Narrative length:', narrative.length);
+    console.log('Step 4 complete. Narrative length:', typeof narrative === 'string' ? narrative.length : JSON.stringify(narrative)?.length);
 
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
-      responseNarrative: narrative,
+      responseNarrative: typeof narrative === 'string' ? narrative : (narrative?.responseNarrative || JSON.stringify(narrative)),
       status: 'draft',
     });
 
