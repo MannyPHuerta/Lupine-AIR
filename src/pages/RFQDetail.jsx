@@ -352,7 +352,7 @@ export default function RFQDetail() {
             <div className="bg-white rounded-lg border-2 border-green-200 p-5 space-y-4">
               <div className="flex items-center gap-2 border-b pb-2">
                 <span className="bg-green-700 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">1</span>
-                <span className="font-semibold text-gray-900">Upload or Paste RFQ Document</span>
+                <span className="font-semibold text-gray-900">Upload or Paste RFQ Document, then run Analysis</span>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -395,7 +395,7 @@ export default function RFQDetail() {
                   {stepRunning === 1 ? (
                     <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing...</>
                   ) : (
-                    <><Wand2 className="w-5 h-5 mr-2" /> Step 1: Analyze &amp; Extract</>
+                    <><Wand2 className="w-5 h-5 mr-2" /> Analyze &amp; Extract → Go to Analysis Tab</>
                   )}
                 </Button>
                 <Button
@@ -417,14 +417,13 @@ export default function RFQDetail() {
                 <p className="text-xs text-indigo-600 text-center">Running all 4 steps sequentially. This takes ~2 minutes. You'll land on the Response tab when done.</p>
               )}
               {step1Done && stepRunning === null && (
-                <p className="text-xs text-green-600 text-center font-medium">✓ Step 1 complete — review the Analysis tab, or continue to Step 2.</p>
+                <p className="text-xs text-green-600 text-center font-medium">✓ Analysis complete — review the Analysis tab (Tab 2), then run Compliance from there.</p>
               )}
             </div>
 
-            {/* STEP 2: Review / Edit extracted fields — always visible for corrections */}
+            {/* Review / Edit extracted fields — always visible for corrections */}
             <div className={`space-y-4 transition-opacity ${stepRunning === 1 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
               <div className="flex items-center gap-2 px-1">
-                <span className="bg-gray-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">2</span>
                 <span className="font-semibold text-gray-700 text-sm">Review &amp; Correct Extracted Fields</span>
                 {rfq.aiAnalysisSummary && (
                   <>
@@ -480,7 +479,7 @@ export default function RFQDetail() {
           <div className="space-y-4">
             {!rfq.aiAnalysisSummary && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700 flex items-center gap-2">
-                <Wand2 className="w-4 h-4 flex-shrink-0" /> Run Step 1 on the Intake tab to populate this analysis.
+                <Wand2 className="w-4 h-4 flex-shrink-0" /> Upload or paste an RFQ on the Intake tab (Tab 1) and click "Analyze &amp; Extract" to populate this.
               </div>
             )}
             <Section title="AI Analysis Summary">
@@ -498,10 +497,10 @@ export default function RFQDetail() {
               </Section>
             )}
             <StepCTA
-              label="Step 2: Build Compliance Matrix"
+              label="Step 3: Build Compliance Matrix"
               description="AI will extract every requirement and map our compliance status. Review the analysis above first, make any corrections, then click to continue."
               done={step2Done}
-              doneLabel={`Compliance matrix built (${rfq.complianceMatrix?.length} rows) — go to Compliance tab to review.`}
+              doneLabel={`Compliance matrix built (${rfq.complianceMatrix?.length} rows) — go to Tab 3: Compliance to review.`}
               running={stepRunning === 2}
               disabled={!step1Done}
               onClick={handleStep2}
@@ -514,7 +513,7 @@ export default function RFQDetail() {
           <div className="space-y-4">
             {!step1Done && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700 flex items-center gap-2">
-                <Wand2 className="w-4 h-4 flex-shrink-0" /> Run Step 1 on the Intake tab first to populate this view.
+                <Wand2 className="w-4 h-4 flex-shrink-0" /> Complete Tab 1 (Intake) and Tab 2 (Analysis) first to populate this view.
               </div>
             )}
             {step2Done ? (
@@ -524,14 +523,14 @@ export default function RFQDetail() {
               />
             ) : (
               <div className="bg-white rounded-lg border p-6 text-center text-gray-400 text-sm">
-                Compliance matrix not yet generated. Run Step 2 from the Analysis tab.
+                Compliance matrix not yet generated. Go to Tab 2 (Analysis) and run "Step 3: Build Compliance Matrix".
               </div>
             )}
             <StepCTA
-              label="Step 3: Generate Pricing / Line Items"
+              label="Step 4: Generate Pricing / Line Items"
               description="AI will generate a complete pricing schedule based on the requirements. Review the compliance matrix first, make any corrections, then click to continue."
               done={step3Done}
-              doneLabel={`${rfq.proposedLineItems?.length} line items generated (Est. $${(rfq.estimatedTotalValue||0).toLocaleString()}) — go to Line Items tab to review.`}
+              doneLabel={`${rfq.proposedLineItems?.length} line items generated (Est. $${(rfq.estimatedTotalValue||0).toLocaleString()}) — go to Tab 4: Line Items to review.`}
               running={stepRunning === 3}
               disabled={!step2Done}
               onClick={handleStep3}
@@ -554,14 +553,14 @@ export default function RFQDetail() {
               />
             ) : (
               <div className="bg-white rounded-lg border p-6 text-center text-gray-400 text-sm">
-                Line items not yet generated. Run Step 3 from the Compliance tab.
+                Line items not yet generated. Go to Tab 3 (Compliance) and run "Step 4: Generate Pricing / Line Items".
               </div>
             )}
             <StepCTA
-              label="Step 4: Draft Response Narrative"
+              label="Step 5: Draft Response Narrative"
               description="AI will write the complete formal bid response document using your pricing above. Review and adjust line items first, then click to draft."
               done={step4Done}
-              doneLabel="Response draft ready — go to the Response tab to review and edit."
+              doneLabel="Response draft ready — go to Tab 5: Response to review and edit."
               running={stepRunning === 4}
               disabled={!step3Done}
               onClick={handleStep4}
