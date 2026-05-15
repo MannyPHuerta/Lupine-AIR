@@ -336,13 +336,19 @@ export default function CalendarPrintModal({ onClose, rentals, equipment, delive
     win.document.write(`<!DOCTYPE html><html><head>
       <title>Availability Calendar Print</title>
       <style>
+        * { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
         table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #e5e7eb; padding: 3px 6px; font-size: 10px; }
+        th, td { border: 1px solid #e5e7eb; padding: 3px 6px; font-size: 10px; color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         h1 { font-size: 16px; margin-bottom: 4px; }
         h2 { font-size: 13px; margin-bottom: 6px; }
+        div { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        span { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         @page { size: landscape; margin: 1cm; }
-        @media print { body { margin: 0; } }
+        @media print { 
+          body { margin: 0; } 
+          * { color-adjust: exact !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
       </style>
     </head><body>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border-bottom:2px solid #111;padding-bottom:6px;">
