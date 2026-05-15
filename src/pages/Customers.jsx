@@ -20,7 +20,7 @@ export default function Customers() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.Customer.list('-created_date', 500),
+      base44.entities.Customer.list('-created_date', 25000),
       base44.entities.Rental.list('-created_date', 2000),
     ]).then(([c, r]) => {
       setCustomers(c);
@@ -31,7 +31,7 @@ export default function Customers() {
 
   const refresh = async () => {
     const [c, r] = await Promise.all([
-      base44.entities.Customer.list('-created_date', 500),
+      base44.entities.Customer.list('-created_date', 25000),
       base44.entities.Rental.list('-created_date', 2000),
     ]);
     setCustomers(c);
