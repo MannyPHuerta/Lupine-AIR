@@ -15,10 +15,20 @@ if (typeof document !== 'undefined') {
   const style = document.createElement('style');
   style.innerHTML = `
     @media print {
-      body { margin: 0; padding: 0; font-size: 12pt; }
-      .print-hidden { display: none !important; }
-      .print-container { max-width: 100% !important; padding: 0.5in !important; margin: 0 !important; }
-      .print-white { background: white !important; border: none !important; }
+      * { margin: 0; padding: 0; }
+      body, html { margin: 0; padding: 0; }
+      /* Hide layout sidebars */
+      [class*="sidebar"] { display: none !important; }
+      [class*="AppLayout"] { display: block !important; }
+      /* Hide all interactive elements */
+      button, [role="button"], .print-hidden { display: none !important; }
+      /* Clean content */
+      .min-h-screen { min-height: auto; }
+      .max-w-7xl { max-width: 100%; }
+      .px-4, .py-6 { padding: 0.5in; }
+      /* Show only response */
+      .bg-white { background: white; border: none; }
+      .rounded-lg, .border { border: none; border-radius: 0; }
     }
   `;
   document.head.appendChild(style);
