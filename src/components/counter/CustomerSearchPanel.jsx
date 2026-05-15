@@ -109,8 +109,24 @@ export default function CustomerSearchPanel({ searchTerm, customers, onSelect, s
     }
   };
 
-  // Phone capture + verification step
-  if (pendingCustomer && !showVerifyModal) {
+  // Always render modal on top if active
+  if (showVerifyModal && pendingCustomer) {
+    return (
+      <PhoneVerificationModal
+        customer={{ ...pendingCustomer, phone }}
+        currentUser={currentUser}
+        onVerified={handleVerified}
+        onFailed={handleVerificationFailed}
+        onClose={() => {
+          setShowVerifyModal(false);
+          setPendingCustomer(null);
+        }}
+      />
+    );
+  }
+
+  // Phone capture step (new customer from scan, no phone yet)
+  if (pendingCustomer) {
     return (
       <div className="space-y-4 py-2">
         <div className={`border rounded-lg p-3 text-xs ${
@@ -129,81 +145,41 @@ export default function CustomerSearchPanel({ searchTerm, customers, onSelect, s
           )}
         </div>
 
-        {/* Primary phone */}
         <div className="bg-white border rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
             <Phone className="w-4 h-4 text-indigo-600" />
             Primary Phone
             {verificationResult === 'verified' && <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" />}
           </div>
-
-          {verificationResult !== 'failed' ? (
-            <>
-              <Input
-                type="tel"
-                placeholder="(956) 555-0100"
-                value={phone}
-                onChange={e => { setPhone(e.target.value); setVerificationResult(null); }}
-                onKeyDown={e => e.key === 'Enter' && phone && handlePhoneEntered()}
-                className="text-sm"
-                autoFocus={!phone}
-              />
-              <button
-                onClick={handlePhoneEntered}
-                disabled={!phone}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded disabled:opacity-50 transition"
-              >
-                {phone ? 'Verify Phone →' : 'Enter phone to continue'}
-              </button>
-            </>
-          ) : (
-            <>
-              <Input
-                type="tel"
-                placeholder="Enter corrected number"
-                value={phone}
-                onChange={e => { setPhone(e.target.value); setVerificationResult(null); }}
-                onKeyDown={e => e.key === 'Enter' && phone && handlePhoneEntered()}
-                className="text-sm border-red-300 focus:ring-red-400"
-                autoFocus
-              />
-              <button
-                onClick={handlePhoneEntered}
-                disabled={!phone}
-                className="w-full py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded disabled:opacity-50 transition"
-              >
-                Retry Verification →
-              </button>
-            </>
-          )}
+          <Input
+            type="tel"
+            placeholder="(956) 555-0100"
+            value={phone}
+            onChange={e => { setPhone(e.target.value); setVerificationResult(null); }}
+            onKeyDown={e => e.key === 'Enter' && phone && handlePhoneEntered()}
+            className={`text-sm ${verificationResult === 'failed' ? 'border-red-300' : ''}`}
+            autoFocus
+          />
+          <button
+            onClick={handlePhoneEntered}
+            disabled={!phone}
+            className={`w-full py-2 text-white text-xs font-semibold rounded disabled:opacity-50 transition ${
+              verificationResult === 'failed' ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
+          >
+            {verificationResult === 'failed' ? 'Retry Verification →' : phone ? 'Verify Phone →' : 'Enter phone to continue'}
+          </button>
         </div>
 
-        {/* Secondary phone — shown after primary is entered (even before verification completes) */}
         {phone && (
           <div className="bg-white border rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
               <Phone className="w-4 h-4 text-gray-400" />
               Secondary Contact <span className="text-xs font-normal text-gray-400">(optional)</span>
             </div>
-            <Input
-              type="tel"
-              placeholder="Secondary phone number"
-              value={secondaryPhone}
-              onChange={e => setSecondaryPhone(e.target.value)}
-              className="text-sm"
-            />
-            <Input
-              placeholder="Contact name (e.g. Maria Gomez)"
-              value={secondaryPhoneName}
-              onChange={e => setSecondaryPhoneName(e.target.value)}
-              className="text-sm"
-            />
-            <Input
-              placeholder="Relationship (e.g. Spouse, Parent, Employer)"
-              value={secondaryPhoneRelation}
-              onChange={e => setSecondaryPhoneRelation(e.target.value)}
-              className="text-sm"
-            />
+            <Input type="tel" placeholder="Secondary phone number" value={secondaryPhone} onChange={e => setSecondaryPhone(e.target.value)} className="text-sm" />
+            <Input placeholder="Contact name (e.g. Maria Gomez)" value={secondaryPhoneName} onChange={e => setSecondaryPhoneName(e.target.value)} className="text-sm" />
+            <Input placeholder="Relationship (e.g. Spouse, Parent, Employer)" value={secondaryPhoneRelation} onChange={e => setSecondaryPhoneRelation(e.target.value)} className="text-sm" />
           </div>
         )}
       </div>
@@ -237,64 +213,39 @@ export default function CustomerSearchPanel({ searchTerm, customers, onSelect, s
   }
 
   return (
-    <>
-      <div className="space-y-1">
-        {filtered.map(c => (
-          <button
-            key={c.id}
-            onClick={() => handleSelectExisting(c)}
-            className="w-full text-left p-3 border rounded hover:bg-indigo-50 hover:border-indigo-300 transition group"
-          >
-            <div className="flex items-start gap-2">
-              <div className="mt-1">
-                {c.accountType === 'business' ? (
-                  <Building2 className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <User className="w-4 h-4 text-gray-400" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900 group-hover:text-indigo-700 truncate">
-                  {c.fullName}
-                </div>
-                {c.companyName && (
-                  <div className="text-xs text-gray-600 truncate">{c.companyName}</div>
-                )}
-                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  {c.phone}
-                  {c.phoneVerified && <CheckCircle2 className="w-3 h-3 text-green-500" title="Phone verified" />}
-                  · {c.city || 'No city'}
-                </div>
-                {c.secondaryPhone && (
-                  <div className="text-xs text-gray-400">Alt: {c.secondaryPhone} {c.secondaryPhoneRelation ? `(${c.secondaryPhoneRelation})` : ''}</div>
-                )}
-              </div>
-              {(c.creditHold || c.blacklisted) && (
-                <AlertCircle className={`w-4 h-4 flex-shrink-0 ${c.blacklisted ? 'text-red-600' : 'text-orange-500'}`} />
+    <div className="space-y-1">
+      {filtered.map(c => (
+        <button
+          key={c.id}
+          onClick={() => handleSelectExisting(c)}
+          className="w-full text-left p-3 border rounded hover:bg-indigo-50 hover:border-indigo-300 transition group"
+        >
+          <div className="flex items-start gap-2">
+            <div className="mt-1">
+              {c.accountType === 'business' ? (
+                <Building2 className="w-4 h-4 text-gray-400" />
+              ) : (
+                <User className="w-4 h-4 text-gray-400" />
               )}
             </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Verification modal for existing customers */}
-      {showVerifyModal && pendingCustomer && (
-        <PhoneVerificationModal
-          customer={{ ...pendingCustomer, phone }}
-          currentUser={currentUser}
-          onVerified={() => {
-            setShowVerifyModal(false);
-            // For existing customers, just proceed directly
-            onSelect({ ...pendingCustomer, phone });
-            setPendingCustomer(null);
-          }}
-          onFailed={handleVerificationFailed}
-          onClose={() => {
-            setShowVerifyModal(false);
-            setPendingCustomer(null);
-          }}
-        />
-      )}
-    </>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 group-hover:text-indigo-700 truncate">{c.fullName}</div>
+              {c.companyName && <div className="text-xs text-gray-600 truncate">{c.companyName}</div>}
+              <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                {c.phone}
+                {c.phoneVerified && <CheckCircle2 className="w-3 h-3 text-green-500" title="Phone verified" />}
+                · {c.city || 'No city'}
+              </div>
+              {c.secondaryPhone && (
+                <div className="text-xs text-gray-400">Alt: {c.secondaryPhone} {c.secondaryPhoneRelation ? `(${c.secondaryPhoneRelation})` : ''}</div>
+              )}
+            </div>
+            {(c.creditHold || c.blacklisted) && (
+              <AlertCircle className={`w-4 h-4 flex-shrink-0 ${c.blacklisted ? 'text-red-600' : 'text-orange-500'}`} />
+            )}
+          </div>
+        </button>
+      ))}
+    </div>
   );
 }
