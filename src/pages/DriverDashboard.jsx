@@ -23,6 +23,7 @@ export default function DriverDashboard() {
 
   const [markingReceived, setMarkingReceived] = useState(null);
   const [sortBy, setSortBy] = useState('date'); // 'date' or 'status'
+  const [filterDate, setFilterDate] = useState('');
 
   const handleMarkReceived = async (delivery) => {
     setMarkingReceived(delivery.id);
@@ -105,6 +106,71 @@ export default function DriverDashboard() {
   const today = new Date().toISOString().split('T')[0];
   const activeStatuses = ['scheduled', 'departed', 'arrived', 'setup_complete', 'signed'];
 
+  // If filtering by date, show only that day's activities
+  if (filterDate) {
+    const filteredDeliveries = deliveries.filter(d => d.scheduledDate === filterDate);
+    const filteredRecoveries = recoveries.filter(r => r.scheduledDate === filterDate);
+    
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+          <div className="px-4 py-4 max-w-4xl mx-auto">
+            <div className="flex items-center justify-between">
+              <div className="text-lg font-bold">🚚 Driver Dashboard</div>
+              <button onClick={() => navigate('/driver-report')} className="p-2 rounded-lg hover:bg-indigo-800" title="Performance Report">
+                <FileBarChart className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="text-indigo-300 text-xs mt-1">{driver?.full_name} • {driver?.email}</div>
+            <div className="mt-2 text-sm text-indigo-200">
+              {format(parseISO(filterDate), 'MMMM d, yyyy')} — {filteredDeliveries.length} deliveries · {filteredRecoveries.length} recoveries
+            </div>
+            <button
+              onClick={() => setFilterDate('')}
+              className="mt-3 px-3 py-1 bg-indigo-800 hover:bg-indigo-700 rounded text-xs text-indigo-200 transition"
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+          {filteredDeliveries.length > 0 && (
+            <section>
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Deliveries</h2>
+              <div className="space-y-3">
+                {filteredDeliveries.map(d => (
+                  <DeliveryCard key={d.id} delivery={d}
+                    onSelect={() => navigate(`/delivery/${d.id}`)}
+                    onMarkReceived={handleMarkReceived}
+                    markingReceived={markingReceived}
+                    currentDriver={driver}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+          {filteredRecoveries.length > 0 && (
+            <section>
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-rose-600" /> Recoveries
+              </h2>
+              <div className="space-y-3">
+                {filteredRecoveries.map(r => (
+                  <RecoveryCard key={r.id} recovery={r} onSelect={() => navigate(`/recovery/${r.id}`)} />
+                ))}
+              </div>
+            </section>
+          )}
+          {filteredDeliveries.length === 0 && filteredRecoveries.length === 0 && (
+            <div className="text-center text-gray-500 py-12">
+              <div className="text-lg font-medium">No activities on {format(parseISO(filterDate), 'MMM d')}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // Sort deliveries by date or group by status
   const sortedDeliveries = [...deliveries].sort((a, b) => {
     if (sortBy === 'date') {
@@ -177,6 +243,15 @@ export default function DriverDashboard() {
               >
                 Status
               </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-indigo-300">Filter by date:</span>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="text-xs px-2 py-1 rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none"
+              />
             </div>
           </div>
         </div>
