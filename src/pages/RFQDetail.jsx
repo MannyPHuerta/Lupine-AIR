@@ -395,7 +395,7 @@ export default function RFQDetail() {
                   {stepRunning === 1 ? (
                     <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing...</>
                   ) : (
-                    <><Wand2 className="w-5 h-5 mr-2" /> Analyze &amp; Extract → Go to Analysis Tab</>
+                    <><Wand2 className="w-5 h-5 mr-2" /> Run Analysis → Review in Tab 2</>
                   )}
                 </Button>
                 <Button
