@@ -296,10 +296,10 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   // Trigger verification when a complete phone number is entered (10 digits)
   useEffect(() => {
     const digits = (customer.phone || '').replace(/\D/g, '');
-    if (digits.length === 10 && customer.phone !== lastVerifiedPhone && !showVerifyModal) {
+    if (digits.length === 10 && customer.phone !== lastVerifiedPhone) {
       setShowVerifyModal(true);
     }
-  }, [customer.phone]);
+  }, [customer.phone, lastVerifiedPhone]);
 
   const nudges = useMemo(
     () => history ? buildNudges(history.typicalItems, lines) : [],
