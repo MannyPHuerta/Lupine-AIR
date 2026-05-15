@@ -10,6 +10,20 @@ import RFQComplianceMatrix from '@/components/rfq/RFQComplianceMatrix';
 import RFQLineItems from '@/components/rfq/RFQLineItems';
 import RFQPrintExport from '@/components/rfq/RFQPrintExport';
 
+// Print stylesheet
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    @media print {
+      body { margin: 0; padding: 0; font-size: 12pt; }
+      .print-hidden { display: none !important; }
+      .print-container { max-width: 100% !important; padding: 0.5in !important; margin: 0 !important; }
+      .print-white { background: white !important; border: none !important; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
 
 const BLANK_RFQ = {
@@ -293,7 +307,7 @@ export default function RFQDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-green-900 text-white sticky top-0 z-10 shadow-lg print:hidden">
+      <div className="bg-green-900 text-white sticky top-0 z-10 shadow-lg print-hidden">
         <div className="px-4 py-3 flex items-center gap-3 max-w-7xl mx-auto">
           <button onClick={() => navigate('/rfq')} className="p-2 rounded-lg hover:bg-green-800">
             <ArrowLeft className="w-5 h-5" />
@@ -342,7 +356,7 @@ export default function RFQDetail() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 print:max-w-none print:p-0 print:m-0">
+      <div className="max-w-7xl mx-auto px-4 py-6 print-container">
 
         {/* INTAKE TAB */}
         {activeTab === 'intake' && (
@@ -605,7 +619,7 @@ export default function RFQDetail() {
         {activeTab === 'response' && (
           <div className="space-y-4">
             {rfq.responseNarrative && (
-              <div className="flex justify-end print:hidden">
+              <div className="flex justify-end print-hidden">
                 <Button
                   onClick={handleStep4}
                   disabled={stepRunning !== null}
@@ -785,9 +799,9 @@ function ResponseDraftTab({ value, onChange }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border print:bg-transparent print:border-0 print:rounded-none">
+    <div className="bg-white rounded-lg border print-white">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50 rounded-t-lg print:hidden">
+      <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50 rounded-t-lg print-hidden">
         <span className="text-sm font-semibold text-gray-700">Response Narrative / Cover Letter</span>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={handleCopy} className="gap-1 text-xs">
@@ -808,11 +822,11 @@ function ResponseDraftTab({ value, onChange }) {
         <textarea
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="w-full p-5 text-sm min-h-[600px] resize-y font-mono focus:outline-none rounded-b-lg print:p-0 print:min-h-0 print:rounded-none print:border-0"
+          className="w-full p-5 text-sm min-h-[600px] resize-y font-mono focus:outline-none rounded-b-lg"
           placeholder="Response narrative will appear here after analysis..."
         />
       ) : (
-        <div className="p-6 md:p-10 prose prose-sm max-w-none text-gray-900 min-h-[600px] print:p-0 print:min-h-0
+        <div className="p-6 md:p-10 prose prose-sm max-w-none text-gray-900 min-h-[600px]
           [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4
           [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-2
           [&_p]:mb-3 [&_p]:leading-relaxed
