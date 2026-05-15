@@ -426,12 +426,7 @@ export default function RFQDetail() {
               <div className="flex items-center gap-2 px-1">
                 <span className="font-semibold text-gray-700 text-sm">Review &amp; Correct Extracted Fields</span>
                 {rfq.aiAnalysisSummary && (
-                  <>
-                    <span className="text-xs text-green-600 font-medium">✓ AI-filled</span>
-                    <button onClick={handleClearAnalysis} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-0.5 ml-1">
-                      <X className="w-3 h-3" /> Clear analysis
-                    </button>
-                  </>
+                  <span className="text-xs text-green-600 font-medium">✓ AI-filled</span>
                 )}
               </div>
 
@@ -511,30 +506,33 @@ export default function RFQDetail() {
         {/* COMPLIANCE MATRIX TAB */}
         {activeTab === 'compliance' && (
           <div className="space-y-4">
-            {!step1Done && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700 flex items-center gap-2">
-                <Wand2 className="w-4 h-4 flex-shrink-0" /> Complete Tab 1 (Intake) and Tab 2 (Analysis) first to populate this view.
-              </div>
-            )}
-            {step2Done ? (
-              <RFQComplianceMatrix
-                matrix={rfq.complianceMatrix}
-                onChange={m => update('complianceMatrix', m)}
-              />
-            ) : (
-              <div className="bg-white rounded-lg border p-6 text-center text-gray-400 text-sm">
-                Compliance matrix not yet generated. Go to Tab 2 (Analysis) and run "Step 3: Build Compliance Matrix".
-              </div>
-            )}
             <StepCTA
-              label="Step 4: Generate Pricing / Line Items"
-              description="AI will generate a complete pricing schedule based on the requirements. Review the compliance matrix first, make any corrections, then click to continue."
-              done={step3Done}
-              doneLabel={`${rfq.proposedLineItems?.length} line items generated (Est. $${(rfq.estimatedTotalValue||0).toLocaleString()}) — go to Tab 4: Line Items to review.`}
-              running={stepRunning === 3}
-              disabled={!step2Done}
-              onClick={handleStep3}
+              label="Build Compliance Matrix"
+              description="AI will extract every requirement from the RFQ and map our compliance status."
+              done={step2Done}
+              doneLabel={`Compliance matrix built — ${rfq.complianceMatrix?.length} rows. Review and edit below, then generate Line Items.`}
+              running={stepRunning === 2}
+              disabled={!step1Done}
+              disabledMessage="Run Analysis on Tab 1 first."
+              onClick={handleStep2}
             />
+            {step2Done && (
+              <>
+                <RFQComplianceMatrix
+                  matrix={rfq.complianceMatrix}
+                  onChange={m => update('complianceMatrix', m)}
+                />
+                <StepCTA
+                  label="Generate Pricing / Line Items"
+                  description="AI will generate a complete pricing schedule based on the requirements above."
+                  done={step3Done}
+                  doneLabel={`${rfq.proposedLineItems?.length} line items generated (Est. $${(rfq.estimatedTotalValue||0).toLocaleString()}) — go to Tab 4: Line Items to review.`}
+                  running={stepRunning === 3}
+                  disabled={false}
+                  onClick={handleStep3}
+                />
+              </>
+            )}
           </div>
         )}
 
@@ -781,7 +779,7 @@ function ResponseDraftTab({ value, onChange }) {
   );
 }
 
-function StepCTA({ label, description, done, doneLabel, running, disabled, onClick }) {
+function StepCTA({ label, description, done, doneLabel, running, disabled, disabledMessage, onClick }) {
   return (
     <div className={`rounded-xl border-2 p-5 ${done ? 'border-green-300 bg-green-50' : disabled ? 'border-gray-200 bg-gray-50' : 'border-blue-200 bg-blue-50'}`}>
       <div className="flex items-start gap-3">
@@ -808,8 +806,7 @@ function StepCTA({ label, description, done, doneLabel, running, disabled, onCli
                   : <><Wand2 className="w-4 h-4" /> {label} <ChevronRight className="w-4 h-4" /></>
                 }
               </Button>
-              {disabled && <p className="text-xs text-gray-400 mt-2">Complete the previous step first to enable this.</p>}
-              {running && <p className="text-xs text-blue-600 mt-2">This typically takes 15–30 seconds...</p>}
+              {disabled && <p className="text-xs text-gray-400 mt-2">{disabledMessage || 'Complete the previous step first to enable this.'}</p>}
             </>
           )}
         </div>
