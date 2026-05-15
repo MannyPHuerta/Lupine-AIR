@@ -70,6 +70,7 @@ export default function AvailabilityManager() {
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
+  const [currentUser, setCurrentUser] = useState(null);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
   const [deliveryMatrices, setDeliveryMatrices] = useState({});
@@ -89,6 +90,7 @@ export default function AvailabilityManager() {
 
   // Fetch catalog and rental data
   useEffect(() => {
+    base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
     Promise.all([
       base44.entities.Equipment.list('name', 2000),
       base44.entities.Rental.list('-created_date', 1000),
@@ -736,6 +738,7 @@ export default function AvailabilityManager() {
         {/* Customer identity — SECOND: collect after availability confirmed */}
         <CustomerIdentity
           customer={customer}
+          currentUser={currentUser}
           onChange={(updated) => {
             setCustomer(updated);
             if (updated.loyaltyDiscountEnabled && updated.loyaltyDiscountPercent) {

@@ -5,6 +5,7 @@ import { formatPhoneUS } from '@/lib/phoneUtils';
 import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, Ban } from 'lucide-react';
 import { useDLScanner } from '@/hooks/useDLScanner';
 import { base44 } from '@/api/base44Client';
+import PhoneVerificationModal from '@/components/counter/PhoneVerificationModal';
 
 const BRANCHES = [
   '01 McAllen',
@@ -161,7 +162,7 @@ function SuggestionDropdown({ suggestions, onSelect, activeIndex }) {
 }
 
 /** Top card: customer identity fields (phone first, then name, email, branch) */
-export function CustomerIdentity({ customer, onChange, rentals = [], lines = [], onAddItems }) {
+export function CustomerIdentity({ customer, onChange, rentals = [], lines = [], onAddItems, currentUser }) {
   const set = (field, value) => onChange({ ...customer, [field]: value });
   const [autoFilled, setAutoFilled] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
@@ -171,6 +172,9 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   const [activeIndex, setActiveIndex] = useState(-1);
   const [dlScanFlash, setDlScanFlash] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [lastVerifiedPhone, setLastVerifiedPhone] = useState('');
   const phoneRef = useRef(null);
 
   // Load customer records once for lookup
@@ -289,6 +293,14 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
     if (!customer.name && !customer.phone) { setAutoFilled(false); setNudgeDismissed(false); setAdded(false); }
   }, [customer.name, customer.phone]);
 
+  // Trigger verification when a complete phone number is entered (10 digits)
+  useEffect(() => {
+    const digits = (customer.phone || '').replace(/\D/g, '');
+    if (digits.length === 10 && customer.phone !== lastVerifiedPhone && !showVerifyModal) {
+      setShowVerifyModal(true);
+    }
+  }, [customer.phone]);
+
   const nudges = useMemo(
     () => history ? buildNudges(history.typicalItems, lines) : [],
     [history, lines]
@@ -366,12 +378,19 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
 
         {/* Phone — required */}
         <div className="relative">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Phone *</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
+            Phone *
+            {phoneVerified && customer.phone === lastVerifiedPhone && (
+              <span className="flex items-center gap-1 text-green-600 font-normal text-xs">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+              </span>
+            )}
+          </label>
           <Input
             ref={phoneRef}
             placeholder="(956) 123-4567"
             value={customer.phone}
-            onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); }}
+            onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); setPhoneVerified(false); }}
             onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             onKeyDown={handleKeyDown}
@@ -442,7 +461,52 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             onChange={e => set('notes', e.target.value)}
           />
         </div>
+
+        {/* Secondary contact */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Secondary Phone</label>
+          <Input
+            type="tel"
+            placeholder="(956) 123-4567"
+            value={customer.secondaryPhone || ''}
+            onChange={e => set('secondaryPhone', e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Secondary Contact Name</label>
+          <Input
+            placeholder="e.g. Maria Gomez"
+            value={customer.secondaryPhoneName || ''}
+            onChange={e => set('secondaryPhoneName', e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Relationship</label>
+          <Input
+            placeholder="e.g. Spouse, Parent, Employer"
+            value={customer.secondaryPhoneRelation || ''}
+            onChange={e => set('secondaryPhoneRelation', e.target.value)}
+          />
+        </div>
       </div>
+
+      {/* Phone Verification Modal */}
+      {showVerifyModal && customer.phone && (
+        <PhoneVerificationModal
+          customer={{ id: customer.customerId || customer.id, fullName: customer.name, phone: customer.phone }}
+          currentUser={currentUser}
+          onVerified={() => {
+            setShowVerifyModal(false);
+            setPhoneVerified(true);
+            setLastVerifiedPhone(customer.phone);
+          }}
+          onFailed={({ override } = {}) => {
+            setShowVerifyModal(false);
+            if (!override) setPhoneVerified(false);
+          }}
+          onClose={() => setShowVerifyModal(false)}
+        />
+      )}
 
       {/* Conversational upsell prompt */}
       {nudges.length > 0 && !nudgeDismissed && (
