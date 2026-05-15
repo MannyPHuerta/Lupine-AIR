@@ -72,10 +72,17 @@ Write a complete bid response in Markdown with these sections:
 Write minimum 900 words in formal government procurement language. Address the issuing organization by name throughout.`,
     });
 
-    console.log('Step 4 complete. Narrative length:', typeof narrative === 'string' ? narrative.length : JSON.stringify(narrative)?.length);
+    const narrativeText = typeof narrative === 'string' ? narrative : (narrative?.responseNarrative || JSON.stringify(narrative));
+    console.log('Step 4 complete. Narrative length:', narrativeText.length);
+
+    // Upload narrative as file since it's too large for direct storage
+    const file = new Blob([narrativeText], { type: 'text/markdown' });
+    const uploadRes = await base44.integrations.Core.UploadFile({
+      file: await file.arrayBuffer(),
+    });
 
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
-      responseNarrative: typeof narrative === 'string' ? narrative : (narrative?.responseNarrative || JSON.stringify(narrative)),
+      responseNarrative: uploadRes.file_url,
       status: 'draft',
     });
 
