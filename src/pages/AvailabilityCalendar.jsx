@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Printer } from 'lucide-react';
 import EquipmentAvailabilityCalendar from '@/components/calendar/EquipmentAvailabilityCalendar';
+import CalendarPrintModal from '@/components/calendar/CalendarPrintModal';
 
 export default function AvailabilityCalendar() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function AvailabilityCalendar() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
 
   const load = async () => {
     const [me, eq, rent, dels, usrs] = await Promise.all([
@@ -76,6 +78,13 @@ export default function AvailabilityCalendar() {
             </div>
           </div>
           <button
+            onClick={() => setShowPrint(true)}
+            className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 transition"
+            title="Print calendar"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          <button
             onClick={handleRefresh}
             disabled={refreshing}
             className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 transition"
@@ -99,6 +108,16 @@ export default function AvailabilityCalendar() {
           onDateSelect={(date) => {}}
           onDeliveryAssigned={handleDeliveryAssigned}
         />
+
+        {showPrint && (
+          <CalendarPrintModal
+            onClose={() => setShowPrint(false)}
+            rentals={rentals}
+            equipment={equipment}
+            deliveries={deliveries}
+            currentDate={new Date()}
+          />
+        )}
 
         <div className="mt-4 text-xs text-gray-400 text-center">
           Click any booking bar to see details · {isManager ? 'As manager, you can assign deliveries from the booking popup.' : ''}
