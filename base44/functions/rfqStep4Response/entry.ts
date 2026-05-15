@@ -75,14 +75,11 @@ Write minimum 900 words in formal government procurement language. Address the i
     const narrativeText = typeof narrative === 'string' ? narrative : (narrative?.responseNarrative || JSON.stringify(narrative));
     console.log('Step 4 complete. Narrative length:', narrativeText.length);
 
-    // Upload narrative as file since it's too large for direct storage
-    const file = new Blob([narrativeText], { type: 'text/markdown' });
-    const uploadRes = await base44.integrations.Core.UploadFile({
-      file: await file.arrayBuffer(),
-    });
-
+    // Store as text file URL if needed later; for now, truncate to fit field limit
+    const truncated = narrativeText.substring(0, 10000);
+    
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
-      responseNarrative: uploadRes.file_url,
+      responseNarrative: truncated,
       status: 'draft',
     });
 
