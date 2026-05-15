@@ -266,13 +266,13 @@ export default function DriverDashboard() {
         </div>
 
         <style>{`
-          @media print {
-            body { margin: 0; padding: 0; }
-            .screen-only { display: none !important; }
-            .print-only { display: block !important; }
-          }
           @media screen {
             .print-only { display: none !important; }
+          }
+          @media print {
+            .screen-only { display: none !important; }
+            .print-only { display: block !important; }
+            body { margin: 0; padding: 0; }
           }
         `}</style>
       </div>
