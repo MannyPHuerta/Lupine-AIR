@@ -48,7 +48,10 @@ Be comprehensive — include every piece of equipment and service mentioned. Inc
       }
     });
 
-    const data = result?.data || result || {};
+    // InvokeLLM with response_json_schema returns the parsed object directly
+    const data = (result && typeof result === 'object' && result.proposedLineItems)
+      ? result
+      : (result?.data || {});
     const items = data.proposedLineItems || [];
     const totalValue = items.reduce((s, i) => s + (i.totalPrice || 0), 0);
     console.log('Step 3 complete. Line items:', items.length, '| Total: $', totalValue);

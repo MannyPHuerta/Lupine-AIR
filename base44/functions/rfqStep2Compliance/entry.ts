@@ -47,7 +47,10 @@ Be thorough — capture every requirement, no matter how small.`,
       }
     });
 
-    const data = result?.data || result || {};
+    // InvokeLLM with response_json_schema returns the parsed object directly
+    const data = (result && typeof result === 'object' && (result.extractedRequirements || result.complianceMatrix))
+      ? result
+      : (result?.data || {});
     console.log('Step 2 complete. Requirements:', data.extractedRequirements?.length, '| Matrix rows:', data.complianceMatrix?.length);
 
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
