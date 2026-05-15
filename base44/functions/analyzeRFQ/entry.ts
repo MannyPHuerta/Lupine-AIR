@@ -154,10 +154,15 @@ Write minimum 800 words in formal government procurement language.`,
       }),
     ]);
 
-    console.log('Both calls done. Requirements:', detailResult.extractedRequirements?.length, '| Line items:', detailResult.proposedLineItems?.length);
+    console.log('Both calls done. Meta keys:', Object.keys(metaResult || {}));
+    console.log('Detail keys:', Object.keys(detailResult || {}));
+    console.log('Requirements:', detailResult?.extractedRequirements?.length, '| Line items:', detailResult?.proposedLineItems?.length);
 
-    const totalValue = (detailResult.proposedLineItems || []).reduce((s, i) => s + (i.totalPrice || 0), 0);
-    const analysis = { ...metaResult, ...detailResult };
+    // Safely unpack — LLM may return nested .data or top-level
+    const meta = metaResult?.data || metaResult || {};
+    const detail = detailResult?.data || detailResult || {};
+    const totalValue = (detail.proposedLineItems || []).reduce((s, i) => s + (i.totalPrice || 0), 0);
+    const analysis = { ...meta, ...detail };
 
     // Save all results
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {

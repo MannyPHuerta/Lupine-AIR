@@ -48,8 +48,9 @@ export default function RFQDetail() {
   useEffect(() => {
     if (!isNew) {
       setLoading(true);
-      base44.entities.RFQRecord.filter({ id }).then(results => {
-        if (results[0]) setRfq(results[0]);
+      base44.entities.RFQRecord.list('-created_date', 500).then(all => {
+        const found = all.find(r => r.id === id);
+        if (found) setRfq(found);
         setLoading(false);
       });
     }
@@ -195,7 +196,16 @@ export default function RFQDetail() {
     { id: 'compliance', label: 'Compliance Matrix', badge: rfq.complianceMatrix?.length || null },
     { id: 'lineitems', label: 'Line Items', badge: rfq.proposedLineItems?.length || null },
     { id: 'response', label: 'Response Draft' },
+    { id: 'outcome', label: 'Outcome', badge: rfq.status === 'won' ? '🏆' : rfq.status === 'lost' ? '✗' : null },
   ];
+
+  const handleTabChange = async (tabId) => {
+    // Auto-save on tab switch if record exists
+    if (!isNew && !saving) {
+      base44.entities.RFQRecord.update(id, rfq).catch(() => {});
+    }
+    setActiveTab(tabId);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -237,7 +247,7 @@ export default function RFQDetail() {
           {tabs.map(t => (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id)}
+              onClick={() => handleTabChange(t.id)}
               className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition flex items-center gap-1 ${
                 activeTab === t.id ? 'bg-green-800 text-white border-b-2 border-white' : 'text-green-300 hover:text-white'
               }`}
@@ -419,6 +429,95 @@ export default function RFQDetail() {
         {activeTab === 'response' && (
           <ResponseDraftTab value={rfq.responseNarrative} onChange={v => update('responseNarrative', v)} />
         )}
+
+        {/* OUTCOME TAB */}
+        {activeTab === 'outcome' && (
+          <div className="space-y-4 max-w-2xl">
+            <div className="bg-white rounded-lg border p-6 space-y-5">
+              <div className="font-semibold text-gray-900 border-b pb-2">Bid Outcome</div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={async () => {
+                    update('status', 'won');
+                    if (!isNew) await base44.entities.RFQRecord.update(id, { ...rfq, status: 'won' });
+                  }}
+                  className={`py-6 rounded-xl border-2 font-bold text-lg transition flex flex-col items-center gap-2 ${
+                    rfq.status === 'won'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 hover:border-green-300 text-gray-500'
+                  }`}
+                >
+                  🏆 <span>WON</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    update('status', 'lost');
+                    if (!isNew) await base44.entities.RFQRecord.update(id, { ...rfq, status: 'lost' });
+                  }}
+                  className={`py-6 rounded-xl border-2 font-bold text-lg transition flex flex-col items-center gap-2 ${
+                    rfq.status === 'lost'
+                      ? 'border-red-400 bg-red-50 text-red-700'
+                      : 'border-gray-200 hover:border-red-300 text-gray-500'
+                  }`}
+                >
+                  ✗ <span>LOST</span>
+                </button>
+              </div>
+
+              {rfq.status === 'won' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Awarded Contract Value ($)</label>
+                  <input
+                    type="number"
+                    value={rfq.awardedValue || ''}
+                    onChange={e => update('awardedValue', parseFloat(e.target.value) || 0)}
+                    className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                    placeholder="Actual awarded amount"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Outcome Notes (win/loss reason, competitor info)</label>
+                <textarea
+                  value={rfq.outcome || ''}
+                  onChange={e => update('outcome', e.target.value)}
+                  className="w-full border rounded-md px-3 py-2 text-sm h-28 resize-none focus:outline-none focus:ring-1 focus:ring-green-500"
+                  placeholder="Why did we win or lose? Who was the competitor? What would we do differently?"
+                />
+              </div>
+
+              <button
+                onClick={async () => {
+                  setSaving(true);
+                  await base44.entities.RFQRecord.update(id, rfq);
+                  setSaving(false);
+                }}
+                disabled={saving || isNew}
+                className="w-full bg-green-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Outcome'}
+              </button>
+            </div>
+
+            {/* Quick stats */}
+            {rfq.estimatedTotalValue > 0 && (
+              <div className="bg-white rounded-lg border p-4 grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-xs text-gray-500">Estimated Bid Value</div>
+                  <div className="text-xl font-bold text-gray-800">${rfq.estimatedTotalValue?.toLocaleString()}</div>
+                </div>
+                {rfq.awardedValue > 0 && (
+                  <div>
+                    <div className="text-xs text-gray-500">Awarded Value</div>
+                    <div className="text-xl font-bold text-green-700">${rfq.awardedValue?.toLocaleString()}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showPrint && (
@@ -427,6 +526,7 @@ export default function RFQDetail() {
     </div>
   );
 }
+
 
 // --- Helper subcomponents ---
 
