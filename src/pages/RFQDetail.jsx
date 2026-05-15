@@ -603,7 +603,22 @@ export default function RFQDetail() {
 
         {/* RESPONSE DRAFT TAB */}
         {activeTab === 'response' && (
-          <ResponseDraftTab value={rfq.responseNarrative} onChange={v => update('responseNarrative', v)} />
+          <div className="space-y-4">
+            {rfq.responseNarrative && (
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleStep4}
+                  disabled={stepRunning !== null}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  {stepRunning === 4 ? <><Loader2 className="w-4 h-4 animate-spin" /> Re-running...</> : <><Wand2 className="w-4 h-4" /> Rerun Response</>}
+                </Button>
+              </div>
+            )}
+            <ResponseDraftTab value={rfq.responseNarrative} onChange={v => update('responseNarrative', v)} />
+          </div>
         )}
 
         {/* OUTCOME TAB */}
