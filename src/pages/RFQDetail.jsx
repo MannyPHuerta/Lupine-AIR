@@ -348,10 +348,10 @@ export default function RFQDetail() {
         {activeTab === 'intake' && (
           <div className="space-y-6">
 
-            {/* STEP 1: Upload / Paste */}
-            <div className="bg-white rounded-lg border-2 border-green-200 p-5 space-y-4">
-              <div className="flex items-center gap-2 border-b pb-2">
-                <span className="font-semibold text-gray-900">Upload or Paste RFQ Document, then run Analysis</span>
+            {/* Section 1: Upload / Paste — always visible */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 p-5 space-y-4">
+              <div className="font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
+                <Upload className="w-4 h-4 text-gray-500" /> Step 1 — Load RFQ Document
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -364,9 +364,9 @@ export default function RFQDetail() {
                     <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onChange={handleFileUpload} />
                   </label>
                   {rfq.uploadedFileUrl && (
-                    <div className="flex items-center gap-3 mt-1">
-                      <a href={rfq.uploadedFileUrl} target="_blank" rel="noreferrer" className="text-xs text-green-700 underline">
-                        ✓ File uploaded — view it
+                    <div className="flex items-center gap-3 mt-2">
+                      <a href={rfq.uploadedFileUrl} target="_blank" rel="noreferrer" className="text-xs text-green-700 underline font-medium">
+                        ✓ {rfq.uploadedFileName || 'File uploaded'} — view
                       </a>
                       <button onClick={handleClearFile} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-0.5">
                         <X className="w-3 h-3" /> Remove
@@ -385,6 +385,31 @@ export default function RFQDetail() {
                 </div>
               </div>
 
+              {/* Inline text preview if pasted */}
+              {rfq.rawRfqText && !rfq.uploadedFileUrl && (
+                <div className="border rounded-md bg-gray-50 p-3 max-h-48 overflow-y-auto">
+                  <div className="text-xs font-medium text-gray-500 mb-1">Document preview ({rfq.rawRfqText.length.toLocaleString()} chars)</div>
+                  <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{rfq.rawRfqText.slice(0, 2000)}{rfq.rawRfqText.length > 2000 ? '\n\n[... truncated for preview ...]' : ''}</pre>
+                </div>
+              )}
+
+              {/* Uploaded file preview */}
+              {rfq.uploadedFileUrl && (
+                <div className="border rounded-md overflow-hidden" style={{ height: '400px' }}>
+                  <iframe
+                    src={rfq.uploadedFileUrl}
+                    className="w-full h-full"
+                    title="RFQ Document Preview"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Section 2: Run Analysis — separate card */}
+            <div className="bg-white rounded-lg border-2 border-green-200 p-5 space-y-4">
+              <div className="font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
+                <Wand2 className="w-4 h-4 text-green-700" /> Step 2 — Run AI Analysis
+              </div>
               <div className="grid md:grid-cols-2 gap-3">
                 <Button
                   onClick={handleStep1}
