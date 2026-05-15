@@ -293,7 +293,7 @@ export default function RFQDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-green-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="bg-green-900 text-white sticky top-0 z-10 shadow-lg print:hidden">
         <div className="px-4 py-3 flex items-center gap-3 max-w-7xl mx-auto">
           <button onClick={() => navigate('/rfq')} className="p-2 rounded-lg hover:bg-green-800">
             <ArrowLeft className="w-5 h-5" />
@@ -787,7 +787,7 @@ function ResponseDraftTab({ value, onChange }) {
   return (
     <div className="bg-white rounded-lg border">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50 rounded-t-lg">
+      <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50 rounded-t-lg print:hidden">
         <span className="text-sm font-semibold text-gray-700">Response Narrative / Cover Letter</span>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={handleCopy} className="gap-1 text-xs">
