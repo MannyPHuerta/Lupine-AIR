@@ -113,18 +113,9 @@ export default function DriverDashboard() {
     
     return (
       <>
-        <style>{`
-          @media print {
-            .screen-only { display: none !important; }
-            .print-only { display: block !important; }
-          }
-          @media screen {
-            .print-only { display: none !important; }
-          }
-        `}</style>
         <div className="min-h-screen bg-gray-50">
         {/* Screen view */}
-        <div style={{display: 'block'}} className="screen-only bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+        <div className="screen-only bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
           <div className="px-4 py-4 max-w-4xl mx-auto">
             <div className="flex items-center justify-between">
               <div className="text-lg font-bold">🚚 Driver Dashboard</div>
@@ -154,7 +145,7 @@ export default function DriverDashboard() {
         </div>
 
         {/* Print view - driver manifest */}
-        <div style={{display: 'none'}} className="print-only p-8">
+        <div className="print-only p-8">
           <div className="max-w-3xl mx-auto">
             <div className="border-b-2 border-black pb-4 mb-6">
               <h1 className="text-2xl font-bold">Driver Manifest</h1>
@@ -240,7 +231,7 @@ export default function DriverDashboard() {
         </div>
 
         {/* Screen view list */}
-        <div style={{display: 'block'}} className="screen-only max-w-4xl mx-auto px-4 py-6 space-y-6">
+        <div className="screen-only max-w-4xl mx-auto px-4 py-6 space-y-6">
           {filteredDeliveries.length > 0 && (
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-4">Deliveries</h2>
@@ -275,6 +266,15 @@ export default function DriverDashboard() {
           )}
         </div>
 
+        <style>{`
+          @media print {
+            .screen-only { display: none !important; }
+            .print-only { display: block !important; }
+          }
+          @media screen {
+            .print-only { display: none !important; }
+          }
+        `}</style>
       </div>
       </>
     );
