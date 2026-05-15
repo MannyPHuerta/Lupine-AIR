@@ -14,32 +14,35 @@ Deno.serve(async (req) => {
     const rfq = records.find(r => r.id === rfqId);
     if (!rfq) return Response.json({ error: 'RFQ record not found' }, { status: 404 });
 
-    const docText = (rfq.rawRfqText || '').slice(0, 10000);
+    const docText = (rfq.rawRfqText || '').slice(0, 12000);
     if (!docText) return Response.json({ error: 'No RFQ text found. Please complete Step 1 first.' }, { status: 400 });
 
-    // Include compliance matrix context to know what equipment is needed
-    const requirementsSummary = (rfq.extractedRequirements || [])
-      .filter(r => r.requirementType === 'equipment' || r.requirementType === 'pricing')
-      .map(r => `- ${r.requirementText}`)
+    // Use ALL requirements as context, not just equipment/pricing
+    const allRequirements = (rfq.extractedRequirements || [])
+      .map(r => `[${r.sectionNumber}] ${r.requirementType?.toUpperCase()}: ${r.requirementText}`)
       .join('\n') || 'See full RFQ text.';
 
     console.log('Step 3: Generating line items...');
+    console.log('Requirements count:', rfq.extractedRequirements?.length || 0);
+    console.log('Doc text length:', docText.length);
 
     const result = await base44.integrations.Core.InvokeLLM({
       model: 'gemini_3_flash',
-      prompt: `You are a pricing specialist for a South Texas equipment rental company. Generate a detailed pricing schedule for this RFQ.
+      prompt: `You are a pricing specialist for a South Texas equipment rental and sales company. Generate a pricing schedule for this RFQ.
 
-EQUIPMENT/PRICING REQUIREMENTS:
-${requirementsSummary}
+RFQ TEXT (first 4000 chars):
+${docText.slice(0, 4000)}
 
-FULL RFQ TEXT (for context):
-${docText.slice(0, 5000)}
+EXTRACTED REQUIREMENTS:
+${allRequirements.slice(0, 2000)}
 
-Generate realistic South Texas market pricing. Return JSON with:
+Rules:
+- Identify every piece of equipment or service requested.
+- Price at realistic South Texas market rates (purchase price if buying, rental rate if renting).
+- Every unitPrice MUST be > 0.
+- Include delivery/setup fees if mentioned.
 
-proposedLineItems: Array of all line items. Each: { lineNumber (string like "1", "2"), description (string), equipmentCategory (string), quantity (number), unit (each|day|week|month|event|lot), unitPrice (number — realistic South TX rate), totalPrice (number = quantity × unitPrice), specs (brief specs string), notes (string or null) }
-
-Be comprehensive — include every piece of equipment and service mentioned. Include delivery/setup/teardown as separate line items if applicable.`,
+Return JSON: proposedLineItems array. Each item: { lineNumber, description, equipmentCategory, quantity, unit (each|day|week|month|lot), unitPrice, totalPrice, specs, notes }`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -52,7 +55,12 @@ Be comprehensive — include every piece of equipment and service mentioned. Inc
     const data = (result && typeof result === 'object' && result.proposedLineItems)
       ? result
       : (result?.data || {});
-    const items = data.proposedLineItems || [];
+    const items = (data.proposedLineItems || []).map((item, idx) => ({
+      ...item,
+      lineNumber: item.lineNumber || String(idx + 1),
+      unitPrice: item.unitPrice || 0,
+      totalPrice: item.totalPrice || ((item.quantity || 1) * (item.unitPrice || 0)),
+    }));
     const totalValue = items.reduce((s, i) => s + (i.totalPrice || 0), 0);
     console.log('Step 3 complete. Line items:', items.length, '| Total: $', totalValue);
 
