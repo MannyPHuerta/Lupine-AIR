@@ -342,7 +342,7 @@ export default function RFQDetail() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 print:max-w-none print:p-0 print:m-0">
 
         {/* INTAKE TAB */}
         {activeTab === 'intake' && (
@@ -785,7 +785,7 @@ function ResponseDraftTab({ value, onChange }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border">
+    <div className="bg-white rounded-lg border print:bg-transparent print:border-0 print:rounded-none">
       {/* Toolbar */}
       <div className="flex items-center justify-between border-b px-4 py-2 bg-gray-50 rounded-t-lg print:hidden">
         <span className="text-sm font-semibold text-gray-700">Response Narrative / Cover Letter</span>
@@ -808,11 +808,11 @@ function ResponseDraftTab({ value, onChange }) {
         <textarea
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="w-full p-5 text-sm min-h-[600px] resize-y font-mono focus:outline-none rounded-b-lg"
+          className="w-full p-5 text-sm min-h-[600px] resize-y font-mono focus:outline-none rounded-b-lg print:p-0 print:min-h-0 print:rounded-none print:border-0"
           placeholder="Response narrative will appear here after analysis..."
         />
       ) : (
-        <div className="p-6 md:p-10 prose prose-sm max-w-none text-gray-900 min-h-[600px]
+        <div className="p-6 md:p-10 prose prose-sm max-w-none text-gray-900 min-h-[600px] print:p-0 print:min-h-0
           [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4
           [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-2
           [&_p]:mb-3 [&_p]:leading-relaxed
