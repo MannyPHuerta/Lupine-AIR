@@ -36,19 +36,23 @@ function buildResponseHTML(rfq) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>RFQ Response</title>
+  <title>${rfq.rfqNumber || 'RFQ Response'}</title>
   <style>
     * { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; color: #111; }
-    h1 { font-size: 18px; margin-bottom: 4px; border-bottom: 2px solid #000; padding-bottom: 8px; }
-    h2 { font-size: 14px; margin-top: 16px; margin-bottom: 8px; font-weight: bold; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.4; color: #111; }
+    h1 { font-size: 18px; margin: 0 0 4px 0; border-bottom: 2px solid #000; padding-bottom: 8px; }
+    h2 { font-size: 14px; margin: 16px 0 8px 0; font-weight: bold; }
     p { margin: 4px 0; font-size: 11px; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 12px; font-size: 10px; }
     th { border: 1px solid #e5e7eb; padding: 6px; text-align: left; background: #f3f4f6; font-weight: bold; }
     td { border: 1px solid #e5e7eb; padding: 6px; vertical-align: top; }
     .total { font-size: 12px; font-weight: bold; text-align: right; margin-top: 8px; }
-    @page { size: letter; margin: 1cm; }
-    @media print { body { margin: 0; padding: 0; } }
+    @page { size: letter; margin: 0.5in; @bottom-center { content: ""; } @top-center { content: ""; } }
+    @media print { 
+      * { margin: 0; padding: 0; }
+      body { margin: 0; padding: 0.5in; background: white; }
+      html { margin: 0; padding: 0; }
+    }
   </style>
 </head>
 <body>
@@ -118,6 +122,13 @@ export default function RFQPrintExport({ rfq, onClose }) {
       win.print();
       setTimeout(() => { win.close(); }, 500);
     }, 400);
+  };
+
+  const getFileName = () => {
+    if (rfq.suggestedFileName) return rfq.suggestedFileName;
+    const rfqNum = rfq.rfqNumber?.replace(/[^a-z0-9]/gi, '_') || 'RFQ';
+    const org = rfq.issuingOrg?.replace(/[^a-z0-9]/gi, '_') || 'Response';
+    return `RFQ_${rfqNum}_${org}.pdf`;
   };
 
   const handlePrintPDF = () => {
@@ -229,8 +240,7 @@ export default function RFQPrintExport({ rfq, onClose }) {
       doc.text(`ESTIMATED TOTAL: $${(rfq.estimatedTotalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageW - margin, y, { align: 'right' });
     }
 
-    const fileName = rfq.suggestedFileName || `RFQ-Response-${rfq.issuingOrg?.replace(/\s+/g, '_')}.pdf`;
-    doc.save(fileName);
+    doc.save(getFileName());
   };
 
   return (
