@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw, FileBarChart, Bell, Users } from 'lucide-react';
+import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw, FileBarChart, Bell, Users, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 const STATUS_COLORS = {
@@ -125,12 +125,20 @@ export default function DriverDashboard() {
             <div className="mt-2 text-sm text-indigo-200">
               {format(parseISO(filterDate), 'MMMM d, yyyy')} — {filteredDeliveries.length} deliveries · {filteredRecoveries.length} recoveries
             </div>
-            <button
-              onClick={() => setFilterDate('')}
-              className="mt-3 px-3 py-1 bg-indigo-800 hover:bg-indigo-700 rounded text-xs text-indigo-200 transition"
-            >
-              ← Back to Dashboard
-            </button>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => setFilterDate('')}
+                className="px-3 py-1 bg-indigo-800 hover:bg-indigo-700 rounded text-xs text-indigo-200 transition"
+              >
+                ← Back to Dashboard
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-3 py-1 bg-indigo-800 hover:bg-indigo-700 rounded text-xs text-indigo-200 transition flex items-center gap-1.5"
+              >
+                <Printer className="w-3.5 h-3.5" /> Print
+              </button>
+            </div>
           </div>
         </div>
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
