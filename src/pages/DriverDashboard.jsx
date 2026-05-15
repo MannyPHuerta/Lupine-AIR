@@ -22,6 +22,7 @@ export default function DriverDashboard() {
   const [selectedDriver, setSelectedDriver] = useState(null);
 
   const [markingReceived, setMarkingReceived] = useState(null);
+  const [sortBy, setSortBy] = useState('date'); // 'date' or 'status'
 
   const handleMarkReceived = async (delivery) => {
     setMarkingReceived(delivery.id);
@@ -103,10 +104,20 @@ export default function DriverDashboard() {
 
   const today = new Date().toISOString().split('T')[0];
   const activeStatuses = ['scheduled', 'departed', 'arrived', 'setup_complete', 'signed'];
-  const todaysDeliveries = deliveries.filter(d => d.scheduledDate === today && activeStatuses.includes(d.status));
-  const overdueDeliveries = deliveries.filter(d => d.scheduledDate < today && activeStatuses.includes(d.status));
-  const upcomingDeliveries = deliveries.filter(d => d.scheduledDate > today && activeStatuses.includes(d.status));
-  const completedDeliveries = deliveries.filter(d => d.status === 'completed');
+
+  // Sort deliveries by date or group by status
+  const sortedDeliveries = [...deliveries].sort((a, b) => {
+    if (sortBy === 'date') {
+      return (a.scheduledDate || '').localeCompare(b.scheduledDate || '');
+    } else {
+      return (a.status || '').localeCompare(b.status || '');
+    }
+  });
+
+  const todaysDeliveries = sortedDeliveries.filter(d => d.scheduledDate === today && activeStatuses.includes(d.status));
+  const overdueDeliveries = sortedDeliveries.filter(d => d.scheduledDate < today && activeStatuses.includes(d.status));
+  const upcomingDeliveries = sortedDeliveries.filter(d => d.scheduledDate > today && activeStatuses.includes(d.status));
+  const completedDeliveries = sortedDeliveries.filter(d => d.status === 'completed');
   const todaysRecoveries = recoveries.filter(r => r.scheduledDate === today && r.status !== 'completed');
   const upcomingRecoveries = recoveries.filter(r => r.scheduledDate > today && r.status !== 'completed');
 
@@ -131,26 +142,43 @@ export default function DriverDashboard() {
           <div className="mt-2 text-sm text-indigo-200">
             {todaysDeliveries.length + overdueDeliveries.length} deliveries · {todaysRecoveries.length} recoveries today
           </div>
-          {driver?.role === 'admin' && driversList.length > 0 && (
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-indigo-300">Filter by driver:</span>
-              <button
-                onClick={() => setSelectedDriver(null)}
-                className={`text-xs px-2 py-1 rounded transition ${!selectedDriver ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
-              >
-                All Drivers
-              </button>
-              {driversList.map(d => (
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            {driver?.role === 'admin' && driversList.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-indigo-300">Drivers:</span>
                 <button
-                  key={d.driverId}
-                  onClick={() => setSelectedDriver(d.driverId)}
-                  className={`text-xs px-2 py-1 rounded transition ${selectedDriver === d.driverId ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
+                  onClick={() => setSelectedDriver(null)}
+                  className={`text-xs px-2 py-1 rounded transition ${!selectedDriver ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
                 >
-                  {d.driverName}
+                  All
                 </button>
-              ))}
+                {driversList.map(d => (
+                  <button
+                    key={d.driverId}
+                    onClick={() => setSelectedDriver(d.driverId)}
+                    className={`text-xs px-2 py-1 rounded transition ${selectedDriver === d.driverId ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
+                  >
+                    {d.driverName?.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-indigo-300">Sort:</span>
+              <button
+                onClick={() => setSortBy('date')}
+                className={`text-xs px-2 py-1 rounded transition ${sortBy === 'date' ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
+              >
+                Date
+              </button>
+              <button
+                onClick={() => setSortBy('status')}
+                className={`text-xs px-2 py-1 rounded transition ${sortBy === 'status' ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
+              >
+                Status
+              </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
