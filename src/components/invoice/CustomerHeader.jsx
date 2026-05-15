@@ -462,14 +462,15 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
           />
         </div>
 
-        {/* Secondary contact */}
+        {/* Secondary contact — spans next row after Notes for proper tab order */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Secondary Phone</label>
           <Input
             type="tel"
             placeholder="(956) 123-4567"
             value={customer.secondaryPhone || ''}
-            onChange={e => set('secondaryPhone', e.target.value)}
+            onChange={e => set('secondaryPhone', formatPhoneUS(e.target.value))}
+            inputMode="numeric"
           />
         </div>
         <div>
