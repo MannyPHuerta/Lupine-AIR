@@ -351,7 +351,6 @@ export default function RFQDetail() {
             {/* STEP 1: Upload / Paste */}
             <div className="bg-white rounded-lg border-2 border-green-200 p-5 space-y-4">
               <div className="flex items-center gap-2 border-b pb-2">
-                <span className="bg-green-700 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">1</span>
                 <span className="font-semibold text-gray-900">Upload or Paste RFQ Document, then run Analysis</span>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
@@ -491,32 +490,30 @@ export default function RFQDetail() {
                 <Input value={rfq.suggestedFileName} onChange={e => update('suggestedFileName', e.target.value)} className="font-mono text-sm" />
               </Section>
             )}
-            <StepCTA
-              label="Step 3: Build Compliance Matrix"
-              description="AI will extract every requirement and map our compliance status. Review the analysis above first, make any corrections, then click to continue."
-              done={step2Done}
-              doneLabel={`Compliance matrix built (${rfq.complianceMatrix?.length} rows) — go to Tab 3: Compliance to review.`}
-              running={stepRunning === 2}
-              disabled={!step1Done}
-              onClick={handleStep2}
-            />
+            {step1Done && (
+              <div className="flex justify-end">
+                <Button onClick={() => handleTabChange('compliance')} className="bg-green-700 hover:bg-green-800 text-white gap-2">
+                  Go to Tab 3: Compliance <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
         {/* COMPLIANCE MATRIX TAB */}
         {activeTab === 'compliance' && (
           <div className="space-y-4">
-            <StepCTA
-              label="Build Compliance Matrix"
-              description="AI will extract every requirement from the RFQ and map our compliance status."
-              done={step2Done}
-              doneLabel={`Compliance matrix built — ${rfq.complianceMatrix?.length} rows. Review and edit below, then generate Line Items.`}
-              running={stepRunning === 2}
-              disabled={!step1Done}
-              disabledMessage="Run Analysis on Tab 1 first."
-              onClick={handleStep2}
-            />
-            {step2Done && (
+            {!step2Done ? (
+              <StepCTA
+                label="Build Compliance Matrix"
+                description="AI will extract every requirement from the RFQ and map our compliance status."
+                done={false}
+                running={stepRunning === 2}
+                disabled={!step1Done}
+                disabledMessage="Run Analysis on Tab 2 first."
+                onClick={handleStep2}
+              />
+            ) : (
               <>
                 <RFQComplianceMatrix
                   matrix={rfq.complianceMatrix}
