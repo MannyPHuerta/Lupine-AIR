@@ -22,9 +22,10 @@ Deno.serve(async (req) => {
 
     console.log('Step 2: Building compliance matrix...');
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      model: 'claude_sonnet_4_6',
-      prompt: `You are a senior government procurement compliance specialist. Extract ALL requirements from this RFQ and build a compliance matrix.
+    let result;
+    try {
+      result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a senior government procurement compliance specialist. Extract ALL requirements from this RFQ and build a compliance matrix.
 
 RFQ TEXT:
 ${docText}
@@ -38,19 +39,22 @@ extractedRequirements: Array of ALL explicit requirements. Each item: { sectionN
 complianceMatrix: One row per requirement in the same order. Each item: { sectionNumber (string), requirementSummary (max 20 words, string), complianceStatus (compliant|compliant_with_exception|non_compliant|not_applicable|pending_review), responseText (1-2 sentence response, string), exceptionNote (string or null), documentReference (string or null) }
 
 Be thorough — capture every requirement, no matter how small.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          extractedRequirements: { type: 'array', items: { type: 'object' } },
-          complianceMatrix: { type: 'array', items: { type: 'object' } },
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            extractedRequirements: { type: 'array', items: { type: 'object' } },
+            complianceMatrix: { type: 'array', items: { type: 'object' } },
+          }
         }
-      }
-    });
+      });
+    } catch (llmErr) {
+      console.error('LLM call failed:', llmErr.message);
+      throw llmErr;
+    }
 
+    console.log('LLM result type:', typeof result, '| keys:', result ? Object.keys(result) : 'null');
     // InvokeLLM with response_json_schema returns the parsed object directly
-    const data = (result && typeof result === 'object' && (result.extractedRequirements || result.complianceMatrix))
-      ? result
-      : (result?.data || {});
+    const data = (result?.extractedRequirements || result?.complianceMatrix) ? result : (result?.data || result || {});
     console.log('Step 2 complete. Requirements:', data.extractedRequirements?.length, '| Matrix rows:', data.complianceMatrix?.length);
 
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
