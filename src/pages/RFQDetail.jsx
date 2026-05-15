@@ -15,19 +15,18 @@ if (typeof document !== 'undefined') {
   const style = document.createElement('style');
   style.innerHTML = `
     @media print {
-      * { margin: 0 !important; padding: 0 !important; }
-      body { margin: 0 !important; padding: 0 !important; background: white; }
-      /* Hide everything except print-container and its contents */
-      body > * { display: none !important; }
-      .print-container { display: block !important; max-width: 100%; margin: 0; padding: 0.5in; background: white; }
-      .print-container * { display: inherit !important; }
-      /* Hide buttons and interactive elements inside container */
+      body { margin: 0; padding: 0; background: white; }
+      /* Hide header and tabs */
+      div[class*="bg-green-900"], div[class*="sticky"] { display: none !important; }
+      /* Hide sidebar */
+      aside, [class*="sidebar"] { display: none !important; }
+      /* Hide buttons */
       button, [role="button"], .print-hidden { display: none !important; }
-      /* Clean spacing */
-      .min-h-screen { min-height: auto !important; }
-      .rounded-lg { border-radius: 0 !important; }
-      .border { border: none !important; }
-      .bg-green-900, .bg-gray-50 { background: white !important; }
+      /* Show content full width */
+      .print-container { max-width: 100%; margin: 0; padding: 0.5in; background: white; }
+      .min-h-screen { min-height: auto; page-break-after: avoid; }
+      .rounded-lg, .border { border: none; border-radius: 0; }
+      .bg-gray-50 { background: white; }
     }
   `;
   document.head.appendChild(style);
