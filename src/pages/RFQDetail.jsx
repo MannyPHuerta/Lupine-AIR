@@ -15,20 +15,19 @@ if (typeof document !== 'undefined') {
   const style = document.createElement('style');
   style.innerHTML = `
     @media print {
-      * { margin: 0; padding: 0; }
-      body, html { margin: 0; padding: 0; }
-      /* Hide layout sidebars */
-      [class*="sidebar"] { display: none !important; }
-      [class*="AppLayout"] { display: block !important; }
-      /* Hide all interactive elements */
+      * { margin: 0 !important; padding: 0 !important; }
+      body { margin: 0 !important; padding: 0 !important; background: white; }
+      /* Hide everything except print-container and its contents */
+      body > * { display: none !important; }
+      .print-container { display: block !important; max-width: 100%; margin: 0; padding: 0.5in; background: white; }
+      .print-container * { display: inherit !important; }
+      /* Hide buttons and interactive elements inside container */
       button, [role="button"], .print-hidden { display: none !important; }
-      /* Clean content */
-      .min-h-screen { min-height: auto; }
-      .max-w-7xl { max-width: 100%; }
-      .px-4, .py-6 { padding: 0.5in; }
-      /* Show only response */
-      .bg-white { background: white; border: none; }
-      .rounded-lg, .border { border: none; border-radius: 0; }
+      /* Clean spacing */
+      .min-h-screen { min-height: auto !important; }
+      .rounded-lg { border-radius: 0 !important; }
+      .border { border: none !important; }
+      .bg-green-900, .bg-gray-50 { background: white !important; }
     }
   `;
   document.head.appendChild(style);
