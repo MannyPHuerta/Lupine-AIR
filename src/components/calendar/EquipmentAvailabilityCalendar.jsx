@@ -201,87 +201,95 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
   const needsDelivery = rental.deliveryMethod === 'company_delivery';
 
   return (
-    <div className="absolute z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 w-72 text-sm" style={{ top: '100%', left: 0 }}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="font-semibold text-gray-900 leading-tight">{rental.customerName}</div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0"><X className="w-3.5 h-3.5" /></button>
-      </div>
-      <div className="space-y-1 text-xs text-gray-600">
-        <div><span className="text-gray-400">Equipment:</span> {rental.equipmentName}</div>
-        <div><span className="text-gray-400">Dates:</span> {rental.startDate} → {rental.endDate}</div>
-        {rental.customerPhone && <div><span className="text-gray-400">Phone:</span> {rental.customerPhone}</div>}
-        {rental.invoiceNumber && <div><span className="text-gray-400">Invoice:</span> {rental.invoiceNumber}</div>}
-        {rental.branch && <div><span className="text-gray-400">Branch:</span> {rental.branch}</div>}
-        {needsDelivery && (
-          <div className="mt-1 space-y-1">
-            <div className="flex items-center gap-1">
-              <Truck className="w-3 h-3 text-indigo-500" />
-              {delivery ? (
-                <span className="text-indigo-700 font-medium">
-                  Assigned: {delivery.driverName}
-                  {delivery.teamDrivers?.length > 1 && ` +${delivery.teamDrivers.length - 1} more`}
-                  {delivery.assignedAt && (
-                    <span className="text-indigo-400 ml-1">· {format(parseISO(delivery.assignedAt), 'MM/dd HH:mm')}</span>
-                  )}
-                </span>
-              ) : (
-                <span className="text-amber-600 font-medium">Delivery not assigned</span>
-              )}
-            </div>
-            {delivery && (delivery.recommendedCrew || delivery.recommendedVehicles) && (
-              <div className="flex items-center gap-2 text-[10px] bg-indigo-50 rounded px-2 py-1">
-                {delivery.recommendedCrew && (
-                  <span className="flex items-center gap-0.5 text-indigo-600">
-                    <Users className="w-3 h-3" /> {delivery.recommendedCrew} crew
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 w-80 text-sm max-h-[80vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="font-semibold text-gray-900 leading-tight">{rental.customerName}</div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0"><X className="w-3.5 h-3.5" /></button>
+        </div>
+        <div className="space-y-1 text-xs text-gray-600">
+          <div><span className="text-gray-400">Equipment:</span> {rental.equipmentName}</div>
+          <div><span className="text-gray-400">Dates:</span> {rental.startDate} → {rental.endDate}</div>
+          {rental.customerPhone && <div><span className="text-gray-400">Phone:</span> {rental.customerPhone}</div>}
+          {rental.invoiceNumber && <div><span className="text-gray-400">Invoice:</span> {rental.invoiceNumber}</div>}
+          {rental.branch && <div><span className="text-gray-400">Branch:</span> {rental.branch}</div>}
+          {needsDelivery && (
+            <div className="mt-1 space-y-1">
+              <div className="flex items-center gap-1">
+                <Truck className="w-3 h-3 text-indigo-500" />
+                {delivery ? (
+                  <span className="text-indigo-700 font-medium">
+                    Assigned: {delivery.driverName}
+                    {delivery.teamDrivers?.length > 1 && ` +${delivery.teamDrivers.length - 1} more`}
+                    {delivery.assignedAt && (
+                      <span className="text-indigo-400 ml-1">· {format(parseISO(delivery.assignedAt), 'MM/dd HH:mm')}</span>
+                    )}
                   </span>
-                )}
-                {delivery.recommendedVehicles && (
-                  <span className="flex items-center gap-0.5 text-indigo-600">
-                    <Truck className="w-3 h-3" /> {delivery.recommendedVehicles} vehicle{delivery.recommendedVehicles !== 1 ? 's' : ''}
-                  </span>
-                )}
-                {delivery.recommendedVehicleType && (
-                  <span className="text-indigo-400">· {delivery.recommendedVehicleType}</span>
+                ) : (
+                  <span className="text-amber-600 font-medium">Delivery not assigned</span>
                 )}
               </div>
+              {delivery && (delivery.recommendedCrew || delivery.recommendedVehicles) && (
+                <div className="flex items-center gap-2 text-[10px] bg-indigo-50 rounded px-2 py-1">
+                  {delivery.recommendedCrew && (
+                    <span className="flex items-center gap-0.5 text-indigo-600">
+                      <Users className="w-3 h-3" /> {delivery.recommendedCrew} crew
+                    </span>
+                  )}
+                  {delivery.recommendedVehicles && (
+                    <span className="flex items-center gap-0.5 text-indigo-600">
+                      <Truck className="w-3 h-3" /> {delivery.recommendedVehicles} vehicle{delivery.recommendedVehicles !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {delivery.recommendedVehicleType && (
+                    <span className="text-indigo-400">· {delivery.recommendedVehicleType}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {delivery?.receivedAt && (
+            <div className="text-green-700 flex items-center gap-1 text-xs">
+              <CheckCircle className="w-3 h-3" />
+              Driver confirmed {format(parseISO(delivery.receivedAt), 'MM/dd HH:mm')}
+            </div>
+          )}
+          <div className="mt-2">
+            <span className={`inline-block px-2 py-0.5 rounded-full text-white font-medium ${color.bg}`}>
+              {color.label}
+            </span>
+          </div>
+        </div>
+
+        {isManager && needsDelivery && (
+          <div className="mt-2">
+            {!showAssign ? (
+              <button
+                onClick={() => setShowAssign(true)}
+                className="w-full text-xs border border-indigo-300 text-indigo-700 rounded px-2 py-1 hover:bg-indigo-50 flex items-center justify-center gap-1"
+              >
+                <UserPlus className="w-3 h-3" />
+                {delivery ? 'Reassign Delivery' : 'Assign Delivery'}
+              </button>
+            ) : (
+              <AssignDeliveryPanel
+                rental={rental}
+                users={users}
+                deliveries={deliveries}
+                currentUser={currentUser}
+                onAssigned={onAssigned}
+                onClose={() => setShowAssign(false)}
+              />
             )}
           </div>
         )}
-        {delivery?.receivedAt && (
-          <div className="text-green-700 flex items-center gap-1 text-xs">
-            <CheckCircle className="w-3 h-3" />
-            Driver confirmed {format(parseISO(delivery.receivedAt), 'MM/dd HH:mm')}
-          </div>
-        )}
-        <div className="mt-2">
-          <span className={`inline-block px-2 py-0.5 rounded-full text-white font-medium ${color.bg}`}>
-            {color.label}
-          </span>
-        </div>
       </div>
-
-      {isManager && needsDelivery && (
-        <div className="mt-2">
-          {!showAssign ? (
-            <button
-              onClick={() => setShowAssign(true)}
-              className="w-full text-xs border border-indigo-300 text-indigo-700 rounded px-2 py-1 hover:bg-indigo-50 flex items-center justify-center gap-1"
-            >
-              <UserPlus className="w-3 h-3" />
-              {delivery ? 'Reassign Delivery' : 'Assign Delivery'}
-            </button>
-          ) : (
-            <AssignDeliveryPanel
-              rental={rental}
-              users={users}
-              deliveries={deliveries}
-              currentUser={currentUser}
-              onAssigned={onAssigned}
-              onClose={() => setShowAssign(false)}
-            />
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -513,22 +521,7 @@ export default function EquipmentAvailabilityCalendar({
                       ) : (
                         <div className="h-full w-full" />
                       )}
-                      {/* Tooltip */}
-                      {selectedRental && tooltipEqId === tooltipKey && (
-                        <div className="relative">
-                          <RentalTooltip
-                            rental={selectedRental}
-                            deliveries={deliveries}
-                            users={users}
-                            currentUser={currentUser}
-                            isManager={isManager}
-                            onClose={() => { setSelectedRental(null); setTooltipEqId(null); }}
-                            onAssigned={(delivery) => {
-                              onDeliveryAssigned?.(delivery);
-                            }}
-                          />
-                        </div>
-                      )}
+
                     </td>
                   );
                 })}
@@ -538,9 +531,17 @@ export default function EquipmentAvailabilityCalendar({
         </table>
       </div>
 
-      {/* Click-away to close tooltip */}
+      {/* Rental detail modal — rendered outside the table so it's always fully visible */}
       {selectedRental && (
-        <div className="fixed inset-0 z-40" onClick={() => { setSelectedRental(null); setTooltipEqId(null); }} />
+        <RentalTooltip
+          rental={selectedRental}
+          deliveries={deliveries}
+          users={users}
+          currentUser={currentUser}
+          isManager={isManager}
+          onClose={() => { setSelectedRental(null); setTooltipEqId(null); }}
+          onAssigned={(delivery) => { onDeliveryAssigned?.(delivery); }}
+        />
       )}
     </div>
   );
