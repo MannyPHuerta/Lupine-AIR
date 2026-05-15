@@ -30,9 +30,13 @@ function calcRate(eq, days) {
   return eq.dailyRate || 0;
 }
 
-function calcDays(start, end) {
+function calcDays(start, end, startTime = '00:00', endTime = '00:00') {
   if (!start || !end) return 0;
-  return Math.floor((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1;
+  const startDt = new Date(`${start}T${startTime}`);
+  const endDt = new Date(`${end}T${endTime}`);
+  const diffMs = endDt - startDt;
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return Math.max(1, Math.ceil(diffDays));
 }
 
 function LineDateInput({ label, value, onChange, nextFocusRef, triggerRef: externalTriggerRef }) {
@@ -120,7 +124,9 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
 
   const startDate = line.startDate || '';
   const endDate = line.endDate || '';
-  const days = calcDays(startDate, endDate);
+  const startTime = line.startTime || '00:00';
+  const endTime = line.endTime || '00:00';
+  const days = calcDays(startDate, endDate, startTime, endTime);
 
   const filtered = search.trim()
     ? equipment.filter(e => e.name.toUpperCase().includes(search.toUpperCase()))
@@ -158,7 +164,9 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   const recalc = (updatedLine, eq) => {
     const start = updatedLine.startDate || '';
     const end = updatedLine.endDate || '';
-    const d = calcDays(start, end);
+    const sTime = updatedLine.startTime || '00:00';
+    const eTime = updatedLine.endTime || '00:00';
+    const d = calcDays(start, end, sTime, eTime);
     const rate = calcRate(eq, d);
     const baseAmount = Math.round(rate * d * (updatedLine.quantity || 1) * 100) / 100;
     return { ...updatedLine, rate, baseAmount };
@@ -288,13 +296,19 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
         </button>
       </div>
 
-      {/* Per-line date overrides */}
-      <div className="flex items-center gap-3 flex-wrap">
+      {/* Per-line date & time overrides */}
+      <div className="flex items-center gap-2 flex-wrap">
         <LineDateInput
           label="From"
           value={line.startDate || ''}
           onChange={v => handleDateChange('startDate', v)}
           nextFocusRef={toTriggerRef}
+        />
+        <input
+          type="time"
+          value={line.startTime || '00:00'}
+          onChange={e => handleDateChange('startTime', e.target.value)}
+          className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm outline-none focus:ring-1 focus:ring-indigo-400 w-20"
         />
         <LineDateInput
           label="To"
@@ -303,7 +317,12 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
           nextFocusRef={afterToRef}
           triggerRef={toTriggerRef}
         />
-
+        <input
+          type="time"
+          value={line.endTime || '00:00'}
+          onChange={e => handleDateChange('endTime', e.target.value)}
+          className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm outline-none focus:ring-1 focus:ring-indigo-400 w-20"
+        />
       </div>
 
       {/* Availability & pricing row */}
