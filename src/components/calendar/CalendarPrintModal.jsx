@@ -359,7 +359,10 @@ export default function CalendarPrintModal({ onClose, rentals, equipment, delive
     </body></html>`);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); }, 400);
+    setTimeout(() => {
+      win.print();
+      setTimeout(() => { win.close(); }, 500);
+    }, 400);
   };
 
   return (
