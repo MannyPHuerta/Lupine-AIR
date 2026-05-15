@@ -16,17 +16,16 @@ if (typeof document !== 'undefined') {
   style.innerHTML = `
     @media print {
       body { margin: 0; padding: 0; background: white; }
-      /* Hide header and tabs */
-      div[class*="bg-green-900"], div[class*="sticky"] { display: none !important; }
-      /* Hide sidebar */
-      aside, [class*="sidebar"] { display: none !important; }
+      /* Hide sticky header only */
+      [class*="sticky"][class*="top-0"] { display: none !important; }
       /* Hide buttons */
       button, [role="button"], .print-hidden { display: none !important; }
-      /* Show content full width */
-      .print-container { max-width: 100%; margin: 0; padding: 0.5in; background: white; }
-      .min-h-screen { min-height: auto; page-break-after: avoid; }
-      .rounded-lg, .border { border: none; border-radius: 0; }
-      .bg-gray-50 { background: white; }
+      /* Show content full width with clean spacing */
+      .max-w-7xl { max-width: 100%; padding: 0.5in; background: white; }
+      .min-h-screen { min-height: auto; }
+      .rounded-lg { border-radius: 0; }
+      .border { border: none; }
+      .bg-gray-50, .bg-green-900 { background: white !important; }
     }
   `;
   document.head.appendChild(style);
