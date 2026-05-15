@@ -19,6 +19,7 @@ export default function DriverDashboard() {
   const [deliveries, setDeliveries] = useState([]);
   const [recoveries, setRecoveries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDriver, setSelectedDriver] = useState(null);
 
   const [markingReceived, setMarkingReceived] = useState(null);
 
@@ -47,12 +48,19 @@ export default function DriverDashboard() {
       base44.entities.Recovery.list('-created_date', 50),
     ]).then(([user, dels, recs]) => {
       setDriver(user);
-      // show deliveries where this driver is primary OR in the team
-      setDeliveries(dels.filter(d =>
-        d.driverId === user.email ||
-        d.teamDrivers?.some(t => t.driverId === user.email)
-      ));
-      setRecoveries(recs.filter(r => r.driverId === user.email));
+      // if admin/manager, show all deliveries; otherwise show only this driver's
+      const filterByDriver = selectedDriver || (user.role === 'admin' ? null : user.email);
+      
+      if (filterByDriver) {
+        setDeliveries(dels.filter(d =>
+          d.driverId === filterByDriver ||
+          d.teamDrivers?.some(t => t.driverId === filterByDriver)
+        ));
+        setRecoveries(recs.filter(r => r.driverId === filterByDriver));
+      } else {
+        setDeliveries(dels);
+        setRecoveries(recs);
+      }
       setLoading(false);
 
       // Auto-track location every 60 seconds while page is open
@@ -83,7 +91,7 @@ export default function DriverDashboard() {
 
       return () => clearInterval(interval);
     });
-  }, []);
+  }, [selectedDriver]);
 
   if (loading) {
     return (
@@ -102,6 +110,12 @@ export default function DriverDashboard() {
   const todaysRecoveries = recoveries.filter(r => r.scheduledDate === today && r.status !== 'completed');
   const upcomingRecoveries = recoveries.filter(r => r.scheduledDate > today && r.status !== 'completed');
 
+  const driversList = [...new Map(
+    deliveries.concat(recoveries)
+      .flatMap(d => d.teamDrivers || (d.driverId ? [{ driverId: d.driverId, driverName: d.driverName }] : []))
+      .map(t => [t.driverId, t])
+  ).values()].sort((a, b) => (a.driverName || '').localeCompare(b.driverName || ''));
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -117,6 +131,26 @@ export default function DriverDashboard() {
           <div className="mt-2 text-sm text-indigo-200">
             {todaysDeliveries.length + overdueDeliveries.length} deliveries · {todaysRecoveries.length} recoveries today
           </div>
+          {driver?.role === 'admin' && driversList.length > 0 && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-indigo-300">Filter by driver:</span>
+              <button
+                onClick={() => setSelectedDriver(null)}
+                className={`text-xs px-2 py-1 rounded transition ${!selectedDriver ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
+              >
+                All Drivers
+              </button>
+              {driversList.map(d => (
+                <button
+                  key={d.driverId}
+                  onClick={() => setSelectedDriver(d.driverId)}
+                  className={`text-xs px-2 py-1 rounded transition ${selectedDriver === d.driverId ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
+                >
+                  {d.driverName}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
