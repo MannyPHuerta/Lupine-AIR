@@ -113,7 +113,8 @@ export default function DriverDashboard() {
     
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+        {/* Screen view */}
+        <div className="screen-only bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
           <div className="px-4 py-4 max-w-4xl mx-auto">
             <div className="flex items-center justify-between">
               <div className="text-lg font-bold">🚚 Driver Dashboard</div>
@@ -141,7 +142,95 @@ export default function DriverDashboard() {
             </div>
           </div>
         </div>
-        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+        {/* Print view - driver manifest */}
+        <div className="print-only p-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="border-b-2 border-black pb-4 mb-6">
+              <h1 className="text-2xl font-bold">Driver Manifest</h1>
+              <p className="text-sm text-gray-700 mt-1">{format(parseISO(filterDate), 'MMMM d, yyyy')}</p>
+              <p className="text-sm text-gray-700">Driver: {driver?.full_name}</p>
+            </div>
+
+            {/* Deliveries */}
+            {filteredDeliveries.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-bold border-b border-gray-300 pb-2 mb-4">DELIVERIES ({filteredDeliveries.length})</h2>
+                <div className="space-y-6">
+                  {filteredDeliveries.map((d, idx) => (
+                    <div key={d.id} className="border border-gray-300 p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-bold text-lg">Stop #{idx + 1}: {d.customerName}</div>
+                        <span className="text-sm font-semibold px-2 py-1 bg-gray-100">{d.scheduledTime || d.scheduledDate}</span>
+                      </div>
+                      <div className="text-sm space-y-1 mb-3">
+                        <p>{d.customerAddress}</p>
+                        <p>{d.customerCity}, {d.customerState} {d.customerZip}</p>
+                        {d.customerPhone && <p>📞 {d.customerPhone}</p>}
+                      </div>
+                      <div className="mb-3">
+                        <p className="font-semibold text-sm mb-1">Equipment:</p>
+                        <ul className="text-sm space-y-1 ml-4">
+                          {d.items?.map((item, i) => (
+                            <li key={i}>• {item.quantity}x {item.equipmentName}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      {d.notes && (
+                        <div className="text-sm bg-yellow-50 border border-yellow-200 rounded p-2">
+                          <p className="font-semibold">Notes:</p>
+                          <p>{d.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recoveries */}
+            {filteredRecoveries.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-bold border-b border-gray-300 pb-2 mb-4">RECOVERIES ({filteredRecoveries.length})</h2>
+                <div className="space-y-6">
+                  {filteredRecoveries.map((r, idx) => (
+                    <div key={r.id} className="border border-gray-300 p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-bold text-lg">Stop #{filteredDeliveries.length + idx + 1}: {r.customerName}</div>
+                        <span className="text-sm font-semibold px-2 py-1 bg-gray-100">{r.scheduledDate}</span>
+                      </div>
+                      <div className="text-sm space-y-1 mb-3">
+                        <p>{r.customerName}</p>
+                        {r.customerPhone && <p>📞 {r.customerPhone}</p>}
+                      </div>
+                      <div className="mb-3">
+                        <p className="font-semibold text-sm mb-1">Items to Recover:</p>
+                        <ul className="text-sm space-y-1 ml-4">
+                          {r.items?.map((item, i) => (
+                            <li key={i}>• {item.quantity}x {item.equipmentName}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      {r.notes && (
+                        <div className="text-sm bg-yellow-50 border border-yellow-200 rounded p-2">
+                          <p className="font-semibold">Notes:</p>
+                          <p>{r.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {filteredDeliveries.length === 0 && filteredRecoveries.length === 0 && (
+              <p className="text-center text-gray-500">No activities on {format(parseISO(filterDate), 'MMM d')}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Screen view list */}
+        <div className="screen-only max-w-4xl mx-auto px-4 py-6 space-y-6">
           {filteredDeliveries.length > 0 && (
             <section>
               <h2 className="text-lg font-bold text-gray-900 mb-4">Deliveries</h2>
@@ -175,6 +264,17 @@ export default function DriverDashboard() {
             </div>
           )}
         </div>
+
+        <style>{`
+          @media print {
+            body { margin: 0; padding: 0; }
+            .screen-only { display: none !important; }
+            .print-only { display: block !important; }
+          }
+          @media screen {
+            .print-only { display: none !important; }
+          }
+        `}</style>
       </div>
     );
   }
