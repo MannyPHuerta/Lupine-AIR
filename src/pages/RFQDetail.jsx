@@ -32,7 +32,7 @@ export default function RFQDetail() {
   const [rfq, setRfq] = useState(BLANK_RFQ);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  const [stepRunning, setStepRunning] = useState(null); // null | 1 | 2 | 3 | 4
+  const [stepRunning, setStepRunning] = useState(null); // null | 1 | 2 | 3 | 4 | 'all'
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('intake');
   const [showPrint, setShowPrint] = useState(false);
@@ -162,6 +162,36 @@ export default function RFQDetail() {
       setActiveTab('response');
     } catch (err) {
       alert('Step 4 failed: ' + err.message);
+    } finally {
+      setStepRunning(null);
+    }
+  };
+
+  const handleRunAll = async () => {
+    if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please upload a file or paste RFQ text first.'); return; }
+    const companyInfo = await getCompanyInfo();
+    setStepRunning('all');
+    try {
+      const recordId = await ensureSaved();
+      // Step 1
+      const r1 = await base44.functions.invoke('rfqStep1Analyze', { rfqText: rfq.rawRfqText || null, fileUrl: rfq.uploadedFileUrl || null, rfqId: recordId, companyInfo });
+      if (r1.data?.error) throw new Error('Step 1: ' + r1.data.error);
+      await reloadRfq(recordId);
+      // Step 2
+      const r2 = await base44.functions.invoke('rfqStep2Compliance', { rfqId: recordId });
+      if (r2.data?.error) throw new Error('Step 2: ' + r2.data.error);
+      await reloadRfq(recordId);
+      // Step 3
+      const r3 = await base44.functions.invoke('rfqStep3LineItems', { rfqId: recordId });
+      if (r3.data?.error) throw new Error('Step 3: ' + r3.data.error);
+      await reloadRfq(recordId);
+      // Step 4
+      const r4 = await base44.functions.invoke('rfqStep4Response', { rfqId: recordId, companyInfo });
+      if (r4.data?.error) throw new Error('Step 4: ' + r4.data.error);
+      await reloadRfq(recordId);
+      setActiveTab('response');
+    } catch (err) {
+      alert('Auto-run failed: ' + err.message);
     } finally {
       setStepRunning(null);
     }
@@ -346,26 +376,38 @@ export default function RFQDetail() {
                 </div>
               </div>
 
-              <Button
-                onClick={handleStep1}
-                disabled={stepRunning !== null || (!rfq.rawRfqText && !rfq.uploadedFileUrl)}
-                className="w-full bg-green-700 hover:bg-green-800 text-white text-base py-5"
-              >
-                {stepRunning === 1 ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing RFQ — extracting fields &amp; writing AI summary...</>
-                ) : (
-                  <><Wand2 className="w-5 h-5 mr-2" /> Step 1: Analyze &amp; Extract Metadata</>
-                )}
-              </Button>
+              <div className="grid md:grid-cols-2 gap-3">
+                <Button
+                  onClick={handleStep1}
+                  disabled={stepRunning !== null || (!rfq.rawRfqText && !rfq.uploadedFileUrl)}
+                  className="w-full bg-green-700 hover:bg-green-800 text-white text-base py-5"
+                >
+                  {stepRunning === 1 ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing...</>
+                  ) : (
+                    <><Wand2 className="w-5 h-5 mr-2" /> Step 1: Analyze &amp; Extract</>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleRunAll}
+                  disabled={stepRunning !== null || (!rfq.rawRfqText && !rfq.uploadedFileUrl)}
+                  className="w-full bg-indigo-700 hover:bg-indigo-800 text-white text-base py-5"
+                >
+                  {stepRunning === 'all' ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Running all steps — please wait (~2 min)...</>
+                  ) : (
+                    <><Wand2 className="w-5 h-5 mr-2" /> Run All Steps → Go to Response</>
+                  )}
+                </Button>
+              </div>
               {stepRunning === 1 && (
-                <p className="text-xs text-gray-500 text-center">
-                  Extracting org name, RFQ number, due dates, contacts, and writing strategic analysis summary (~15–20 seconds)...
-                </p>
+                <p className="text-xs text-gray-500 text-center">Extracting org name, RFQ number, due dates, contacts, and writing strategic analysis summary (~15–20 seconds)...</p>
+              )}
+              {stepRunning === 'all' && (
+                <p className="text-xs text-indigo-600 text-center">Running all 4 steps sequentially. This takes ~2 minutes. You'll land on the Response tab when done.</p>
               )}
               {step1Done && stepRunning === null && (
-                <p className="text-xs text-green-600 text-center font-medium">
-                  ✓ Analysis complete — review on the Analysis tab, then proceed to Step 2.
-                </p>
+                <p className="text-xs text-green-600 text-center font-medium">✓ Step 1 complete — review the Analysis tab, or continue to Step 2.</p>
               )}
             </div>
 
@@ -426,96 +468,94 @@ export default function RFQDetail() {
         {/* ANALYSIS TAB */}
         {activeTab === 'analysis' && (
           <div className="space-y-4">
-            {!rfq.aiAnalysisSummary ? (
-              <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
-                <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <div>Complete Step 1 on the Intake tab first.</div>
+            {!rfq.aiAnalysisSummary && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700 flex items-center gap-2">
+                <Wand2 className="w-4 h-4 flex-shrink-0" /> Run Step 1 on the Intake tab to populate this analysis.
               </div>
-            ) : (
-              <>
-                <Section title="AI Analysis Summary">
-                  <EditableText value={rfq.aiAnalysisSummary} onChange={v => update('aiAnalysisSummary', v)} />
-                </Section>
-                <Section title="Organization History & Intelligence">
-                  <EditableText value={rfq.orgHistorySummary} onChange={v => update('orgHistorySummary', v)} />
-                </Section>
-                <Section title="Suggested Response Format & Structure">
-                  <EditableText value={rfq.suggestedResponseFormat} onChange={v => update('suggestedResponseFormat', v)} />
-                </Section>
-                {rfq.suggestedFileName && (
-                  <Section title="Suggested File Name">
-                    <Input value={rfq.suggestedFileName} onChange={e => update('suggestedFileName', e.target.value)} className="font-mono text-sm" />
-                  </Section>
-                )}
-                <StepCTA
-                  label="Step 2: Build Compliance Matrix"
-                  description="AI will extract every requirement and map our compliance status. Review the analysis above first, make any corrections, then click to continue."
-                  done={step2Done}
-                  doneLabel={`Compliance matrix built (${rfq.complianceMatrix?.length} rows) — go to Compliance tab to review.`}
-                  running={stepRunning === 2}
-                  onClick={handleStep2}
-                />
-              </>
             )}
+            <Section title="AI Analysis Summary">
+              <EditableText value={rfq.aiAnalysisSummary} onChange={v => update('aiAnalysisSummary', v)} />
+            </Section>
+            <Section title="Organization History & Intelligence">
+              <EditableText value={rfq.orgHistorySummary} onChange={v => update('orgHistorySummary', v)} />
+            </Section>
+            <Section title="Suggested Response Format & Structure">
+              <EditableText value={rfq.suggestedResponseFormat} onChange={v => update('suggestedResponseFormat', v)} />
+            </Section>
+            {rfq.suggestedFileName && (
+              <Section title="Suggested File Name">
+                <Input value={rfq.suggestedFileName} onChange={e => update('suggestedFileName', e.target.value)} className="font-mono text-sm" />
+              </Section>
+            )}
+            <StepCTA
+              label="Step 2: Build Compliance Matrix"
+              description="AI will extract every requirement and map our compliance status. Review the analysis above first, make any corrections, then click to continue."
+              done={step2Done}
+              doneLabel={`Compliance matrix built (${rfq.complianceMatrix?.length} rows) — go to Compliance tab to review.`}
+              running={stepRunning === 2}
+              disabled={!step1Done}
+              onClick={handleStep2}
+            />
           </div>
         )}
 
         {/* COMPLIANCE MATRIX TAB */}
         {activeTab === 'compliance' && (
           <div className="space-y-4">
-            {!step2Done ? (
-              <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
-                <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <div>Complete Step 2 on the Analysis tab first.</div>
+            {!step1Done && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-700 flex items-center gap-2">
+                <Wand2 className="w-4 h-4 flex-shrink-0" /> Run Step 1 on the Intake tab first to populate this view.
               </div>
-            ) : (
-              <>
-                <RFQComplianceMatrix
-                  matrix={rfq.complianceMatrix}
-                  onChange={m => update('complianceMatrix', m)}
-                />
-                <StepCTA
-                  label="Step 3: Generate Pricing / Line Items"
-                  description="AI will generate a complete pricing schedule based on the requirements above. Review the compliance matrix, make any corrections, then click to continue."
-                  done={step3Done}
-                  doneLabel={`${rfq.proposedLineItems?.length} line items generated (Est. $${(rfq.estimatedTotalValue||0).toLocaleString()}) — go to Line Items tab to review.`}
-                  running={stepRunning === 3}
-                  onClick={handleStep3}
-                />
-              </>
             )}
+            {step2Done ? (
+              <RFQComplianceMatrix
+                matrix={rfq.complianceMatrix}
+                onChange={m => update('complianceMatrix', m)}
+              />
+            ) : (
+              <div className="bg-white rounded-lg border p-6 text-center text-gray-400 text-sm">
+                Compliance matrix not yet generated. Run Step 2 from the Analysis tab.
+              </div>
+            )}
+            <StepCTA
+              label="Step 3: Generate Pricing / Line Items"
+              description="AI will generate a complete pricing schedule based on the requirements. Review the compliance matrix first, make any corrections, then click to continue."
+              done={step3Done}
+              doneLabel={`${rfq.proposedLineItems?.length} line items generated (Est. $${(rfq.estimatedTotalValue||0).toLocaleString()}) — go to Line Items tab to review.`}
+              running={stepRunning === 3}
+              disabled={!step2Done}
+              onClick={handleStep3}
+            />
           </div>
         )}
 
         {/* LINE ITEMS TAB */}
         {activeTab === 'lineitems' && (
           <div className="space-y-4">
-            {!step3Done ? (
-              <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
-                <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <div>Complete Step 3 on the Compliance tab first.</div>
-              </div>
+            {step3Done ? (
+              <RFQLineItems
+                items={rfq.proposedLineItems}
+                onChange={items => {
+                  const total = items.reduce((sum, i) => sum + (i.totalPrice || 0), 0);
+                  update('proposedLineItems', items);
+                  update('estimatedTotalValue', total);
+                }}
+                totalValue={rfq.estimatedTotalValue}
+              />
             ) : (
-              <>
-                <RFQLineItems
-                  items={rfq.proposedLineItems}
-                  onChange={items => {
-                    const total = items.reduce((sum, i) => sum + (i.totalPrice || 0), 0);
-                    update('proposedLineItems', items);
-                    update('estimatedTotalValue', total);
-                  }}
-                  totalValue={rfq.estimatedTotalValue}
-                />
-                <StepCTA
-                  label="Step 4: Draft Response Narrative"
-                  description="AI will write the complete formal bid response document using your pricing above. Review and adjust the line items first, then click to draft."
-                  done={step4Done}
-                  doneLabel="Response draft ready — go to the Response tab to review and edit."
-                  running={stepRunning === 4}
-                  onClick={handleStep4}
-                />
-              </>
+              <div className="bg-white rounded-lg border p-6 text-center text-gray-400 text-sm">
+                Line items not yet generated. Run Step 3 from the Compliance tab.
+              </div>
             )}
+            <StepCTA
+              label="Step 4: Draft Response Narrative"
+              description="AI will write the complete formal bid response document using your pricing above. Review and adjust line items first, then click to draft."
+              done={step4Done}
+              doneLabel="Response draft ready — go to the Response tab to review and edit."
+              running={stepRunning === 4}
+              disabled={!step3Done}
+              onClick={handleStep4}
+            />
           </div>
         )}
 
@@ -681,7 +721,8 @@ function ResponseDraftTab({ value, onChange }) {
     return (
       <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
         <Wand2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-        <div>Complete Steps 1–3, then click "Draft Response Narrative" on the Line Items tab.</div>
+        <div className="text-sm">No response draft yet.</div>
+        <div className="text-xs mt-1 text-gray-400">Use "Run All Steps" on the Intake tab, or work through Steps 1–4 individually.</div>
       </div>
     );
   }
@@ -731,14 +772,14 @@ function ResponseDraftTab({ value, onChange }) {
   );
 }
 
-function StepCTA({ label, description, done, doneLabel, running, onClick }) {
+function StepCTA({ label, description, done, doneLabel, running, disabled, onClick }) {
   return (
-    <div className={`rounded-xl border-2 p-5 ${done ? 'border-green-300 bg-green-50' : 'border-blue-200 bg-blue-50'}`}>
+    <div className={`rounded-xl border-2 p-5 ${done ? 'border-green-300 bg-green-50' : disabled ? 'border-gray-200 bg-gray-50' : 'border-blue-200 bg-blue-50'}`}>
       <div className="flex items-start gap-3">
         <div className="mt-0.5">
           {done
             ? <CheckCircle2 className="w-5 h-5 text-green-600" />
-            : <Circle className="w-5 h-5 text-blue-400" />
+            : <Circle className={`w-5 h-5 ${disabled ? 'text-gray-300' : 'text-blue-400'}`} />
           }
         </div>
         <div className="flex-1">
@@ -746,21 +787,20 @@ function StepCTA({ label, description, done, doneLabel, running, onClick }) {
             <div className="text-sm font-semibold text-green-700">{doneLabel}</div>
           ) : (
             <>
-              <div className="text-sm font-semibold text-gray-800 mb-1">{label}</div>
+              <div className={`text-sm font-semibold mb-1 ${disabled ? 'text-gray-400' : 'text-gray-800'}`}>{label}</div>
               <div className="text-xs text-gray-500 mb-3">{description}</div>
               <Button
                 onClick={onClick}
-                disabled={running}
-                className="bg-blue-700 hover:bg-blue-800 text-white gap-2"
+                disabled={running || disabled}
+                className={`gap-2 ${disabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
               >
                 {running
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Running AI — please wait...</>
                   : <><Wand2 className="w-4 h-4" /> {label} <ChevronRight className="w-4 h-4" /></>
                 }
               </Button>
-              {running && (
-                <p className="text-xs text-blue-600 mt-2">This typically takes 15–30 seconds...</p>
-              )}
+              {disabled && <p className="text-xs text-gray-400 mt-2">Complete the previous step first to enable this.</p>}
+              {running && <p className="text-xs text-blue-600 mt-2">This typically takes 15–30 seconds...</p>}
             </>
           )}
         </div>
