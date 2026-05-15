@@ -739,6 +739,7 @@ export default function AvailabilityManager() {
         <CustomerIdentity
           customer={customer}
           currentUser={currentUser}
+          branchSettings={branchSettings}
           onChange={(updated) => {
             setCustomer(updated);
             if (updated.loyaltyDiscountEnabled && updated.loyaltyDiscountPercent) {

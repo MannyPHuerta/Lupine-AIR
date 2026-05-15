@@ -125,6 +125,13 @@ function nudgesNeeded(nudges) {
   return nudges.filter(n => n.type !== 'ok');
 }
 
+// Extract area code from branch phone (e.g., "(956) 123-4567" → "956")
+function getAreaCodeFromBranch(branchPhone) {
+  if (!branchPhone) return null;
+  const match = branchPhone.match(/\((\d{3})\)/);
+  return match ? match[1] : null;
+}
+
 function SuggestionDropdown({ suggestions, onSelect, activeIndex }) {
   const itemRefs = useRef([]);
   useEffect(() => {
@@ -162,7 +169,7 @@ function SuggestionDropdown({ suggestions, onSelect, activeIndex }) {
 }
 
 /** Top card: customer identity fields (phone first, then name, email, branch) */
-export function CustomerIdentity({ customer, onChange, rentals = [], lines = [], onAddItems, currentUser }) {
+export function CustomerIdentity({ customer, onChange, rentals = [], lines = [], onAddItems, currentUser, branchSettings = {} }) {
   const set = (field, value) => onChange({ ...customer, [field]: value });
   const [autoFilled, setAutoFilled] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
@@ -377,29 +384,32 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
         </div>
 
         {/* Phone — required */}
-        <div className="relative">
-          <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
-            Phone *
-            {phoneVerified && customer.phone === lastVerifiedPhone && (
-              <span className="flex items-center gap-1 text-green-600 font-normal text-xs">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Verified
-              </span>
-            )}
-          </label>
-          <Input
-            ref={phoneRef}
-            placeholder="(956) 123-4567"
-            value={customer.phone}
-            onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); setPhoneVerified(false); }}
-            onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            onKeyDown={handleKeyDown}
-            inputMode="numeric"
-          />
-          {activeSearchField === 'phone' && showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
-          )}
-        </div>
+         <div className="relative">
+           <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
+             Phone *
+             {phoneVerified && customer.phone === lastVerifiedPhone && (
+               <span className="flex items-center gap-1 text-green-600 font-normal text-xs">
+                 <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+               </span>
+             )}
+           </label>
+           <Input
+             ref={phoneRef}
+             placeholder={(() => {
+               const areaCode = getAreaCodeFromBranch(branchSettings[customer.branch]?.phone);
+               return areaCode ? `(${areaCode}) 123-4567` : '(956) 123-4567';
+             })()}
+             value={customer.phone}
+             onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); setPhoneVerified(false); }}
+             onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
+             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+             onKeyDown={handleKeyDown}
+             inputMode="numeric"
+           />
+           {activeSearchField === 'phone' && showSuggestions && suggestions.length > 0 && (
+             <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
+           )}
+         </div>
 
         <div className="relative">
           <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
