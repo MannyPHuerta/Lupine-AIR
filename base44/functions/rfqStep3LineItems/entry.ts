@@ -14,37 +14,46 @@ Deno.serve(async (req) => {
     const rfq = records.find(r => r.id === rfqId);
     if (!rfq) return Response.json({ error: 'RFQ record not found' }, { status: 404 });
 
-    const docText = (rfq.rawRfqText || '').slice(0, 12000);
-    if (!docText) return Response.json({ error: 'No RFQ text found. Please complete Step 1 first.' }, { status: 400 });
+    let docText = (rfq.rawRfqText || '');
+
+    // If the doc text seems thin (only boilerplate), re-extract from the uploaded file to get exhibits/schedules
+    if (docText.length < 2000 && rfq.uploadedFileUrl) {
+      console.log('rawRfqText too short, re-extracting from uploaded file...');
+      try {
+        const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url: rfq.uploadedFileUrl,
+          json_schema: { type: 'object', properties: { full_text: { type: 'string' } } }
+        });
+        if (extracted.status === 'success' && extracted.output?.full_text) {
+          docText = extracted.output.full_text;
+          console.log('Re-extracted text length:', docText.length);
+          // Save it back so future steps have it
+          await base44.asServiceRole.entities.RFQRecord.update(rfqId, { rawRfqText: docText.slice(0, 50000) });
+        }
+      } catch (e) {
+        console.log('Re-extraction failed:', e.message);
+      }
+    }
 
     // Use ALL requirements as context, not just equipment/pricing
     const allRequirements = (rfq.extractedRequirements || [])
       .map(r => `[${r.sectionNumber}] ${r.requirementType?.toUpperCase()}: ${r.requirementText}`)
       .join('\n') || 'See full RFQ text.';
 
+    if (!docText) return Response.json({ error: 'No RFQ text found. Please complete Step 1 first.' }, { status: 400 });
+
     console.log('Step 3: Generating line items...');
     console.log('Requirements count:', rfq.extractedRequirements?.length || 0);
     console.log('Doc text length:', docText.length);
 
     const result = await base44.integrations.Core.InvokeLLM({
-      model: 'gemini_3_flash',
-      prompt: `You are a pricing specialist for a South Texas equipment rental/sales company. Read this RFQ and generate a detailed line-item pricing schedule.
+      prompt: `Equipment pricing specialist. List all equipment/services in this RFQ with realistic market prices.
 
-RFQ TEXT:
-${docText.slice(0, 5000)}
+RFQ: ${docText.slice(0, 3000)}
 
-REQUIREMENTS EXTRACTED:
-${allRequirements.slice(0, 1500)}
+Rules: unitPrice > 0 always. If buying: purchase price. If renting: daily rate. At least 5 items.
 
-CRITICAL RULES:
-1. Generate AT LEAST 5 line items. More is better.
-2. Every single unitPrice MUST be a positive number greater than zero. Example: 45000, 1200, 350.
-3. If buying equipment: use realistic purchase prices (e.g. excavator = $85000, generator = $12000).
-4. If renting: use daily/weekly rates (e.g. excavator/day = $1200, generator/day = $250).
-5. totalPrice = quantity * unitPrice. Never leave either as 0.
-6. Include ALL equipment, vehicles, and services mentioned.
-
-Return JSON with proposedLineItems array. Each item must have: lineNumber (string), description (string), equipmentCategory (string), quantity (number > 0), unit (string: each/day/week/month/lot), unitPrice (number > 0), totalPrice (number > 0), specs (string), notes (string)`,
+Return JSON: { "proposedLineItems": [{ "lineNumber": "1", "description": "...", "equipmentCategory": "...", "quantity": 1, "unit": "each", "unitPrice": 50000, "totalPrice": 50000, "specs": "...", "notes": "" }] }`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -54,6 +63,9 @@ Return JSON with proposedLineItems array. Each item must have: lineNumber (strin
     });
 
     // InvokeLLM with response_json_schema returns the parsed object directly
+    console.log('LLM raw result type:', typeof result);
+    console.log('LLM raw result keys:', result ? Object.keys(result) : 'null');
+    console.log('LLM proposedLineItems:', JSON.stringify(result?.proposedLineItems?.slice(0, 2)));
     const data = (result && typeof result === 'object' && result.proposedLineItems)
       ? result
       : (result?.data || {});
