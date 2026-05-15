@@ -605,7 +605,7 @@ export default function RFQDetail() {
         {activeTab === 'response' && (
           <div className="space-y-4">
             {rfq.responseNarrative && (
-              <div className="flex justify-end">
+              <div className="flex justify-end print:hidden">
                 <Button
                   onClick={handleStep4}
                   disabled={stepRunning !== null}
