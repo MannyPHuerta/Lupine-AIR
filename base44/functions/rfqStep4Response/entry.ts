@@ -57,19 +57,19 @@ TOTAL PROPOSED VALUE: $${totalValue.toLocaleString()}
 ORIGINAL RFQ TEXT (for context):
 ${docText}
 
-Write a complete bid response in Markdown with these sections:
-1. Letterhead (${companyName}, ${companyAddress}, ${companyPhone}, ${companyEmail}${companyWebsite ? `, ${companyWebsite}` : ''})
-2. Date and Submission Details
-3. Executive Summary
-4. Company Overview (describe ${companyName} as an established South Texas equipment rental company)
-5. Technical Approach & Equipment Specifications
-6. Delivery, Setup & Teardown Plan
-7. Pricing Schedule (format the pricing above as a clean Markdown table with line totals and grand total)
-8. Insurance & Bonding: ${companyInsurance}
-9. References (include 3 placeholder reference entries)
-10. Certifications & Signature Block
+Write a complete bid response with these sections. Do NOT use markdown formatting, markdown headings (# ## ###), horizontal rules (---), or special characters. Use plain text with section numbers and names only:
+1. LETTERHEAD: ${companyName}, ${companyAddress}, ${companyPhone}, ${companyEmail}${companyWebsite ? `, ${companyWebsite}` : ''}
+2. DATE AND SUBMISSION DETAILS
+3. EXECUTIVE SUMMARY
+4. COMPANY OVERVIEW: Describe ${companyName} as an established South Texas equipment rental company
+5. TECHNICAL APPROACH AND EQUIPMENT SPECIFICATIONS
+6. DELIVERY, SETUP AND TEARDOWN PLAN
+7. PRICING SCHEDULE: Format the pricing above as a clean table with line totals and grand total
+8. INSURANCE AND BONDING: ${companyInsurance}
+9. REFERENCES: Include 3 placeholder reference entries
+10. CERTIFICATIONS AND SIGNATURE BLOCK
 
-Write minimum 900 words in formal government procurement language. Address the issuing organization by name throughout.`,
+Write minimum 900 words in formal government procurement language. Address the issuing organization by name throughout. Use plain text only, no markdown.`,
     });
 
     const narrativeText = typeof narrative === 'string' ? narrative : (narrative?.responseNarrative || JSON.stringify(narrative));
