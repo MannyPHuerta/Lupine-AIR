@@ -48,7 +48,7 @@ function LineDateInput({ label, value, onChange, nextFocusRef, triggerRef: exter
   const handleSelect = (date) => {
     onChange(date ? format(date, 'yyyy-MM-dd') : '');
     setOpen(false);
-    // Focus next field after selection
+    // Focus next field after selection (time input or next date)
     setTimeout(() => {
       if (nextFocusRef?.current) {
         nextFocusRef.current.focus();
@@ -118,7 +118,9 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const toTriggerRef = useRef(null);  // "To" date button — From calendar advances here
-  const afterToRef = afterDatesRef || null;  // after "To" calendar, advance to next element (e.g. Add Equipment button)
+  const startTimeRef = useRef(null);  // From time input — From date advances here
+  const endTimeRef = useRef(null);    // To time input — To date advances here
+  const afterToRef = afterDatesRef || null;  // after "To" time, advance to next element (e.g. Add Equipment button)
   const aiSearchTimer = useRef(null);
   const { aiSuggestions, isSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(equipment);
 
@@ -302,25 +304,39 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
           label="From"
           value={line.startDate || ''}
           onChange={v => handleDateChange('startDate', v)}
-          nextFocusRef={toTriggerRef}
+          nextFocusRef={startTimeRef}
         />
         <input
+          ref={startTimeRef}
           type="time"
           value={line.startTime || '00:00'}
           onChange={e => handleDateChange('startTime', e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Tab' && !e.shiftKey) {
+              e.preventDefault();
+              toTriggerRef.current?.focus();
+            }
+          }}
           className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm outline-none focus:ring-1 focus:ring-indigo-400 w-20"
         />
         <LineDateInput
           label="To"
           value={line.endDate || ''}
           onChange={v => handleDateChange('endDate', v)}
-          nextFocusRef={afterToRef}
+          nextFocusRef={endTimeRef}
           triggerRef={toTriggerRef}
         />
         <input
+          ref={endTimeRef}
           type="time"
           value={line.endTime || '00:00'}
           onChange={e => handleDateChange('endTime', e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Tab' && !e.shiftKey && afterToRef?.current) {
+              e.preventDefault();
+              afterToRef.current.focus();
+            }
+          }}
           className="h-7 rounded border border-input bg-transparent px-2 text-xs shadow-sm outline-none focus:ring-1 focus:ring-indigo-400 w-20"
         />
       </div>
