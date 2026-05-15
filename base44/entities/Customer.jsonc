@@ -25,6 +25,31 @@
       "type": "string",
       "description": "Primary phone number"
     },
+    "phoneVerified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether primary phone was verified via outbound call"
+    },
+    "phoneVerifiedAt": {
+      "type": "string",
+      "description": "ISO timestamp when phone was last verified"
+    },
+    "phoneVerifiedBy": {
+      "type": "string",
+      "description": "Email of counter staff who confirmed verification"
+    },
+    "secondaryPhone": {
+      "type": "string",
+      "description": "Secondary / emergency contact phone number"
+    },
+    "secondaryPhoneRelation": {
+      "type": "string",
+      "description": "Relationship of secondary contact to customer (e.g. Spouse, Parent, Employer)"
+    },
+    "secondaryPhoneName": {
+      "type": "string",
+      "description": "Name of the secondary contact"
+    },
     "email": {
       "type": "string",
       "description": "Primary email address"

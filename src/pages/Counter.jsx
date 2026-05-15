@@ -8,6 +8,7 @@ import RentalCartPanel from '@/components/counter/RentalCartPanel';
 import PracticeModeWatermark from '@/components/PracticeModeWatermark';
 import { useAIEquipmentSearch } from '@/hooks/useAIEquipmentSearch';
 import AIEquipmentSearchInput from '@/components/equipment/AIEquipmentSearchInput';
+import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
 
 // Steps: 'equipment' → 'checkout'
 const WALKIN_CUSTOMER = { fullName: 'Walk-in', phone: '', address: '', city: '', state: '', zip: '', id: 'walkin' };
@@ -23,6 +24,10 @@ export default function Counter() {
   const [companySettings, setCompanySettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customers, setCustomers] = useState([]);
   const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
   const { aiSuggestions, isSearching: aiSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(equipment);
   const aiTimerRef = useRef(null);
@@ -40,11 +45,15 @@ export default function Counter() {
       base44.entities.Rental.list('-created_date', 200),
       base44.entities.BranchSettings.list(),
       base44.entities.CompanySettings.list(),
-    ]).then(([eq, rent, bs, cs]) => {
+      base44.entities.Customer.list('-created_date', 500),
+      base44.auth.me().catch(() => null),
+    ]).then(([eq, rent, bs, cs, custs, user]) => {
       setEquipment(eq);
       setRentals(rent);
       setBranchSettings(bs[0]);
       setCompanySettings(cs[0]);
+      setCustomers(custs);
+      setCurrentUser(user);
       setLoading(false);
     });
     setTimeout(() => equipSearchRef.current?.focus(), 100);
@@ -324,17 +333,49 @@ export default function Counter() {
       {/* ── STEP 2: Checkout (RentalCartPanel) ── */}
       {step === 'checkout' && (
         <div className="flex flex-1 h-[calc(100vh-60px)]">
-          {/* Left sidebar: add more equipment */}
+          {/* Left sidebar: customer + add more equipment */}
           <div className="w-1/3 border-r bg-white overflow-y-auto flex flex-col">
             <div className="p-4 space-y-4 flex-1 overflow-y-auto">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="font-bold text-gray-900">Walk-in</div>
-                  <div className="text-xs text-gray-400 mt-1">Counter sale — no customer record</div>
+                  {selectedCustomer ? (
+                    <>
+                      <div className="font-bold text-gray-900">{selectedCustomer.fullName}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{selectedCustomer.phone}</div>
+                      {selectedCustomer.secondaryPhone && (
+                        <div className="text-xs text-gray-400">Alt: {selectedCustomer.secondaryPhone} {selectedCustomer.secondaryPhoneRelation ? `(${selectedCustomer.secondaryPhoneRelation})` : ''}</div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="font-bold text-gray-900">Walk-in</div>
+                      <div className="text-xs text-gray-400 mt-1">Search or scan DL to find customer</div>
+                    </>
+                  )}
                 </div>
                 <button onClick={() => setStep('equipment')} className="text-gray-400 hover:text-gray-600">
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+
+              {/* Customer search / verification */}
+              <div className="border-t pt-3 space-y-2">
+                <div className="text-xs font-semibold text-gray-700">Customer</div>
+                <Input
+                  placeholder="Search by name, phone…"
+                  value={customerSearch}
+                  onChange={e => { setCustomerSearch(e.target.value); setSelectedCustomer(null); }}
+                  className="text-sm"
+                />
+                {!selectedCustomer && (
+                  <CustomerSearchPanel
+                    searchTerm={customerSearch}
+                    customers={customers}
+                    onSelect={(c) => { setSelectedCustomer(c); setCustomerSearch(c.fullName || ''); }}
+                    scannedDL={null}
+                    currentUser={currentUser}
+                  />
+                )}
               </div>
 
               <div className="border-t pt-4">
