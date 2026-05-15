@@ -79,13 +79,19 @@ Write minimum 900 words in formal government procurement language. Address the i
     });
 
     // InvokeLLM with response_json_schema returns the parsed object directly
-    const data = (result && typeof result === 'object' && result.responseNarrative)
-      ? result
-      : (result?.data || {});
-    console.log('Step 4 complete. Narrative length:', data.responseNarrative?.length);
+    // Handle: { responseNarrative: "..." } OR plain string fallback
+    let narrative = '';
+    if (result && typeof result === 'object' && result.responseNarrative) {
+      narrative = result.responseNarrative;
+    } else if (result && typeof result === 'object' && result.data?.responseNarrative) {
+      narrative = result.data.responseNarrative;
+    } else if (typeof result === 'string') {
+      narrative = result;
+    }
+    console.log('Step 4 complete. Narrative length:', narrative.length);
 
     await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
-      responseNarrative: data.responseNarrative || '',
+      responseNarrative: narrative,
       status: 'draft',
     });
 
