@@ -1,6 +1,5 @@
 import { X, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 
 const COMPLIANCE_LABELS = {
@@ -11,7 +10,116 @@ const COMPLIANCE_LABELS = {
   pending_review: 'PENDING REVIEW',
 };
 
+function buildResponseHTML(rfq) {
+  const complianceRows = (rfq.complianceMatrix || [])
+    .map(row => `
+      <tr>
+        <td style="border: 1px solid #e5e7eb; padding: 6px; font-weight: 600;">${row.sectionNumber || ''}</td>
+        <td style="border: 1px solid #e5e7eb; padding: 6px;">${row.requirementSummary || ''}</td>
+        <td style="border: 1px solid #e5e7eb; padding: 6px; background: #f0fdf4; font-weight: 600;">${COMPLIANCE_LABELS[row.complianceStatus] || ''}</td>
+        <td style="border: 1px solid #e5e7eb; padding: 6px;">${row.responseText || ''}</td>
+      </tr>
+    `).join('');
+
+  const lineItemsRows = (rfq.proposedLineItems || [])
+    .map(item => `
+      <tr>
+        <td style="border: 1px solid #e5e7eb; padding: 6px; text-align: center;">${item.lineNumber || ''}</td>
+        <td style="border: 1px solid #e5e7eb; padding: 6px;">${item.description || ''}</td>
+        <td style="border: 1px solid #e5e7eb; padding: 6px; text-align: right;">${item.quantity || ''}</td>
+        <td style="border: 1px solid #e5e7eb; padding: 6px; text-align: right;">$${(item.unitPrice || 0).toFixed(2)}</td>
+        <td style="border: 1px solid #e5e7eb; padding: 6px; text-align: right; font-weight: 600;">$${(item.totalPrice || 0).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RFQ Response</title>
+  <style>
+    * { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; color: #111; }
+    h1 { font-size: 18px; margin-bottom: 4px; border-bottom: 2px solid #000; padding-bottom: 8px; }
+    h2 { font-size: 14px; margin-top: 16px; margin-bottom: 8px; font-weight: bold; }
+    p { margin: 4px 0; font-size: 11px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 12px; font-size: 10px; }
+    th { border: 1px solid #e5e7eb; padding: 6px; text-align: left; background: #f3f4f6; font-weight: bold; }
+    td { border: 1px solid #e5e7eb; padding: 6px; vertical-align: top; }
+    .total { font-size: 12px; font-weight: bold; text-align: right; margin-top: 8px; }
+    @page { size: letter; margin: 1cm; }
+    @media print { body { margin: 0; padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>REQUEST FOR QUOTATION — RESPONSE</h1>
+  
+  <div style="margin-bottom: 12px; font-size: 11px;">
+    <p><strong>Submitted to:</strong> ${rfq.issuingOrg || ''}</p>
+    ${rfq.rfqNumber ? `<p><strong>RFQ Number:</strong> ${rfq.rfqNumber}</p>` : ''}
+    ${rfq.title ? `<p><strong>Title:</strong> ${rfq.title}</p>` : ''}
+    ${rfq.dueDate ? `<p><strong>Due Date:</strong> ${rfq.dueDate}${rfq.dueTime ? ' ' + rfq.dueTime : ''}</p>` : ''}
+    <p><strong>Date Prepared:</strong> ${new Date().toLocaleDateString()}</p>
+    ${rfq.branch ? `<p><strong>Responding Branch:</strong> ${rfq.branch}</p>` : ''}
+  </div>
+
+  ${rfq.responseNarrative ? `
+    <h2>RESPONSE NARRATIVE</h2>
+    <div style="font-size: 10px; line-height: 1.5; white-space: pre-wrap;">${rfq.responseNarrative}</div>
+  ` : ''}
+
+  ${rfq.complianceMatrix?.length > 0 ? `
+    <h2>COMPLIANCE MATRIX</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 60px;">Section</th>
+          <th>Requirement</th>
+          <th style="width: 100px;">Status</th>
+          <th>Response</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${complianceRows}
+      </tbody>
+    </table>
+  ` : ''}
+
+  ${rfq.proposedLineItems?.length > 0 ? `
+    <h2>PROPOSED PRICING — LINE ITEMS</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;">Line</th>
+          <th>Description</th>
+          <th style="width: 50px; text-align: right;">Qty</th>
+          <th style="width: 80px; text-align: right;">Unit Price</th>
+          <th style="width: 80px; text-align: right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${lineItemsRows}
+      </tbody>
+    </table>
+    <div class="total">ESTIMATED TOTAL: $${(rfq.estimatedTotalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+  ` : ''}
+</body>
+</html>`;
+}
+
 export default function RFQPrintExport({ rfq, onClose }) {
+  const handlePrintBrowser = () => {
+    const html = buildResponseHTML(rfq);
+    const win = window.open('', '_blank', 'width=1000,height=800');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => {
+      win.print();
+      setTimeout(() => { win.close(); }, 500);
+    }, 400);
+  };
+
   const handlePrintPDF = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
     const margin = 20;
@@ -144,8 +252,8 @@ export default function RFQPrintExport({ rfq, onClose }) {
           <Button onClick={handlePrintPDF} className="flex-1 bg-green-700 hover:bg-green-800">
             <Printer className="w-4 h-4 mr-2" /> Download PDF
           </Button>
-          <Button onClick={() => window.print()} variant="outline" className="flex-1">
-            Print
+          <Button onClick={handlePrintBrowser} variant="outline" className="flex-1">
+            Print / Save as PDF
           </Button>
         </div>
       </div>
