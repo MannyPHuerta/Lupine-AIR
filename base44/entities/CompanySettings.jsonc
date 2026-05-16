@@ -45,33 +45,39 @@
     "invoiceNumberStart": {
       "type": "integer",
       "default": 1001,
-      "description": "Starting invoice number for auto-assignment (e.g. 1001 produces MCL-1001)"
+      "description": "Starting invoice number for auto-assignment"
     },
     "invoiceNumberPrefix": {
       "type": "string",
       "default": "MCL",
-      "description": "Prefix prepended to auto-assigned invoice numbers (e.g. MCL)"
+      "description": "Prefix prepended to auto-assigned invoice numbers"
     },
     "smsRemindersEnabled": {
       "type": "boolean",
       "default": true,
       "description": "Enable/disable automated SMS return reminders"
     },
+    "rentalDayMode": {
+      "type": "string",
+      "enum": [
+        "clock_hour",
+        "calendar_day"
+      ],
+      "default": "clock_hour",
+      "description": "Billing cycle rule. clock_hour = 24 hours from pickup time (e.g. picked up at 2pm, next day charged at 2pm). calendar_day = new day starts at midnight regardless of pickup time."
+    },
     "brandingTheme": {
       "type": "object",
       "description": "Theme customization for internal staff app",
       "properties": {
         "primaryColor": {
-          "type": "string",
-          "description": "Primary brand color (hex, e.g. #1E40AF)"
+          "type": "string"
         },
         "secondaryColor": {
-          "type": "string",
-          "description": "Secondary brand color (hex)"
+          "type": "string"
         },
         "accentColor": {
-          "type": "string",
-          "description": "Accent color (hex)"
+          "type": "string"
         }
       }
     },

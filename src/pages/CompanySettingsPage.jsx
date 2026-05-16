@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import PaymentSettingsPanel from '@/components/settings/PaymentSettingsPanel';
+import { rentalDayModeLabel } from '@/lib/rentalDayCalc';
 
 export default function CompanySettingsPage() {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function CompanySettingsPage() {
     invoiceNumberStart: 1001,
     invoiceNumberPrefix: 'MCL',
     smsRemindersEnabled: true,
+    rentalDayMode: 'clock_hour',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -87,6 +89,7 @@ export default function CompanySettingsPage() {
       invoiceNumberStart: parseInt(settings.invoiceNumberStart) || 1001,
       invoiceNumberPrefix: settings.invoiceNumberPrefix || 'MCL',
       smsRemindersEnabled: settings.smsRemindersEnabled !== false,
+      rentalDayMode: settings.rentalDayMode || 'clock_hour',
     };
 
     if (settings.id) {
@@ -320,6 +323,42 @@ export default function CompanySettingsPage() {
                     }`}
                   />
                 </button>
+              </div>
+            </div>
+
+            {/* Rental Day Billing Mode */}
+            <div className="bg-white rounded-xl border shadow-sm p-5">
+              <div className="font-semibold text-gray-900 mb-1">Rental Day Billing Mode</div>
+              <p className="text-xs text-gray-500 mb-4">
+                Controls how billable days are counted. <strong>24-Hour Rolling</strong> starts the clock at pickup time — a customer who picks up at 2 pm is billed a new day at 2 pm each subsequent day.
+                <br /><strong>Calendar Day</strong> resets at midnight regardless of pickup hour.
+              </p>
+              <div className="space-y-2">
+                {['clock_hour', 'calendar_day'].map(mode => (
+                  <label key={mode} className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="rentalDayMode"
+                      value={mode}
+                      checked={(settings.rentalDayMode || 'clock_hour') === mode}
+                      onChange={() => handleChange('rentalDayMode', mode)}
+                      className="mt-0.5 accent-indigo-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-800">{rentalDayModeLabel(mode)}</div>
+                      {mode === 'clock_hour' && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          Pickup at 2 pm → Day 2 starts at 2 pm · Day 3 at 2 pm · etc.
+                        </div>
+                      )}
+                      {mode === 'calendar_day' && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          Any pickup time → new day starts at midnight. Mon pickup = Mon + Tue + Wed if returned Wed.
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                ))}
               </div>
             </div>
 
