@@ -85,6 +85,8 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
   const [advancingStatus, setAdvancingStatus] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState(order.signatureDataUrl || null);
+  const [agreement, setAgreement] = useState(null);
+  const [loadingAgreement, setLoadingAgreement] = useState(false);
 
   const lines = order.lines;
   const taxRateDecimal = (order.taxRate || 8.25) / 100;
@@ -101,6 +103,19 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
   const dateRange = lines.length > 0
     ? `${lines[0].startDate || '?'} – ${lines[lines.length - 1].endDate || '?'}`
     : '';
+
+  // Load agreement when order expands
+  useEffect(() => {
+    if (expanded && !agreement && !loadingAgreement) {
+      setLoadingAgreement(true);
+      base44.entities.RentalAgreement.filter({ branch: order.customer.branch }, '-updated_date', 1)
+        .then(results => {
+          setAgreement(results[0] || null);
+          setLoadingAgreement(false);
+        })
+        .catch(() => setLoadingAgreement(false));
+    }
+  }, [expanded, agreement, loadingAgreement, order.customer.branch]);
 
   const enriched = lines.map(l => {
     const eq = equipment.find(e => e.id === l.equipmentId);
@@ -145,6 +160,7 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
       lines: enriched,
       branchInfo: bs ? { name: bs.branchName || order.customer.branch, address: bs.address || '', phone: bs.phone || '', email: bs.email || '' } : { name: order.customer.branch, address: '', phone: '', email: '' },
       companyInfo: companyInfo ? { companyName: companyInfo.companyName || '', logoUrl: companyInfo.logoUrl || '', invoiceFooter: companyInfo.invoiceFooter || '' } : {},
+      agreement: agreement ? { title: agreement.title || 'Equipment Rental Agreement', content: agreement.content, pages: agreement.pages || 1 } : null,
     }, amountPaid, signatureDataUrl);
 
     // Update rental status + mark equipment as reserved
@@ -278,6 +294,20 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
             {amountPaid > 0 && <div className="flex justify-between font-bold border-t pt-1"><span>Balance</span><span className={balance <= 0 ? 'text-green-600' : 'text-red-600'}>${balance.toFixed(2)}</span></div>}
           </div>
 
+          {/* Agreement display */}
+          {agreement && (
+            <div className="border rounded-lg p-4 bg-gray-50 space-y-2 max-h-64 overflow-y-auto">
+              <div className="text-xs font-semibold text-gray-700 uppercase">{agreement.title || 'Equipment Rental Agreement'}</div>
+              <div className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{agreement.content}</div>
+              {signatureDataUrl && (
+                <div className="pt-2 border-t">
+                  <div className="text-xs font-medium text-gray-500 mb-1">Customer Signature</div>
+                  <img src={signatureDataUrl} alt="signature" className="h-12 border rounded" />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Inline signature pad — shown when ready to print */}
           {showSignature && (
             <div className="border rounded-lg p-4 bg-gray-50 space-y-2">
@@ -311,6 +341,7 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
                   lines: enriched,
                   branchInfo: bs ? { name: bs.branchName || order.customer.branch, address: bs.address || '', phone: bs.phone || '', email: bs.email || '' } : { name: order.customer.branch, address: '', phone: '', email: '' },
                   companyInfo: companyInfo ? { companyName: companyInfo.companyName || '', logoUrl: companyInfo.logoUrl || '', invoiceFooter: companyInfo.invoiceFooter || '' } : {},
+                  agreement: agreement ? { title: agreement.title || 'Equipment Rental Agreement', content: agreement.content, pages: agreement.pages || 1 } : null,
                 }, amountPaid, signatureDataUrl);
               }}
               className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50"

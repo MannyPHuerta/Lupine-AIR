@@ -42,11 +42,11 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
     : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   // Build rental agreement section if present
-  const agreementHtml = order.rentalAgreement ? `
+  const agreementHtml = order.agreement ? `
   <div id="agreement-section" style="page-break-before:always;margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px">
-    <h2 style="font-size:16px;font-weight:700;color:#1e1b4b;margin-bottom:12px">Equipment Rental Agreement</h2>
+    <h2 style="font-size:16px;font-weight:700;color:#1e1b4b;margin-bottom:12px">${order.agreement.title || 'Equipment Rental Agreement'}</h2>
     <div style="font-size:12px;line-height:1.8;color:#333;background:#f9fafb;border:1px solid #e5e7eb;padding:16px;border-radius:6px;white-space:pre-wrap;font-family:Georgia,serif">
-      ${order.rentalAgreement.content || ''}
+      ${order.agreement.content || ''}
     </div>
     <div style="margin-top:20px;display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap">
       <div>
