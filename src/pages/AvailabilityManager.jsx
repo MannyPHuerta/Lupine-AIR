@@ -69,6 +69,7 @@ export default function AvailabilityManager() {
   const [aiDeliveryRec, setAiDeliveryRec] = useState(null); // { addedFee: number } when AI fee was applied
   const [aiDeliveryFee, setAiDeliveryFee] = useState(null); // overrides matrix delivery fee when set
   const [pickupTime, setPickupTime] = useState('08:00'); // HH:MM — used for clock_hour billing mode
+  const [returnTime, setReturnTime] = useState('17:00'); // HH:MM — used for clock_hour billing mode
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
@@ -792,19 +793,6 @@ export default function AvailabilityManager() {
         {/* Delivery & Return Methods */}
         <div className="bg-white rounded-xl border shadow-sm px-6 py-4 space-y-4">
           <div className="flex flex-wrap items-center gap-6">
-            {rentalDayMode === 'clock_hour' && (
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-gray-600 whitespace-nowrap">⏰ Pickup Time</label>
-                <input
-                  type="time"
-                  value={pickupTime}
-                  onChange={e => setPickupTime(e.target.value)}
-                  className="border border-input rounded-md px-2 py-1.5 text-sm bg-white w-28"
-                  title="Sets the daily billing anchor time (24-hour rolling)"
-                />
-                <span className="text-xs text-gray-400">sets daily billing anchor</span>
-              </div>
-            )}
             <div className="flex items-center gap-3">
               <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Delivery Method</label>
               <select
@@ -817,6 +805,18 @@ export default function AvailabilityManager() {
                 <option value="shipped">📦 Shipped</option>
               </select>
             </div>
+            {rentalDayMode === 'clock_hour' && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600 whitespace-nowrap">⏰ Pickup Time</label>
+                <input
+                  type="time"
+                  value={pickupTime}
+                  onChange={e => setPickupTime(e.target.value)}
+                  className="border border-input rounded-md px-2 py-1.5 text-sm bg-white w-28"
+                  title="Sets the daily billing anchor time (24-hour rolling)"
+                />
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Return Method</label>
               <select
@@ -829,6 +829,18 @@ export default function AvailabilityManager() {
                 <option value="customer_ships">📦 Customer Ships</option>
               </select>
             </div>
+            {rentalDayMode === 'clock_hour' && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600 whitespace-nowrap">⏰ Return Time</label>
+                <input
+                  type="time"
+                  value={returnTime}
+                  onChange={e => setReturnTime(e.target.value)}
+                  className="border border-input rounded-md px-2 py-1.5 text-sm bg-white w-28"
+                  title="Sets the daily billing anchor time for returns (24-hour rolling)"
+                />
+              </div>
+            )}
           </div>
           {deliveryMethod === 'company_delivery' && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
