@@ -60,6 +60,45 @@ export default function ExpenseLog({ expenses, onRefresh, capitalizationThreshol
     setUploading(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     setForm(f => ({ ...f, receiptUrl: file_url }));
+
+    // AI extraction from receipt image
+    try {
+      const extracted = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an accounting assistant. Extract structured data from this receipt/invoice image.
+Return ONLY a JSON object with these fields (use null if not found):
+- vendor: string (vendor/payee name)
+- vendorInvoiceNumber: string (invoice or PO number on the document)
+- vendorInvoiceDate: string (date on the document, format YYYY-MM-DD)
+- amount: number (total amount due or total paid, as a number with no $ sign)
+- paymentMethod: one of: check, ach, credit_card, cash, wire, other, or null
+- description: string (brief description of what was purchased)`,
+        file_urls: [file_url],
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            vendor: { type: 'string' },
+            vendorInvoiceNumber: { type: 'string' },
+            vendorInvoiceDate: { type: 'string' },
+            amount: { type: 'number' },
+            paymentMethod: { type: 'string' },
+            description: { type: 'string' },
+          }
+        }
+      });
+      setForm(f => ({
+        ...f,
+        receiptUrl: file_url,
+        vendor: extracted.vendor || f.vendor,
+        vendorInvoiceNumber: extracted.vendorInvoiceNumber || f.vendorInvoiceNumber,
+        vendorInvoiceDate: extracted.vendorInvoiceDate || f.vendorInvoiceDate,
+        amount: extracted.amount != null ? String(extracted.amount) : f.amount,
+        paymentMethod: extracted.paymentMethod || f.paymentMethod,
+        description: extracted.description || f.description,
+      }));
+    } catch (_) {
+      // silently ignore extraction errors — receipt is still attached
+    }
+
     setUploading(false);
   };
 
@@ -150,7 +189,7 @@ export default function ExpenseLog({ expenses, onRefresh, capitalizationThreshol
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer border border-dashed border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 transition">
               <Upload className="w-3.5 h-3.5" />
-              {uploading ? 'Uploading…' : form.receiptUrl ? 'Receipt ✓' : 'Attach receipt'}
+              {uploading ? '🤖 Scanning receipt…' : form.receiptUrl ? '✓ Receipt + AI filled' : 'Attach receipt (AI auto-fill)'}
               <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleUpload} />
             </label>
             {form.receiptUrl && (
