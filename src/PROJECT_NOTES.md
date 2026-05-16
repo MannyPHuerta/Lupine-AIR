@@ -249,4 +249,28 @@ To verify SigWeb status on a workstation, visit: `https://tablet.sigwebtablet.co
 
 ---
 
-*Last updated: 2026-05-08*
+---
+
+## Asset Wolf → "Field Reports" — Future Subscriber Rebrand
+
+**Decision (2026-05-16):** Asset Wolf is a Rental World-owned brand. When onboarding future subscribers, the same feature set ships under a new name.
+
+### Planned changes (do NOT implement until first non-Rental-World subscriber is onboarded):
+
+1. **Rename "Asset Wolf" → "Field Reports"** across all UI labels and sidebar sections. The `— Asset Wolf —` divider in AIReports becomes `— Field Reports —`. The `/about` page branding is updated or replaced with a subscriber-specific info page.
+
+2. **Remove `/about` page** from the sidebar nav entirely — it is a Rental World-specific marketing/info page, not a reusable ops tool. Future subscribers will not need it.
+
+3. **Make `/report-form` subscriber-configurable** — the form's categories, disposition options, branch list, notification recipients, and SMS/email routing should all be driven by the subscriber's `BranchSettings` and `CompanySettings` rather than hardcoded Rental World values. This means:
+   - Branch list pulled from `BranchSettings` (already in use elsewhere)
+   - Report categories / disposition types stored in a settings entity or `CompanySettings`
+   - Notification recipients configurable per-branch
+   - The hardcoded `rentalworld.com` email domain assumptions removed
+
+4. **Rental World exception:** Their live instance at `track-wolf-now.base44.app` keeps "Asset Wolf" branding permanently — they own the name.
+
+*Logged: 2026-05-16*
+
+---
+
+*Last updated: 2026-05-16*
