@@ -189,13 +189,27 @@ Stripe, Square, PayPal, Authorize.Net, Amazon Pay, Wise, QuickBooks
 
 ---
 
-## Roadmap: Merging Asset Wolf → AIR
+## Architecture: Asset Wolf as a Standalone Module
 
-The goal is to eventually incorporate Asset Wolf's functionality into the AIR platform as a module. Until then:
-1. Asset Wolf routes stay at their current paths
-2. The `/` home route stays as `ReportForm` (Asset Wolf)  
-3. AIR lives under `/air`, `/airental`, `/availability`, `/lupine`, etc.
-4. Do NOT change Asset Wolf business logic while building out AIR features
+Asset Wolf is fundamentally **decoupled from AIR** — there is no necessary integration between them, nor should there be. They operate independently:
+
+- **Asset Wolf** = field/operations reporting tool (disposal, repair, sale leads)
+- **AIR** = rental management platform
+
+This separation is intentional and clean. Asset Wolf could be extracted into a standalone app at any time without affecting AIR. They share the same Base44 instance and auth system, but their data models, workflows, and users are distinct.
+
+### Current Structure
+1. Asset Wolf routes at `/` → `/report-form`, `/pending`, `/history`, `/marketplace`, `/analytics`
+2. AIR routes at `/air`, `/airental`, `/availability`, `/manager`, `/dispatch`, etc.
+3. No cross-references between Asset Wolf entities (Report) and AIR entities (Rental, Equipment, etc.)
+
+### Future: One App Per Subscriber
+When onboarding subscribers, we can:
+- Deploy a **standalone Field Reports app** (rebrand of Asset Wolf) if they only need field reporting
+- Deploy **full AIR platform** if they need rental + dispatch + accounting
+- Deploy **both** side-by-side if they need everything
+
+No forced coupling required.
 
 ---
 
