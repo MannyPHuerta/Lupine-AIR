@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Trash2, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Upload, X, FileUp } from 'lucide-react';
+import ExpenseBulkImporter from './ExpenseBulkImporter';
 
 const CATEGORIES = [
   'Fuel', 'Repairs / Parts', 'Labor', 'Shop Supplies', 'Insurance',
@@ -36,6 +37,7 @@ export default function ExpenseLog({ expenses, onRefresh, capitalizationThreshol
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showBulkImporter, setShowBulkImporter] = useState(false);
 
   const handleSave = async () => {
     if (!form.amount || !form.date || !form.branch) return;
@@ -116,15 +118,34 @@ Return ONLY a JSON object with these fields (use null if not found):
   const wouldCapitalize = isEquipmentPurchase && parseFloat(form.amount || 0) >= capitalizationThreshold;
 
   return (
+    <>
+      {showBulkImporter && (
+        <ExpenseBulkImporter
+          branch={form.branch}
+          onClose={() => setShowBulkImporter(false)}
+          onSuccess={() => {
+            onRefresh();
+            setShowForm(false);
+          }}
+        />
+      )}
     <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
       <div className="px-5 py-3 border-b flex items-center justify-between">
         <div className="font-semibold text-gray-900 text-sm">Expense Log ({expenses.length})</div>
-        <button
-          onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
-        >
-          <Plus className="w-3.5 h-3.5" /> Add Expense
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBulkImporter(true)}
+            className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+          >
+            <FileUp className="w-3.5 h-3.5" /> Bulk Import
+          </button>
+          <button
+            onClick={() => setShowForm(v => !v)}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Expense
+          </button>
+        </div>
       </div>
 
       {/* Add form */}
@@ -283,5 +304,6 @@ Return ONLY a JSON object with these fields (use null if not found):
         </table>
       </div>
     </div>
+    </>
   );
 }
