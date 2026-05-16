@@ -60,6 +60,8 @@ export default function RFQDetail() {
   const [companySettings, setCompanySettings] = useState(null);
   // Track the live record ID separately so steps 2-4 always have it even after ensureSaved navigates
   const [recordId, setRecordId] = useState(isNew ? null : id);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [templates, setTemplates] = useState([]);
 
   useEffect(() => {
     // Load company settings for use in AI prompt
@@ -200,6 +202,15 @@ export default function RFQDetail() {
     const newValue = !rfq.isTemplate;
     setRfq(prev => ({ ...prev, isTemplate: newValue }));
     await base44.entities.RFQRecord.update(recordId, { isTemplate: newValue });
+  };
+
+  const loadTemplateResponse = async (templateId) => {
+    const templates = await base44.entities.RFQRecord.list('-created_date', 500);
+    const template = templates.find(t => t.id === templateId);
+    if (template && template.responseNarrative) {
+      update('responseNarrative', template.responseNarrative);
+      setShowTemplateDialog(false);
+    }
   };
 
   const handleRunAll = async () => {
@@ -666,6 +677,19 @@ export default function RFQDetail() {
             {/* Response editor + controls */}
             {(rfq.responseNarrative || rfq.manualResponseMode) && (
               <div className="flex justify-end gap-2 print-hidden">
+                <Button
+                  onClick={async () => {
+                    const ts = await base44.entities.RFQRecord.filter({ isTemplate: true, orgType: rfq.orgType }, 'created_date', 100);
+                    setTemplates(ts);
+                    setShowTemplateDialog(true);
+                  }}
+                  disabled={!rfq.orgType}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-blue-700 border-blue-300 hover:bg-blue-50"
+                >
+                  <Eye className="w-4 h-4" /> Load Template
+                </Button>
                 {!rfq.manualResponseMode && (
                   <Button
                     onClick={() => handleStep4(false)}
@@ -686,6 +710,37 @@ export default function RFQDetail() {
                 >
                   <Star className="w-4 h-4" /> {rfq.isTemplate ? 'Template ✓' : 'Save as Template'}
                 </Button>
+              </div>
+            )}
+
+            {/* Template selector dialog */}
+            {showTemplateDialog && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-96 overflow-hidden flex flex-col">
+                  <div className="border-b p-4 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900">Load Template Response</h3>
+                    <button onClick={() => setShowTemplateDialog(false)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto flex-1 space-y-1 p-3">
+                    {templates.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400 text-sm">No template responses yet for {rfq.orgType} organizations.</div>
+                    ) : (
+                      templates.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => loadTemplateResponse(t.id)}
+                          className="w-full text-left p-3 rounded-lg border hover:bg-blue-50 hover:border-blue-300 transition"
+                        >
+                          <div className="font-medium text-gray-900 text-sm">{t.issuingOrg}</div>
+                          <div className="text-xs text-gray-500 truncate">{(t.responseNarrative || '').slice(0, 100)}...</div>
+                          <div className="text-xs text-gray-400 mt-0.5">RFQ: {t.rfqNumber || 'N/A'}</div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
