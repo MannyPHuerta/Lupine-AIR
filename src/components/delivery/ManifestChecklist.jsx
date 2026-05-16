@@ -1,6 +1,27 @@
 import { CheckCircle2, Circle } from 'lucide-react';
 
-export default function ManifestChecklist({ items, onCheckItem }) {
+function ClockInQR({ branch, jobReference, jobType }) {
+  if (!branch && !jobReference) return null;
+  const params = new URLSearchParams();
+  if (branch) params.set('branch', branch);
+  if (jobReference) params.set('job', jobReference);
+  if (jobType) params.set('jobType', jobType);
+  const url = `${window.location.origin}/clockin?${params.toString()}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(url)}`;
+  return (
+    <div className="border rounded-lg p-3 bg-indigo-50 flex items-center gap-3">
+      <img src={qrUrl} alt="Clock-in QR" className="w-20 h-20 flex-shrink-0" />
+      <div className="text-xs text-indigo-800">
+        <div className="font-bold mb-1">📲 Staff Clock-In</div>
+        <div>Branch: {branch || '—'}</div>
+        {jobReference && <div>Job: {jobReference}</div>}
+        <div className="text-indigo-500 mt-1 break-all">{url}</div>
+      </div>
+    </div>
+  );
+}
+
+export default function ManifestChecklist({ items, onCheckItem, branch, jobReference, jobType }) {
   const allChecked = items.every(i => i.checked);
 
   return (
@@ -35,6 +56,8 @@ export default function ManifestChecklist({ items, onCheckItem }) {
           Check off all items before departing
         </div>
       )}
+
+      <ClockInQR branch={branch} jobReference={jobReference} jobType={jobType} />
     </div>
   );
 }

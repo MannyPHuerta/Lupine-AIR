@@ -252,6 +252,17 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
 
   ${agreementHtml}
 
+  ${order.clockInUrl ? `
+  <div style="border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px;display:flex;align-items:center;gap:16px;background:#eef2ff;border-radius:8px;padding:12px 16px;">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(order.clockInUrl)}" style="width:80px;height:80px;flex-shrink:0" alt="Clock-in QR" />
+    <div style="font-size:11px;color:#3730a3;">
+      <div style="font-weight:700;font-size:12px;margin-bottom:4px">📲 Staff / Crew Clock-In</div>
+      <div>Scan to log hours for this job.</div>
+      ${order.id ? `<div style="margin-top:2px">Invoice: ${order.id}</div>` : ''}
+      <div style="color:#6366f1;margin-top:4px;font-size:10px;word-break:break-all">${order.clockInUrl}</div>
+    </div>
+  </div>` : ''}
+
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
     ${company.invoiceFooter || `Thank you for your business! Questions? Contact us at ${branch.email || branch.phone || 'your local branch'}.`}
   </div>

@@ -450,6 +450,7 @@ export default function AvailabilityManager() {
         paymentMethod,
         deliveryFee: dFee,
         returnFee: rFee,
+        clockInUrl: (() => { const p = new URLSearchParams(); if (customer.branch) p.set('branch', customer.branch); if (invNumber) p.set('job', invNumber); p.set('jobType', deliveryMethod === 'company_delivery' ? 'delivery' : 'general'); return `${window.location.origin}/clockin?${p.toString()}`; })(),
       };
 
       const rentalIds = await handleSave('confirmed');
@@ -491,6 +492,7 @@ export default function AvailabilityManager() {
         paymentMethod: paymentMethod || '',
         deliveryFee: dFee,
         returnFee: rFee,
+        clockInUrl: (() => { const p = new URLSearchParams(); if (customer.branch) p.set('branch', customer.branch); if (invNumber) p.set('job', invNumber); p.set('jobType', deliveryMethod === 'company_delivery' ? 'delivery' : 'general'); return `${window.location.origin}/clockin?${p.toString()}`; })(),
       },
       totalDue,
     });

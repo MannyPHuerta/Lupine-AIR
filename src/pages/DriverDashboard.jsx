@@ -539,6 +539,28 @@ function PrintPreviewModal({ filterDate, driver, deliveries, recoveries, onClose
             </div>
           )}
 
+          {/* Clock-in QR codes per delivery */}
+          {deliveries.length > 0 && (
+            <div className="mt-4 border-t pt-4">
+              <div className="font-bold mb-2 text-sm">STAFF CLOCK-IN QR CODES</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                {deliveries.map((d, idx) => {
+                  const params = new URLSearchParams();
+                  if (d.branch) params.set('branch', d.branch);
+                  if (d.rentalId) params.set('job', d.rentalId);
+                  params.set('jobType', 'delivery');
+                  const url = `${window.location.origin}/clockin?${params.toString()}`;
+                  return (
+                    <div key={d.id} style={{ textAlign: 'center', fontSize: '9pt' }}>
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(url)}`} style={{ width: '80px', height: '80px', display: 'block' }} alt="" />
+                      <div style={{ fontWeight: 'bold', marginTop: '4px' }}>{idx + 1}. {d.customerName}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {deliveries.length === 0 && recoveries.length === 0 && (
             <p className="text-sm text-gray-500">No activities on {format(parseISO(filterDate), 'MMM d')}</p>
           )}

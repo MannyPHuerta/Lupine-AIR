@@ -194,6 +194,9 @@ export default function DeliveryDetail() {
               updated[idx].checked = checked;
               setDelivery({ ...delivery, items: updated });
             }}
+            branch={delivery.branch}
+            jobReference={delivery.rentalId}
+            jobType="delivery"
           />
         ) : null}
 
