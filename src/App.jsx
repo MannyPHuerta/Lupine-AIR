@@ -77,6 +77,7 @@ import DriverReport from "./pages/DriverReport";
 import RFQManager from "./pages/RFQManager";
 import RFQDetail from "./pages/RFQDetail";
 import AgreementSigningFlow from "./pages/AgreementSigningFlow";
+import Timesheets from "./pages/Timesheets";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -177,6 +178,7 @@ const AuthenticatedApp = () => {
         <Route path="/rfq" element={<RFQManager />} />
         <Route path="/rfq/:id" element={<RFQDetail />} />
         <Route path="/agreement-signing" element={<AgreementSigningFlow />} />
+        <Route path="/timesheets" element={<Timesheets />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

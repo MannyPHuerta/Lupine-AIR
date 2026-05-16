@@ -1,0 +1,115 @@
+{
+  "name": "Timesheet",
+  "type": "object",
+  "properties": {
+    "staffName": {
+      "type": "string",
+      "description": "Staff member full name"
+    },
+    "staffEmail": {
+      "type": "string",
+      "description": "Staff member email (optional, links to User if exists)"
+    },
+    "staffType": {
+      "type": "string",
+      "enum": [
+        "full_time",
+        "part_time",
+        "temp",
+        "event"
+      ],
+      "default": "temp",
+      "description": "Type of staff member"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch location"
+    },
+    "jobReference": {
+      "type": "string",
+      "description": "Linked job \u2014 invoice number, event name, or delivery ID"
+    },
+    "jobType": {
+      "type": "string",
+      "enum": [
+        "delivery",
+        "event",
+        "shop",
+        "laundry",
+        "general"
+      ],
+      "default": "general",
+      "description": "Type of job worked"
+    },
+    "workDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date worked"
+    },
+    "clockIn": {
+      "type": "string",
+      "description": "Clock-in time (HH:MM 24h)"
+    },
+    "clockOut": {
+      "type": "string",
+      "description": "Clock-out time (HH:MM 24h)"
+    },
+    "hoursWorked": {
+      "type": "number",
+      "description": "Total hours worked (auto-calculated or manual override)"
+    },
+    "overtimeHours": {
+      "type": "number",
+      "default": 0,
+      "description": "Hours over 8 in a day (auto-calculated)"
+    },
+    "hourlyRate": {
+      "type": "number",
+      "description": "Hourly pay rate (USD)"
+    },
+    "regularPay": {
+      "type": "number",
+      "description": "Regular pay for this entry (USD)"
+    },
+    "overtimePay": {
+      "type": "number",
+      "description": "Overtime pay for this entry (USD)"
+    },
+    "totalPay": {
+      "type": "number",
+      "description": "Total pay for this entry (USD)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "paid"
+      ],
+      "default": "pending",
+      "description": "Approval status"
+    },
+    "approvedBy": {
+      "type": "string",
+      "description": "Email of manager who approved"
+    },
+    "approvedAt": {
+      "type": "string",
+      "description": "ISO timestamp of approval"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes about the shift"
+    },
+    "payPeriod": {
+      "type": "string",
+      "description": "Pay period identifier (e.g. 2026-W20)"
+    }
+  },
+  "required": [
+    "staffName",
+    "workDate",
+    "branch"
+  ]
+}

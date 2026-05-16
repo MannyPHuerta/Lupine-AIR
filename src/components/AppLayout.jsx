@@ -5,7 +5,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -96,6 +96,7 @@ const navGroups = [
       { label: 'Rental Agreement', path: '/rental-agreement', icon: FileText },
       { label: 'Branch Settings', path: '/branch-settings', icon: Building2 },
       { label: 'Company Settings', path: '/company-settings', icon: Building2 },
+      { label: 'Timesheets', path: '/timesheets', icon: Clock },
       { label: 'Employee Profiles', path: '/employee-profiles', icon: UserCog },
       { label: 'Roles', path: '/roles', icon: Shield },
       { label: 'Branding', path: '/branding', icon: Star },
