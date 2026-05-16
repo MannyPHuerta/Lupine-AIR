@@ -78,6 +78,7 @@ import RFQManager from "./pages/RFQManager";
 import RFQDetail from "./pages/RFQDetail";
 import AgreementSigningFlow from "./pages/AgreementSigningFlow";
 import Timesheets from "./pages/Timesheets";
+import ClockIn from "./pages/ClockIn";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -199,6 +200,7 @@ function App() {
             <Route path="/airevents" element={<AIREvents />} />
             <Route path="/airfq" element={<AIRfq />} />
             <Route path="/report/:id" element={<ReportView />} />
+            <Route path="/clockin" element={<ClockIn />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Clock, Plus, CheckCircle, XCircle, DollarSign, Download, Filter, Loader2, ChevronDown } from 'lucide-react';
+import { Clock, Plus, CheckCircle, XCircle, DollarSign, Download, Filter, Loader2, ChevronDown, QrCode, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import QRCodeGenerator from '@/components/timesheets/QRCodeGenerator';
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
 const JOB_TYPES = ['delivery', 'event', 'shop', 'laundry', 'general'];
@@ -154,6 +155,13 @@ export default function Timesheets() {
   const [filterBranch, setFilterBranch] = useState('all');
   const [filterWeek, setFilterWeek] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(u => { setUser(u); setAuthChecked(true); }).catch(() => setAuthChecked(true));
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -162,7 +170,7 @@ export default function Timesheets() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (authChecked && user?.role === 'admin') load(); }, [authChecked]);
 
   const filtered = entries.filter(e => {
     if (filterStatus !== 'all' && e.status !== filterStatus) return false;
@@ -208,6 +216,16 @@ export default function Timesheets() {
     load();
   };
 
+  // Admin gate
+  if (!authChecked) return <div className="flex justify-center items-center min-h-screen"><Loader2 className="w-6 h-6 animate-spin text-indigo-600" /></div>;
+  if (user?.role !== 'admin') return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-gray-500">
+      <ShieldAlert className="w-12 h-12 text-red-400" />
+      <div className="text-lg font-semibold">Admin Access Required</div>
+      <div className="text-sm">Contact your manager to access timesheets.</div>
+    </div>
+  );
+
   const handleExportCSV = () => {
     const rows = [
       ['Name', 'Type', 'Branch', 'Date', 'Job', 'Clock In', 'Clock Out', 'Hours', 'OT Hours', 'Rate', 'Regular Pay', 'OT Pay', 'Total Pay', 'Status', 'Pay Period'],
@@ -239,6 +257,9 @@ export default function Timesheets() {
           <div className="flex gap-2">
             <Button onClick={handleExportCSV} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
               <Download className="w-4 h-4" /> Export CSV
+            </Button>
+            <Button onClick={() => setShowQR(true)} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
+              <QrCode className="w-4 h-4" /> QR Code
             </Button>
             <Button onClick={() => { setEditEntry(null); setShowModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 gap-1">
               <Plus className="w-4 h-4" /> Log Hours
@@ -365,6 +386,8 @@ export default function Timesheets() {
           </div>
         )}
       </div>
+
+      {showQR && <QRCodeGenerator onClose={() => setShowQR(false)} />}
 
       {showModal && (
         <EntryModal
