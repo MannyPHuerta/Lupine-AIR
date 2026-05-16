@@ -374,7 +374,10 @@ export default function RentalHistory() {
   const [branchSettings, setBranchSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [invoiceSearch, setInvoiceSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [editingOrder, setEditingOrder] = useState(null);
 
   const reload = () => {
@@ -427,30 +430,66 @@ export default function RentalHistory() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
-        <div className="flex gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="space-y-3">
+          <div className="flex gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search customer, phone, email, equipment..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
             <Input
-              placeholder="Search customer, phone, email, equipment..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9"
+              placeholder="Invoice #"
+              value={invoiceSearch}
+              onChange={e => setInvoiceSearch(e.target.value)}
+              className="w-32"
             />
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="border rounded-md px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="all">All Statuses</option>
+              <option value="quote">Quote</option>
+              <option value="reservation">Reservation</option>
+              <option value="contract">Contract</option>
+              <option value="out">Out on Rental</option>
+              <option value="returned">Returned</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="border rounded-md px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="quote">Quote</option>
-            <option value="reservation">Reservation</option>
-            <option value="contract">Contract</option>
-            <option value="out">Out on Rental</option>
-            <option value="returned">Returned</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <div className="flex gap-3 flex-wrap items-end">
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">From Date</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">To Date</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            {(dateFrom || dateTo || invoiceSearch) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); setInvoiceSearch(''); }}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
