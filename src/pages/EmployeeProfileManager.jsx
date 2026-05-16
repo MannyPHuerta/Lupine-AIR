@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit2, Trash2, Loader2, Badge, Wrench, Calendar, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Loader2, Badge, Wrench, Calendar, Save, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+
+const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
 const EQUIPMENT_CATEGORIES = [
   'Air Compressor', 'Backhoe', 'Boom Lift', 'Bulldozer', 'Chair', 'Chipper/Shredder',
@@ -26,13 +28,15 @@ const PLANNER_CERTS = [
 
 export default function EmployeeProfileManager() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('mechanics'); // 'mechanics' | 'planners'
+  const [tab, setTab] = useState('staff'); // 'staff' | 'mechanics' | 'planners'
   const [mechanics, setMechanics] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editingUserForm, setEditingUserForm] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -78,6 +82,29 @@ export default function EmployeeProfileManager() {
     setMechanics(prev => prev.filter(m => m.id !== id));
   };
 
+  const startEditUser = (user) => {
+    setEditingUserId(user.id);
+    setEditingUserForm({ ...user });
+  };
+
+  const cancelEditUser = () => {
+    setEditingUserId(null);
+    setEditingUserForm(null);
+  };
+
+  const handleSaveUser = async () => {
+    setSaving(true);
+    try {
+      await base44.entities.User.update(editingUserId, { homeBranch: editingUserForm.homeBranch });
+      setUsers(prev => prev.map(u => u.id === editingUserId ? editingUserForm : u));
+      cancelEditUser();
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCreateNew = async (userEmail) => {
     const user = users.find(u => u.email === userEmail);
     if (!user) return;
@@ -119,7 +146,7 @@ export default function EmployeeProfileManager() {
         </div>
         {/* Tabs */}
         <div className="px-4 max-w-6xl mx-auto flex gap-1">
-          {[{ key: 'mechanics', label: 'Mechanics', icon: Wrench }, { key: 'planners', label: 'Planners', icon: Calendar }].map(t => {
+          {[{ key: 'staff', label: 'Staff Home Branches', icon: Users }, { key: 'mechanics', label: 'Mechanics', icon: Wrench }, { key: 'planners', label: 'Planners', icon: Calendar }].map(t => {
             const Icon = t.icon;
             return (
               <button
@@ -137,7 +164,75 @@ export default function EmployeeProfileManager() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {tab === 'mechanics' ? (
+        {tab === 'staff' ? (
+          <>
+            {/* Staff home branches */}
+            <div className="space-y-3">
+              {users.length === 0 ? (
+                <div className="bg-white rounded-lg border p-8 text-center text-gray-400">No staff registered yet</div>
+              ) : (
+                users.map(user => (
+                  <div key={user.id} className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                    {editingUserId === user.id ? (
+                      // Edit mode
+                      <div className="p-5 space-y-4 border-t">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-medium text-gray-600 block mb-1">Full Name</label>
+                            <Input value={user.full_name} disabled className="bg-gray-100" />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-gray-600 block mb-1">Email</label>
+                            <Input type="email" value={user.email} disabled className="bg-gray-100" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-2">Home Branch</label>
+                          <select
+                            value={editingUserForm.homeBranch || ''}
+                            onChange={e => setEditingUserForm(f => ({ ...f, homeBranch: e.target.value }))}
+                            className="w-full border border-input rounded-md px-3 py-2 text-sm bg-white"
+                          >
+                            <option value="">— Not set —</option>
+                            {BRANCHES.map(b => (
+                              <option key={b} value={b}>{b}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2 justify-end pt-2 border-t">
+                          <Button variant="outline" size="sm" onClick={cancelEditUser}>Cancel</Button>
+                          <Button size="sm" onClick={handleSaveUser} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+                            {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Read mode
+                      <div className="px-5 py-4 flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">{user.full_name || user.email}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{user.email}</div>
+                          {user.homeBranch && (
+                            <div className="text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded inline-block mt-2">
+                              🏠 Home: {user.homeBranch}
+                            </div>
+                          )}
+                          {!user.homeBranch && (
+                            <div className="text-xs text-gray-500 mt-2">— no home branch set —</div>
+                          )}
+                        </div>
+                        <button onClick={() => startEditUser(user)} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded hover:bg-gray-50">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        ) : tab === 'mechanics' ? (
           <>
             {/* Quick add for unassigned mechanics */}
             {getMechanicUsers().filter(u => !mechanicEmails.has(u.email)).length > 0 && (

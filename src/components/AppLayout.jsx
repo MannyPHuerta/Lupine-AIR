@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import { useWorkingBranch } from '@/lib/WorkingBranchContext';
+import WorkingBranchModal from '@/components/WorkingBranchModal';
+import { base44 } from '@/api/base44Client';
 import {
   LayoutDashboard, Calendar, Truck, RotateCcw, Users, BarChart3,
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
@@ -153,6 +156,19 @@ function NavGroup({ group, location, onNavigate }) {
 export default function AppLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { workingBranch, loading } = useWorkingBranch();
+  const [user, setUser] = useState(null);
+  const [showBranchModal, setShowBranchModal] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(u => {
+      setUser(u);
+      // Show modal on first load if no working branch selected
+      if (!workingBranch && !loading) {
+        setShowBranchModal(true);
+      }
+    }).catch(() => {});
+  }, [workingBranch, loading]);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -196,6 +212,7 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {showBranchModal && <WorkingBranchModal user={user} onClose={() => setShowBranchModal(false)} />}
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-56 bg-slate-800 flex-shrink-0 overflow-hidden">
         <SidebarContent />

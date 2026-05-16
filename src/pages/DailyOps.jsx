@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
+import BranchMismatchBadge from '@/components/BranchMismatchBadge';
 import {
   Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
   Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft
@@ -113,6 +114,7 @@ export default function DailyOps() {
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState('All Branches');
   const [user, setUser] = useState(null);
+  const [workingBranch, setWorkingBranch] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -124,6 +126,8 @@ export default function DailyOps() {
     setUser(me);
     setRentals(r);
     setEquipment(eq);
+    const stored = localStorage.getItem('workingBranch');
+    setWorkingBranch(stored);
     setLoading(false);
   };
 
@@ -227,6 +231,9 @@ export default function DailyOps() {
               <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
                 <RefreshCw className="w-4 h-4" />
               </button>
+              {user?.homeBranch && workingBranch && user.homeBranch !== workingBranch && (
+                <BranchMismatchBadge userHomeBranch={user.homeBranch} />
+              )}
               <button
                 onClick={() => navigate('/counter')}
                 className="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg text-sm transition"
