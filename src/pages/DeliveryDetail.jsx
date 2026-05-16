@@ -73,6 +73,18 @@ export default function DeliveryDetail() {
         await base44.entities.Rental.update(rental.id, { status: 'out' });
         setRental(r => ({ ...r, status: 'out' }));
       }
+
+      // On delivery complete: also ensure rental is "out" and update Equipment unitStatus
+      if (newStatus === 'completed' && rental?.id) {
+        if (['contract', 'reservation', 'quote'].includes(rental.status)) {
+          await base44.entities.Rental.update(rental.id, { status: 'out' });
+          setRental(r => ({ ...r, status: 'out' }));
+        }
+        // Mark equipment as out_on_rental
+        if (rental.equipmentId) {
+          await base44.entities.Equipment.update(rental.equipmentId, { unitStatus: 'out_on_rental' });
+        }
+      }
     } catch (err) {
       alert(`Error: ${err.message}`);
     } finally {

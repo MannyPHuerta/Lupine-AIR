@@ -80,6 +80,23 @@ export default function ShopFloor() {
     return woParts.some(p => p.isCritical && p.status !== 'in_stock' && p.status !== 'received');
   };
 
+  const handleCompleteWO = async (wo) => {
+    const needsLaundry = confirm(`Is "${wo.equipmentName}" clean and ready to rent, or does it still need laundry/washing?\n\nOK = Send to Laundry\nCancel = Mark Available Now`);
+    try {
+      await base44.entities.WorkOrder.update(wo.id, {
+        status: 'completed',
+        completedDate: new Date().toISOString().split('T')[0],
+      });
+      await base44.entities.Equipment.update(wo.equipmentId, {
+        unitStatus: needsLaundry ? 'in_laundry' : 'available',
+      });
+      alert(needsLaundry ? '✓ Work order complete — equipment sent to laundry' : '✓ Work order complete — equipment marked available');
+      load();
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
   const handleAssign = async (woId, mechanicEmail) => {
     setAssignmentLoading(true);
     try {
@@ -322,9 +339,17 @@ export default function ShopFloor() {
                   {/* Current job */}
                   {currentJob && (
                     <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Clock className="w-3 h-3 text-blue-600" />
-                        <span className="text-xs font-semibold text-blue-900">NOW</span>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3 h-3 text-blue-600" />
+                          <span className="text-xs font-semibold text-blue-900">IN PROGRESS</span>
+                        </div>
+                        <button
+                          onClick={() => handleCompleteWO(currentJob)}
+                          className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition"
+                        >
+                          <Check className="w-3 h-3" /> Complete
+                        </button>
                       </div>
                       <div className="text-sm font-medium text-gray-900">{currentJob.equipmentName}</div>
                       <div className="text-xs text-gray-600">{currentJob.description}</div>
@@ -351,9 +376,15 @@ export default function ShopFloor() {
                     <div className="space-y-1 text-xs">
                       <div className="text-gray-600 font-medium">Queue ({scheduled.length})</div>
                       {scheduled.map((job, idx) => (
-                        <div key={job.id} className="flex items-center gap-2 text-gray-700">
+                        <div key={job.id} className="flex items-center gap-2 text-gray-700 py-0.5">
                           <span className="text-gray-400">#{idx + 1}</span>
-                          <span className="truncate">{job.equipmentName}</span>
+                          <span className="truncate flex-1">{job.equipmentName}</span>
+                          <button
+                            onClick={() => handleCompleteWO(job)}
+                            className="flex-shrink-0 px-2 py-0.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                          >
+                            ✓ Done
+                          </button>
                         </div>
                       ))}
                     </div>

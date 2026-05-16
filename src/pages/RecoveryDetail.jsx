@@ -247,55 +247,65 @@ export default function RecoveryDetail() {
           )}
           {recovery.status === 'returned_to_branch' && (
             <>
-              <div className="flex gap-3 items-center justify-center bg-gray-50 p-3 rounded-lg border">
+              <div className="bg-gray-50 p-3 rounded-lg border space-y-2">
+                <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Route equipment to:</div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={needsRepair}
                     onChange={e => setNeedsRepair(e.target.checked)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 accent-orange-600"
                   />
-                  <span className="text-sm font-medium text-gray-700">Repair</span>
+                  <span className="text-sm font-medium text-gray-700">🔧 Needs Repair (Shop)</span>
                 </label>
-                <div className="text-gray-300">|</div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={needsLaundry}
                     onChange={e => setNeedsLaundry(e.target.checked)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 accent-blue-600"
                   />
-                  <span className="text-sm font-medium text-gray-700">Washing/Laundry</span>
+                  <span className="text-sm font-medium text-gray-700">🧼 Needs Washing/Laundry</span>
                 </label>
               </div>
-              {needsRepair && (
+
+              {/* Can select BOTH repair and laundry — they're independent */}
+              {(needsRepair || needsLaundry) && (
                 <Button
                   onClick={async () => {
-                    await base44.entities.Equipment.update(recovery.equipmentId, { unitStatus: 'in_shop' });
-                    alert('✓ Equipment marked for repair');
+                    // If repair needed, shop takes priority for unitStatus; laundry queued after
+                    const newStatus = needsRepair ? 'in_shop' : 'in_laundry';
+                    await base44.entities.Equipment.update(recovery.equipmentId, { unitStatus: newStatus });
+                    const msg = needsRepair && needsLaundry
+                      ? '✓ Equipment sent to Shop for repair. After repair, send to Laundry.'
+                      : needsRepair
+                        ? '✓ Equipment marked for repair (Shop)'
+                        : '✓ Equipment marked for washing/laundry';
+                    alert(msg);
+                    await handleStatusUpdate('completed');
                   }}
                   disabled={updating}
-                  className="w-full bg-orange-600 hover:bg-orange-700"
+                  className={`w-full ${needsRepair ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                 >
-                  🔧 Send to Shop
-                </Button>
-              )}
-              {needsLaundry && (
-                <Button
-                  onClick={async () => {
-                    await base44.entities.Equipment.update(recovery.equipmentId, { unitStatus: 'in_laundry' });
-                    alert('✓ Equipment marked for washing/laundry');
-                  }}
-                  disabled={updating}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  🧼 Send to Laundry
-                </Button>
-              )}
-              {!needsRepair && !needsLaundry && (
-                <Button onClick={() => handleStatusUpdate('completed')} disabled={updating} className="w-full bg-green-600 hover:bg-green-700">
                   {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-                  Mark Recovery Complete
+                  {needsRepair && needsLaundry ? 'Send to Shop (then Laundry)' : needsRepair ? 'Send to Shop' : 'Send to Laundry'}
+                </Button>
+              )}
+
+              {!needsRepair && !needsLaundry && (
+                <Button
+                  onClick={async () => {
+                    // Reset equipment to available
+                    if (recovery.equipmentId) {
+                      await base44.entities.Equipment.update(recovery.equipmentId, { unitStatus: 'available' });
+                    }
+                    await handleStatusUpdate('completed');
+                  }}
+                  disabled={updating}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                  Mark Complete — Return to Available
                 </Button>
               )}
             </>
