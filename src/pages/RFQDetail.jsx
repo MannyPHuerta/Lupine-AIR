@@ -155,6 +155,8 @@ export default function RFQDetail() {
   const handleStep2 = async () => {
     const rid = await ensureSaved();
     setStepRunning(2);
+    // Save current state before running AI in case of timeout
+    const backupState = { ...rfq };
     try {
       const result = await base44.functions.invoke('rfqStep2Compliance', { rfqId: rid });
       if (result.data?.error) throw new Error(result.data.error);
@@ -162,6 +164,8 @@ export default function RFQDetail() {
       setActiveTab('compliance');
     } catch (err) {
       alert('Step 2 failed: ' + err.message);
+      // Restore from backup if data was lost
+      setRfq(backupState);
     } finally {
       setStepRunning(null);
     }
@@ -170,6 +174,8 @@ export default function RFQDetail() {
   const handleStep3 = async () => {
     const rid = await ensureSaved();
     setStepRunning(3);
+    // Save current state before running AI in case of timeout
+    const backupState = { ...rfq };
     try {
       const result = await base44.functions.invoke('rfqStep3LineItems', { rfqId: rid });
       if (result.data?.error) throw new Error(result.data.error);
@@ -177,6 +183,8 @@ export default function RFQDetail() {
       setActiveTab('lineitems');
     } catch (err) {
       alert('Step 3 failed: ' + err.message);
+      // Restore from backup if data was lost
+      setRfq(backupState);
     } finally {
       setStepRunning(null);
     }
@@ -657,7 +665,7 @@ export default function RFQDetail() {
         {activeTab === 'response' && (
           <div className="space-y-4">
             {/* Load external previous response — always available */}
-            {!rfq.responseNarrative && !rfq.manualResponseMode && (
+            {(!rfq.manualResponseMode || styleGuide) && (
               <div className="bg-blue-50 rounded-lg border-2 border-blue-200 p-5 space-y-4">
                 <div className="font-semibold text-gray-900 border-b pb-2">Import Previous Response (Optional)</div>
                 <div className="text-xs text-gray-600 mb-3">Load a response you've written before — paste text or upload a document to start from.</div>
