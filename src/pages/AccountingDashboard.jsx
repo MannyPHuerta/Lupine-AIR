@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import InvoiceDrawer from '@/components/accounting/InvoiceDrawer';
 import ProfitLossStatement from '@/components/accounting/ProfitLossStatement';
 import ExpenseLog from '@/components/accounting/ExpenseLog';
+import JobProfitLoss from '@/components/accounting/JobProfitLoss';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 const CAPITALIZATION_THRESHOLD = 2500;
@@ -124,12 +125,14 @@ const TABS = [
   { id: 'overview', label: 'Overview', icon: <BarChart2 className="w-4 h-4" /> },
   { id: 'pl', label: 'P&L Statement', icon: <FileText className="w-4 h-4" /> },
   { id: 'expenses', label: 'Expenses', icon: <Receipt className="w-4 h-4" /> },
+  { id: 'jobpl', label: 'Job P&L', icon: <FileText className="w-4 h-4" /> },
 ];
 
 export default function AccountingDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [rentals, setRentals] = useState([]);
+  const [timesheets, setTimesheets] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,16 +148,18 @@ export default function AccountingDashboard() {
 
   const load = async () => {
     setLoading(true);
-    const [me, r, exp, eq] = await Promise.all([
+    const [me, r, exp, eq, ts] = await Promise.all([
       base44.auth.me(),
       base44.entities.Rental.list('-startDate', 2000),
       base44.entities.Expense.list('-date', 2000),
       base44.entities.Equipment.list('-created_date', 500),
+      base44.entities.Timesheet.list('-workDate', 2000),
     ]);
     setUser(me);
     setRentals(r);
     setExpenses(exp);
     setEquipment(eq);
+    setTimesheets(ts);
     setLoading(false);
   };
 
@@ -421,6 +426,19 @@ export default function AccountingDashboard() {
             expenses={filteredExpenses}
             onRefresh={loadExpenses}
             capitalizationThreshold={CAPITALIZATION_THRESHOLD}
+          />
+        )}
+
+        {/* ── JOB P&L TAB ── */}
+        {activeTab === 'jobpl' && (
+          <JobProfitLoss
+            rentals={filtered}
+            timesheets={timesheets.filter(t => {
+              const branchMatch = branch === 'All Branches' || t.branch === branch;
+              const dateMatch = (!dateFrom || t.workDate >= dateFrom) && (!dateTo || t.workDate <= dateTo);
+              return branchMatch && dateMatch;
+            })}
+            expenses={filteredExpenses}
           />
         )}
 
