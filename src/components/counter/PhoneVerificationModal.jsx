@@ -57,7 +57,7 @@ export default function PhoneVerificationModal({ customer, onVerified, onFailed,
 
   const handleSkipCall = async () => {
     await logOutcome('skipped', 'Counter staff skipped phone verification');
-    onVerified();
+    onClose(); // Close without calling onVerified
   };
 
   const logOutcome = async (outcome, note) => {
