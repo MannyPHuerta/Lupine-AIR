@@ -239,6 +239,16 @@
       "type": "string",
       "description": "Full response narrative / cover letter text"
     },
+    "manualResponseMode": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, response was written manually (no AI Step 4)"
+    },
+    "isTemplate": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark this response as a template for future RFQs of the same org type"
+    },
     "internalNotes": {
       "type": "string",
       "description": "Internal notes (not included in response)"
@@ -257,7 +267,7 @@
     },
     "outcome": {
       "type": "string",
-      "description": "Outcome notes (win/loss reason, awarded value, competitor info)"
+      "description": "Outcome notes (win/loss reason, competitor info)"
     },
     "awardedValue": {
       "type": "number",

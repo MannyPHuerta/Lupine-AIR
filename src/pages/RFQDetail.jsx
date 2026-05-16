@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Upload, Wand2, Save, Printer, Send, Loader2, Trash2, X, Eye, Pencil, Copy, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, Upload, Wand2, Save, Printer, Send, Loader2, Trash2, X, Eye, Pencil, Copy, ChevronRight, CheckCircle2, Circle, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -179,12 +179,12 @@ export default function RFQDetail() {
     }
   };
 
-  const handleStep4 = async () => {
+  const handleStep4 = async (manualMode = false) => {
     const companyInfo = await getCompanyInfo();
     const rid = await ensureSaved();
     setStepRunning(4);
     try {
-      const result = await base44.functions.invoke('rfqStep4Response', { rfqId: rid, companyInfo });
+      const result = await base44.functions.invoke('rfqStep4Response', { rfqId: rid, companyInfo, manualMode });
       if (result.data?.error) throw new Error(result.data.error);
       await reloadRfq(rid);
       setActiveTab('response');
@@ -193,6 +193,13 @@ export default function RFQDetail() {
     } finally {
       setStepRunning(null);
     }
+  };
+
+  const handleToggleTemplate = async () => {
+    if (!recordId) return;
+    const newValue = !rfq.isTemplate;
+    setRfq(prev => ({ ...prev, isTemplate: newValue }));
+    await base44.entities.RFQRecord.update(recordId, { isTemplate: newValue });
   };
 
   const handleRunAll = async () => {
@@ -625,20 +632,64 @@ export default function RFQDetail() {
         {/* RESPONSE DRAFT TAB */}
         {activeTab === 'response' && (
           <div className="space-y-4">
-            {rfq.responseNarrative && (
-              <div className="flex justify-end print-hidden">
+            {/* Mode selector — if no response yet */}
+            {!rfq.responseNarrative && !rfq.manualResponseMode && (
+              <div className="bg-white rounded-lg border-2 border-purple-200 p-5 space-y-4">
+                <div className="font-semibold text-gray-900 border-b pb-2">Step 5 — Choose Response Method</div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => handleStep4(false)}
+                    disabled={stepRunning !== null || !step3Done}
+                    className="w-full bg-purple-700 hover:bg-purple-800 text-white text-base py-5"
+                  >
+                    {stepRunning === 4 ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> AI Draft...</>
+                    ) : (
+                      <><Wand2 className="w-5 h-5 mr-2" /> AI-Generated Response</>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => handleStep4(true)}
+                    disabled={stepRunning !== null || !step3Done}
+                    variant="outline"
+                    className="w-full text-base py-5 border-2"
+                  >
+                    <Pencil className="w-5 h-5 mr-2" /> Manual / Your Own
+                  </Button>
+                </div>
+                {!step3Done && (
+                  <p className="text-xs text-gray-500 text-center">Complete Step 4 (Line Items) first.</p>
+                )}
+              </div>
+            )}
+
+            {/* Response editor + controls */}
+            {(rfq.responseNarrative || rfq.manualResponseMode) && (
+              <div className="flex justify-end gap-2 print-hidden">
+                {!rfq.manualResponseMode && (
+                  <Button
+                    onClick={() => handleStep4(false)}
+                    disabled={stepRunning !== null}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                  >
+                    {stepRunning === 4 ? <><Loader2 className="w-4 h-4 animate-spin" /> Re-running...</> : <><Wand2 className="w-4 h-4" /> Rerun Response</>}
+                  </Button>
+                )}
                 <Button
-                  onClick={handleStep4}
-                  disabled={stepRunning !== null}
-                  variant="outline"
+                  onClick={handleToggleTemplate}
+                  disabled={!recordId || !rfq.responseNarrative}
+                  variant={rfq.isTemplate ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50"
+                  className={`gap-2 ${rfq.isTemplate ? 'bg-green-600 hover:bg-green-700 text-white' : 'border-green-300 text-green-700 hover:bg-green-50'}`}
                 >
-                  {stepRunning === 4 ? <><Loader2 className="w-4 h-4 animate-spin" /> Re-running...</> : <><Wand2 className="w-4 h-4" /> Rerun Response</>}
+                  <Star className="w-4 h-4" /> {rfq.isTemplate ? 'Template ✓' : 'Save as Template'}
                 </Button>
               </div>
             )}
-            <ResponseDraftTab value={rfq.responseNarrative} onChange={v => update('responseNarrative', v)} />
+
+            <ResponseDraftTab value={rfq.responseNarrative} onChange={v => update('responseNarrative', v)} manualMode={rfq.manualResponseMode} />
           </div>
         )}
 
@@ -788,12 +839,26 @@ function EditableText({ value, onChange }) {
   );
 }
 
-function ResponseDraftTab({ value, onChange }) {
+function ResponseDraftTab({ value, onChange, manualMode }) {
   const [editing, setEditing] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(value || '');
   };
+
+  if (!value && manualMode) {
+    return (
+      <div className="bg-white rounded-lg border p-8">
+        <div className="text-sm font-semibold text-gray-700 mb-3">Manual Response Entry</div>
+        <textarea
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          className="w-full border rounded-md p-4 text-sm min-h-[600px] resize-y font-mono focus:outline-none focus:ring-1 focus:ring-purple-500"
+          placeholder="Paste or write your RFQ response here. You have full control of the format and content."
+        />
+      </div>
+    );
+  }
 
   if (!value) {
     return (

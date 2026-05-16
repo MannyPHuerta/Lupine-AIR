@@ -7,12 +7,22 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { rfqId, companyInfo } = await req.json();
+    const { rfqId, companyInfo, manualMode } = await req.json();
     if (!rfqId) return Response.json({ error: 'rfqId is required' }, { status: 400 });
 
     const records = await base44.asServiceRole.entities.RFQRecord.list('-created_date', 500);
     const rfq = records.find(r => r.id === rfqId);
     if (!rfq) return Response.json({ error: 'RFQ record not found' }, { status: 404 });
+
+    // If manual mode, just mark and return — user will fill in response manually
+    if (manualMode) {
+      await base44.asServiceRole.entities.RFQRecord.update(rfqId, {
+        manualResponseMode: true,
+        status: 'draft',
+      });
+      console.log('Step 4: Manual response mode enabled.');
+      return Response.json({ success: true, manual: true });
+    }
 
     const docText = (rfq.rawRfqText || '').slice(0, 6000);
     if (!docText) return Response.json({ error: 'No RFQ text found. Please complete Step 1 first.' }, { status: 400 });
@@ -35,9 +45,18 @@ Deno.serve(async (req) => {
 
     console.log('Step 4: Drafting response narrative...');
 
+    // Fetch template responses by org type to inject as style examples
+    const templateSamples = records.filter(r => r.isTemplate && r.orgType === rfq.orgType && r.responseNarrative);
+    const templateContext = templateSamples.length > 0
+      ? `REFERENCE TEMPLATES (matching ${rfq.orgType} org type — study the structure and tone):\n\n` +
+        templateSamples.slice(0, 2).map((t, i) => `TEMPLATE ${i + 1} (from ${t.issuingOrg}):\n${(t.responseNarrative || '').slice(0, 2000)}\n\n---\n\n`).join('')
+      : '';
+
     const narrative = await base44.integrations.Core.InvokeLLM({
       model: 'claude_sonnet_4_6',
       prompt: `You are a senior government procurement writer. Write a complete, professional bid response for this RFQ.
+
+${templateContext}
 
 RESPONDING COMPANY:
 Name: ${companyName}
