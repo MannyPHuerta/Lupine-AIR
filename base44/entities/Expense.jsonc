@@ -28,6 +28,27 @@
       "type": "string",
       "description": "Vendor or payee name"
     },
+    "vendorInvoiceNumber": {
+      "type": "string",
+      "description": "Vendor's invoice or PO number (from the bill they sent us)"
+    },
+    "vendorInvoiceDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date on the vendor's invoice"
+    },
+    "paymentMethod": {
+      "type": "string",
+      "enum": [
+        "check",
+        "ach",
+        "credit_card",
+        "cash",
+        "wire",
+        "other"
+      ],
+      "description": "How this expense was paid"
+    },
     "amount": {
       "type": "number",
       "description": "Expense amount (USD)"
@@ -40,9 +61,9 @@
       "type": "string",
       "description": "Optional notes or description"
     },
-    "invoiceNumber": {
+    "jobInvoiceNumber": {
       "type": "string",
-      "description": "Related rental invoice number (e.g. MCL-1042) \u2014 links expense to a specific rental job"
+      "description": "Our rental invoice number (e.g. MCL-1042) \u2014 links this expense to a specific job"
     },
     "receiptUrl": {
       "type": "string",

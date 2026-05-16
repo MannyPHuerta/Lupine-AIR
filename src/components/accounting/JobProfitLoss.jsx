@@ -180,9 +180,10 @@ export default function JobProfitLoss({ rentals, timesheets, expenses }) {
             t.jobReference === r.id
           )
         );
-        const jobExp = expenses.filter(e =>
-          e.invoiceNumber && invoiceNum && e.invoiceNumber === invoiceNum
-        );
+        const jobExp = expenses.filter(e => {
+          const eJob = e.jobInvoiceNumber || e.invoiceNumber;
+          return eJob && invoiceNum && eJob === invoiceNum;
+        });
 
         const rentalRevenue = r.baseAmount || 0;
         const deliveryRevenue = (r.deliveryFee || 0) + (r.returnFee || 0);

@@ -9,14 +9,19 @@ const CATEGORIES = [
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
+const PAYMENT_METHODS = ['check', 'ach', 'credit_card', 'cash', 'wire', 'other'];
+
 const EMPTY = {
   date: new Date().toISOString().split('T')[0],
   category: 'Fuel',
   vendor: '',
+  vendorInvoiceNumber: '',
+  vendorInvoiceDate: '',
+  paymentMethod: '',
   amount: '',
   branch: '01 McAllen',
   description: '',
-  invoiceNumber: '',
+  jobInvoiceNumber: '',
   receiptUrl: '',
   isCapitalized: false,
 };
@@ -76,7 +81,7 @@ export default function ExpenseLog({ expenses, onRefresh, capitalizationThreshol
       {/* Add form */}
       {showForm && (
         <div className="bg-emerald-50 border-b px-5 py-4 space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Date</label>
               <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
@@ -109,10 +114,29 @@ export default function ExpenseLog({ expenses, onRefresh, capitalizationThreshol
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Invoice # (optional)</label>
-              <input type="text" placeholder="e.g. MCL-1042" value={form.invoiceNumber}
-                onChange={e => setForm(f => ({ ...f, invoiceNumber: e.target.value }))}
-                className="w-full border rounded px-2 py-1.5 text-xs font-mono" />
+              <label className="text-xs text-gray-500 mb-1 block">Payment Method</label>
+              <select value={form.paymentMethod} onChange={e => setForm(f => ({ ...f, paymentMethod: e.target.value }))}
+                className="w-full border rounded px-2 py-1.5 text-xs bg-white">
+                <option value="">— select —</option>
+                {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m.replace('_', ' ').toUpperCase()}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-indigo-600 mb-1 block">Vendor Invoice # <span className="font-normal text-gray-400">(their bill to us)</span></label>
+              <input type="text" placeholder="e.g. VND-8891" value={form.vendorInvoiceNumber}
+                onChange={e => setForm(f => ({ ...f, vendorInvoiceNumber: e.target.value }))}
+                className="w-full border border-indigo-200 rounded px-2 py-1.5 text-xs font-mono focus:ring-1 focus:ring-indigo-400" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Vendor Invoice Date</label>
+              <input type="date" value={form.vendorInvoiceDate} onChange={e => setForm(f => ({ ...f, vendorInvoiceDate: e.target.value }))}
+                className="w-full border rounded px-2 py-1.5 text-xs" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-emerald-700 mb-1 block">Our Job Invoice # <span className="font-normal text-gray-400">(links to rental)</span></label>
+              <input type="text" placeholder="e.g. MCL-1042" value={form.jobInvoiceNumber}
+                onChange={e => setForm(f => ({ ...f, jobInvoiceNumber: e.target.value }))}
+                className="w-full border border-emerald-200 rounded px-2 py-1.5 text-xs font-mono focus:ring-1 focus:ring-emerald-400" />
             </div>
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Note (optional)</label>
@@ -162,7 +186,9 @@ export default function ExpenseLog({ expenses, onRefresh, capitalizationThreshol
               <th className="px-4 py-2 font-medium">Category</th>
               <th className="px-4 py-2 font-medium">Vendor</th>
               <th className="px-4 py-2 font-medium">Branch</th>
-              <th className="px-4 py-2 font-medium">Invoice #</th>
+              <th className="px-4 py-2 font-medium text-indigo-600">Vendor Inv #</th>
+              <th className="px-4 py-2 font-medium text-emerald-700">Our Job Inv #</th>
+              <th className="px-4 py-2 font-medium">Paid Via</th>
               <th className="px-4 py-2 font-medium">Note</th>
               <th className="px-4 py-2 font-medium text-right">Amount</th>
               <th className="px-4 py-2 font-medium">Type</th>
@@ -171,14 +197,16 @@ export default function ExpenseLog({ expenses, onRefresh, capitalizationThreshol
           </thead>
           <tbody className="divide-y">
             {expenses.length === 0 ? (
-              <tr><td colSpan={8} className="text-center text-gray-400 py-8">No expenses logged for this period</td></tr>
+              <tr><td colSpan={11} className="text-center text-gray-400 py-8">No expenses logged for this period</td></tr>
             ) : expenses.map(e => (
               <tr key={e.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 text-gray-600">{e.date}</td>
                 <td className="px-4 py-2 font-medium text-gray-900">{e.category}</td>
                 <td className="px-4 py-2 text-gray-600">{e.vendor || '—'}</td>
                 <td className="px-4 py-2 text-gray-500">{e.branch}</td>
-                <td className="px-4 py-2 font-mono text-indigo-700">{e.invoiceNumber || '—'}</td>
+                <td className="px-4 py-2 font-mono text-indigo-700">{e.vendorInvoiceNumber || <span className="text-gray-300">—</span>}</td>
+                <td className="px-4 py-2 font-mono text-emerald-700">{e.jobInvoiceNumber || e.invoiceNumber || <span className="text-gray-300">—</span>}</td>
+                <td className="px-4 py-2 text-gray-500 text-xs">{e.paymentMethod ? e.paymentMethod.replace('_', ' ').toUpperCase() : '—'}</td>
                 <td className="px-4 py-2 text-gray-400">{e.description || '—'}</td>
                 <td className="px-4 py-2 text-right font-semibold text-gray-900">{fmt(e.amount)}</td>
                 <td className="px-4 py-2">
