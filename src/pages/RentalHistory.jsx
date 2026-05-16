@@ -410,8 +410,11 @@ export default function RentalHistory() {
       o.customer.phone.includes(q) ||
       o.customer.email.toLowerCase().includes(q) ||
       o.lines.some(l => l.equipmentName?.toLowerCase().includes(q));
+    const matchInvoice = !invoiceSearch || (o.invoiceNumber && o.invoiceNumber.toString().includes(invoiceSearch));
     const matchStatus = statusFilter === 'all' || o.status === statusFilter;
-    return matchSearch && matchStatus;
+    const orderDate = o.createdAt ? o.createdAt.split('T')[0] : '';
+    const matchDateRange = (!dateFrom || orderDate >= dateFrom) && (!dateTo || orderDate <= dateTo);
+    return matchSearch && matchInvoice && matchStatus && matchDateRange;
   });
 
   return (
