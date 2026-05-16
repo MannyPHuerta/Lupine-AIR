@@ -15,7 +15,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Trash2, AlertTriangle, CheckCircle, WrenchIcon, Loader2, Sparkles } from 'lucide-react';
+import { Trash2, AlertTriangle, CheckCircle, WrenchIcon, Loader2, Sparkles, ArrowRightLeft } from 'lucide-react';
 import UnitStatusBadge from '@/components/equipment/UnitStatusBadge';
 import { useAIEquipmentSearch } from '@/hooks/useAIEquipmentSearch';
 
@@ -111,7 +111,7 @@ function LineDateInput({ label, value, onChange, nextFocusRef, triggerRef: exter
   );
 }
 
-export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef, onAddLine, afterDatesRef }) {
+export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef, onAddLine, afterDatesRef, customerBranch }) {
   const [search, setSearch] = useState(line.equipmentName || '');
   const [open, setOpen] = useState(!line.equipmentId);
   const [highlight, setHighlight] = useState(0);
@@ -175,7 +175,16 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   };
 
   const handleSelect = (eq) => {
-    const updated = recalc({ ...line, equipmentId: eq.id, equipmentName: eq.name, taxable: eq.taxable, deposit: eq.depositRequired || 0 }, eq);
+    const isCrossBranch = !!(customerBranch && eq.location && eq.location !== customerBranch);
+    const updated = recalc({
+      ...line,
+      equipmentId: eq.id,
+      equipmentName: eq.name,
+      taxable: eq.taxable,
+      deposit: eq.depositRequired || 0,
+      sourceBranch: isCrossBranch ? eq.location : null,
+      isCrossBranch,
+    }, eq);
     onUpdate(updated);
     setSearch(eq.name);
     setOpen(false);
@@ -206,6 +215,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   const eqRecord = equipment.find(e => e.id === line.equipmentId);
   const unitStatus = eqRecord?.unitStatus || 'available';
   const unitUnavailable = UNAVAILABLE_STATUSES.includes(unitStatus);
+  const isCrossBranch = line.isCrossBranch || (customerBranch && eqRecord?.location && eqRecord.location !== customerBranch);
 
   // Availability check using this line's effective dates
   const conflicts = line.equipmentId && startDate && endDate
@@ -367,6 +377,13 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
               </>
             )}
           </div>
+          {isCrossBranch && (
+            <div className="flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              <ArrowRightLeft className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="font-semibold">Cross-branch borrow</span>
+              <span className="text-amber-600">· Item is at <strong>{line.sourceBranch || eqRecord?.location}</strong> — transfer to <strong>{customerBranch}</strong> required before rental start. Will need return transfer after.</span>
+            </div>
+          )}
           {line.baseAmount > 0 && (
             <div className="flex items-center gap-3 text-gray-600 ml-auto">
               <span>Rental: <strong>${line.baseAmount.toFixed(2)}</strong></span>

@@ -369,6 +369,10 @@ export default function AvailabilityManager() {
         worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
         signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
         notes: customer.notes,
+        isCrossBranch: line.isCrossBranch || false,
+        sourceBranch: line.sourceBranch || null,
+        transferOutCompleted: false,
+        transferBackCompleted: false,
       });
       createdIds.push(rental.id);
       }
@@ -727,6 +731,7 @@ export default function AvailabilityManager() {
                 qtyRef={qtyRefs.current[line.id]}
                 onAddLine={handleAddSuggestedItem}
                 afterDatesRef={addButtonRef}
+                customerBranch={customer.branch}
               />
             );
           })}

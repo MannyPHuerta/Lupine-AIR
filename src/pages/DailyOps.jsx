@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import {
   Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
-  Clock, CheckCircle, Loader2, Calendar
+  Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft
 } from 'lucide-react';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
@@ -53,6 +53,48 @@ function EmptyState({ message }) {
     <div className="flex items-center justify-center gap-2 py-8 text-gray-400 text-sm">
       <CheckCircle className="w-4 h-4 text-green-400" />
       {message}
+    </div>
+  );
+}
+
+function CrossBranchRow({ rental, type, onMarkDone }) {
+  const [saving, setSaving] = useState(false);
+  const field = type === 'out' ? 'transferOutCompleted' : 'transferBackCompleted';
+  const done = type === 'out' ? rental.transferOutCompleted : rental.transferBackCompleted;
+
+  const handleMark = async (e) => {
+    e.stopPropagation();
+    setSaving(true);
+    await base44.entities.Rental.update(rental.id, { [field]: true });
+    onMarkDone(rental.id, field);
+    setSaving(false);
+  };
+
+  return (
+    <div className={`flex items-start gap-3 px-4 py-3 border-b last:border-0 ${done ? 'opacity-40' : ''}`}>
+      <ArrowRightLeft className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-gray-900 text-sm truncate">{rental.equipmentName}</div>
+        <div className="text-xs text-gray-500 mt-0.5">
+          {type === 'out'
+            ? <><strong>{rental.sourceBranch}</strong> → <strong>{rental.branch}</strong> · Needed by {rental.startDate}</>
+            : <><strong>{rental.branch}</strong> → <strong>{rental.sourceBranch}</strong> · Item returned — must go back to original branch</>
+          }
+        </div>
+        <div className="text-xs text-gray-400">
+          {rental.customerName} · Invoice: {rental.invoiceNumber || '—'}
+        </div>
+      </div>
+      {!done && (
+        <button
+          onClick={handleMark}
+          disabled={saving}
+          className="flex-shrink-0 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : '✓ Done'}
+        </button>
+      )}
+      {done && <span className="text-xs text-green-600 font-medium flex-shrink-0">✓ Transferred</span>}
     </div>
   );
 }
@@ -111,6 +153,30 @@ export default function DailyOps() {
       r.status === 'out'
     ), [filtered]);
 
+  // Cross-branch transfers needed: items that need to move OUT to rental branch before start
+  const transfersOut = useMemo(() =>
+    filtered.filter(r =>
+      r.isCrossBranch &&
+      r.sourceBranch &&
+      !r.transferOutCompleted &&
+      ['reservation', 'contract', 'quote'].includes(r.status)
+    ).sort((a, b) => (a.startDate || '').localeCompare(b.startDate || '')),
+  [filtered]);
+
+  // Cross-branch returns needed: item was returned by customer but needs to go BACK to source branch
+  const transfersBack = useMemo(() =>
+    filtered.filter(r =>
+      r.isCrossBranch &&
+      r.sourceBranch &&
+      !r.transferBackCompleted &&
+      ['returned', 'completed'].includes(r.status)
+    ).sort((a, b) => (b.endDate || '').localeCompare(a.endDate || '')),
+  [filtered]);
+
+  const handleTransferDone = useCallback((rentalId, field) => {
+    setRentals(prev => prev.map(r => r.id === rentalId ? { ...r, [field]: true } : r));
+  }, []);
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Good morning';
@@ -161,12 +227,13 @@ export default function DailyOps() {
           </div>
 
           {/* KPI bar */}
-          <div className="grid grid-cols-4 gap-3 mt-4">
+          <div className="grid grid-cols-5 gap-3 mt-4">
             {[
               { label: 'Going Out', value: goingOutToday.length, color: 'text-cyan-300' },
               { label: 'Due Back', value: dueToday.length, color: 'text-green-300' },
               { label: 'Overdue', value: overdue.length, color: overdue.length > 0 ? 'text-red-300' : 'text-gray-400' },
               { label: 'Re-Rent?', value: endingTomorrow.length, color: 'text-amber-300' },
+              { label: 'Transfers', value: transfersOut.length + transfersBack.length, color: (transfersOut.length + transfersBack.length) > 0 ? 'text-amber-300' : 'text-gray-400' },
             ].map(k => (
               <div key={k.label} className="text-center">
                 <div className={`text-2xl font-black ${k.color}`}>{k.value}</div>
@@ -208,6 +275,38 @@ export default function DailyOps() {
               <RentalRow key={r.id} rental={r} badge={`Starts ${r.startDate}`} badgeColor="bg-cyan-100 text-cyan-700" navigate={navigate} />
             ))}
         </div>
+
+        {/* Cross-Branch Transfers */}
+        {(transfersOut.length > 0 || transfersBack.length > 0) && (
+          <div className="bg-white border border-amber-200 rounded-xl shadow-sm overflow-hidden">
+            <SectionHeader
+              icon={<ArrowRightLeft className="w-4 h-4" />}
+              label="Cross-Branch Transfers"
+              count={transfersOut.length + transfersBack.length}
+              color="bg-amber-500 text-white"
+            />
+            {transfersOut.length > 0 && (
+              <>
+                <div className="px-4 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border-b">
+                  📦 Needs to move TO rental branch before start date
+                </div>
+                {transfersOut.map(r => (
+                  <CrossBranchRow key={r.id + '-out'} rental={r} type="out" onMarkDone={handleTransferDone} />
+                ))}
+              </>
+            )}
+            {transfersBack.length > 0 && (
+              <>
+                <div className="px-4 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border-b border-t">
+                  🔁 Needs to return to original branch (exact unit)
+                </div>
+                {transfersBack.map(r => (
+                  <CrossBranchRow key={r.id + '-back'} rental={r} type="back" onMarkDone={handleTransferDone} />
+                ))}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Due Back Today */}
         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">

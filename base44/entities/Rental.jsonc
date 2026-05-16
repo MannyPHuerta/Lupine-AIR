@@ -70,7 +70,26 @@
     },
     "branch": {
       "type": "string",
-      "description": "Branch location for this rental"
+      "description": "Branch location for this rental (the branch doing the renting)"
+    },
+    "sourceBranch": {
+      "type": "string",
+      "description": "The branch where the equipment physically lives. Set when branch != equipment.location (cross-branch borrow)."
+    },
+    "isCrossBranch": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the renting branch borrowed equipment from another branch's inventory."
+    },
+    "transferOutCompleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the equipment has been physically moved from sourceBranch to rental branch."
+    },
+    "transferBackCompleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the returned equipment has been sent back to the sourceBranch."
     },
     "totalDays": {
       "type": "integer",
