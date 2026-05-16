@@ -43,6 +43,11 @@ const navGroups = [
       { label: 'Inventory Health', path: '/inventory-health', icon: AlertTriangle },
       { label: 'Loyalty Manager', path: '/loyalty-manager', icon: Star },
       { label: 'Audit Logs', path: '/audit-logs', icon: Shield },
+      { label: '— Asset Wolf —', path: null, icon: null, divider: true },
+      { label: 'Submit Report', path: '/report-form', icon: Send },
+      { label: 'Pending Reports', path: '/pending', icon: ClipboardList },
+      { label: 'Report History', path: '/history', icon: FileText },
+      { label: 'Marketplace', path: '/marketplace', icon: Globe },
     ],
   },
   {
@@ -58,8 +63,6 @@ const navGroups = [
     color: 'text-green-400',
     description: 'Quotes & bids',
     items: [
-      { label: 'Event Planner', path: '/event-planner', icon: Calendar },
-      { label: 'Planner Queue', path: '/planner-queue', icon: ClipboardList },
       { label: 'RFQ Manager', path: '/rfq', icon: FileText },
     ],
   },
@@ -83,6 +86,7 @@ const navGroups = [
     items: [
       { label: 'Event Planner', path: '/event-planner', icon: Calendar },
       { label: 'Planner Queue', path: '/planner-queue', icon: ClipboardList },
+      { label: 'RFQ Manager', path: '/rfq', icon: FileText },
     ],
   },
   {
@@ -129,6 +133,13 @@ function NavGroup({ group, location, onNavigate }) {
       {open && (
         <div className="pb-1">
           {group.items.map(item => {
+            if (item.divider) {
+              return (
+                <div key={item.label} className="px-4 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Asset Wolf
+                </div>
+              );
+            }
             const active = location.pathname === item.path;
             const Icon = item.icon;
             return (
