@@ -62,6 +62,7 @@ export default function RFQDetail() {
   const [recordId, setRecordId] = useState(isNew ? null : id);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templates, setTemplates] = useState([]);
+  const [styleGuide, setStyleGuide] = useState('');
 
   useEffect(() => {
     // Load company settings for use in AI prompt
@@ -186,9 +187,10 @@ export default function RFQDetail() {
     const rid = await ensureSaved();
     setStepRunning(4);
     try {
-      const result = await base44.functions.invoke('rfqStep4Response', { rfqId: rid, companyInfo, manualMode });
+      const result = await base44.functions.invoke('rfqStep4Response', { rfqId: rid, companyInfo, manualMode, styleGuide });
       if (result.data?.error) throw new Error(result.data.error);
       await reloadRfq(rid);
+      setStyleGuide(''); // Clear style guide after use
       setActiveTab('response');
     } catch (err) {
       alert('Step 4 failed: ' + err.message);
@@ -672,12 +674,8 @@ export default function RFQDetail() {
                     <label className="block text-xs font-medium text-gray-600 mb-2">— or paste previous response text</label>
                     <textarea
                       placeholder="Paste the full text of a previous response here..."
-                      onBlur={(e) => {
-                        if (e.target.value.trim()) {
-                          update('responseNarrative', e.target.value);
-                          e.target.value = '';
-                        }
-                      }}
+                      value={styleGuide}
+                      onChange={(e) => setStyleGuide(e.target.value)}
                       className="w-full border rounded-md p-2 text-sm h-24 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>

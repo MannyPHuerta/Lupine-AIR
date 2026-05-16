@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { rfqId, companyInfo, manualMode } = await req.json();
+    const { rfqId, companyInfo, manualMode, styleGuide } = await req.json();
     if (!rfqId) return Response.json({ error: 'rfqId is required' }, { status: 400 });
 
     const records = await base44.asServiceRole.entities.RFQRecord.list('-created_date', 500);
@@ -52,11 +52,16 @@ Deno.serve(async (req) => {
         templateSamples.slice(0, 2).map((t, i) => `TEMPLATE ${i + 1} (from ${t.issuingOrg}):\n${(t.responseNarrative || '').slice(0, 2000)}\n\n---\n\n`).join('')
       : '';
 
+    // User-provided style guide from imported previous response
+    const styleGuideContext = styleGuide && styleGuide.trim()
+      ? `USER'S PREVIOUS RESPONSE STYLE (replicate this tone, structure, and format):\n\n${styleGuide.slice(0, 3000)}\n\n---\n\n`
+      : '';
+
     const narrative = await base44.integrations.Core.InvokeLLM({
       model: 'claude_sonnet_4_6',
       prompt: `You are a senior government procurement writer. Write a complete, professional bid response for this RFQ.
 
-${templateContext}
+${styleGuideContext}${templateContext}
 
 RESPONDING COMPANY:
 Name: ${companyName}
