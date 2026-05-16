@@ -24,6 +24,7 @@ const EMPTY = {
   jobInvoiceNumber: '',
   receiptUrl: '',
   isCapitalized: false,
+  _currencyNote: null,
 };
 
 function fmt(n) {
@@ -69,7 +70,9 @@ Return ONLY a JSON object with these fields (use null if not found):
 - vendor: string (vendor/payee name)
 - vendorInvoiceNumber: string (invoice or PO number on the document)
 - vendorInvoiceDate: string (date on the document, format YYYY-MM-DD)
-- amount: number (total amount due or total paid, as a number with no $ sign)
+- amount: number (total amount due or total paid, as a number with no currency symbol)
+- currencyCode: string (3-letter ISO currency code, e.g. USD, EUR, GBP, MXN — default USD if not shown)
+- currencySymbol: string (the symbol shown on the document, e.g. $, €, £)
 - paymentMethod: one of: check, ach, credit_card, cash, wire, other, or null
 - description: string (brief description of what was purchased)`,
         file_urls: [file_url],
@@ -80,20 +83,27 @@ Return ONLY a JSON object with these fields (use null if not found):
             vendorInvoiceNumber: { type: 'string' },
             vendorInvoiceDate: { type: 'string' },
             amount: { type: 'number' },
+            currencyCode: { type: 'string' },
+            currencySymbol: { type: 'string' },
             paymentMethod: { type: 'string' },
             description: { type: 'string' },
           }
         }
       });
+      const isNonUSD = extracted.currencyCode && extracted.currencyCode.toUpperCase() !== 'USD';
+      const currencyNote = isNonUSD
+        ? `${extracted.currencyCode.toUpperCase()} ${extracted.currencySymbol || ''}${extracted.amount} — enter USD equivalent below`
+        : null;
       setForm(f => ({
         ...f,
         receiptUrl: file_url,
         vendor: extracted.vendor || f.vendor,
         vendorInvoiceNumber: extracted.vendorInvoiceNumber || f.vendorInvoiceNumber,
         vendorInvoiceDate: extracted.vendorInvoiceDate || f.vendorInvoiceDate,
-        amount: extracted.amount != null ? String(extracted.amount) : f.amount,
+        amount: isNonUSD ? f.amount : (extracted.amount != null ? String(extracted.amount) : f.amount),
         paymentMethod: extracted.paymentMethod || f.paymentMethod,
         description: extracted.description || f.description,
+        _currencyNote: currencyNote,
       }));
     } catch (_) {
       // silently ignore extraction errors — receipt is still attached
@@ -184,6 +194,14 @@ Return ONLY a JSON object with these fields (use null if not found):
                 className="w-full border rounded px-2 py-1.5 text-xs" />
             </div>
           </div>
+
+          {/* Foreign currency warning */}
+          {form._currencyNote && (
+            <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-300 text-yellow-800 text-xs rounded-lg px-3 py-2">
+              <span className="text-base">💱</span>
+              <span><strong>Foreign currency detected:</strong> {form._currencyNote}</span>
+            </div>
+          )}
 
           {/* Receipt upload */}
           <div className="flex items-center gap-3">
