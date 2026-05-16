@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, RefreshCw, Download, Loader2, BarChart2, FileText, Receipt
+  ArrowLeft, RefreshCw, Download, Loader2, BarChart2, FileText, Receipt, Brain
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import InvoiceDrawer from '@/components/accounting/InvoiceDrawer';
 import ProfitLossStatement from '@/components/accounting/ProfitLossStatement';
 import ExpenseLog from '@/components/accounting/ExpenseLog';
 import JobProfitLoss from '@/components/accounting/JobProfitLoss';
+import SpendAnalyst from '@/components/accounting/SpendAnalyst';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 const CAPITALIZATION_THRESHOLD = 2500;
@@ -126,6 +127,7 @@ const TABS = [
   { id: 'pl', label: 'P&L Statement', icon: <FileText className="w-4 h-4" /> },
   { id: 'expenses', label: 'Expenses', icon: <Receipt className="w-4 h-4" /> },
   { id: 'jobpl', label: 'Job P&L', icon: <FileText className="w-4 h-4" /> },
+  { id: 'ai_analyst', label: 'AI Spend Analyst', icon: <Brain className="w-4 h-4" /> },
 ];
 
 export default function AccountingDashboard() {
@@ -439,6 +441,18 @@ export default function AccountingDashboard() {
               return branchMatch && dateMatch;
             })}
             expenses={filteredExpenses}
+          />
+        )}
+
+        {/* ── AI SPEND ANALYST TAB ── */}
+        {activeTab === 'ai_analyst' && (
+          <SpendAnalyst
+            expenses={filteredExpenses}
+            rentals={filtered}
+            timesheets={timesheets}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            branch={branch}
           />
         )}
 
