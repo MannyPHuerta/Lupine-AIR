@@ -679,8 +679,9 @@ export default function RFQDetail() {
               <div className="flex justify-end gap-2 print-hidden">
                 <Button
                   onClick={async () => {
-                    const ts = await base44.entities.RFQRecord.filter({ isTemplate: true, orgType: rfq.orgType }, 'created_date', 100);
-                    setTemplates(ts);
+                    const all = await base44.entities.RFQRecord.filter({ orgType: rfq.orgType, responseNarrative: { $exists: true } }, '-created_date', 100);
+                    const withResponses = all.filter(r => r.responseNarrative);
+                    setTemplates(withResponses);
                     setShowTemplateDialog(true);
                   }}
                   disabled={!rfq.orgType}
@@ -688,7 +689,7 @@ export default function RFQDetail() {
                   size="sm"
                   className="gap-2 text-blue-700 border-blue-300 hover:bg-blue-50"
                 >
-                  <Eye className="w-4 h-4" /> Load Template
+                  <Eye className="w-4 h-4" /> Load Previous Response
                 </Button>
                 {!rfq.manualResponseMode && (
                   <Button
