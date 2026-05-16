@@ -213,6 +213,17 @@ export default function RFQDetail() {
     }
   };
 
+  const handleExternalFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    // Extract text from uploaded file (simplified — just note for user)
+    alert('File uploaded. You can now review it or copy/paste the text into the response field below.');
+    window.open(file_url, '_blank');
+    setUploading(false);
+  };
+
   const handleRunAll = async () => {
     if (!rfq.rawRfqText && !rfq.uploadedFileUrl) { alert('Please upload a file or paste RFQ text first.'); return; }
     const companyInfo = await getCompanyInfo();
@@ -643,6 +654,37 @@ export default function RFQDetail() {
         {/* RESPONSE DRAFT TAB */}
         {activeTab === 'response' && (
           <div className="space-y-4">
+            {/* Load external previous response — always available */}
+            {!rfq.responseNarrative && !rfq.manualResponseMode && (
+              <div className="bg-blue-50 rounded-lg border-2 border-blue-200 p-5 space-y-4">
+                <div className="font-semibold text-gray-900 border-b pb-2">Import Previous Response (Optional)</div>
+                <div className="text-xs text-gray-600 mb-3">Load a response you've written before — paste text or upload a document to start from.</div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">Upload Previous Response (PDF, Word, etc.)</label>
+                    <label className="flex items-center gap-2 cursor-pointer border-2 border-dashed border-blue-300 rounded-lg p-4 hover:border-blue-500 transition">
+                      <Upload className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600">{uploading ? 'Uploading...' : 'Click to upload'}</span>
+                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.txt" onChange={handleExternalFileUpload} disabled={uploading} />
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">— or paste previous response text</label>
+                    <textarea
+                      placeholder="Paste the full text of a previous response here..."
+                      onBlur={(e) => {
+                        if (e.target.value.trim()) {
+                          update('responseNarrative', e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full border rounded-md p-2 text-sm h-24 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Mode selector — if no response yet */}
             {!rfq.responseNarrative && !rfq.manualResponseMode && (
               <div className="bg-white rounded-lg border-2 border-purple-200 p-5 space-y-4">
