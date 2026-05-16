@@ -253,6 +253,11 @@ export default function ExpenseBulkImporter({ branch, onClose, onSuccess }) {
         {step === 'confirm' && (
           <div className="p-6 space-y-4">
             <h2 className="text-lg font-bold text-gray-900">Review Import</h2>
+            {duplicates.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 text-xs px-3 py-2 rounded-lg animate-flash font-semibold">
+                ⚠️ {duplicates.length} potential duplicate(s) detected! Matching by date, vendor, and amount. These will be skipped during import to prevent double entries.
+              </div>
+            )}
             <div className="bg-blue-50 border border-blue-200 text-blue-700 text-xs px-3 py-2 rounded-lg">
               {rows.length - duplicates.length} new expenses, {duplicates.length} possible duplicates (will skip)
             </div>
