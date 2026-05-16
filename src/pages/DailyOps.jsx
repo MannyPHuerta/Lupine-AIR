@@ -57,10 +57,11 @@ function EmptyState({ message }) {
   );
 }
 
-function CrossBranchRow({ rental, type, onMarkDone }) {
+function CrossBranchRow({ rental, type, onMarkDone, equipment }) {
   const [saving, setSaving] = useState(false);
   const field = type === 'out' ? 'transferOutCompleted' : 'transferBackCompleted';
   const done = type === 'out' ? rental.transferOutCompleted : rental.transferBackCompleted;
+  const eq = equipment.find(e => e.id === rental.equipmentId);
 
   const handleMark = async (e) => {
     e.stopPropagation();
@@ -81,8 +82,14 @@ function CrossBranchRow({ rental, type, onMarkDone }) {
             : <><strong>{rental.branch}</strong> → <strong>{rental.sourceBranch}</strong> · Item returned — must go back to original branch</>
           }
         </div>
-        <div className="text-xs text-gray-400">
-          {rental.customerName} · Invoice: {rental.invoiceNumber || '—'}
+        <div className="text-xs text-gray-400 space-y-0.5">
+          <div>{rental.customerName} · Invoice: {rental.invoiceNumber || '—'}</div>
+          {eq && (
+            <div className="text-gray-500 font-mono">
+              {eq.assetNumber && <span>Asset: {eq.assetNumber}</span>}
+              {eq.serialNumber && <span>{eq.assetNumber ? ' · ' : ''}Serial: {eq.serialNumber}</span>}
+            </div>
+          )}
         </div>
       </div>
       {!done && (
@@ -102,18 +109,21 @@ function CrossBranchRow({ rental, type, onMarkDone }) {
 export default function DailyOps() {
   const navigate = useNavigate();
   const [rentals, setRentals] = useState([]);
+  const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState('All Branches');
   const [user, setUser] = useState(null);
 
   const load = async () => {
     setLoading(true);
-    const [me, r] = await Promise.all([
+    const [me, r, eq] = await Promise.all([
       base44.auth.me(),
       base44.entities.Rental.list('-startDate', 1000),
+      base44.entities.Equipment.list('name', 2000),
     ]);
     setUser(me);
     setRentals(r);
+    setEquipment(eq);
     setLoading(false);
   };
 
@@ -291,7 +301,7 @@ export default function DailyOps() {
                   📦 Needs to move TO rental branch before start date
                 </div>
                 {transfersOut.map(r => (
-                  <CrossBranchRow key={r.id + '-out'} rental={r} type="out" onMarkDone={handleTransferDone} />
+                  <CrossBranchRow key={r.id + '-out'} rental={r} type="out" onMarkDone={handleTransferDone} equipment={equipment} />
                 ))}
               </>
             )}
@@ -301,7 +311,7 @@ export default function DailyOps() {
                   🔁 Needs to return to original branch (exact unit)
                 </div>
                 {transfersBack.map(r => (
-                  <CrossBranchRow key={r.id + '-back'} rental={r} type="back" onMarkDone={handleTransferDone} />
+                  <CrossBranchRow key={r.id + '-back'} rental={r} type="back" onMarkDone={handleTransferDone} equipment={equipment} />
                 ))}
               </>
             )}
