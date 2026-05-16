@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import EditRentalPanel from '@/components/rentals/EditRentalPanel';
@@ -294,9 +294,28 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
             </div>
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={() => onEdit(order)} className="gap-2 border-gray-300 text-gray-700 hover:bg-gray-50">
               <Pencil className="w-3.5 h-3.5" /> Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                const bs = branchSettings[order.customer.branch];
+                const { openInvoiceWindow, writeInvoiceToWindow } = await import('@/lib/buildInvoiceHTML');
+                const win = openInvoiceWindow();
+                writeInvoiceToWindow(win, {
+                  ...order,
+                  id: order.invoiceNumber || order.id,
+                  lines: enriched,
+                  branchInfo: bs ? { name: bs.branchName || order.customer.branch, address: bs.address || '', phone: bs.phone || '', email: bs.email || '' } : { name: order.customer.branch, address: '', phone: '', email: '' },
+                  companyInfo: companyInfo ? { companyName: companyInfo.companyName || '', logoUrl: companyInfo.logoUrl || '', invoiceFooter: companyInfo.invoiceFooter || '' } : {},
+                }, amountPaid, signatureDataUrl);
+              }}
+              className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+            >
+              <Download className="w-3.5 h-3.5" /> Reprint Contract
             </Button>
             {emailMode ? (
               <div className="flex items-center gap-2 w-full">

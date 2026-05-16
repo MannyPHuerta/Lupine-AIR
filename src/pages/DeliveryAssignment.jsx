@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, CheckCircle, Truck, Clock } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, Truck, Clock, User } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
@@ -14,16 +14,19 @@ export default function DeliveryAssignment() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [branchFilter, setBranchFilter] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Rental.list('-created_date', 500),
       base44.entities.Delivery.list('-created_date', 500),
       base44.entities.User.list(),
-    ]).then(([rents, dels, usrs]) => {
+      base44.auth.me(),
+    ]).then(([rents, dels, usrs, me]) => {
       setRentals(rents);
       setDeliveries(dels);
       setUsers(usrs);
+      setCurrentUser(me);
       setLoading(false);
     });
   }, []);
@@ -99,6 +102,7 @@ export default function DeliveryAssignment() {
             <div className="text-lg font-bold">📦 Delivery Assignment</div>
             <div className="text-indigo-300 text-xs">
               {pendingDeliveries.filter(r => !deliveries.some(d => d.rentalId === r.id)).length} unassigned · {pendingDeliveries.length} total deliveries
+              {currentUser && <span className="ml-2 opacity-70">· Assigning as {currentUser.full_name}</span>}
             </div>
           </div>
           <select
@@ -124,7 +128,7 @@ export default function DeliveryAssignment() {
               <DeliveryAssignmentCard
                 key={rental.id}
                 rental={rental}
-                drivers={users.filter(u => u.role !== 'admin')}
+                drivers={users.filter(u => ['driver', 'field_crew', 'user'].includes(u.role))}
                 deliveries={deliveries}
                 onAssign={handleCreateDelivery}
                 isCreating={creating}
