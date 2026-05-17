@@ -118,7 +118,6 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const dropdownContainerRef = useRef(null);
-  const closeTimerRef = useRef(null);
   const toTriggerRef = useRef(null);  // "To" date button — From calendar advances here
   const startTimeRef = useRef(null);  // From time input — From date advances here
   const endTimeRef = useRef(null);    // To time input — To date advances here
@@ -160,6 +159,18 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   }, []);
 
   useEffect(() => { setHighlight(0); }, [search]);
+
+  // Close dropdown on click outside — immune to re-renders and async updates
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (!dropdownContainerRef.current?.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
   const scrollToHighlight = (idx) => {
     listRef.current?.children[idx]?.scrollIntoView({ block: 'nearest' });
@@ -245,17 +256,6 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
             onFocus={() => { setOpen(true); setSearch(line.equipmentId ? '' : search); }}
             onChange={e => { setSearch(e.target.value); setOpen(true); }}
             onKeyDown={handleKeyDown}
-            onBlur={() => {
-              // Cancel any previous close timer
-              clearTimeout(closeTimerRef.current);
-              closeTimerRef.current = setTimeout(() => {
-                // Only close if focus has truly left the dropdown container
-                if (!dropdownContainerRef.current?.contains(document.activeElement)) {
-                  setOpen(false);
-                }
-              }, 250);
-            }}
-            onFocus={() => clearTimeout(closeTimerRef.current)}
             readOnly={false}
           />
           {open && (
