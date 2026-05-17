@@ -58,16 +58,29 @@ function EmptyState({ message }) {
   );
 }
 
-function CrossBranchRow({ rental, type, onMarkDone, equipment }) {
+function CrossBranchRow({ rental, type, onMarkDone, equipment, deliveries, navigate }) {
   const [saving, setSaving] = useState(false);
   const field = type === 'out' ? 'transferOutCompleted' : 'transferBackCompleted';
   const done = type === 'out' ? rental.transferOutCompleted : rental.transferBackCompleted;
   const eq = equipment.find(e => e.id === rental.equipmentId);
 
+  // Find the linked transfer Delivery record
+  const transferDelivery = deliveries?.find(d => d.isCrossTransfer && d.rentalId === rental.id);
+
   const handleMark = async (e) => {
     e.stopPropagation();
     setSaving(true);
     await base44.entities.Rental.update(rental.id, { [field]: true });
+    // When transfer-back completes, free up the equipment
+    if (type === 'back' && rental.equipmentId) {
+      try {
+        await base44.entities.Equipment.update(rental.equipmentId, {
+          unitStatus: 'available',
+          statusNote: '',
+          statusUpdatedAt: new Date().toISOString(),
+        });
+      } catch (e) { console.warn('Could not reset equipment status:', e.message); }
+    }
     onMarkDone(rental.id, field);
     setSaving(false);
   };
@@ -91,6 +104,21 @@ function CrossBranchRow({ rental, type, onMarkDone, equipment }) {
               {eq.serialNumber && <span>{eq.assetNumber ? ' · ' : ''}Serial: {eq.serialNumber}</span>}
             </div>
           )}
+          {/* Driver assignment status */}
+          {transferDelivery && (
+            <div className={`mt-0.5 flex items-center gap-1 ${transferDelivery.driverId ? 'text-green-700' : 'text-red-600'}`}>
+              {transferDelivery.driverId
+                ? <><span>🚚 Driver: {transferDelivery.driverName}</span>{transferDelivery.teamDrivers?.length > 1 && <span> +{transferDelivery.teamDrivers.length - 1}</span>}</>
+                : <span>⚠️ No driver assigned yet</span>
+              }
+              <button
+                onClick={e => { e.stopPropagation(); navigate('/assign-deliveries'); }}
+                className="ml-1 text-indigo-500 hover:text-indigo-700 underline text-xs"
+              >
+                {transferDelivery.driverId ? 'Reassign' : 'Assign now →'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {!done && (
@@ -111,6 +139,7 @@ export default function DailyOps() {
   const navigate = useNavigate();
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState('All Branches');
   const [user, setUser] = useState(null);
@@ -118,14 +147,16 @@ export default function DailyOps() {
 
   const load = async () => {
     setLoading(true);
-    const [me, r, eq] = await Promise.all([
+    const [me, r, eq, dels] = await Promise.all([
       base44.auth.me(),
       base44.entities.Rental.list('-startDate', 1000),
       base44.entities.Equipment.list('name', 2000),
+      base44.entities.Delivery.list('-created_date', 500),
     ]);
     setUser(me);
     setRentals(r);
     setEquipment(eq);
+    setDeliveries(dels);
     const stored = localStorage.getItem('workingBranch');
     setWorkingBranch(stored);
     setLoading(false);
@@ -308,7 +339,7 @@ export default function DailyOps() {
                   📦 Needs to move TO rental branch before start date
                 </div>
                 {transfersOut.map(r => (
-                  <CrossBranchRow key={r.id + '-out'} rental={r} type="out" onMarkDone={handleTransferDone} equipment={equipment} />
+                  <CrossBranchRow key={r.id + '-out'} rental={r} type="out" onMarkDone={handleTransferDone} equipment={equipment} deliveries={deliveries} navigate={navigate} />
                 ))}
               </>
             )}
@@ -318,7 +349,7 @@ export default function DailyOps() {
                   🔁 Needs to return to original branch (exact unit)
                 </div>
                 {transfersBack.map(r => (
-                  <CrossBranchRow key={r.id + '-back'} rental={r} type="back" onMarkDone={handleTransferDone} equipment={equipment} />
+                  <CrossBranchRow key={r.id + '-back'} rental={r} type="back" onMarkDone={handleTransferDone} equipment={equipment} deliveries={deliveries} navigate={navigate} />
                 ))}
               </>
             )}

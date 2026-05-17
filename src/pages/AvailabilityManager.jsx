@@ -338,6 +338,18 @@ export default function AvailabilityManager() {
       const dFee = createdIds.length === 0 && deliveryMethod === 'company_delivery' ? (aiDeliveryFee ?? matrixFee) : 0;
       const rFee = createdIds.length === 0 && returnMethod === 'company_pickup' ? matrixFee : 0;
 
+      // Lock equipment at source branch when cross-branch
+      if (line.isCrossBranch && line.equipmentId) {
+        try {
+          await base44.entities.Equipment.update(line.equipmentId, {
+            unitStatus: 'reserved',
+            statusNote: `Cross-branch borrow → ${customer.branch} for ${customer.name} (${line.startDate})`,
+            statusUpdatedAt: new Date().toISOString(),
+            statusUpdatedBy: currentUser?.email || 'system',
+          });
+        } catch (e) { console.warn('Could not lock equipment:', e.message); }
+      }
+
       const rental = await base44.entities.Rental.create({
         equipmentId: line.equipmentId,
         equipmentName: line.equipmentName,
@@ -377,6 +389,32 @@ export default function AvailabilityManager() {
       });
       createdIds.push(rental.id);
       }
+      // Create cross-branch transfer Delivery records (one per cross-branch line) rooted at the SOURCE branch
+      const crossBranchLines = validLines.filter(l => l.isCrossBranch && l.sourceBranch);
+      for (let i = 0; i < crossBranchLines.length; i++) {
+        const line = crossBranchLines[i];
+        const rentalId = createdIds[validLines.indexOf(line)];
+        try {
+          await base44.entities.Delivery.create({
+            rentalId: rentalId || createdIds[0],
+            customerId: customerId || null,
+            customerName: customer.name,
+            customerPhone: customer.phone,
+            customerAddress: `→ ${customer.branch}`,
+            customerCity: customer.city || '',
+            customerState: customer.state || '',
+            customerZip: customer.zip || '',
+            branch: line.sourceBranch, // delivery originates from the LENDING branch
+            status: 'scheduled',
+            items: [{ equipmentId: line.equipmentId, equipmentName: line.equipmentName, quantity: line.quantity || 1, checked: false }],
+            scheduledDate: line.startDate,
+            notes: `⇄ Cross-branch transfer to ${customer.branch} for ${customer.name} · Invoice ${invoiceNumber}`,
+            isCrossTransfer: true,
+            destinationBranch: customer.branch,
+          });
+        } catch (e) { console.warn('Could not create transfer delivery:', e.message); }
+      }
+
       setSaved(true);
       base44.entities.Rental.list('-created_date', 1000).then(setRentals);
       setCustomer(EMPTY_CUSTOMER);

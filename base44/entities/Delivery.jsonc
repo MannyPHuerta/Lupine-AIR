@@ -75,7 +75,7 @@
     },
     "branch": {
       "type": "string",
-      "description": "Branch location"
+      "description": "Branch location (origin branch for cross-transfers)"
     },
     "status": {
       "type": "string",
@@ -91,9 +91,18 @@
       "default": "scheduled",
       "description": "Current delivery status"
     },
+    "isCrossTransfer": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when this delivery is a cross-branch equipment transfer (not a customer delivery)"
+    },
+    "destinationBranch": {
+      "type": "string",
+      "description": "For cross-branch transfers: the branch receiving the equipment"
+    },
     "recommendedCrew": {
       "type": "integer",
-      "description": "AI-recommended number of crew members for this delivery"
+      "description": "AI-recommended number of crew members"
     },
     "recommendedVehicles": {
       "type": "integer",
@@ -101,7 +110,7 @@
     },
     "recommendedVehicleType": {
       "type": "string",
-      "description": "AI-recommended vehicle type (e.g. flatbed, box truck)"
+      "description": "AI-recommended vehicle type"
     },
     "recommendedDeliveryFee": {
       "type": "number",
@@ -217,7 +226,6 @@
   },
   "required": [
     "rentalId",
-    "customerId",
     "customerName",
     "scheduledDate"
   ]
