@@ -31,7 +31,7 @@ const navGroups = [
     ],
   },
   {
-    label: 'Analytics',
+    label: 'AIReports',
     color: 'text-violet-400',
     description: 'Management & finance',
     items: [
