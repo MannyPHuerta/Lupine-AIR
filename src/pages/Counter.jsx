@@ -104,9 +104,14 @@ export default function Counter() {
     return () => clearTimeout(aiTimerRef.current);
   }, [equipmentSearchTerm, filteredEquipment.length]);
 
+  const checkoutBtnRef = useRef(null);
+
   const handleSearchKeyDown = (e) => {
+    if (e.key === 'Tab') {
+      // Let Tab move focus naturally to the checkout button — do nothing
+      return;
+    }
     if (filteredEquipment.length === 0) return;
-    if (e.key === 'Tab') return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       const next = Math.min(highlightIndex + 1, filteredEquipment.length - 1);
@@ -258,6 +263,7 @@ export default function Counter() {
               {filteredEquipment.map((e, idx) => (
                 <button
                   key={e.id}
+                  tabIndex={-1}
                   onClick={() => handleAddToCart(e)}
                   className={`w-full text-left p-3 rounded-lg border transition group ${
                     highlightIndex >= 0 && idx === highlightIndex
@@ -287,7 +293,7 @@ export default function Counter() {
             {/* Action button — always visible at top */}
             <div className="p-3 border-b bg-white">
               <Button
-                tabIndex={0}
+                ref={checkoutBtnRef}
                 onClick={() => setStep('checkout')}
                 disabled={cart.length === 0}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 text-base font-bold"
