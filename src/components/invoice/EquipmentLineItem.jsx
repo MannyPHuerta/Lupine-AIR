@@ -117,6 +117,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const dropdownContainerRef = useRef(null);
   const toTriggerRef = useRef(null);  // "To" date button — From calendar advances here
   const startTimeRef = useRef(null);  // From time input — From date advances here
   const endTimeRef = useRef(null);    // To time input — To date advances here
@@ -234,7 +235,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
     <div className="border rounded-lg p-4 bg-white space-y-3">
       <div className="flex items-start gap-3">
         {/* Equipment search */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" ref={dropdownContainerRef}>
           <Input
             ref={inputRef}
             value={open ? search : (line.equipmentName || '')}
@@ -243,7 +244,14 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
             onFocus={() => { setOpen(true); setSearch(line.equipmentId ? '' : search); }}
             onChange={e => { setSearch(e.target.value); setOpen(true); }}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => setOpen(false), 200)}
+            onBlur={(e) => {
+              // Only close if focus moved outside the dropdown container
+              setTimeout(() => {
+                if (dropdownContainerRef.current && !dropdownContainerRef.current.contains(document.activeElement)) {
+                  setOpen(false);
+                }
+              }, 200);
+            }}
             readOnly={false}
           />
           {open && (
