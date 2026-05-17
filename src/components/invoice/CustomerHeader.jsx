@@ -354,12 +354,6 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Branch FIRST — sets context before customer lookup */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Branch</label>
-          <BranchSelect value={customer.branch} onChange={v => set('branch', v)} />
-        </div>
-
         {/* Name / DL */}
         <div className="relative">
           <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
