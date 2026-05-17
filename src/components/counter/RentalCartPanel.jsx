@@ -27,8 +27,8 @@ export default function RentalCartPanel({
     cart.reduce((sum, item) => sum + (item.dailyRate || 0), 0),
   [cart]);
 
-  const tax = subtotal * TAX_RATE;
-  const totalDue = subtotal + tax + deliveryFee;
+  const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
+  const totalDue = Math.round((subtotal + tax + deliveryFee) * 100) / 100;
   const paid = parseFloat(amountPaid) || 0;
   const balance = Math.round((totalDue - paid) * 100) / 100;
 
