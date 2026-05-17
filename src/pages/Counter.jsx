@@ -119,7 +119,7 @@ export default function Counter() {
       listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filteredEquipment[highlightIndex]) handleAddToCart(filteredEquipment[highlightIndex]);
+      if (highlightIndex >= 0 && filteredEquipment[highlightIndex]) handleAddToCart(filteredEquipment[highlightIndex]);
     }
   };
 
@@ -212,8 +212,9 @@ export default function Counter() {
                   ref={equipSearchRef}
                   placeholder="Search equipment by name…"
                   value={equipmentSearchTerm}
-                  onChange={e => { setEquipmentSearchTerm(e.target.value); setHighlightIndex(0); }}
+                  onChange={e => { setEquipmentSearchTerm(e.target.value); setHighlightIndex(-1); }}
                   onKeyDown={handleSearchKeyDown}
+                  onBlur={() => setHighlightIndex(-1)}
                   className="pl-9"
                   autoFocus
                 />
@@ -259,7 +260,7 @@ export default function Counter() {
                   key={e.id}
                   onClick={() => handleAddToCart(e)}
                   className={`w-full text-left p-3 rounded-lg border transition group ${
-                    idx === highlightIndex
+                    highlightIndex >= 0 && idx === highlightIndex
                       ? 'bg-indigo-100 border-indigo-300'
                       : 'border-transparent hover:bg-indigo-50 hover:border-indigo-200'
                   }`}
