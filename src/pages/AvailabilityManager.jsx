@@ -476,7 +476,7 @@ export default function AvailabilityManager() {
     const totalDue = Math.max(0, subtotal + taxAmount + depositTotal - discountAmount + dFee + rFee);
 
     // If non-card payment method, skip payment processor and go straight to confirmation
-    if (['Cash', 'Check', 'Net 30'].includes(paymentMethod)) {
+    if (practiceMode || ['Cash', 'Check', 'Net 30'].includes(paymentMethod)) {
       const paid = parseFloat(amountPaid) || 0;
       const win = openInvoiceWindow();
       
@@ -500,8 +500,9 @@ export default function AvailabilityManager() {
         clockInUrl: (() => { const p = new URLSearchParams(); if (customer.branch) p.set('branch', customer.branch); if (invNumber) p.set('job', invNumber); p.set('jobType', deliveryMethod === 'company_delivery' ? 'delivery' : 'general'); return `${window.location.origin}/clockin?${p.toString()}`; })(),
       };
 
-      const rentalIds = await handleSave('confirmed');
+      // In practice mode, write the invoice first (with practice watermark), then reset — no DB writes
       writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl, practiceMode);
+      const rentalIds = await handleSave('confirmed');
 
       if (!practiceMode && autoSendCommunications && customer.email && rentalIds.length > 0) {
         try {
