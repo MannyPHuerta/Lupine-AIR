@@ -190,6 +190,13 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
     base44.entities.Customer.list('-created_date', 500).then(setCustomers);
   }, []);
 
+  // Pre-populate branch from current user's branch if not already set
+  useEffect(() => {
+    if (!customer.branch && currentUser?.branch) {
+      onChange({ ...customer, branch: currentUser.branch });
+    }
+  }, [currentUser]);
+
   // DL Scanner — fires when a USB ID scanner reads a driver's license
   useDLScanner((parsed) => {
     const dlFields = {
@@ -347,7 +354,13 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Name / DL FIRST */}
+        {/* Branch FIRST — sets context before customer lookup */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Branch</label>
+          <BranchSelect value={customer.branch} onChange={v => set('branch', v)} />
+        </div>
+
+        {/* Name / DL */}
         <div className="relative">
           <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
             Customer Name *
@@ -427,10 +440,6 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
           {activeSearchField === 'email' && showSuggestions && suggestions.length > 0 && (
             <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
           )}
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Branch</label>
-          <BranchSelect value={customer.branch} onChange={v => set('branch', v)} />
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
           <label className="block text-xs font-medium text-gray-600 mb-1">Street Address</label>
