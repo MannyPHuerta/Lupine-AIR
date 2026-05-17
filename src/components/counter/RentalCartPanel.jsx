@@ -182,7 +182,7 @@ export default function RentalCartPanel({
               onClick={() => setAmountPaid(totalDue.toFixed(2))}
               className="h-8 text-xs font-semibold text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition whitespace-nowrap"
             >
-              Apply Exact
+              Apply Exact Amount
             </button>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Amount Paid</label>
@@ -215,7 +215,7 @@ export default function RentalCartPanel({
         >
           {completing ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
             : completed ? <><Check className="w-4 h-4" /> Done!</>
-            : <><DollarSign className="w-4 h-4" /> Complete Sale &amp; Print Receipt</>}
+            : <>Complete Sale &amp; Print Receipt</>}
         </Button>
 
       </div>
