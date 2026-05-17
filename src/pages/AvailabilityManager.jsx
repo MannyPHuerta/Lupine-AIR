@@ -726,6 +726,17 @@ export default function AvailabilityManager() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {/* Branch selector — top of form, establishes context for everything below */}
+        <div className="bg-white rounded-xl border shadow-sm px-5 py-3 flex items-center gap-3">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Working Branch</span>
+          <div style={{ width: '200px' }}>
+            <BranchSelect
+              value={customer.branch}
+              onChange={(v) => setCustomer({ ...customer, branch: v })}
+            />
+          </div>
+        </div>
+
         {/* Success banner */}
         {saved && (
           <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
@@ -762,33 +773,6 @@ export default function AvailabilityManager() {
           {/* Equipment items with branch selector prepended to first item */}
           {lines.map((line, idx) => {
             if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
-            if (idx === 0) {
-              // First item: include branch selector inline
-              return (
-                <div key={line.id} className="bg-white rounded-xl border shadow-sm p-4">
-                  <div className="flex gap-3 items-center mb-4 pb-4 border-b border-gray-200">
-                    <div className="flex-shrink-0" style={{ width: '180px' }}>
-                      <BranchSelect 
-                        value={customer.branch} 
-                        onChange={(v) => setCustomer({ ...customer, branch: v })} 
-                      />
-                    </div>
-                  </div>
-                  <EquipmentLineItem
-                    line={line}
-                    equipment={equipment}
-                    rentals={rentals}
-                    onUpdate={(updated) => updateLine(line.id, updated)}
-                    onRemove={() => removeLine(line.id)}
-                    qtyRef={qtyRefs.current[line.id]}
-                    onAddLine={handleAddSuggestedItem}
-                    afterDatesRef={addButtonRef}
-                    customerBranch={customer.branch}
-                  />
-                </div>
-              );
-            }
-            // Remaining items
             return (
               <EquipmentLineItem
                 key={line.id}
