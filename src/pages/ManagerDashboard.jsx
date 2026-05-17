@@ -76,7 +76,7 @@ export default function ManagerDashboard() {
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
