@@ -759,24 +759,22 @@ export default function AvailabilityManager() {
 
         {/* Branch selector + Equipment lines */}
         <div className="space-y-3">
-          {/* First line: branch selector + first equipment item */}
-          <div className="flex gap-3 items-start">
-            {/* Branch selector */}
-            <div className="bg-white rounded-xl border shadow-sm flex-shrink-0 flex items-center" style={{ width: '200px' }}>
-              <BranchSelect 
-                value={customer.branch} 
-                onChange={(v) => setCustomer({ ...customer, branch: v })} 
-              />
-            </div>
-
-            {/* First equipment item */}
-            {lines.length > 0 && (() => {
-              const line = lines[0];
-              if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
+          {/* Equipment items with branch selector prepended to first item */}
+          {lines.map((line, idx) => {
+            if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
+            if (idx === 0) {
+              // First item: include branch selector inline
               return (
-                <div className="flex-1">
+                <div key={line.id} className="bg-white rounded-xl border shadow-sm p-4">
+                  <div className="flex gap-3 items-center mb-4 pb-4 border-b border-gray-200">
+                    <div className="flex-shrink-0" style={{ width: '180px' }}>
+                      <BranchSelect 
+                        value={customer.branch} 
+                        onChange={(v) => setCustomer({ ...customer, branch: v })} 
+                      />
+                    </div>
+                  </div>
                   <EquipmentLineItem
-                    key={line.id}
                     line={line}
                     equipment={equipment}
                     rentals={rentals}
@@ -789,31 +787,23 @@ export default function AvailabilityManager() {
                   />
                 </div>
               );
-            })()}
-          </div>
-
-          {/* Remaining equipment items */}
-          {lines.length > 1 && (
-            <div className="space-y-3">
-              {lines.slice(1).map(line => {
-                if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
-                return (
-                  <EquipmentLineItem
-                    key={line.id}
-                    line={line}
-                    equipment={equipment}
-                    rentals={rentals}
-                    onUpdate={(updated) => updateLine(line.id, updated)}
-                    onRemove={() => removeLine(line.id)}
-                    qtyRef={qtyRefs.current[line.id]}
-                    onAddLine={handleAddSuggestedItem}
-                    afterDatesRef={addButtonRef}
-                    customerBranch={customer.branch}
-                  />
-                );
-              })}
-            </div>
-          )}
+            }
+            // Remaining items
+            return (
+              <EquipmentLineItem
+                key={line.id}
+                line={line}
+                equipment={equipment}
+                rentals={rentals}
+                onUpdate={(updated) => updateLine(line.id, updated)}
+                onRemove={() => removeLine(line.id)}
+                qtyRef={qtyRefs.current[line.id]}
+                onAddLine={handleAddSuggestedItem}
+                afterDatesRef={addButtonRef}
+                customerBranch={customer.branch}
+              />
+            );
+          })}
         </div>
 
         {/* Add Equipment */}
