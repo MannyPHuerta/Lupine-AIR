@@ -38,12 +38,12 @@ Deno.serve(async (req) => {
     const outreachList = [];
 
     for (const cust of customers) {
-      if (!cust.email || cust.blacklisted) continue;
+      if (cust.blacklisted) continue;
 
-      // Find customer's rental history
+      // Find customer's rental history (any non-cancelled status counts)
       const custRentals = rentals.filter(r =>
-        (r.customerName === cust.fullName || r.customerEmail === cust.email) &&
-        r.status === 'completed'
+        (r.customerName === cust.fullName || (cust.email && r.customerEmail === cust.email)) &&
+        r.status !== 'cancelled' && r.status !== 'quote'
       );
 
       // Skip if not enough rental history
@@ -61,8 +61,8 @@ Deno.serve(async (req) => {
 
       // Analyze rental history for equipment preferences
       const recentRentals = rentals.filter(r =>
-        (r.customerName === cust.fullName || r.customerEmail === cust.email) &&
-        r.status === 'completed' &&
+        (r.customerName === cust.fullName || (cust.email && r.customerEmail === cust.email)) &&
+        r.status !== 'cancelled' && r.status !== 'quote' &&
         new Date(r.startDate || r.created_date) >= historyStart
       );
 
