@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Loader2, Wrench, Clock, CheckCircle2, AlertTriangle, Package, Zap, TrendingUp } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Wrench, Clock, CheckCircle2, AlertTriangle, Package, Zap, TrendingUp, Download } from 'lucide-react';
 import WorkOrderCard from '@/components/shop/WorkOrderCard';
 import PredictiveAlertsPanel from '@/components/repair/PredictiveAlertsPanel';
 import SmartSchedulePanel from '@/components/repair/SmartSchedulePanel';
@@ -64,6 +64,28 @@ export default function AIRepair() {
     completed:      workOrders.filter(w => w.status === 'completed').length,
   }), [workOrders]);
 
+  const handleExportCSV = () => {
+    const headers = ['Equipment', 'Type', 'Status', 'Branch', 'Assigned To', 'Scheduled Date', 'Description', 'Cost'];
+    const rows = filtered.map(wo => [
+      wo.equipmentName || '',
+      wo.type || '',
+      wo.status || '',
+      wo.branch || '',
+      wo.assignedTo || '',
+      wo.scheduledDate || '',
+      wo.description || '',
+      wo.cost || '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `work-orders-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleUpdate = async (id, updates) => {
     await base44.entities.WorkOrder.update(id, updates);
     setWorkOrders(prev => prev.map(wo => wo.id === id ? { ...wo, ...updates } : wo));
@@ -89,6 +111,11 @@ export default function AIRepair() {
           >
             {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
+          {!loading && filtered.length > 0 && (
+            <button onClick={handleExportCSV} title="Export CSV" className="flex items-center gap-1.5 text-indigo-200 hover:text-white px-3 py-1.5 rounded-lg hover:bg-indigo-800 transition text-xs font-medium border border-indigo-700">
+              <Download className="w-3.5 h-3.5" /> CSV
+            </button>
+          )}
           <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -362,6 +362,18 @@ function HealthTab({ equipment, rentals }) {
   );
 }
 
+// ─── CSV Export Helpers ───────────────────────────────────────────────────────
+function downloadCSV(filename, headers, rows) {
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function AIReports() {
   const navigate = useNavigate();
@@ -389,6 +401,54 @@ export default function AIReports() {
   const filteredRentals = branch === 'all' ? rentals : rentals.filter(r => r.branch === branch);
   const filteredEquipment = branch === 'all' ? equipment : equipment.filter(e => e.location === branch);
 
+  const handleExport = () => {
+    const date = new Date().toISOString().split('T')[0];
+    const branchLabel = branch === 'all' ? 'all-branches' : branch.replace(/\s+/g, '-');
+
+    if (activeTab === 'utilization') {
+      const catMap = {};
+      filteredRentals.forEach(r => {
+        const eq = filteredEquipment.find(e => e.id === r.equipmentId);
+        const cat = eq?.category || 'Unknown';
+        if (!catMap[cat]) catMap[cat] = { category: cat, rentals: 0, revenue: 0 };
+        catMap[cat].rentals += 1;
+        catMap[cat].revenue += r.baseAmount || 0;
+      });
+      const rows = Object.values(catMap).sort((a, b) => b.rentals - a.rentals)
+        .map(r => [r.category, r.rentals, r.revenue.toFixed(2)]);
+      downloadCSV(`utilization-${branchLabel}-${date}.csv`, ['Category', 'Rentals', 'Revenue ($)'], rows);
+
+    } else if (activeTab === 'demand') {
+      const monthMap = {};
+      filteredRentals.forEach(r => {
+        if (!r.startDate) return;
+        const month = r.startDate.slice(0, 7);
+        if (!monthMap[month]) monthMap[month] = { month, rentals: 0, revenue: 0 };
+        monthMap[month].rentals += 1;
+        monthMap[month].revenue += r.baseAmount || 0;
+      });
+      const rows = Object.entries(monthMap).sort(([a], [b]) => a.localeCompare(b))
+        .map(([, v]) => [v.month, v.rentals, v.revenue.toFixed(2)]);
+      downloadCSV(`demand-trends-${branchLabel}-${date}.csv`, ['Month', 'Rentals', 'Revenue ($)'], rows);
+
+    } else if (activeTab === 'aging') {
+      const now = new Date();
+      const rows = filteredEquipment.map(e => {
+        const ageYears = e.purchaseDate
+          ? ((now - new Date(e.purchaseDate)) / (1000 * 60 * 60 * 24 * 365)).toFixed(1)
+          : 'Unknown';
+        return [e.name, e.category || '', e.condition || '', e.purchaseDate || '', ageYears, e.location || ''];
+      });
+      downloadCSV(`asset-aging-${branchLabel}-${date}.csv`, ['Equipment', 'Category', 'Condition', 'Purchase Date', 'Age (yrs)', 'Location'], rows);
+
+    } else if (activeTab === 'health') {
+      const rows = filteredEquipment.map(e => [
+        e.name, e.category || '', e.unitStatus || e.status || '', e.condition || '', e.location || '', e.statusNote || ''
+      ]);
+      downloadCSV(`fleet-health-${branchLabel}-${date}.csv`, ['Equipment', 'Category', 'Status', 'Condition', 'Location', 'Note'], rows);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
@@ -405,7 +465,7 @@ export default function AIReports() {
             </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <select
               value={branch}
               onChange={e => setBranch(e.target.value)}
@@ -415,6 +475,24 @@ export default function AIReports() {
                 <option key={b} value={b}>{b === 'all' ? 'All Branches' : b}</option>
               ))}
             </select>
+            {!loading && (
+              <>
+                <button
+                  onClick={handleExport}
+                  title="Export CSV"
+                  className="flex items-center gap-1.5 text-white/70 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition text-xs font-medium border border-white/10"
+                >
+                  <Download className="w-3.5 h-3.5" /> CSV
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  title="Print / Save PDF"
+                  className="flex items-center gap-1.5 text-white/70 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition text-xs font-medium border border-white/10"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Print
+                </button>
+              </>
+            )}
             <button onClick={load} disabled={loading}
               className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
