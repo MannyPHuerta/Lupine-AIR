@@ -39,15 +39,19 @@ function AISuggestions({ equipmentId, equipmentName, equipmentItem, equipment = 
   useEffect(() => {
     if (!equipmentId) { setAiSuggestions([]); setReasoning(''); return; }
 
+    let cancelled = false;
     setLoading(true);
     base44.functions.invoke('suggestBundles', { equipmentId, equipmentName })
       .then(res => {
+        if (cancelled) return;
         const suggs = (res.data.suggestions || []).filter(s => !depIds.has(s.id));
         setAiSuggestions(suggs);
         setReasoning(res.data.reasoning || '');
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
   }, [equipmentId, equipmentName]);
 
   if (!equipmentId) return null;
