@@ -94,7 +94,12 @@ export default function AvailabilityManager() {
 
   // Fetch catalog and rental data
   useEffect(() => {
-    base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+    base44.auth.me().then(u => {
+      setCurrentUser(u);
+      if (u?.homeBranch) {
+        setCustomer(prev => ({ ...prev, branch: u.homeBranch }));
+      }
+    }).catch(() => {});
     Promise.all([
       base44.entities.Equipment.list('name', 2000),
       base44.entities.Rental.list('-created_date', 1000),
