@@ -31,12 +31,12 @@ const navGroups = [
     ],
   },
   {
-    label: 'AIReports',
+    label: 'Analytics',
     color: 'text-violet-400',
     description: 'Management & finance',
     items: [
       { label: 'Manager Dashboard', path: '/manager', icon: BarChart3 },
-      { label: 'AI Reports', path: '/aireports', icon: ChartNoAxesCombined },
+      { label: 'Analytics', path: '/aireports', icon: ChartNoAxesCombined },
       { label: 'Accounting', path: '/accounting', icon: Receipt },
       { label: 'Demand Patterns', path: '/demand-patterns', icon: TrendingUp },
       { label: 'Depreciation', path: '/depreciation', icon: FileText },
