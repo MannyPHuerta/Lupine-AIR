@@ -106,6 +106,7 @@ export default function Counter() {
 
   const handleSearchKeyDown = (e) => {
     if (filteredEquipment.length === 0) return;
+    if (e.key === 'Tab') return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       const next = Math.min(highlightIndex + 1, filteredEquipment.length - 1);
