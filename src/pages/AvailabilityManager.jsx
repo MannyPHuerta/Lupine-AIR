@@ -726,20 +726,6 @@ export default function AvailabilityManager() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
-        {/* Branch selector — very first thing, pre-populated from current user's branch */}
-        <div className="bg-white rounded-xl border shadow-sm px-6 py-3">
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Branch:</label>
-            <div className="w-48">
-              <BranchSelect 
-                value={customer.branch} 
-                onChange={(v) => setCustomer({ ...customer, branch: v })} 
-              />
-            </div>
-            <span className="text-xs text-gray-500">{customer.branch}</span>
-          </div>
-        </div>
-
         {/* Success banner */}
         {saved && (
           <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
@@ -771,25 +757,39 @@ export default function AvailabilityManager() {
            </div>
          )}
 
-        {/* Line items — FIRST: check availability before collecting customer info */}
-        <div className="space-y-3">
-          {lines.map(line => {
-            if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
-            return (
-              <EquipmentLineItem
-                key={line.id}
-                line={line}
-                equipment={equipment}
-                rentals={rentals}
-                onUpdate={(updated) => updateLine(line.id, updated)}
-                onRemove={() => removeLine(line.id)}
-                qtyRef={qtyRefs.current[line.id]}
-                onAddLine={handleAddSuggestedItem}
-                afterDatesRef={addButtonRef}
-                customerBranch={customer.branch}
+        {/* Branch selector + Equipment lines */}
+        <div className="bg-white rounded-xl border shadow-sm p-4 space-y-4">
+          {/* Branch selector inline */}
+          <div className="flex items-center gap-3 pb-3 border-b border-gray-200">
+            <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Branch:</label>
+            <div className="w-40">
+              <BranchSelect 
+                value={customer.branch} 
+                onChange={(v) => setCustomer({ ...customer, branch: v })} 
               />
-            );
-          })}
+            </div>
+          </div>
+
+          {/* Equipment line items */}
+          <div className="space-y-3">
+            {lines.map(line => {
+              if (!qtyRefs.current[line.id]) qtyRefs.current[line.id] = { current: null };
+              return (
+                <EquipmentLineItem
+                  key={line.id}
+                  line={line}
+                  equipment={equipment}
+                  rentals={rentals}
+                  onUpdate={(updated) => updateLine(line.id, updated)}
+                  onRemove={() => removeLine(line.id)}
+                  qtyRef={qtyRefs.current[line.id]}
+                  onAddLine={handleAddSuggestedItem}
+                  afterDatesRef={addButtonRef}
+                  customerBranch={customer.branch}
+                />
+              );
+            })}
+          </div>
         </div>
 
         {/* Add Equipment */}
