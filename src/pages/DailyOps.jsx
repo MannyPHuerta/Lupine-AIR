@@ -4,13 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import BranchMismatchBadge from '@/components/BranchMismatchBadge';
 import {
   Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
-  Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft
+  Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
+function offsetDate(baseDate, days) {
+  const d = new Date(baseDate + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
 const today = new Date().toISOString().split('T')[0];
-const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
 function SectionHeader({ icon, label, count, color }) {
   return (
@@ -144,6 +149,7 @@ export default function DailyOps() {
   const [branch, setBranch] = useState('All Branches');
   const [user, setUser] = useState(null);
   const [workingBranch, setWorkingBranch] = useState(null);
+  const [viewDate, setViewDate] = useState(today);
 
   const load = async () => {
     setLoading(true);
@@ -170,33 +176,36 @@ export default function DailyOps() {
     );
   }, [rentals, branch]);
 
-  // Going out today (startDate = today, status = reservation/contract)
+  const nextDay = useMemo(() => offsetDate(viewDate, 1), [viewDate]);
+  const isToday = viewDate === today;
+
+  // Going out on viewDate (startDate = viewDate, status = reservation/contract)
   const goingOutToday = useMemo(() =>
     filtered.filter(r =>
-      r.startDate === today &&
+      r.startDate === viewDate &&
       ['reservation', 'contract'].includes(r.status)
-    ), [filtered]);
+    ), [filtered, viewDate]);
 
-  // Due back today (endDate = today, status = out)
+  // Due back on viewDate (endDate = viewDate, status = out)
   const dueToday = useMemo(() =>
     filtered.filter(r =>
-      r.endDate === today &&
+      r.endDate === viewDate &&
       r.status === 'out'
-    ), [filtered]);
+    ), [filtered, viewDate]);
 
-  // Overdue (endDate < today, status = out)
+  // Overdue (endDate < viewDate, status = out)
   const overdue = useMemo(() =>
     filtered.filter(r =>
-      r.endDate < today &&
+      r.endDate < viewDate &&
       r.status === 'out'
-    ).sort((a, b) => a.endDate.localeCompare(b.endDate)), [filtered]);
+    ).sort((a, b) => a.endDate.localeCompare(b.endDate)), [filtered, viewDate]);
 
-  // Ending tomorrow — re-rent candidates
+  // Ending next day — re-rent candidates
   const endingTomorrow = useMemo(() =>
     filtered.filter(r =>
-      r.endDate === tomorrow &&
+      r.endDate === nextDay &&
       r.status === 'out'
-    ), [filtered]);
+    ), [filtered, nextDay]);
 
   // Cross-branch transfers needed: items that need to move OUT to rental branch before start
   const transfersOut = useMemo(() =>
@@ -245,10 +254,23 @@ export default function DailyOps() {
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <div className="text-lg font-bold">
-                {greeting()}{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''} 👋
+                {isToday ? `${greeting()}${user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''} 👋` : '📅 Schedule View'}
               </div>
-              <div className="text-indigo-300 text-xs mt-0.5">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              <div className="flex items-center gap-1 text-indigo-300 text-xs mt-0.5">
+                <button onClick={() => setViewDate(d => offsetDate(d, -1))} className="p-0.5 hover:text-white rounded">
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span
+                  className={`cursor-pointer hover:text-white transition ${isToday ? '' : 'text-amber-300 font-semibold'}`}
+                  onClick={() => setViewDate(today)}
+                  title="Click to return to today"
+                >
+                  {new Date(viewDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  {!isToday && ' (click for today)'}
+                </span>
+                <button onClick={() => setViewDate(d => offsetDate(d, 1))} className="p-0.5 hover:text-white rounded">
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -313,7 +335,7 @@ export default function DailyOps() {
         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
           <SectionHeader
             icon={<Truck className="w-4 h-4" />}
-            label="Going Out Today"
+            label={isToday ? "Going Out Today" : `Going Out ${new Date(viewDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
             count={goingOutToday.length}
             color="bg-cyan-600 text-white"
           />
@@ -360,7 +382,7 @@ export default function DailyOps() {
         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
           <SectionHeader
             icon={<RotateCcw className="w-4 h-4" />}
-            label="Due Back Today"
+            label={isToday ? "Due Back Today" : `Due Back ${new Date(viewDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
             count={dueToday.length}
             color="bg-green-600 text-white"
           />
@@ -394,7 +416,7 @@ export default function DailyOps() {
         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
           <SectionHeader
             icon={<Clock className="w-4 h-4" />}
-            label="Ending Tomorrow — Re-Rent Conversation"
+            label={`Ending ${isToday ? 'Tomorrow' : new Date(nextDay + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — Re-Rent Conversation`}
             count={endingTomorrow.length}
             color="bg-amber-500 text-white"
           />
