@@ -150,7 +150,7 @@ export default function Counter() {
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-20 shadow-lg">
         <div className="px-4 py-2 flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="p-2 rounded hover:bg-indigo-800 text-sm">
+          <button onClick={() => step === 'checkout' ? setStep('equipment') : navigate('/')} className="p-2 rounded hover:bg-indigo-800 text-sm">
             ← Back
           </button>
           <div className="flex-1">
@@ -340,11 +340,19 @@ export default function Counter() {
       {/* ── STEP 2: Checkout (RentalCartPanel) ── */}
       {step === 'checkout' && (
         <div className="flex flex-1 h-[calc(100vh-60px)]">
-          {/* Left sidebar: back button only */}
-          <div className="w-1/3 border-r bg-white flex flex-col items-center justify-start p-4">
-            <button onClick={() => setStep('equipment')} className="text-gray-400 hover:text-gray-600 self-start">
-              <X className="w-5 h-5" />
-            </button>
+          {/* Left sidebar: back + add more equipment */}
+          <div className="w-1/3 border-r bg-white flex flex-col p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-600">Add Equipment</span>
+              <button onClick={() => setStep('equipment')} className="text-gray-400 hover:text-gray-600" title="Back to equipment list">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <AIEquipmentSearchInput
+              equipment={equipment}
+              placeholder="Search equipment…"
+              onSelect={(e) => handleAddToCart(e)}
+            />
           </div>
 
           {/* Right: Cart / invoice */}
