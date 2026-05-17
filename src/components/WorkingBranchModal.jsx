@@ -52,17 +52,17 @@ export default function WorkingBranchModal({ user, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 space-y-4">
-        <h2 className="text-lg font-bold text-gray-900">Which branch are you working at today?</h2>
-        <p className="text-sm text-gray-600">
+      <div className="bg-white rounded-xl shadow-xl max-w-xs w-full p-4 space-y-3">
+        <h2 className="text-base font-bold text-gray-900">Which branch are you working at today?</h2>
+        <p className="text-xs text-gray-600">
           {user?.homeBranch ? `Your home branch is ${user.homeBranch}. Select your working location:` : 'Select your working branch:'}
         </p>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {branches.map(branch => (
             <button
               key={branch}
               onClick={() => setSelected(branch)}
-              className={`w-full p-3 text-left rounded-lg border-2 transition font-medium ${
+              className={`w-full p-2 text-left rounded-lg border-2 transition font-medium text-sm ${
                 selected === branch
                   ? 'border-indigo-600 bg-indigo-50 text-indigo-900'
                   : 'border-gray-200 bg-white text-gray-900 hover:border-indigo-300'
@@ -72,7 +72,7 @@ export default function WorkingBranchModal({ user, onClose }) {
             </button>
           ))}
         </div>
-        <Button onClick={handleConfirm} disabled={!selected} className="w-full bg-indigo-600 hover:bg-indigo-700">
+        <Button onClick={handleConfirm} disabled={!selected} className="w-full bg-indigo-600 hover:bg-indigo-700 h-8 text-sm">
           Confirm
         </Button>
       </div>
