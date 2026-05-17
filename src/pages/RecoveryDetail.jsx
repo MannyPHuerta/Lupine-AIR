@@ -80,7 +80,7 @@ export default function RecoveryDetail() {
     <div className="flex flex-col justify-center items-center min-h-screen gap-4">
       <AlertCircle className="w-8 h-8 text-red-600" />
       <div className="text-center"><div className="font-medium">{error}</div>
-        <button onClick={() => navigate('/driver')} className="text-indigo-600 hover:underline text-sm mt-2">Back to dashboard</button>
+        <button onClick={() => navigate(-1)} className="text-indigo-600 hover:underline text-sm mt-2">Back to dashboard</button>
       </div>
     </div>
   );
@@ -92,7 +92,7 @@ export default function RecoveryDetail() {
       {/* Header */}
       <div className="bg-rose-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/driver')} className="p-2 rounded-lg hover:bg-rose-800">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-rose-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">

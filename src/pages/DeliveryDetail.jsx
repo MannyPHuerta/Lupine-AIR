@@ -107,7 +107,7 @@ export default function DeliveryDetail() {
         <div className="text-gray-700 text-center">
           <div className="font-medium">{error}</div>
           <button
-            onClick={() => navigate('/driver')}
+            onClick={() => navigate(-1)}
             className="text-indigo-600 hover:underline text-sm mt-2"
           >
             Back to driver dashboard
@@ -150,7 +150,7 @@ export default function DeliveryDetail() {
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/driver')} className="text-white p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate(-1)} className="text-white p-2 rounded-lg hover:bg-indigo-800">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">

@@ -330,7 +330,7 @@ export default function EventPlanner() {
     <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
       {/* Header */}
       <div className="h-12 bg-black border-b border-white/10 flex items-center gap-3 px-4 flex-shrink-0">
-        <button onClick={() => navigate('/lupine')} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
+        <button onClick={() => navigate(-1)} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
