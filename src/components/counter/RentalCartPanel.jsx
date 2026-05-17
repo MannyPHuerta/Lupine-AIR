@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Trash2, DollarSign, Loader2, Check, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -18,6 +18,11 @@ export default function RentalCartPanel({
   const [completed, setCompleted] = useState(false);
   const [amountPaid, setAmountPaid] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const paymentMethodRef = useRef(null);
+
+  useEffect(() => {
+    setTimeout(() => paymentMethodRef.current?.focus(), 100);
+  }, []);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryAddress, setDeliveryAddress] = useState({ address: '', city: '', state: 'TX', zip: '' });
 
@@ -229,7 +234,7 @@ export default function RentalCartPanel({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs font-medium text-gray-600 block mb-1">Payment Method</label>
-            <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full h-8 border border-input rounded px-2 text-xs bg-white">
+            <select ref={paymentMethodRef} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full h-8 border border-input rounded px-2 text-xs bg-white">
               <option value="Cash">Cash</option>
               <option value="Card">Card</option>
               <option value="Check">Check</option>
