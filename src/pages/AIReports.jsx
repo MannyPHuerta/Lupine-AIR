@@ -449,6 +449,25 @@ export default function AIReports() {
     }
   };
 
+  // Add print styles to disable headers/footers
+  const printStyles = `
+    @media print {
+      @page {
+        margin: 0.5in;
+      }
+      body {
+        margin: 0;
+      }
+    }
+  `;
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = printStyles;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Header */}
