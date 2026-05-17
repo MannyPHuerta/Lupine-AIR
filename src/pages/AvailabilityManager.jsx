@@ -8,6 +8,7 @@ import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML'
 import { calcDeliveryFee } from '@/lib/deliveryFee';
 import { calcBillableDays } from '@/lib/rentalDayCalc';
 import SignaturePad from '@/components/invoice/SignaturePad';
+import BranchSelect from '@/components/invoice/BranchSelect';
 import { Button } from '@/components/ui/button';
 import { CustomerIdentity } from '@/components/invoice/CustomerHeader';
 import EquipmentLineItem from '@/components/invoice/EquipmentLineItem';
@@ -725,12 +726,26 @@ export default function AvailabilityManager() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
-         {/* Success banner */}
-         {saved && (
-           <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
-             ✓ Rental saved successfully!
-           </div>
-         )}
+        {/* Branch selector — very first thing, pre-populated from current user's branch */}
+        <div className="bg-white rounded-xl border shadow-sm px-6 py-3">
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Branch:</label>
+            <div className="w-48">
+              <BranchSelect 
+                value={customer.branch} 
+                onChange={(v) => setCustomer({ ...customer, branch: v })} 
+              />
+            </div>
+            <span className="text-xs text-gray-500">{customer.branch}</span>
+          </div>
+        </div>
+
+        {/* Success banner */}
+        {saved && (
+          <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm font-medium">
+            ✓ Rental saved successfully!
+          </div>
+        )}
 
          {/* Payment Modal */}
          {showPayment && pendingInvoice && (
