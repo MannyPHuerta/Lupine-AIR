@@ -183,6 +183,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [lastVerifiedPhone, setLastVerifiedPhone] = useState('');
   const phoneRef = useRef(null);
+  const emailRef = useRef(null);
 
   // Load customer records once for lookup
   useEffect(() => {
@@ -414,6 +415,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
         <div className="relative">
           <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
           <Input
+            ref={emailRef}
             type="email"
             placeholder="john@example.com"
             value={customer.email}
@@ -510,12 +512,17 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             setShowVerifyModal(false);
             setPhoneVerified(true);
             setLastVerifiedPhone(customer.phone);
+            setTimeout(() => emailRef.current?.focus(), 50);
           }}
           onFailed={({ override } = {}) => {
             setShowVerifyModal(false);
             if (!override) setPhoneVerified(false);
+            setTimeout(() => emailRef.current?.focus(), 50);
           }}
-          onClose={() => setShowVerifyModal(false)}
+          onClose={() => {
+            setShowVerifyModal(false);
+            setTimeout(() => emailRef.current?.focus(), 50);
+          }}
         />
       )}
 
