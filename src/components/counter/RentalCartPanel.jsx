@@ -23,6 +23,7 @@ export default function RentalCartPanel({
   useEffect(() => {
     setTimeout(() => paymentMethodRef.current?.focus(), 100);
   }, []);
+  const [showDelivery, setShowDelivery] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryAddress, setDeliveryAddress] = useState({ address: '', city: '', state: 'TX', zip: '' });
 
@@ -161,14 +162,14 @@ export default function RentalCartPanel({
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
                 type="checkbox"
-                checked={deliveryFee > 0 || deliveryAddress.city !== ''}
-                onChange={e => { if (!e.target.checked) { setDeliveryFee(0); setDeliveryAddress({ address: '', city: '', state: 'TX', zip: '' }); }}}
+                checked={showDelivery}
+                onChange={e => { setShowDelivery(e.target.checked); if (!e.target.checked) { setDeliveryFee(0); setDeliveryAddress({ address: '', city: '', state: 'TX', zip: '' }); }}}
                 className="accent-indigo-600"
               />
               <span className="text-xs text-gray-600">Add delivery</span>
             </label>
           </div>
-          {(deliveryFee > 0 || deliveryAddress.city !== '') && (
+          {showDelivery && (
             <div className="space-y-1.5">
               <input
                 className="w-full h-7 border border-input rounded px-2 text-xs bg-gray-50"
