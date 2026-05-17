@@ -762,8 +762,7 @@ export default function AvailabilityManager() {
           {/* First line: branch selector + first equipment item */}
           <div className="flex gap-3 items-start">
             {/* Branch selector */}
-            <div className="bg-white rounded-xl border shadow-sm p-3 flex-shrink-0" style={{ width: '200px' }}>
-              <label className="text-xs font-semibold text-gray-700 block mb-2">Branch:</label>
+            <div className="bg-white rounded-xl border shadow-sm flex-shrink-0 flex items-center" style={{ width: '200px' }}>
               <BranchSelect 
                 value={customer.branch} 
                 onChange={(v) => setCustomer({ ...customer, branch: v })} 
