@@ -88,6 +88,7 @@ export default function AuditLogDashboard() {
   const [filterUser, setFilterUser] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [showFinancialOnly, setShowFinancialOnly] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -103,6 +104,14 @@ export default function AuditLogDashboard() {
   const entities = useMemo(() => [...new Set(logs.map(l => l.entityName).filter(Boolean))].sort(), [logs]);
   const branches = useMemo(() => [...new Set(logs.map(l => l.branch).filter(Boolean))].sort(), [logs]);
   const users = useMemo(() => [...new Set(logs.map(l => l.performedBy).filter(Boolean))].sort(), [logs]);
+
+  // Financial audit keywords
+  const financialKeywords = ['baseAmount', 'taxAmount', 'deposit', 'amountPaid', 'discount', 'deliveryFee', 'returnFee', 'refund', 'payment'];
+  const isFinancialAudit = (log) => {
+    if (!log.changes) return false;
+    const changeFields = Object.keys(log.changes).map(f => f.toLowerCase());
+    return financialKeywords.some(k => changeFields.some(f => f.includes(k.toLowerCase())));
+  };
 
   // Apply filters
   const filtered = useMemo(() => {
@@ -126,9 +135,11 @@ export default function AuditLogDashboard() {
         matchDate = matchDate && new Date(log.performedAt) <= new Date(dateTo + 'T23:59:59');
       }
       
-      return matchSearch && matchAction && matchEntity && matchBranch && matchUser && matchDate;
+      const matchFinancial = showFinancialOnly ? isFinancialAudit(log) : true;
+      
+      return matchSearch && matchAction && matchEntity && matchBranch && matchUser && matchDate && matchFinancial;
     });
-  }, [logs, search, filterAction, filterEntity, filterBranch, filterUser, dateFrom, dateTo]);
+  }, [logs, search, filterAction, filterEntity, filterBranch, filterUser, dateFrom, dateTo, showFinancialOnly]);
 
   // Action color coding
   const actionColor = (action) => {
@@ -260,7 +271,7 @@ export default function AuditLogDashboard() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -272,33 +283,56 @@ export default function AuditLogDashboard() {
                 setFilterUser('all');
                 setDateFrom('');
                 setDateTo('');
+                setShowFinancialOnly(false);
               }}
             >
               Clear Filters
+            </Button>
+            <Button
+              variant={showFinancialOnly ? 'destructive' : 'outline'}
+              size="sm"
+              onClick={() => setShowFinancialOnly(!showFinancialOnly)}
+              className={showFinancialOnly ? 'bg-red-600 text-white hover:bg-red-700' : ''}
+            >
+              💰 Financial Audit Only
             </Button>
           </div>
         </div>
 
         {/* Summary Stats */}
         {!loading && filtered.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Creates', action: 'create', color: 'text-green-700 bg-green-50 border-green-200' },
-              { label: 'Updates', action: 'update', color: 'text-blue-700 bg-blue-50 border-blue-200' },
-              { label: 'Deletes', action: 'delete', color: 'text-red-700 bg-red-50 border-red-200' },
-              { label: 'Other', action: null, color: 'text-gray-700 bg-gray-50 border-gray-200' },
-            ].map(({ label, action, color }) => {
-              const count = action
-                ? filtered.filter(l => l.action === action).length
-                : filtered.filter(l => !['create', 'update', 'delete'].includes(l.action)).length;
-              return (
-                <div key={label} className={`rounded-lg border px-4 py-3 ${color}`}>
-                  <div className="text-xl font-bold">{count}</div>
-                  <div className="text-xs font-medium">{label}</div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Creates', action: 'create', color: 'text-green-700 bg-green-50 border-green-200' },
+                { label: 'Updates', action: 'update', color: 'text-blue-700 bg-blue-50 border-blue-200' },
+                { label: 'Deletes', action: 'delete', color: 'text-red-700 bg-red-50 border-red-200' },
+                { label: 'Other', action: null, color: 'text-gray-700 bg-gray-50 border-gray-200' },
+              ].map(({ label, action, color }) => {
+                const count = action
+                  ? filtered.filter(l => l.action === action).length
+                  : filtered.filter(l => !['create', 'update', 'delete'].includes(l.action)).length;
+                return (
+                  <div key={label} className={`rounded-lg border px-4 py-3 ${color}`}>
+                    <div className="text-xl font-bold">{count}</div>
+                    <div className="text-xs font-medium">{label}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {showFinancialOnly && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-red-800 font-semibold text-sm mb-2">
+                  <span>💰 Financial Audit Filter Active</span>
                 </div>
-              );
-            })}
-          </div>
+                <div className="text-xs text-red-700">
+                  Showing only audits with financial changes: amounts, discounts, taxes, deposits, fees, and payments.
+                  <br />
+                  Total: <strong>{filtered.length}</strong> financial events
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Table */}

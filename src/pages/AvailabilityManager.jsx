@@ -74,6 +74,28 @@ export default function AvailabilityManager() {
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
+  // Helper: Log financial audit for rental updates
+  const logFinancialAudit = async (rentalId, changes, reason, action = 'update') => {
+    try {
+      const rental = await base44.entities.Rental.get(rentalId);
+      if (rental) {
+        await base44.entities.AuditLog.create({
+          action,
+          entityName: 'Rental',
+          entityId: rentalId,
+          entityLabel: `${rental.equipmentName} - ${rental.customerName}`,
+          performedBy: currentUser?.email || 'system',
+          performedAt: new Date().toISOString(),
+          branch: rental.branch,
+          changes,
+          reason,
+        });
+      }
+    } catch (e) {
+      console.warn('Audit log failed:', e.message);
+    }
+  };
+
   const [currentUser, setCurrentUser] = useState(null);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
@@ -356,6 +378,7 @@ export default function AvailabilityManager() {
         } catch (e) { console.warn('Could not lock equipment:', e.message); }
       }
 
+      const oldRental = null; // New rental, no old data
       const rental = await base44.entities.Rental.create({
         equipmentId: line.equipmentId,
         equipmentName: line.equipmentName,
@@ -393,6 +416,27 @@ export default function AvailabilityManager() {
         transferOutCompleted: false,
         transferBackCompleted: false,
       });
+      
+      // Audit: Rental created
+      await base44.entities.AuditLog.create({
+        action: 'create',
+        entityName: 'Rental',
+        entityId: rental.id,
+        entityLabel: `${line.equipmentName} - ${customer.name}`,
+        performedBy: currentUser?.email || 'system',
+        performedAt: new Date().toISOString(),
+        branch: customer.branch,
+        changes: {
+          status: { before: null, after: status === 'confirmed' ? 'contract' : 'quote' },
+          baseAmount: { before: null, after: line.baseAmount },
+          taxAmount: { before: null, after: taxAmount },
+          deposit: { before: null, after: (line.deposit || 0) * line.quantity },
+          amountPaid: { before: null, after: status === 'confirmed' ? paid : 0 },
+          invoiceNumber: { before: null, after: invoiceNumber },
+        },
+        reason: status === 'confirmed' ? 'Confirmed rental' : 'Quote created',
+      });
+      
       createdIds.push(rental.id);
       }
       // Create cross-branch transfer Delivery records (one per cross-branch line) rooted at the SOURCE branch
