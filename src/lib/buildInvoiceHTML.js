@@ -290,6 +290,8 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
     document.getElementById('balance-display').textContent = 'Total Due: $' + GT.toFixed(2);
     document.getElementById('balance-display').style.color = '#3730a3';
     document.getElementById('balance-display').style.fontWeight = '700';
+    // Focus print button on load
+    document.getElementById('print-btn').focus();
   </script>
 </body>
 </html>`;

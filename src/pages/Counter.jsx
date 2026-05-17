@@ -35,7 +35,7 @@ export default function Counter() {
   const [step, setStep] = useState('equipment'); // 'equipment' | 'checkout'
   const [cart, setCart] = useState([]);
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState('');
-  const [highlightIndex, setHighlightIndex] = useState(0);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const [branch, setBranch] = useState('01 McAllen');
   const listRef = useRef(null);
 
@@ -219,7 +219,6 @@ export default function Counter() {
                   value={equipmentSearchTerm}
                   onChange={e => { setEquipmentSearchTerm(e.target.value); setHighlightIndex(-1); }}
                   onKeyDown={handleSearchKeyDown}
-                  onBlur={() => setHighlightIndex(-1)}
                   className="pl-9"
                   autoFocus
                 />
