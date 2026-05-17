@@ -231,7 +231,7 @@ export default function RentalCartPanel({
         </div>
 
         {/* Payment */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-2">
           <div>
             <label className="text-xs font-medium text-gray-600 block mb-1">Payment Method</label>
             <select ref={paymentMethodRef} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full h-8 border border-input rounded px-2 text-xs bg-white">
@@ -240,6 +240,13 @@ export default function RentalCartPanel({
               <option value="Check">Check</option>
             </select>
           </div>
+          <button
+            type="button"
+            onClick={() => setAmountPaid(totalDue.toFixed(2))}
+            className="w-full text-xs font-semibold text-indigo-600 border border-indigo-300 rounded-md py-1.5 hover:bg-indigo-50 transition"
+          >
+            Apply Exact Amount (${totalDue.toFixed(2)})
+          </button>
           <div>
             <label className="text-xs font-medium text-gray-600 block mb-1">Amount Paid</label>
             <div className="flex items-center gap-1">
@@ -261,13 +268,6 @@ export default function RentalCartPanel({
             )}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setAmountPaid(totalDue.toFixed(2))}
-          className="w-full text-xs font-semibold text-indigo-600 border border-indigo-300 rounded-md py-1.5 hover:bg-indigo-50 transition"
-        >
-          Apply Exact Amount (${totalDue.toFixed(2)})
-        </button>
 
         {/* Complete */}
         <Button
