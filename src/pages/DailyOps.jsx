@@ -256,19 +256,19 @@ export default function DailyOps() {
               <div className="text-lg font-bold">
                 {isToday ? `${greeting()}${user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ''} 👋` : '📅 Schedule View'}
               </div>
-              <div className="flex items-center gap-1 text-indigo-300 text-xs mt-0.5">
-                <button onClick={() => setViewDate(d => offsetDate(d, -1))} className="p-0.5 hover:text-white rounded">
+              <div className="flex items-center gap-3 text-indigo-300 text-xs mt-0.5">
+                <button onClick={() => setViewDate(d => offsetDate(d, -1))} className="p-0.5 hover:text-white rounded flex-shrink-0">
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <span
-                  className={`cursor-pointer hover:text-white transition ${isToday ? '' : 'text-amber-300 font-semibold'}`}
+                  className={`cursor-pointer hover:text-white transition min-w-56 text-center ${isToday ? '' : 'text-amber-300 font-semibold'}`}
                   onClick={() => setViewDate(today)}
                   title="Click to return to today"
                 >
                   {new Date(viewDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                   {!isToday && ' (click for today)'}
                 </span>
-                <button onClick={() => setViewDate(d => offsetDate(d, 1))} className="p-0.5 hover:text-white rounded">
+                <button onClick={() => setViewDate(d => offsetDate(d, 1))} className="p-0.5 hover:text-white rounded flex-shrink-0">
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
