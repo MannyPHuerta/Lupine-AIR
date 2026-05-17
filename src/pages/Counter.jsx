@@ -341,60 +341,11 @@ export default function Counter() {
       {/* ── STEP 2: Checkout (RentalCartPanel) ── */}
       {step === 'checkout' && (
         <div className="flex flex-1 h-[calc(100vh-60px)]">
-          {/* Left sidebar: customer + add more equipment */}
-          <div className="w-1/3 border-r bg-white overflow-y-auto flex flex-col">
-            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-              <div className="flex items-start justify-between">
-                <div>
-                  {selectedCustomer ? (
-                    <>
-                      <div className="font-bold text-gray-900">{selectedCustomer.fullName}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{selectedCustomer.phone}</div>
-                      {selectedCustomer.secondaryPhone && (
-                        <div className="text-xs text-gray-400">Alt: {selectedCustomer.secondaryPhone} {selectedCustomer.secondaryPhoneRelation ? `(${selectedCustomer.secondaryPhoneRelation})` : ''}</div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="font-bold text-gray-900">Walk-in</div>
-                      <div className="text-xs text-gray-400 mt-1">Search or scan DL to find customer</div>
-                    </>
-                  )}
-                </div>
-                <button onClick={() => setStep('equipment')} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Customer search / verification */}
-              <div className="border-t pt-3 space-y-2">
-                <div className="text-xs font-semibold text-gray-700">Customer</div>
-                <Input
-                  placeholder="Search by name, phone…"
-                  value={customerSearch}
-                  onChange={e => { setCustomerSearch(e.target.value); setSelectedCustomer(null); }}
-                  className="text-sm"
-                />
-                {!selectedCustomer && (
-                  <CustomerSearchPanel
-                    searchTerm={customerSearch}
-                    customers={customers}
-                    onSelect={(c) => { setSelectedCustomer(c); setCustomerSearch(c.fullName || ''); }}
-                    scannedDL={null}
-                    currentUser={currentUser}
-                  />
-                )}
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="text-xs font-semibold text-gray-700 mb-3">Add Equipment</div>
-                <AIEquipmentSearchInput
-                  equipment={equipment}
-                  placeholder="Search equipment…"
-                  onSelect={(e) => handleAddToCart(e)}
-                />
-              </div>
-            </div>
+          {/* Left sidebar: back button only */}
+          <div className="w-1/3 border-r bg-white flex flex-col items-center justify-start p-4">
+            <button onClick={() => setStep('equipment')} className="text-gray-400 hover:text-gray-600 self-start">
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Right: Cart / invoice */}

@@ -231,42 +231,44 @@ export default function RentalCartPanel({
         </div>
 
         {/* Payment */}
-        <div className="space-y-2">
-          <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Payment Method</label>
-            <select ref={paymentMethodRef} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full h-8 border border-input rounded px-2 text-xs bg-white">
-              <option value="Cash">Cash</option>
-              <option value="Card">Card</option>
-              <option value="Check">Check</option>
-            </select>
-          </div>
-          <button
-            type="button"
-            onClick={() => setAmountPaid(totalDue.toFixed(2))}
-            className="w-full text-xs font-semibold text-indigo-600 border border-indigo-300 rounded-md py-1.5 hover:bg-indigo-50 transition"
-          >
-            Apply Exact Amount (${totalDue.toFixed(2)})
-          </button>
-          <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Amount Paid</label>
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-500">$</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={amountPaid}
-                onChange={e => setAmountPaid(e.target.value)}
-                placeholder={totalDue.toFixed(2)}
-                className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs shadow-sm"
-              />
+        <div className="space-y-1">
+          <div className="grid grid-cols-3 gap-2 items-end">
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Payment Method</label>
+              <select ref={paymentMethodRef} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full h-8 border border-input rounded px-2 text-xs bg-white">
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="Check">Check</option>
+              </select>
             </div>
-            {paid > 0 && (
-              <div className={`text-xs mt-1 font-medium ${balance <= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {balance <= 0 ? `Change: $${Math.abs(balance).toFixed(2)}` : `Balance: $${balance.toFixed(2)}`}
+            <button
+              type="button"
+              onClick={() => setAmountPaid(totalDue.toFixed(2))}
+              className="h-8 text-xs font-semibold text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition whitespace-nowrap"
+            >
+              Apply Exact
+            </button>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Amount Paid</label>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={amountPaid}
+                  onChange={e => setAmountPaid(e.target.value)}
+                  placeholder={totalDue.toFixed(2)}
+                  className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs shadow-sm"
+                />
               </div>
-            )}
+            </div>
           </div>
+          {paid > 0 && (
+            <div className={`text-xs font-medium text-center ${balance <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {balance <= 0 ? `Change: $${Math.abs(balance).toFixed(2)}` : `Balance: $${balance.toFixed(2)}`}
+            </div>
+          )}
         </div>
 
         {/* Complete */}
