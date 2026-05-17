@@ -298,7 +298,7 @@ export default function Counter() {
                 disabled={cart.length === 0}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 text-base font-bold"
               >
-                <DollarSign className="w-5 h-5" /> Customer Agreed — Checkout
+                <DollarSign className="w-5 h-5" /> Checkout
               </Button>
             </div>
 
