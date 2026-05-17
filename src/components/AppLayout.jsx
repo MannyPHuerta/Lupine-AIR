@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useWorkingBranch } from '@/lib/WorkingBranchContext';
 import WorkingBranchModal from '@/components/WorkingBranchModal';
 import { base44 } from '@/api/base44Client';
@@ -112,15 +112,33 @@ const navGroups = [
   },
 ];
 
-function NavGroup({ group, location, onNavigate }) {
+function NavGroup({ group, location, onNavigate, groupIndex, focusedGroup, focusedItem, onGroupFocus, onKeyDown }) {
   const isActive = group.items.some(i => i.path === location.pathname);
   const [open, setOpen] = useState(isActive);
+  const isFocused = focusedGroup === groupIndex;
+  const headerRef = useRef(null);
+  const itemRefs = useRef([]);
+
+  // Sync focus to DOM
+  useEffect(() => {
+    if (isFocused && focusedItem === -1) {
+      headerRef.current?.focus();
+    } else if (isFocused && focusedItem >= 0) {
+      itemRefs.current[focusedItem]?.focus();
+    }
+  }, [isFocused, focusedItem]);
+
+  const navigableItems = group.items.filter(i => !i.divider && i.path);
 
   return (
     <div className="border-b border-slate-700/50 last:border-0">
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-700/40 transition group"
+        ref={headerRef}
+        tabIndex={0}
+        onClick={() => setOpen(o => !o)}
+        onFocus={() => onGroupFocus(groupIndex, -1)}
+        onKeyDown={e => onKeyDown(e, groupIndex, -1, open, () => setOpen(o => !o))}
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-700/40 transition group focus:outline-none focus:bg-slate-700/40"
       >
         <div className="flex items-center gap-2">
           <span className={`text-sm font-bold ${group.color}`}>{group.label}</span>
@@ -132,7 +150,7 @@ function NavGroup({ group, location, onNavigate }) {
       </button>
       {open && (
         <div className="pb-1">
-          {group.items.map(item => {
+          {group.items.map((item, idx) => {
             if (item.divider) {
               return (
                 <div key={item.label} className="px-4 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
@@ -142,12 +160,18 @@ function NavGroup({ group, location, onNavigate }) {
             }
             const active = location.pathname === item.path;
             const Icon = item.icon;
+            // navigable index (skip dividers)
+            const navIdx = navigableItems.indexOf(item);
             return (
               <Link
                 key={item.path}
                 to={item.path}
+                ref={el => { itemRefs.current[navIdx] = el; }}
+                tabIndex={-1}
+                onFocus={() => onGroupFocus(groupIndex, navIdx)}
+                onKeyDown={e => onKeyDown(e, groupIndex, navIdx, open, () => setOpen(o => !o))}
                 onClick={onNavigate}
-                className={`flex items-center gap-2.5 px-4 py-1.5 text-sm transition border-l-4 ${
+                className={`flex items-center gap-2.5 px-4 py-1.5 text-sm transition border-l-4 focus:outline-none focus:bg-slate-700/60 ${
                   active
                     ? `font-semibold ${group.color} bg-slate-700/60 border-current`
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 border-transparent'
@@ -166,20 +190,104 @@ function NavGroup({ group, location, onNavigate }) {
 
 export default function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { workingBranch, loading } = useWorkingBranch();
   const [user, setUser] = useState(null);
   const [showBranchModal, setShowBranchModal] = useState(false);
+  const [focusedGroup, setFocusedGroup] = useState(null);
+  const [focusedItem, setFocusedItem] = useState(-1);
+  // Track open state per group for keyboard nav
+  const [groupOpenState, setGroupOpenState] = useState(() =>
+    navGroups.map(g => g.items.some(i => i.path === location.pathname))
+  );
 
   useEffect(() => {
     base44.auth.me().then(u => {
       setUser(u);
-      // Show modal on first load if no working branch selected
       if (!workingBranch && !loading) {
         setShowBranchModal(true);
       }
     }).catch(() => {});
   }, [workingBranch, loading]);
+
+  const handleGroupFocus = useCallback((gIdx, iIdx) => {
+    setFocusedGroup(gIdx);
+    setFocusedItem(iIdx);
+  }, []);
+
+  const handleKeyDown = useCallback((e, gIdx, iIdx, isOpen, toggleOpen) => {
+    const group = navGroups[gIdx];
+    const navigableItems = group.items.filter(i => !i.divider && i.path);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (iIdx === -1) {
+        // On header: open group and focus first item, or move to next group header
+        if (!isOpen) {
+          toggleOpen();
+          setGroupOpenState(prev => { const s = [...prev]; s[gIdx] = true; return s; });
+          setTimeout(() => { setFocusedGroup(gIdx); setFocusedItem(0); }, 0);
+        } else {
+          setFocusedGroup(gIdx);
+          setFocusedItem(0);
+        }
+      } else if (iIdx < navigableItems.length - 1) {
+        setFocusedGroup(gIdx);
+        setFocusedItem(iIdx + 1);
+      } else {
+        // Move to next group header
+        const nextG = (gIdx + 1) % navGroups.length;
+        setFocusedGroup(nextG);
+        setFocusedItem(-1);
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (iIdx === -1) {
+        // On header: move to previous group's last item or header
+        const prevG = (gIdx - 1 + navGroups.length) % navGroups.length;
+        const prevNav = navGroups[prevG].items.filter(i => !i.divider && i.path);
+        const prevOpen = groupOpenState[prevG];
+        if (prevOpen && prevNav.length > 0) {
+          setFocusedGroup(prevG);
+          setFocusedItem(prevNav.length - 1);
+        } else {
+          setFocusedGroup(prevG);
+          setFocusedItem(-1);
+        }
+      } else if (iIdx > 0) {
+        setFocusedGroup(gIdx);
+        setFocusedItem(iIdx - 1);
+      } else {
+        // Move back to group header
+        setFocusedGroup(gIdx);
+        setFocusedItem(-1);
+      }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      if (iIdx === -1) {
+        e.preventDefault();
+        toggleOpen();
+        setGroupOpenState(prev => { const s = [...prev]; s[gIdx] = !isOpen; return s; });
+      } else {
+        // Navigate to item
+        const item = navigableItems[iIdx];
+        if (item?.path) {
+          e.preventDefault();
+          navigate(item.path);
+          setSidebarOpen(false);
+        }
+      }
+    } else if (e.key === 'Escape') {
+      if (iIdx >= 0) {
+        // Collapse back to header
+        setFocusedGroup(gIdx);
+        setFocusedItem(-1);
+      } else {
+        toggleOpen();
+        setGroupOpenState(prev => { const s = [...prev]; s[gIdx] = false; return s; });
+      }
+    }
+  }, [navigate, groupOpenState]);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -198,12 +306,17 @@ export default function AppLayout() {
 
       {/* Nav groups */}
       <div className="flex-1 overflow-y-auto py-3 space-y-1">
-        {navGroups.map(group => (
+        {navGroups.map((group, gIdx) => (
           <NavGroup
             key={group.label}
             group={group}
             location={location}
             onNavigate={() => setSidebarOpen(false)}
+            groupIndex={gIdx}
+            focusedGroup={focusedGroup}
+            focusedItem={focusedItem}
+            onGroupFocus={handleGroupFocus}
+            onKeyDown={handleKeyDown}
           />
         ))}
       </div>
