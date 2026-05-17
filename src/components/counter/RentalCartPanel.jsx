@@ -1,9 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Trash2, DollarSign, Loader2, Check, Truck } from 'lucide-react';
+import { Trash2, DollarSign, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
-import DeliveryRecommendation from './DeliveryRecommendation';
 
 export default function RentalCartPanel({
   cart,
@@ -23,9 +22,7 @@ export default function RentalCartPanel({
   useEffect(() => {
     setTimeout(() => paymentMethodRef.current?.focus(), 100);
   }, []);
-  const [showDelivery, setShowDelivery] = useState(false);
-  const [deliveryFee, setDeliveryFee] = useState(0);
-  const [deliveryAddress, setDeliveryAddress] = useState({ address: '', city: '', state: 'TX', zip: '' });
+
 
   const TAX_RATE = 0.0825;
 
@@ -34,7 +31,7 @@ export default function RentalCartPanel({
   [cart]);
 
   const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
-  const totalDue = Math.round((subtotal + tax + deliveryFee) * 100) / 100;
+  const totalDue = Math.round((subtotal + tax) * 100) / 100;
   const paid = parseFloat(amountPaid) || 0;
   const balance = Math.round((totalDue - paid) * 100) / 100;
 
@@ -153,62 +150,6 @@ export default function RentalCartPanel({
           ))}
         </div>
 
-        {/* Delivery (optional) */}
-        <div className="bg-white border rounded p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-medium text-gray-700 flex items-center gap-1">
-              <Truck className="w-3.5 h-3.5 text-indigo-500" /> Company Delivery?
-            </div>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showDelivery}
-                onChange={e => { setShowDelivery(e.target.checked); if (!e.target.checked) { setDeliveryFee(0); setDeliveryAddress({ address: '', city: '', state: 'TX', zip: '' }); }}}
-                className="accent-indigo-600"
-              />
-              <span className="text-xs text-gray-600">Add delivery</span>
-            </label>
-          </div>
-          {showDelivery && (
-            <div className="space-y-1.5">
-              <input
-                className="w-full h-7 border border-input rounded px-2 text-xs bg-gray-50"
-                placeholder="City"
-                value={deliveryAddress.city}
-                onChange={e => setDeliveryAddress(a => ({ ...a, city: e.target.value }))}
-              />
-              <div className="grid grid-cols-2 gap-1">
-                <input
-                  className="h-7 border border-input rounded px-2 text-xs bg-gray-50"
-                  placeholder="State"
-                  value={deliveryAddress.state}
-                  onChange={e => setDeliveryAddress(a => ({ ...a, state: e.target.value }))}
-                />
-                <input
-                  className="h-7 border border-input rounded px-2 text-xs bg-gray-50"
-                  placeholder="ZIP"
-                  value={deliveryAddress.zip}
-                  onChange={e => setDeliveryAddress(a => ({ ...a, zip: e.target.value }))}
-                />
-              </div>
-              <DeliveryRecommendation
-                cartItems={cart}
-                deliveryAddress={deliveryAddress}
-                onAddDeliveryFee={(fee) => setDeliveryFee(fee)}
-              />
-              {deliveryFee > 0 && (
-                <div className="flex items-center justify-between text-xs text-green-700">
-                  <span>Delivery fee added</span>
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold">${deliveryFee.toFixed(2)}</span>
-                    <button onClick={() => setDeliveryFee(0)} className="text-gray-400 hover:text-red-500 ml-1">✕</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* Totals */}
         <div className="space-y-1 text-xs bg-white border rounded p-3">
           <div className="flex justify-between text-gray-700">
@@ -219,12 +160,6 @@ export default function RentalCartPanel({
             <span>Tax (8.25%)</span>
             <span>${tax.toFixed(2)}</span>
           </div>
-          {deliveryFee > 0 && (
-            <div className="flex justify-between text-gray-700">
-              <span>Delivery Fee</span>
-              <span>${deliveryFee.toFixed(2)}</span>
-            </div>
-          )}
           <div className="border-t pt-1 mt-1 flex justify-between font-bold text-sm text-gray-900">
             <span>Total Due</span>
             <span className="text-indigo-600">${totalDue.toFixed(2)}</span>
