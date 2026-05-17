@@ -118,6 +118,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const dropdownContainerRef = useRef(null);
+  const closeTimerRef = useRef(null);
   const toTriggerRef = useRef(null);  // "To" date button — From calendar advances here
   const startTimeRef = useRef(null);  // From time input — From date advances here
   const endTimeRef = useRef(null);    // To time input — To date advances here
@@ -244,14 +245,17 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
             onFocus={() => { setOpen(true); setSearch(line.equipmentId ? '' : search); }}
             onChange={e => { setSearch(e.target.value); setOpen(true); }}
             onKeyDown={handleKeyDown}
-            onBlur={(e) => {
-              // Only close if focus moved outside the dropdown container
-              setTimeout(() => {
-                if (dropdownContainerRef.current && !dropdownContainerRef.current.contains(document.activeElement)) {
+            onBlur={() => {
+              // Cancel any previous close timer
+              clearTimeout(closeTimerRef.current);
+              closeTimerRef.current = setTimeout(() => {
+                // Only close if focus has truly left the dropdown container
+                if (!dropdownContainerRef.current?.contains(document.activeElement)) {
                   setOpen(false);
                 }
-              }, 200);
+              }, 250);
             }}
+            onFocus={() => clearTimeout(closeTimerRef.current)}
             readOnly={false}
           />
           {open && (

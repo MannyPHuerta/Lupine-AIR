@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Zap, Plus, Loader2, Link2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 // rentals = all rental records to check conflicts
 // startDate, endDate = current line's rental dates
 // branch = customer's branch for multi-branch availability
-export default function AISuggestions({ equipmentId, equipmentName, equipmentItem, equipment = [], onAddToCart, rentals = [], startDate = '', endDate = '', branch = '' }) {
+function AISuggestions({ equipmentId, equipmentName, equipmentItem, equipment = [], onAddToCart, rentals = [], startDate = '', endDate = '', branch = '' }) {
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [reasoning, setReasoning] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,6 +51,7 @@ export default function AISuggestions({ equipmentId, equipmentName, equipmentIte
   }, [equipmentId, equipmentName]);
 
   if (!equipmentId) return null;
+
   if (dependencies.length === 0 && loading) {
     return (
       <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
@@ -62,7 +63,6 @@ export default function AISuggestions({ equipmentId, equipmentName, equipmentIte
 
   return (
     <div className="mt-3 border-t pt-3 space-y-3">
-
       {/* Required dependencies */}
       {dependencies.length > 0 && (
         <div>
@@ -153,3 +153,5 @@ export default function AISuggestions({ equipmentId, equipmentName, equipmentIte
     </div>
   );
 }
+
+export default memo(AISuggestions);
