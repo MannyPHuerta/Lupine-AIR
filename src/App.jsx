@@ -77,6 +77,7 @@ import LaundryReport from "./pages/LaundryReport";
 import DriverReport from "./pages/DriverReport";
 import RFQManager from "./pages/RFQManager";
 import RFQDetail from "./pages/RFQDetail";
+import RFQTemplates from "./pages/RFQTemplates";
 import AgreementSigningFlow from "./pages/AgreementSigningFlow";
 import Timesheets from "./pages/Timesheets";
 import ClockIn from "./pages/ClockIn";
@@ -180,6 +181,7 @@ const AuthenticatedApp = () => {
         <Route path="/laundry-report" element={<LaundryReport />} />
         <Route path="/driver-report" element={<DriverReport />} />
         <Route path="/rfq" element={<RFQManager />} />
+        <Route path="/rfq/templates" element={<RFQTemplates />} />
         <Route path="/rfq/:id" element={<RFQDetail />} />
         <Route path="/agreement-signing" element={<AgreementSigningFlow />} />
         <Route path="/timesheets" element={<Timesheets />} />

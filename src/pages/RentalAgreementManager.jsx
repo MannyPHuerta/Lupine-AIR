@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw, Upload, FileUp, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -347,6 +347,27 @@ Requirements:
             <span>During checkout, staff will prompt the customer to initial each page before signing the final page.</span>
           </div>
         </div>
+
+        {/* Upload existing bespoke contract — prominent CTA */}
+        {!content || content === ARA_AGREEMENT ? (
+          <div className="bg-indigo-50 border-2 border-indigo-300 rounded-xl p-6 space-y-3">
+            <div className="flex items-start gap-3">
+              <FileUp className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="font-semibold text-indigo-900 mb-1">Have Your Own Contract? Upload It Here</div>
+                <p className="text-sm text-indigo-700">Upload your existing bespoke contract (PDF, Word, or text). We'll extract the text automatically so you can review, edit, and save it for digital signing.</p>
+              </div>
+            </div>
+            <label className={`flex items-center justify-center gap-3 cursor-pointer border-2 border-dashed border-indigo-400 rounded-lg p-6 hover:border-indigo-600 hover:bg-indigo-100 transition ${extracting ? 'opacity-50 pointer-events-none' : ''}`}>
+              {extracting
+                ? <><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /> <span className="text-indigo-700 font-medium">Extracting text from document...</span></>
+                : <><Upload className="w-6 h-6 text-indigo-500" /> <span className="text-indigo-700 font-medium">Click to upload your contract (PDF, Word, .txt)</span></>
+              }
+              <input type="file" className="hidden" accept=".pdf,.doc,.docx,.txt" onChange={handleUploadAgreement} />
+            </label>
+            <div className="text-xs text-indigo-500 text-center">— or paste text manually in the editor below, or use "AI Generate" to create one from scratch —</div>
+          </div>
+        ) : null}
 
         {/* Agreement content */}
         <div className="bg-white rounded-xl border shadow-sm p-6 space-y-3">

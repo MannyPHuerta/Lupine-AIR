@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Clock, CheckCircle2, XCircle, Trophy, Loader2, Search, Filter } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle2, XCircle, Trophy, Loader2, Search, Filter, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -73,9 +73,14 @@ export default function RFQManager() {
             <div className="text-xl font-bold">AIRfq — RFQ Manager</div>
             <div className="text-green-300 text-sm">Bid intelligence & response workspace</div>
           </div>
-          <Button onClick={() => navigate('/rfq/new')} className="bg-green-600 hover:bg-green-700 text-white">
-            <Plus className="w-4 h-4 mr-1" /> New RFQ
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/rfq/templates')} variant="outline" className="border-green-600 text-white hover:bg-green-800 gap-1">
+              <Star className="w-4 h-4" /> Templates
+            </Button>
+            <Button onClick={() => navigate('/rfq/new')} className="bg-green-600 hover:bg-green-700 text-white">
+              <Plus className="w-4 h-4 mr-1" /> New RFQ
+            </Button>
+          </div>
         </div>
       </div>
 
