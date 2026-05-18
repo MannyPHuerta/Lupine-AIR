@@ -8,6 +8,7 @@ import { getSpecsTemplate } from '@/lib/equipmentSpecs';
 import MaintenanceLogPanel from '@/components/maintenance/MaintenanceLogPanel';
 import TentSpecsPanel from '@/components/tent/TentSpecsPanel';
 import BarcodeDisplay from '@/components/equipment/BarcodeDisplay';
+import LocationBadge from '@/components/equipment/LocationBadge';
 
 const CONDITIONS = ['New', 'Good', 'Fair', 'Needs Repair', 'Retired'];
 
@@ -90,6 +91,11 @@ export default function EquipmentDetail() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+        {/* GPS Location Badge */}
+        <section className="bg-white rounded-xl border shadow-sm p-5">
+          <LocationBadge equipment={eq} />
+        </section>
 
         {/* Barcode */}
         <section className="bg-white rounded-xl border shadow-sm p-5">
