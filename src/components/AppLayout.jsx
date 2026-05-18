@@ -80,6 +80,14 @@ const navGroups = [
     ],
   },
   {
+    label: 'AIRecovery',
+    color: 'text-orange-400',
+    description: 'Theft prevention & recovery',
+    items: [
+      { label: 'Recovery Intelligence', path: '/airecovery', icon: AlertTriangle },
+    ],
+  },
+  {
     label: 'AIREvents',
     color: 'text-pink-400',
     description: 'Events & marketing',
