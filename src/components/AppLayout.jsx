@@ -85,7 +85,8 @@ const navGroups = [
     description: 'Theft prevention & recovery',
     items: [
       { label: 'Recovery Intelligence', path: '/airecovery', icon: AlertTriangle },
-      { label: 'GPS Providers', path: '/gps-settings', icon: MapPin },
+      { label: 'Equipment GPS Tracking', path: '/equipment-status', icon: MapPin },
+      { label: 'GPS Providers', path: '/gps-settings', icon: Settings },
     ],
   },
   {
