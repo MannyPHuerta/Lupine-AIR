@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Loader2, Radar, Users, Zap, Shield, TrendingUp, Clock, AlertOctagon } from 'lucide-react';
+import DLScanIntel from './DLScanIntel';
 
 function ThreatCard({ threat }) {
   const levelConfig = {
@@ -306,6 +307,7 @@ Focus on patterns that suggest organized theft vs individual incidents.`,
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
         {[
           { key: 'threats', label: '🔍 Threat Analysis' },
+          { key: 'dlscan', label: '🪪 DL Scan Check' },
           { key: 'integrations', label: '🔌 Prevention APIs' },
         ].map(t => (
           <button
@@ -317,6 +319,8 @@ Focus on patterns that suggest organized theft vs individual incidents.`,
           </button>
         ))}
       </div>
+
+      {activeTab === 'dlscan' && <DLScanIntel rentals={rentals} />}
 
       {activeTab === 'threats' && (
         <>

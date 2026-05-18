@@ -4,7 +4,8 @@
  */
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Loader2, ShieldAlert, MapPin, User, TrendingUp, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Loader2, ShieldAlert, MapPin, User, TrendingUp, AlertTriangle, CheckCircle2, ExternalLink, CreditCard } from 'lucide-react';
+import DLScanIntel from './DLScanIntel';
 
 const RISK_COLORS = {
   critical: 'bg-red-600 text-white',
@@ -97,6 +98,7 @@ function RepeatOffenderCard({ item }) {
 export default function TheftIntelPanel({ rentals, customers, recoveries }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [activeTab, setActiveTab] = useState('intel');
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -251,6 +253,25 @@ Return structured intelligence.`,
         )}
       </div>
 
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        {[
+          { key: 'intel', label: '🕵️ Address & Pattern Intel' },
+          { key: 'dlscan', label: '🪪 DL Scan Check' },
+        ].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`flex-1 text-sm font-medium py-2 rounded-md transition ${activeTab === t.key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'dlscan' && <DLScanIntel rentals={rentals} />}
+
+      {activeTab === 'intel' && <>
       {result?.error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">Error: {result.error}</div>
       )}
@@ -300,6 +321,7 @@ Return structured intelligence.`,
           Click "Run Theft Analysis" to scan all rental history for theft risk patterns
         </div>
       )}
+      </>}
     </div>
   );
 }
