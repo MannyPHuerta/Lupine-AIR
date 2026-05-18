@@ -122,7 +122,8 @@ const navGroups = [
 
 function NavGroup({ group, location, onNavigate, allGroupRefs }) {
   const isActive = group.items.some(i => i.path === location.pathname);
-  const [open, setOpen] = useState(isActive);
+  const singleItem = group.items.filter(i => !i.divider && i.path).length === 1;
+  const [open, setOpen] = useState(isActive || singleItem);
   const headerRef = useRef(null);
   const itemRefs = useRef([]);
   const navigableItems = group.items.filter(i => !i.divider && i.path);
