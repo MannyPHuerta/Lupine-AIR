@@ -382,9 +382,17 @@ Provide a risk assessment for this customer at the counter right now.`,
                     <ExternalLink className="w-3 h-3" /> Google Fraud Search
                   </a>
                 )}
-                <a href={externalCheck.nicbCheck.stolenEquipmentDb} target="_blank" rel="noopener noreferrer"
+                <a href={externalCheck.nicbCheck.machineryTraderStolen} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs bg-gray-700 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-gray-900 transition">
-                  <ExternalLink className="w-3 h-3" /> StolenEquipmentDB
+                  <ExternalLink className="w-3 h-3" /> MachineryTrader
+                </a>
+                <a href={externalCheck.nicbCheck.stolenRegister} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs bg-gray-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-gray-800 transition">
+                  <ExternalLink className="w-3 h-3" /> Stolen Register
+                </a>
+                <a href={externalCheck.nicbCheck.nerIronCheck} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs bg-amber-700 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-amber-800 transition">
+                  <ExternalLink className="w-3 h-3" /> NER IRONcheck ($79)
                 </a>
                 <a href={externalCheck.nicbCheck.manualCheckUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition">

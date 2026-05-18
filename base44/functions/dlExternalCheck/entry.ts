@@ -98,7 +98,9 @@ Deno.serve(async (req) => {
           zipChecked: zip || null,
           manualCheckUrl: nicbSearchUrl,
           reportStolen: nicbReportUrl,
-          stolenEquipmentDb: 'https://www.stolenequipmentdb.com',
+          machineryTraderStolen: 'https://www.machinerytrader.com/stolen-equipment/search',
+      stolenRegister: 'https://www.stolenregister.com/check',
+      nerIronCheck: 'https://www.ner.net/solutions/ironcheck/',
           // Provide a direct Google search link for the name + "stolen equipment" or "scam"
           googleFraudSearch: name
             ? `https://www.google.com/search?q=${encodeURIComponent(`"${name}" stolen equipment rental scam Texas`)}`
