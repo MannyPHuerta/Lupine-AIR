@@ -63,6 +63,24 @@
       "type": "string",
       "description": "ISO timestamp when breach was first detected"
     },
+    "speedAnomalyDetected": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if equipment was moving > 40 mph (suspicious highway/trailer transport)"
+    },
+    "speedAnomalyAt": {
+      "type": "string",
+      "description": "ISO timestamp when speed anomaly was first detected"
+    },
+    "nightMovementDetected": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if equipment movement detected during night hours (10pm-6am)"
+    },
+    "nightMovementAt": {
+      "type": "string",
+      "description": "ISO timestamp when night movement was first detected"
+    },
     "isActive": {
       "type": "boolean",
       "default": true,

@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     );
 
     const breachesDetected = [];
+    const anomaliesDetected = [];
     let alertsSent = 0;
 
     for (const rental of activeRentals) {
@@ -91,6 +92,57 @@ Deno.serve(async (req) => {
       const isBreached = !link.lastKnownAddress ||
         !(link.lastKnownAddress.toLowerCase().includes(worksiteCity?.toLowerCase() || ''));
 
+      // Check for speed anomaly (> 40 mph indicates highway/trailer movement)
+      const lastSpeed = link.lastKnownSpeed || 0;
+      const isSpeedAnomaly = lastSpeed > 40;
+
+      // Check for night movement (10pm-6am in Central time)
+      const now = new Date();
+      const ct = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+      const hour = ct.getHours();
+      const isNightMovement = (hour >= 22 || hour < 6) && lastSpeed > 2; // > 2 mph = actual movement
+
+      // Track anomalies
+      if (isSpeedAnomaly && !link.speedAnomalyDetected) {
+        const now = new Date().toISOString();
+        await base44.asServiceRole.entities.EquipmentGPSLink.update(link.id, {
+          speedAnomalyDetected: true,
+          speedAnomalyAt: now,
+        });
+        anomaliesDetected.push({
+          type: 'speed',
+          rentalId: rental.id,
+          equipmentName: rental.equipmentName,
+          speed: lastSpeed,
+          detectedAt: now,
+        });
+      } else if (!isSpeedAnomaly && link.speedAnomalyDetected) {
+        await base44.asServiceRole.entities.EquipmentGPSLink.update(link.id, {
+          speedAnomalyDetected: false,
+          speedAnomalyAt: null,
+        });
+      }
+
+      if (isNightMovement && !link.nightMovementDetected) {
+        const now = new Date().toISOString();
+        await base44.asServiceRole.entities.EquipmentGPSLink.update(link.id, {
+          nightMovementDetected: true,
+          nightMovementAt: now,
+        });
+        anomaliesDetected.push({
+          type: 'night_movement',
+          rentalId: rental.id,
+          equipmentName: rental.equipmentName,
+          speed: lastSpeed,
+          detectedAt: now,
+        });
+      } else if (!isNightMovement && link.nightMovementDetected) {
+        await base44.asServiceRole.entities.EquipmentGPSLink.update(link.id, {
+          nightMovementDetected: false,
+          nightMovementAt: null,
+        });
+      }
+
       if (isBreached && !link.geofenceBreached) {
         const breachTime = new Date().toISOString();
 
@@ -116,7 +168,12 @@ Deno.serve(async (req) => {
         const expectedLoc = breachInfo.expectedLocation || 'Unknown worksite';
 
         // Send SMS to all configured alert phones
-        const smsBody = `⚠️ GEO-FENCE BREACH\n${rental.equipmentName} (${rental.invoiceNumber || rental.id})\nCustomer: ${rental.customerName}\nCurrent: ${link.lastKnownAddress || 'Unknown'}\nExpected: ${expectedLoc}\nDetected: ${detectedStr}\nView: https://app.lupine.rental/airecovery`;
+        const anomalyList = [];
+        if (isSpeedAnomaly) anomalyList.push(`⚡ Speed: ${lastSpeed} mph`);
+        if (isNightMovement) anomalyList.push(`🌙 Night movement (${hour}:00 CT)`);
+        const anomalyStr = anomalyList.length > 0 ? `\nAnomalies: ${anomalyList.join(' | ')}` : '';
+
+        const smsBody = `⚠️ GEO-FENCE BREACH\n${rental.equipmentName} (${rental.invoiceNumber || rental.id})\nCustomer: ${rental.customerName}\nCurrent: ${link.lastKnownAddress || 'Unknown'}\nExpected: ${expectedLoc}${anomalyStr}\nDetected: ${detectedStr}\nView: https://app.lupine.rental/airecovery`;
 
         for (const phone of alertPhones) {
           try {
@@ -137,8 +194,11 @@ Current Location: ${link.lastKnownAddress || 'Unknown'}
 Expected Worksite: ${expectedLoc}
 
 Geo-fence Radius: ${radiusMiles} miles
+Last Known Speed: ${lastSpeed} mph
 Detected: ${detectedStr}
 
+ANOMALIES DETECTED:
+${isSpeedAnomaly ? `• High-speed movement (${lastSpeed} mph) — suggests highway/trailer transport\n` : ''}${isNightMovement ? `• Night movement (${hour}:00 CT) — outside normal operating hours\n` : ''}
 ⚡ IMMEDIATE ACTION REQUIRED:
 1. Contact customer to verify equipment location
 2. If unauthorized, initiate theft recovery protocol
@@ -166,15 +226,16 @@ Manage Recovery: https://app.lupine.rental/airecovery`;
       }
     }
 
-    console.log(`[checkGeofenceBreaches] Checked ${activeRentals.length} rentals. Detected ${breachesDetected.length} breaches. SMS recipients: ${alertPhones.length}, Email recipients: ${alertEmails.length}`);
+    console.log(`[checkGeofenceBreaches] Checked ${activeRentals.length} rentals. Detected ${breachesDetected.length} breaches & ${anomaliesDetected.length} anomalies. SMS: ${alertPhones.length}, Email: ${alertEmails.length}`);
 
     return Response.json({
       success: true,
       breachesDetected,
+      anomaliesDetected,
       alertsSent,
       smsRecipients: alertPhones.length,
       emailRecipients: alertEmails.length,
-      message: `Scanned ${activeRentals.length} active rentals, detected ${breachesDetected.length} geo-fence breaches.`,
+      message: `Scanned ${activeRentals.length} active rentals, detected ${breachesDetected.length} breaches & ${anomaliesDetected.length} anomalies.`,
     });
   } catch (error) {
     console.error('[checkGeofenceBreaches] Fatal error:', error.message);
