@@ -354,9 +354,6 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
         </div>
       )}
 
-      {/* Inline Risk Check */}
-      <CustomerRiskCheck customer={customer} rentals={rentals} />
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Name / DL */}
         <div className="relative">
@@ -472,6 +469,12 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             onChange={e => set('zip', e.target.value)}
           />
         </div>
+      </div>
+
+      {/* Inline Risk Check — after DL / city/state/zip */}
+      <CustomerRiskCheck customer={customer} rentals={rentals} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="sm:col-span-2 lg:col-span-4">
           <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
           <Input
