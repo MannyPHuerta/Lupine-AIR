@@ -4,8 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, RefreshCw, Loader2, RotateCcw, AlertTriangle,
   CheckCircle2, Clock, Truck, MapPin, Camera, Zap, TrendingUp,
-  Download, Phone, Calendar, DollarSign, Package
+  Download, Phone, Calendar, DollarSign, Package, ShieldAlert, Navigation, Radar
 } from 'lucide-react';
+import TheftIntelPanel from '@/components/recovery/TheftIntelPanel';
+import BoundaryVigilancePanel from '@/components/recovery/BoundaryVigilancePanel';
+import ThreatWatchPanel from '@/components/recovery/ThreatWatchPanel';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
@@ -188,6 +191,7 @@ export default function AIRecovery() {
   const [aiResults, setAiResults] = useState({});
   const [runningAnalysis, setRunningAnalysis] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [mainTab, setMainTab] = useState('recoveries');
 
   const load = async () => {
     setLoading(true);
@@ -371,18 +375,19 @@ Provide a strategic recovery action plan for the operations manager.`,
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* Main Tabs */}
         <div className="px-4 max-w-5xl mx-auto flex gap-1 flex-wrap items-center">
           {[
-            { key: 'open', label: 'Active' },
-            { key: 'completed', label: 'Completed' },
-            { key: 'all', label: 'All' },
+            { key: 'recoveries', label: '🔄 Recoveries', icon: null },
+            { key: 'theft_intel', label: '🕵️ Theft Intel', icon: null },
+            { key: 'boundary', label: '🛰️ Boundary', icon: null },
+            { key: 'threatwatch', label: '📡 ThreatWatch', icon: null },
           ].map(tab => (
             <button
               key={tab.key}
-              onClick={() => setStatusFilter(tab.key)}
+              onClick={() => setMainTab(tab.key)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
-                statusFilter === tab.key
+                mainTab === tab.key
                   ? 'border-white text-white'
                   : 'border-transparent text-indigo-300 hover:text-white'
               }`}
@@ -392,20 +397,50 @@ Provide a strategic recovery action plan for the operations manager.`,
           ))}
           <button
             onClick={() => navigate('/dispatch')}
-            className="ml-4 px-3 py-1.5 text-sm font-medium bg-cyan-600 hover:bg-cyan-700 rounded transition"
+            className="ml-auto px-3 py-1.5 text-sm font-medium bg-cyan-600 hover:bg-cyan-700 rounded transition"
           >
-            🚚 Dispatch Board
-          </button>
-          <button
-            onClick={() => navigate('/driver')}
-            className="px-3 py-1.5 text-sm font-medium bg-indigo-700 hover:bg-indigo-600 rounded transition"
-          >
-            👷 Driver View
+            🚚 Dispatch
           </button>
         </div>
+        {/* Recovery sub-tabs only when on recoveries tab */}
+        {mainTab === 'recoveries' && (
+          <div className="px-4 max-w-5xl mx-auto flex gap-1 pb-1">
+            {[
+              { key: 'open', label: 'Active' },
+              { key: 'completed', label: 'Completed' },
+              { key: 'all', label: 'All' },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-t transition ${
+                  statusFilter === tab.key
+                    ? 'bg-white/20 text-white'
+                    : 'text-indigo-400 hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+        {/* Intelligence Panels */}
+        {mainTab === 'theft_intel' && (
+          <TheftIntelPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+        )}
+        {mainTab === 'boundary' && (
+          <BoundaryVigilancePanel rentals={rentals} recoveries={recoveries} />
+        )}
+        {mainTab === 'threatwatch' && (
+          <ThreatWatchPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+        )}
+
+        {mainTab !== 'recoveries' && null}
+        {mainTab === 'recoveries' && <>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -554,6 +589,7 @@ Provide a strategic recovery action plan for the operations manager.`,
             })}
           </div>
         )}
+        </>}
       </div>
     </div>
   );
