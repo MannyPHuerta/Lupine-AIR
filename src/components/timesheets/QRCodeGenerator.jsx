@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { QrCode, Copy, X, Printer, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { QrCode, Copy, X, Printer, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import JsBarcode from 'jsbarcode'; // not used — we use QR via URL approach
+import { base44 } from '@/api/base44Client';
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
 const JOB_TYPES = ['delivery', 'event', 'shop', 'laundry', 'general'];
@@ -43,6 +43,23 @@ export default function QRCodeGenerator({ onClose }) {
     hourlyRate: '',
   });
   const [copied, setCopied] = useState(false);
+  const [openJobs, setOpenJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+
+  // Fetch open rentals for selected branch
+  useEffect(() => {
+    if (!params.branch) {
+      setOpenJobs([]);
+      return;
+    }
+    setLoadingJobs(true);
+    base44.entities.Rental.filter({ branch: params.branch }, '-startDate', 100)
+      .then(data => {
+        const open = data.filter(r => ['out', 'contract', 'reservation'].includes(r.status));
+        setOpenJobs(open);
+      })
+      .finally(() => setLoadingJobs(false));
+  }, [params.branch]);
 
   const set = (k, v) => setParams(p => ({ ...p, [k]: v }));
   const url = buildClockInUrl(params);
@@ -106,8 +123,30 @@ export default function QRCodeGenerator({ onClose }) {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Job / Invoice #</label>
-            <Input value={params.jobReference} onChange={e => set('jobReference', e.target.value)} placeholder="e.g. MCL-1042" />
+            <label className="text-xs font-medium text-gray-600 flex items-center gap-1">
+              Job / Invoice #
+              {loadingJobs && <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />}
+            </label>
+            {params.branch && openJobs.length > 0 ? (
+              <select
+                value={params.jobReference}
+                onChange={e => set('jobReference', e.target.value)}
+                className="w-full h-9 border rounded-md px-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="">-- Select Job --</option>
+                {openJobs.map(r => (
+                  <option key={r.id} value={r.invoiceNumber || r.id}>
+                    {r.invoiceNumber || r.id.slice(0, 8)} — {r.customerName}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={params.jobReference}
+                onChange={e => set('jobReference', e.target.value)}
+                placeholder={params.branch && !loadingJobs ? 'No open jobs found' : 'e.g. MCL-1042'}
+              />
+            )}
           </div>
           <div>
             <label className="text-xs font-medium text-gray-600">Job Type</label>
