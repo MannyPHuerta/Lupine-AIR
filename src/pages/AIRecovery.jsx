@@ -9,6 +9,7 @@ import {
 import TheftIntelPanel from '@/components/recovery/TheftIntelPanel';
 import BoundaryVigilancePanel from '@/components/recovery/BoundaryVigilancePanel';
 import ThreatWatchPanel from '@/components/recovery/ThreatWatchPanel';
+import ThreatNotificationBanner from '@/components/recovery/ThreatNotificationBanner';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
@@ -348,6 +349,7 @@ Provide a strategic recovery action plan for the operations manager.`,
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ThreatNotificationBanner />
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
         <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
