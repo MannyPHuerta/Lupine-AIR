@@ -111,7 +111,7 @@ function LineDateInput({ label, value, onChange, nextFocusRef, triggerRef: exter
   );
 }
 
-export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef, onAddLine, afterDatesRef, customerBranch }) {
+export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, onRemove, qtyRef, onAddLine, afterDatesRef, customerBranch, onAlertRequired }) {
   const [search, setSearch] = useState(line.equipmentName || '');
   const [open, setOpen] = useState(!line.equipmentId);
   const [highlight, setHighlight] = useState(0);
@@ -187,7 +187,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
     return { ...updatedLine, rate, baseAmount };
   };
 
-  const handleSelect = (eq) => {
+  const commitSelect = (eq) => {
     const isCrossBranch = !!(customerBranch && eq.location && eq.location !== customerBranch);
     const updated = recalc({
       ...line,
@@ -202,6 +202,15 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
     setSearch(eq.name);
     setOpen(false);
     setTimeout(() => qtyRef?.current?.focus(), 50);
+  };
+
+  const handleSelect = (eq) => {
+    if (eq.rentalAlert && onAlertRequired) {
+      setOpen(false);
+      onAlertRequired(eq, () => commitSelect(eq));
+    } else {
+      commitSelect(eq);
+    }
   };
 
   const handleKeyDown = (e) => {

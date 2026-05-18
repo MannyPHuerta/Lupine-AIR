@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench, FlaskConical } from 'lucide-react';
 import DeliveryRecommendation from '@/components/counter/DeliveryRecommendation';
 import PracticeModeWatermark from '@/components/PracticeModeWatermark';
+import RentalAlertModal from '@/components/equipment/RentalAlertModal';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
 import { calcDeliveryFee } from '@/lib/deliveryFee';
 import { calcBillableDays } from '@/lib/rentalDayCalc';
@@ -69,6 +70,8 @@ export default function AvailabilityManager() {
   const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
   const [aiDeliveryRec, setAiDeliveryRec] = useState(null); // { addedFee: number } when AI fee was applied
   const [aiDeliveryFee, setAiDeliveryFee] = useState(null); // overrides matrix delivery fee when set
+  const [pendingAlertEquipment, setPendingAlertEquipment] = useState(null); // { eq, onConfirm }
+
   const [pickupTime, setPickupTime] = useState('08:00'); // HH:MM — used for clock_hour billing mode
   const [returnTime, setReturnTime] = useState('17:00'); // HH:MM — used for clock_hour billing mode
   const qtyRefs = useRef({});
@@ -642,6 +645,13 @@ export default function AvailabilityManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {pendingAlertEquipment && (
+        <RentalAlertModal
+          equipment={pendingAlertEquipment.eq}
+          onConfirm={() => { pendingAlertEquipment.onConfirm(); setPendingAlertEquipment(null); }}
+          onCancel={() => setPendingAlertEquipment(null)}
+        />
+      )}
       {practiceMode && <PracticeModeWatermark />}
       {practiceMode && (
         <div className="bg-red-600 text-white text-center text-xs font-bold py-1.5 tracking-widest z-40 relative print:block">
@@ -834,6 +844,7 @@ export default function AvailabilityManager() {
                 onAddLine={handleAddSuggestedItem}
                 afterDatesRef={addButtonRef}
                 customerBranch={customer.branch}
+                onAlertRequired={(eq, onConfirm) => setPendingAlertEquipment({ eq, onConfirm })}
               />
             );
           })}
