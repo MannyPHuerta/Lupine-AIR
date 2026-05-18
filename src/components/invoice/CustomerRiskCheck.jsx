@@ -299,13 +299,25 @@ Provide a concise counter-level risk assessment. Be direct — the rep needs to 
 
           {/* Twilio result */}
           {externalCheck?.twilioLookup && (
-            <div className={`rounded-lg border p-2.5 text-xs ${externalCheck.twilioLookup.isFraudRisk ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300'}`}>
-              <span className="font-semibold">📱 Phone: </span>
-              <span className={`font-bold uppercase ${externalCheck.twilioLookup.phoneType === 'voip' ? 'text-red-700' : externalCheck.twilioLookup.phoneType === 'prepaid' ? 'text-amber-700' : 'text-green-700'}`}>
-                {externalCheck.twilioLookup.phoneType || 'unknown'}
-              </span>
-              {externalCheck.twilioLookup.carrier && <span className="text-gray-600"> · {externalCheck.twilioLookup.carrier}</span>}
-              {externalCheck.twilioLookup.isFraudRisk && <span className="text-red-700 font-semibold ml-1">⚠️ VOIP/Prepaid — fraud risk</span>}
+            <div className={`rounded-lg border p-2.5 text-xs space-y-1 ${externalCheck.twilioLookup.isFraudRisk ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300'}`}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold">📱 Phone Intelligence:</span>
+                <span className={`font-bold uppercase px-1.5 py-0.5 rounded ${externalCheck.twilioLookup.phoneType === 'voip' ? 'bg-red-100 text-red-700' : externalCheck.twilioLookup.phoneType === 'prepaid' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                  {externalCheck.twilioLookup.phoneType || 'unknown'}
+                </span>
+                {externalCheck.twilioLookup.isFraudRisk
+                  ? <span className="font-bold text-red-700">⚠️ Possible burner phone</span>
+                  : <span className="font-semibold text-green-700">✓ Not a burner phone</span>
+                }
+              </div>
+              {externalCheck.twilioLookup.carrier && (
+                <div className="text-gray-600">
+                  <span className="font-semibold">Carrier:</span> {externalCheck.twilioLookup.carrier}
+                </div>
+              )}
+              {externalCheck.twilioLookup.isFraudRisk && (
+                <div className="text-red-700 font-medium">VOIP/prepaid numbers are commonly used in rental fraud schemes.</div>
+              )}
             </div>
           )}
 
