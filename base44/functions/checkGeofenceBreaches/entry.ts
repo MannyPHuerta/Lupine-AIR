@@ -1,18 +1,12 @@
 /**
  * checkGeofenceBreaches — Scheduled task that runs periodically to detect geo-fence breaches
- * 
- * For each active rental with GPS tracking enabled, check if equipment has moved outside
- * its expected worksite geo-fence. If breached, trigger alerts and update EquipmentGPSLink.
- * 
- * Payload: {} (no params needed)
- * 
- * Returns: { breachesDetected: [...], alertsSent: number }
+ * Sends SMS (Twilio) + email alerts to configured management contacts on new breaches.
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 3959; // Earth's radius in miles
+  const R = 3959;
   const toRad = Math.PI / 180;
   const dLat = (lat2 - lat1) * toRad;
   const dLon = (lon2 - lon1) * toRad;
@@ -21,9 +15,47 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+async function sendSMS(to, body) {
+  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+  const fromPhone = Deno.env.get('TWILIO_PHONE_NUMBER');
+
+  if (!accountSid || !authToken || !fromPhone) {
+    console.warn('[checkGeofenceBreaches] Twilio credentials not configured, skipping SMS');
+    return;
+  }
+
+  const response = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ To: to, From: fromPhone, Body: body }).toString(),
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    console.error(`[checkGeofenceBreaches] SMS to ${to} failed: ${err}`);
+  } else {
+    console.log(`[checkGeofenceBreaches] SMS sent to ${to}`);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Load company settings for alert contacts
+    const settingsArr = await base44.asServiceRole.entities.CompanySettings.list();
+    const settings = settingsArr[0] || {};
+    const alertPhones = settings.geofenceAlertPhones || [];
+    const alertEmails = settings.geofenceAlertEmails?.length
+      ? settings.geofenceAlertEmails
+      : ['dispatch@lupine.rental'];
 
     // Get all active rentals
     const activeRentals = await base44.asServiceRole.entities.Rental.filter(
@@ -38,7 +70,6 @@ Deno.serve(async (req) => {
     for (const rental of activeRentals) {
       if (!rental.equipmentId) continue;
 
-      // Check if equipment has GPS tracking
       const gpsLinks = await base44.asServiceRole.entities.EquipmentGPSLink.filter(
         { equipmentId: rental.equipmentId, isActive: true },
         '-created_date',
@@ -48,36 +79,27 @@ Deno.serve(async (req) => {
       if (gpsLinks.length === 0) continue;
       const link = gpsLinks[0];
 
-      // Get latest location from EquipmentGPSLink
       if (!link.lastKnownLat || !link.lastKnownLng) continue;
 
-      // Get provider to get geo-fence radius
       const provider = await base44.asServiceRole.entities.GPSProvider.get(link.providerId);
       if (!provider) continue;
 
       const radiusMiles = provider.geofenceRadiusMiles || 1;
-
-      // Calculate distance from rental worksite to current location
-      // Use worksite as the expected location
       const worksiteAddress = rental.worksiteAddress || rental.customerAddress;
       const worksiteCity = rental.worksiteCity || rental.customerCity;
 
-      // For now, we'll use simple city-based matching
-      // In production, you'd want to reverse-geocode the GPS coords and do proper distance checking
       const isBreached = !link.lastKnownAddress ||
         !(link.lastKnownAddress.toLowerCase().includes(worksiteCity?.toLowerCase() || ''));
 
       if (isBreached && !link.geofenceBreached) {
-        // New breach detected!
         const breachTime = new Date().toISOString();
 
-        // Update the GPS link to mark breach
         await base44.asServiceRole.entities.EquipmentGPSLink.update(link.id, {
           geofenceBreached: true,
           geofenceBreachedAt: breachTime,
         });
 
-        breachesDetected.push({
+        const breachInfo = {
           rentalId: rental.id,
           equipmentId: rental.equipmentId,
           equipmentName: rental.equipmentName,
@@ -86,41 +108,57 @@ Deno.serve(async (req) => {
           expectedLocation: [worksiteAddress, worksiteCity, rental.worksiteState].filter(Boolean).join(', '),
           breachedAt: breachTime,
           radiusMiles,
-        });
-
+        };
+        breachesDetected.push(breachInfo);
         alertsSent++;
 
-        // Send alert notification
-        try {
-          await base44.integrations.Core.SendEmail({
-            to: 'dispatch@lupine.rental', // Replace with actual dispatch email
-            subject: `⚠️ GEO-FENCE BREACH ALERT — ${rental.equipmentName}`,
-            body: `
-UNAUTHORIZED LOCATION DETECTED
+        const detectedStr = new Date(breachTime).toLocaleString('en-US', { timeZone: 'America/Chicago' });
+        const expectedLoc = breachInfo.expectedLocation || 'Unknown worksite';
+
+        // Send SMS to all configured alert phones
+        const smsBody = `⚠️ GEO-FENCE BREACH\n${rental.equipmentName} (${rental.invoiceNumber || rental.id})\nCustomer: ${rental.customerName}\nCurrent: ${link.lastKnownAddress || 'Unknown'}\nExpected: ${expectedLoc}\nDetected: ${detectedStr}\nView: https://app.lupine.rental/airecovery`;
+
+        for (const phone of alertPhones) {
+          try {
+            await sendSMS(phone, smsBody);
+          } catch (smsErr) {
+            console.error(`[checkGeofenceBreaches] SMS error for ${phone}: ${smsErr.message}`);
+          }
+        }
+
+        // Send email to all configured alert emails
+        const emailBody = `UNAUTHORIZED LOCATION DETECTED
 
 Equipment: ${rental.equipmentName}
-Rental: ${rental.invoiceNumber}
+Rental: ${rental.invoiceNumber || rental.id}
 Customer: ${rental.customerName}
 
-Current Location: ${link.lastKnownAddress}
-Expected Worksite: ${[worksiteAddress, worksiteCity, rental.worksiteState].filter(Boolean).join(', ')}
+Current Location: ${link.lastKnownAddress || 'Unknown'}
+Expected Worksite: ${expectedLoc}
 
 Geo-fence Radius: ${radiusMiles} miles
-Detected: ${new Date(breachTime).toLocaleString('en-US', { timeZone: 'America/Chicago' })}
+Detected: ${detectedStr}
 
 ⚡ IMMEDIATE ACTION REQUIRED:
 1. Contact customer to verify equipment location
 2. If unauthorized, initiate theft recovery protocol
 3. Log incident for insurance purposes
 
-Manage Recovery: https://app.lupine.rental/airecovery
-            `,
-          });
-        } catch (emailErr) {
-          console.warn(`[checkGeofenceBreaches] Email notification failed: ${emailErr.message}`);
+Manage Recovery: https://app.lupine.rental/airecovery`;
+
+        for (const email of alertEmails) {
+          try {
+            await base44.integrations.Core.SendEmail({
+              to: email,
+              subject: `⚠️ GEO-FENCE BREACH ALERT — ${rental.equipmentName}`,
+              body: emailBody,
+            });
+          } catch (emailErr) {
+            console.warn(`[checkGeofenceBreaches] Email to ${email} failed: ${emailErr.message}`);
+          }
         }
+
       } else if (!isBreached && link.geofenceBreached) {
-        // Breach has been cleared (equipment returned to zone)
         await base44.asServiceRole.entities.EquipmentGPSLink.update(link.id, {
           geofenceBreached: false,
           geofenceBreachedAt: null,
@@ -128,12 +166,14 @@ Manage Recovery: https://app.lupine.rental/airecovery
       }
     }
 
-    console.log(`[checkGeofenceBreaches] Checked ${activeRentals.length} rentals. Detected ${breachesDetected.length} breaches.`);
+    console.log(`[checkGeofenceBreaches] Checked ${activeRentals.length} rentals. Detected ${breachesDetected.length} breaches. SMS recipients: ${alertPhones.length}, Email recipients: ${alertEmails.length}`);
 
     return Response.json({
       success: true,
       breachesDetected,
       alertsSent,
+      smsRecipients: alertPhones.length,
+      emailRecipients: alertEmails.length,
       message: `Scanned ${activeRentals.length} active rentals, detected ${breachesDetected.length} geo-fence breaches.`,
     });
   } catch (error) {

@@ -64,7 +64,7 @@
         "calendar_day"
       ],
       "default": "clock_hour",
-      "description": "Billing cycle rule. clock_hour = 24 hours from pickup time (e.g. picked up at 2pm, next day charged at 2pm). calendar_day = new day starts at midnight regardless of pickup time."
+      "description": "Billing cycle rule."
     },
     "brandingTheme": {
       "type": "object",
@@ -90,6 +90,20 @@
       ],
       "default": "magic_link",
       "description": "Authentication method for this subscriber"
+    },
+    "geofenceAlertPhones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Phone numbers (E.164 format, e.g. +12105551234) to receive SMS alerts on geofence breaches"
+    },
+    "geofenceAlertEmails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Email addresses to receive geofence breach alerts"
     }
   },
   "required": []

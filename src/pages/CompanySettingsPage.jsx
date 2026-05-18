@@ -30,6 +30,8 @@ export default function CompanySettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [certInput, setCertInput] = useState('');
+  const [alertPhoneInput, setAlertPhoneInput] = useState('');
+  const [alertEmailInput, setAlertEmailInput] = useState('');
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then(records => {
@@ -91,6 +93,9 @@ export default function CompanySettingsPage() {
       smsRemindersEnabled: settings.smsRemindersEnabled !== false,
       rentalDayMode: settings.rentalDayMode || 'clock_hour',
     };
+
+    payload.geofenceAlertPhones = settings.geofenceAlertPhones || [];
+    payload.geofenceAlertEmails = settings.geofenceAlertEmails || [];
 
     if (settings.id) {
       await base44.entities.CompanySettings.update(settings.id, payload);
@@ -359,6 +364,95 @@ export default function CompanySettingsPage() {
                     </div>
                   </label>
                 ))}
+              </div>
+            </div>
+
+            {/* Geofence Alert Contacts */}
+            <div className="bg-white rounded-xl border shadow-sm p-5">
+              <div className="font-semibold text-gray-900 mb-1">🚨 Geofence Breach Alert Contacts</div>
+              <p className="text-xs text-gray-500 mb-4">
+                When a GPS geofence breach is detected, SMS and email alerts will be sent to everyone listed here.
+                Phone numbers must be in E.164 format (e.g. +12105551234).
+              </p>
+
+              {/* SMS phones */}
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">SMS Alert Numbers</label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={alertPhoneInput}
+                    onChange={e => setAlertPhoneInput(e.target.value)}
+                    placeholder="+12105551234"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = alertPhoneInput.trim();
+                        if (val) {
+                          setSettings(prev => ({ ...prev, geofenceAlertPhones: [...(prev.geofenceAlertPhones || []), val] }));
+                          setAlertPhoneInput('');
+                        }
+                      }
+                    }}
+                  />
+                  <Button variant="outline" onClick={() => {
+                    const val = alertPhoneInput.trim();
+                    if (val) {
+                      setSettings(prev => ({ ...prev, geofenceAlertPhones: [...(prev.geofenceAlertPhones || []), val] }));
+                      setAlertPhoneInput('');
+                    }
+                  }}>Add</Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(settings.geofenceAlertPhones || []).map((phone, i) => (
+                    <div key={i} className="bg-orange-50 border border-orange-200 rounded-full px-3 py-1 text-xs text-orange-800 flex items-center gap-2">
+                      📱 {phone}
+                      <button onClick={() => setSettings(prev => ({ ...prev, geofenceAlertPhones: prev.geofenceAlertPhones.filter((_, j) => j !== i) }))} className="text-orange-500 hover:text-orange-700">×</button>
+                    </div>
+                  ))}
+                  {(settings.geofenceAlertPhones || []).length === 0 && (
+                    <span className="text-xs text-gray-400">No SMS recipients configured</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Alert emails */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">Email Alert Recipients</label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={alertEmailInput}
+                    onChange={e => setAlertEmailInput(e.target.value)}
+                    placeholder="manager@yourcompany.com"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = alertEmailInput.trim();
+                        if (val) {
+                          setSettings(prev => ({ ...prev, geofenceAlertEmails: [...(prev.geofenceAlertEmails || []), val] }));
+                          setAlertEmailInput('');
+                        }
+                      }
+                    }}
+                  />
+                  <Button variant="outline" onClick={() => {
+                    const val = alertEmailInput.trim();
+                    if (val) {
+                      setSettings(prev => ({ ...prev, geofenceAlertEmails: [...(prev.geofenceAlertEmails || []), val] }));
+                      setAlertEmailInput('');
+                    }
+                  }}>Add</Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(settings.geofenceAlertEmails || []).map((email, i) => (
+                    <div key={i} className="bg-red-50 border border-red-200 rounded-full px-3 py-1 text-xs text-red-800 flex items-center gap-2">
+                      ✉️ {email}
+                      <button onClick={() => setSettings(prev => ({ ...prev, geofenceAlertEmails: prev.geofenceAlertEmails.filter((_, j) => j !== i) }))} className="text-red-500 hover:text-red-700">×</button>
+                    </div>
+                  ))}
+                  {(settings.geofenceAlertEmails || []).length === 0 && (
+                    <span className="text-xs text-gray-400">No email recipients configured (defaults to dispatch@lupine.rental)</span>
+                  )}
+                </div>
               </div>
             </div>
 
