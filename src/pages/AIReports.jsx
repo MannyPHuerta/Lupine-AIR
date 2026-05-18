@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer } from 'lucide-react';
+import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShieldAlert } from 'lucide-react';
+import FraudIntelTab from '@/components/reports/FraudIntelTab';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -12,6 +13,7 @@ const TABS = [
   { id: 'demand', label: 'Demand Trends', icon: <TrendingUp className="w-4 h-4" /> },
   { id: 'aging', label: 'Asset Aging', icon: <Package className="w-4 h-4" /> },
   { id: 'health', label: 'Fleet Health', icon: <AlertTriangle className="w-4 h-4" /> },
+  { id: 'fraud', label: '🕵️ Fraud Intel', icon: <ShieldAlert className="w-4 h-4" /> },
 ];
 
 const COLORS = ['#22d3ee', '#a78bfa', '#34d399', '#fb923c', '#f472b6', '#60a5fa', '#facc15'];
@@ -549,6 +551,7 @@ export default function AIReports() {
             {activeTab === 'demand' && <DemandTab rentals={filteredRentals} />}
             {activeTab === 'aging' && <AgingTab equipment={filteredEquipment} />}
             {activeTab === 'health' && <HealthTab equipment={filteredEquipment} rentals={filteredRentals} />}
+            {activeTab === 'fraud' && <FraudIntelTab rentals={filteredRentals} />}
           </>
         )}
       </div>
