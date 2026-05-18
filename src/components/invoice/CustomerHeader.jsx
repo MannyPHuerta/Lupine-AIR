@@ -6,6 +6,7 @@ import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, 
 import { useDLScanner } from '@/hooks/useDLScanner';
 import { base44 } from '@/api/base44Client';
 import PhoneVerificationModal from '@/components/counter/PhoneVerificationModal';
+import CustomerRiskCheck from '@/components/invoice/CustomerRiskCheck';
 
 const BRANCHES = [
   '01 McAllen',
@@ -352,6 +353,9 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
           {customer._creditHoldReason && <span className="font-normal">Reason: {customer._creditHoldReason}</span>}
         </div>
       )}
+
+      {/* Inline Risk Check */}
+      <CustomerRiskCheck customer={customer} rentals={rentals} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Name / DL */}
