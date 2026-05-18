@@ -6,7 +6,7 @@
 import { useState, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useDLScanner } from '@/hooks/useDLScanner';
-import { Loader2, CreditCard, User, MapPin, AlertTriangle, CheckCircle2, Scan, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Loader2, CreditCard, MapPin, Scan, RefreshCw, ShieldAlert, Phone, ExternalLink } from 'lucide-react';
 
 function Field({ label, value, highlight }) {
   if (!value) return null;
@@ -23,14 +23,18 @@ export default function DLScanIntel({ rentals }) {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [scanFlash, setScanFlash] = useState(false);
+  const [externalCheck, setExternalCheck] = useState(null);
+  const [externalLoading, setExternalLoading] = useState(false);
 
   const handleScan = useCallback((parsed) => {
     setScanFlash(true);
     setTimeout(() => setScanFlash(false), 800);
     setScannedDL(parsed);
     setAnalysisResult(null);
-    // Auto-run analysis
+    setExternalCheck(null);
+    // Auto-run both analyses
     runAnalysis(parsed);
+    runExternalCheck(parsed);
   }, [rentals]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useDLScanner(handleScan);
@@ -132,6 +136,27 @@ Provide a risk assessment for this customer at the counter right now.`,
     }
   };
 
+  const runExternalCheck = async (dl) => {
+    if (!dl) return;
+    setExternalLoading(true);
+    setExternalCheck(null);
+    try {
+      const res = await base44.functions.invoke('dlExternalCheck', {
+        phone: dl.phone || null,
+        name: dl.fullName || null,
+        address: dl.address || null,
+        city: dl.city || null,
+        state: dl.state || null,
+        zip: dl.zip || null,
+      });
+      setExternalCheck(res.data);
+    } catch (err) {
+      setExternalCheck({ error: err.message });
+    } finally {
+      setExternalLoading(false);
+    }
+  };
+
   const riskColors = {
     clear:  { bg: 'bg-green-50 border-green-400', badge: 'bg-green-600 text-white', text: 'text-green-800' },
     low:    { bg: 'bg-blue-50 border-blue-300',   badge: 'bg-blue-500 text-white',   text: 'text-blue-800' },
@@ -196,7 +221,7 @@ Provide a risk assessment for this customer at the counter right now.`,
 
           {!analysisResult && !analyzing && (
             <button
-              onClick={() => runAnalysis(scannedDL)}
+              onClick={() => { runAnalysis(scannedDL); runExternalCheck(scannedDL); }}
               className="mt-3 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition text-sm"
             >
               <ShieldAlert className="w-4 h-4" /> Run Risk Check
@@ -305,6 +330,83 @@ Provide a risk assessment for this customer at the counter right now.`,
 
       {analysisResult?.error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">Error: {analysisResult.error}</div>
+      )}
+
+      {/* External Database Checks */}
+      {(externalLoading || externalCheck) && (
+        <div className="bg-white border rounded-xl p-4 shadow-sm space-y-3">
+          <div className="flex items-center gap-2 font-bold text-gray-900 text-sm">
+            🌐 External Database Checks
+            {externalLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 ml-1" />}
+          </div>
+
+          {externalLoading && (
+            <div className="text-xs text-gray-400 italic">Checking Twilio Lookup & NICB…</div>
+          )}
+
+          {/* Twilio Lookup Result */}
+          {externalCheck?.twilioLookup && (
+            <div className={`rounded-lg border p-3 text-sm ${externalCheck.twilioLookup.isFraudRisk ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300'}`}>
+              <div className="flex items-center gap-2 font-semibold mb-1">
+                <Phone className="w-3.5 h-3.5" />
+                Twilio Lookup — Phone Intelligence
+                <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${externalCheck.twilioLookup.isFraudRisk ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+                  {externalCheck.twilioLookup.isFraudRisk ? '⚠️ FRAUD RISK' : '✓ OK'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-700">
+                <div><span className="font-semibold">Line Type:</span> <span className={`uppercase font-bold ${externalCheck.twilioLookup.phoneType === 'voip' ? 'text-red-700' : externalCheck.twilioLookup.phoneType === 'prepaid' ? 'text-amber-700' : 'text-green-700'}`}>{externalCheck.twilioLookup.phoneType || 'Unknown'}</span></div>
+                <div><span className="font-semibold">Carrier:</span> {externalCheck.twilioLookup.carrier || 'Unknown'}</div>
+                <div><span className="font-semibold">Valid #:</span> {externalCheck.twilioLookup.valid ? '✓ Yes' : '✗ No'}</div>
+                {externalCheck.twilioLookup.isFraudRisk && (
+                  <div className="col-span-2 text-red-700 font-semibold">⚠️ VOIP/Prepaid phones are commonly used in rental fraud schemes</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* NICB / Manual Check Links */}
+          {externalCheck?.nicbCheck && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
+              <div className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                🔎 NICB & Theft Databases
+                {externalCheck.nicbCheck.isHighRiskZip && (
+                  <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold">⚠️ HIGH-RISK ZIP</span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500 mb-2">{externalCheck.nicbCheck.note}</div>
+              <div className="flex flex-wrap gap-2">
+                {externalCheck.nicbCheck.googleFraudSearch && (
+                  <a href={externalCheck.nicbCheck.googleFraudSearch} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-700 transition">
+                    <ExternalLink className="w-3 h-3" /> Google Fraud Search
+                  </a>
+                )}
+                <a href={externalCheck.nicbCheck.stolenEquipmentDb} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs bg-gray-700 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-gray-900 transition">
+                  <ExternalLink className="w-3 h-3" /> StolenEquipmentDB
+                </a>
+                <a href={externalCheck.nicbCheck.manualCheckUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition">
+                  <ExternalLink className="w-3 h-3" /> NICB VINCheck
+                </a>
+                <a href={externalCheck.nicbCheck.reportStolen} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-red-700 transition">
+                  <ExternalLink className="w-3 h-3" /> Report to NICB
+                </a>
+              </div>
+            </div>
+          )}
+
+          {externalCheck?.errors?.length > 0 && (
+            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              ⚠️ {externalCheck.errors.join(' | ')}
+            </div>
+          )}
+          {externalCheck?.error && (
+            <div className="text-xs text-red-600">External check error: {externalCheck.error}</div>
+          )}
+        </div>
       )}
 
       {!scannedDL && !scanFlash && (
