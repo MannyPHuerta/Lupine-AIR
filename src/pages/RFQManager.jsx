@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Clock, CheckCircle2, XCircle, Trophy, Loader2, Search, Filter, Star } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle2, XCircle, Trophy, Loader2, Search, Filter, Star, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import BidIntelTab from '@/components/rfq/BidIntelTab';
 
 const STATUS_CONFIG = {
   received:    { label: 'Received',    color: 'bg-blue-100 text-blue-800' },
@@ -29,6 +30,7 @@ export default function RFQManager() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('rfqs');
 
   useEffect(() => {
     base44.entities.RFQRecord.list('-created_date', 200).then(data => {
@@ -82,8 +84,32 @@ export default function RFQManager() {
             </Button>
           </div>
         </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-green-800 mt-2">
+          {[
+            { id: 'rfqs', label: 'RFQ List', icon: <FileText className="w-4 h-4" /> },
+            { id: 'intel', label: '📊 Bid Intel', icon: <BarChart3 className="w-4 h-4" /> },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition ${
+                activeTab === tab.id ? 'border-white text-white' : 'border-transparent text-green-300 hover:text-white'
+              }`}>
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {activeTab === 'intel' ? (
+        <div className="bg-slate-950 min-h-screen">
+          <div className="max-w-6xl mx-auto px-4 py-6">
+            <BidIntelTab rfqs={rfqs} />
+          </div>
+        </div>
+      ) : null}
+
+      {activeTab === 'rfqs' ? (
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -196,6 +222,7 @@ export default function RFQManager() {
           )}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }
