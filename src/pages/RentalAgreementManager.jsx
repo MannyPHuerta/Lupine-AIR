@@ -348,26 +348,34 @@ Requirements:
           </div>
         </div>
 
-        {/* Upload existing bespoke contract — prominent CTA */}
-        {!content || content === ARA_AGREEMENT ? (
-          <div className="bg-indigo-50 border-2 border-indigo-300 rounded-xl p-6 space-y-3">
-            <div className="flex items-start gap-3">
-              <FileUp className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <div className="font-semibold text-indigo-900 mb-1">Have Your Own Contract? Upload It Here</div>
-                <p className="text-sm text-indigo-700">Upload your existing bespoke contract (PDF, Word, or text). We'll extract the text automatically so you can review, edit, and save it for digital signing.</p>
-              </div>
+        {/* Upload bespoke contract — always visible */}
+        <div className={`border-2 rounded-xl p-5 space-y-3 ${content && content !== ARA_AGREEMENT ? 'bg-green-50 border-green-300' : 'bg-indigo-50 border-indigo-300'}`}>
+          <div className="flex items-start gap-3">
+            <FileUp className={`w-6 h-6 flex-shrink-0 mt-0.5 ${content && content !== ARA_AGREEMENT ? 'text-green-600' : 'text-indigo-600'}`} />
+            <div className="flex-1">
+              {content && content !== ARA_AGREEMENT ? (
+                <>
+                  <div className="font-semibold text-green-900 mb-0.5 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Custom Contract Active
+                  </div>
+                  <p className="text-sm text-green-700">Your bespoke contract is set for this branch. Upload a new file to replace it.</p>
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold text-indigo-900 mb-0.5">Use Your Own Bespoke Contract</div>
+                  <p className="text-sm text-indigo-700">Currently using the ARA standard template. Upload your own contract to replace it — we'll extract the text automatically.</p>
+                </>
+              )}
             </div>
-            <label className={`flex items-center justify-center gap-3 cursor-pointer border-2 border-dashed border-indigo-400 rounded-lg p-6 hover:border-indigo-600 hover:bg-indigo-100 transition ${extracting ? 'opacity-50 pointer-events-none' : ''}`}>
-              {extracting
-                ? <><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /> <span className="text-indigo-700 font-medium">Extracting text from document...</span></>
-                : <><Upload className="w-6 h-6 text-indigo-500" /> <span className="text-indigo-700 font-medium">Click to upload your contract (PDF, Word, .txt)</span></>
-              }
-              <input type="file" className="hidden" accept=".pdf,.doc,.docx,.txt" onChange={handleUploadAgreement} />
-            </label>
-            <div className="text-xs text-indigo-500 text-center">— or paste text manually in the editor below, or use "AI Generate" to create one from scratch —</div>
           </div>
-        ) : null}
+          <label className={`flex items-center justify-center gap-3 cursor-pointer border-2 border-dashed rounded-lg p-5 transition ${extracting ? 'opacity-50 pointer-events-none' : ''} ${content && content !== ARA_AGREEMENT ? 'border-green-400 hover:border-green-600 hover:bg-green-100' : 'border-indigo-400 hover:border-indigo-600 hover:bg-indigo-100'}`}>
+            {extracting
+              ? <><Loader2 className="w-5 h-5 text-indigo-500 animate-spin" /><span className="text-indigo-700 font-medium">Extracting text from document...</span></>
+              : <><Upload className={`w-5 h-5 ${content && content !== ARA_AGREEMENT ? 'text-green-500' : 'text-indigo-500'}`} /><span className={`font-medium text-sm ${content && content !== ARA_AGREEMENT ? 'text-green-700' : 'text-indigo-700'}`}>Click to upload contract (PDF, Word, .txt)</span></>
+            }
+            <input type="file" className="hidden" accept=".pdf,.doc,.docx,.txt" onChange={handleUploadAgreement} />
+          </label>
+        </div>
 
         {/* Agreement content */}
         <div className="bg-white rounded-xl border shadow-sm p-6 space-y-3">
