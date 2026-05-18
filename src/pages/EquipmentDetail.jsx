@@ -167,6 +167,24 @@ export default function EquipmentDetail() {
           </div>
         </section>
 
+        {/* Rental Alert */}
+        <section className="bg-amber-50 border border-amber-200 rounded-xl shadow-sm p-5">
+          <h2 className="font-semibold text-amber-900 mb-1 flex items-center gap-2">
+            ⚠️ Counter Alert / Add-On Requirement
+          </h2>
+          <p className="text-xs text-amber-700 mb-3">
+            If filled in, staff will see this message and must acknowledge it before adding this item to a cart or invoice.
+            Use for required accessories, special instructions, or warnings.
+          </p>
+          <textarea
+            value={form.rentalAlert || ''}
+            onChange={e => setForm(f => ({ ...f, rentalAlert: e.target.value }))}
+            placeholder="e.g. Requires 50ft heavy-duty extension cord for spans over 25ft. Ask customer about distance from power source."
+            rows={3}
+            className="w-full border border-amber-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
+          />
+        </section>
+
         {/* Specs */}
         <section className="bg-white rounded-xl border shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-1">Technical Specifications</h2>

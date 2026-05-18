@@ -9,6 +9,7 @@ import PracticeModeWatermark from '@/components/PracticeModeWatermark';
 import { useAIEquipmentSearch } from '@/hooks/useAIEquipmentSearch';
 import AIEquipmentSearchInput from '@/components/equipment/AIEquipmentSearchInput';
 import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
+import RentalAlertModal from '@/components/equipment/RentalAlertModal';
 
 // Steps: 'equipment' → 'checkout'
 const WALKIN_CUSTOMER = { fullName: 'Walk-in', phone: '', address: '', city: '', state: '', zip: '', id: 'walkin' };
@@ -34,6 +35,7 @@ export default function Counter() {
 
   const [step, setStep] = useState('equipment'); // 'equipment' | 'checkout'
   const [cart, setCart] = useState([]);
+  const [pendingAlertItem, setPendingAlertItem] = useState(null);
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [branch, setBranch] = useState('01 McAllen');
@@ -59,6 +61,13 @@ export default function Counter() {
     setTimeout(() => equipSearchRef.current?.focus(), 100);
   }, []);
 
+  const commitAddToCart = (item) => {
+    setCart(prev => [...prev, { ...item, lineId: Math.random(), quantity: 1 }]);
+    setEquipmentSearchTerm('');
+    setHighlightIndex(0);
+    setTimeout(() => equipSearchRef.current?.focus(), 50);
+  };
+
   const handleAddToCart = (item) => {
     if (!item.consumable) {
       // Non-consumables require a full rental contract — redirect to /availability
@@ -67,10 +76,12 @@ export default function Counter() {
       }
       return;
     }
-    setCart(prev => [...prev, { ...item, lineId: Math.random(), quantity: 1 }]);
-    setEquipmentSearchTerm('');
-    setHighlightIndex(0);
-    setTimeout(() => equipSearchRef.current?.focus(), 50);
+    // If item has a rental alert, show the modal first
+    if (item.rentalAlert) {
+      setPendingAlertItem(item);
+      return;
+    }
+    commitAddToCart(item);
   };
 
   const handleRemoveFromCart = (lineId) => {
@@ -141,6 +152,13 @@ export default function Counter() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {pendingAlertItem && (
+        <RentalAlertModal
+          equipment={pendingAlertItem}
+          onConfirm={() => { commitAddToCart(pendingAlertItem); setPendingAlertItem(null); }}
+          onCancel={() => setPendingAlertItem(null)}
+        />
+      )}
       {practiceMode && <PracticeModeWatermark />}
       {practiceMode && (
         <div className="bg-red-600 text-white text-center text-xs font-bold py-1.5 tracking-widest z-40 relative">

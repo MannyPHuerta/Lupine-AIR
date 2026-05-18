@@ -19,6 +19,10 @@
       "default": false,
       "description": "If true, this item can be sold at the counter without a rental contract (e.g. fuel, small supplies). Non-consumables require the full /availability rental form."
     },
+    "rentalAlert": {
+      "type": "string",
+      "description": "\u26a0\ufe0f Counter alert shown when this item is selected \u2014 use for required add-ons, special instructions, or warnings (e.g. 'Requires 50ft extension cord for spans over 25ft')"
+    },
     "dailyRate": {
       "type": "number",
       "description": "Base rental rate per day (USD)"
