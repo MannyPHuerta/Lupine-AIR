@@ -1,0 +1,71 @@
+{
+  "name": "GPSProvider",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Friendly name for this provider config (e.g. 'Samsara - McAllen Fleet')"
+    },
+    "providerType": {
+      "type": "string",
+      "enum": [
+        "samsara",
+        "calamp",
+        "verizon_connect",
+        "geotab",
+        "spireon",
+        "trackimo",
+        "bouncie",
+        "custom"
+      ],
+      "description": "GPS provider platform"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch this provider serves (blank = all branches)"
+    },
+    "apiKey": {
+      "type": "string",
+      "description": "Primary API key or token for this provider"
+    },
+    "apiSecret": {
+      "type": "string",
+      "description": "API secret or password (if required by provider)"
+    },
+    "accountId": {
+      "type": "string",
+      "description": "Account/org ID (required by Geotab, Verizon Connect, etc.)"
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "Custom API base URL (for Geotab MyServer or self-hosted providers)"
+    },
+    "webhookSecret": {
+      "type": "string",
+      "description": "Webhook signing secret (for providers that push events)"
+    },
+    "geofenceRadiusMiles": {
+      "type": "number",
+      "default": 1,
+      "description": "Default geo-fence radius in miles for breach detection"
+    },
+    "pollIntervalMinutes": {
+      "type": "integer",
+      "default": 30,
+      "description": "How often to poll for location updates (minutes)"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this provider config is active"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes about this provider setup"
+    }
+  },
+  "required": [
+    "providerType",
+    "name"
+  ]
+}

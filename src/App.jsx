@@ -81,6 +81,7 @@ import AgreementSigningFlow from "./pages/AgreementSigningFlow";
 import Timesheets from "./pages/Timesheets";
 import ClockIn from "./pages/ClockIn";
 import AIRecovery from "./pages/AIRecovery";
+import GPSProviderSettings from "./pages/GPSProviderSettings";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -183,6 +184,7 @@ const AuthenticatedApp = () => {
         <Route path="/agreement-signing" element={<AgreementSigningFlow />} />
         <Route path="/timesheets" element={<Timesheets />} />
         <Route path="/airecovery" element={<AIRecovery />} />
+        <Route path="/gps-settings" element={<GPSProviderSettings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

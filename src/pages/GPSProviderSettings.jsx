@@ -1,0 +1,333 @@
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { Plus, Pencil, Trash2, Wifi, WifiOff, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+const PROVIDER_META = {
+  samsara:         { label: 'Samsara',          logo: '🚛', authFields: ['apiKey'], docsUrl: 'https://developers.samsara.com' },
+  calamp:          { label: 'CalAmp / LoJack',   logo: '📡', authFields: ['apiKey', 'accountId'], docsUrl: 'https://developer.calamp.com' },
+  verizon_connect: { label: 'Verizon Connect',   logo: '🌐', authFields: ['apiKey', 'apiSecret', 'accountId'], docsUrl: 'https://developer.verizonconnect.com' },
+  geotab:          { label: 'Geotab',            logo: '🗺️', authFields: ['apiKey', 'apiSecret', 'accountId', 'baseUrl'], docsUrl: 'https://developers.geotab.com' },
+  spireon:         { label: 'Spireon',           logo: '🏗️', authFields: ['apiKey', 'accountId'], docsUrl: 'https://www.spireon.com' },
+  trackimo:        { label: 'Trackimo',          logo: '📍', authFields: ['apiKey'], docsUrl: 'https://trackimo.com' },
+  bouncie:         { label: 'Bouncie',           logo: '🔵', authFields: ['apiKey'], docsUrl: 'https://www.bouncie.com' },
+  custom:          { label: 'Custom / Other',    logo: '⚙️', authFields: ['apiKey', 'apiSecret', 'accountId', 'baseUrl'], docsUrl: null },
+};
+
+const FIELD_LABELS = {
+  apiKey:    'API Key / Token',
+  apiSecret: 'API Secret / Password',
+  accountId: 'Account / Org ID',
+  baseUrl:   'Base URL (custom endpoint)',
+};
+
+const BRANCHES = [
+  '', '01 McAllen', '02 Weslaco', '03 Harlingen',
+  '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse',
+];
+
+function ProviderForm({ initial, onSave, onCancel }) {
+  const [form, setForm] = useState(initial || {
+    name: '',
+    providerType: 'samsara',
+    branch: '',
+    apiKey: '',
+    apiSecret: '',
+    accountId: '',
+    baseUrl: '',
+    webhookSecret: '',
+    geofenceRadiusMiles: 1,
+    pollIntervalMinutes: 30,
+    isActive: true,
+    notes: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
+  const meta = PROVIDER_META[form.providerType] || PROVIDER_META.custom;
+
+  const handleSave = async () => {
+    if (!form.name || !form.providerType) {
+      toast.error('Name and provider type are required.');
+      return;
+    }
+    setSaving(true);
+    await onSave(form);
+    setSaving(false);
+  };
+
+  return (
+    <div className="bg-white border rounded-xl p-5 space-y-4 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Provider type */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1">Provider *</label>
+          <select
+            className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+            value={form.providerType}
+            onChange={e => set('providerType', e.target.value)}
+          >
+            {Object.entries(PROVIDER_META).map(([key, m]) => (
+              <option key={key} value={key}>{m.logo} {m.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Friendly name */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1">Friendly Name *</label>
+          <Input
+            placeholder={`e.g. ${meta.label} – McAllen`}
+            value={form.name}
+            onChange={e => set('name', e.target.value)}
+          />
+        </div>
+
+        {/* Branch */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1">Branch (blank = all)</label>
+          <select
+            className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+            value={form.branch}
+            onChange={e => set('branch', e.target.value)}
+          >
+            {BRANCHES.map(b => (
+              <option key={b} value={b}>{b || 'All Branches'}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Active toggle */}
+        <div className="flex items-center gap-3 pt-5">
+          <input
+            type="checkbox"
+            id="isActive"
+            checked={form.isActive}
+            onChange={e => set('isActive', e.target.checked)}
+            className="w-4 h-4"
+          />
+          <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Active</label>
+        </div>
+      </div>
+
+      {/* Auth fields for this provider */}
+      <div>
+        <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-2">
+          🔐 Credentials
+          {meta.docsUrl && (
+            <a href={meta.docsUrl} target="_blank" rel="noopener noreferrer"
+              className="text-indigo-500 hover:underline font-normal normal-case">API Docs ↗</a>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {meta.authFields.map(field => (
+            <div key={field}>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{FIELD_LABELS[field]}</label>
+              <Input
+                type={field.toLowerCase().includes('secret') || field === 'apiKey' ? 'password' : 'text'}
+                placeholder={FIELD_LABELS[field]}
+                value={form[field] || ''}
+                onChange={e => set(field, e.target.value)}
+              />
+            </div>
+          ))}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Webhook Secret (optional)</label>
+            <Input
+              type="password"
+              placeholder="For inbound webhook validation"
+              value={form.webhookSecret || ''}
+              onChange={e => set('webhookSecret', e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Geo-fence settings */}
+      <div>
+        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">📍 Geo-fence Settings</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Breach Radius (miles)</label>
+            <Input
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={form.geofenceRadiusMiles}
+              onChange={e => set('geofenceRadiusMiles', parseFloat(e.target.value))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Poll Interval (minutes)</label>
+            <Input
+              type="number"
+              min="5"
+              step="5"
+              value={form.pollIntervalMinutes}
+              onChange={e => set('pollIntervalMinutes', parseInt(e.target.value))}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div>
+        <label className="block text-xs font-semibold text-gray-500 mb-1">Internal Notes</label>
+        <Input
+          placeholder="e.g. covers generators and lifts at McAllen yard"
+          value={form.notes || ''}
+          onChange={e => set('notes', e.target.value)}
+        />
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <Button onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          {saving ? 'Saving…' : 'Save Provider'}
+        </Button>
+        <Button variant="outline" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+function ProviderCard({ provider, onEdit, onDelete }) {
+  const meta = PROVIDER_META[provider.providerType] || PROVIDER_META.custom;
+  return (
+    <div className={`bg-white border rounded-xl p-4 flex items-start gap-4 ${!provider.isActive ? 'opacity-60' : ''}`}>
+      <div className="text-3xl flex-shrink-0 mt-0.5">{meta.logo}</div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-bold text-gray-900">{provider.name}</span>
+          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{meta.label}</span>
+          {provider.branch && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{provider.branch}</span>}
+          {provider.isActive
+            ? <span className="flex items-center gap-1 text-xs text-green-600"><Wifi className="w-3 h-3" /> Active</span>
+            : <span className="flex items-center gap-1 text-xs text-gray-400"><WifiOff className="w-3 h-3" /> Inactive</span>
+          }
+        </div>
+        <div className="text-xs text-gray-500 mt-1 flex gap-4 flex-wrap">
+          <span>📍 {provider.geofenceRadiusMiles || 1} mi fence</span>
+          <span>⏱ Poll every {provider.pollIntervalMinutes || 30} min</span>
+          {provider.accountId && <span>Account: {provider.accountId}</span>}
+        </div>
+        {provider.notes && <p className="text-xs text-gray-400 mt-1 italic">{provider.notes}</p>}
+      </div>
+      <div className="flex gap-1 flex-shrink-0">
+        <Button size="icon" variant="ghost" onClick={() => onEdit(provider)}>
+          <Pencil className="w-4 h-4 text-gray-400" />
+        </Button>
+        <Button size="icon" variant="ghost" onClick={() => onDelete(provider)}>
+          <Trash2 className="w-4 h-4 text-red-400" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export default function GPSProviderSettings() {
+  const [providers, setProviders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    const data = await base44.entities.GPSProvider.list('-created_date', 100);
+    setProviders(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSave = async (form) => {
+    if (editing) {
+      await base44.entities.GPSProvider.update(editing.id, form);
+      toast.success('Provider updated.');
+    } else {
+      await base44.entities.GPSProvider.create(form);
+      toast.success('Provider added.');
+    }
+    setShowForm(false);
+    setEditing(null);
+    load();
+  };
+
+  const handleEdit = (p) => {
+    setEditing(p);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (p) => {
+    if (!confirm(`Delete "${p.name}"? This will not affect existing equipment links.`)) return;
+    await base44.entities.GPSProvider.delete(p.id);
+    toast.success('Provider removed.');
+    load();
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Settings className="w-6 h-6 text-indigo-600" /> GPS Provider Settings
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Configure GPS tracking providers for equipment location monitoring and geo-fence alerts.
+          </p>
+        </div>
+        {!showForm && (
+          <Button
+            onClick={() => { setEditing(null); setShowForm(true); }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Add Provider
+          </Button>
+        )}
+      </div>
+
+      {/* Supported providers info */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+        <div className="text-xs font-semibold text-indigo-700 uppercase mb-2">Supported Providers</div>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(PROVIDER_META).map(([key, m]) => (
+            <span key={key} className="text-xs bg-white border border-indigo-200 text-indigo-700 px-2 py-1 rounded-full">
+              {m.logo} {m.label}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-indigo-600 mt-2">
+          Each provider uses a normalized adapter — equipment links and geo-fence alerts work the same regardless of provider.
+        </p>
+      </div>
+
+      {/* Add / Edit Form */}
+      {showForm && (
+        <ProviderForm
+          initial={editing}
+          onSave={handleSave}
+          onCancel={() => { setShowForm(false); setEditing(null); }}
+        />
+      )}
+
+      {/* Provider list */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-400 text-sm">Loading…</div>
+      ) : providers.length === 0 ? (
+        <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl text-gray-400">
+          <Settings className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <div className="font-medium text-gray-500">No GPS providers configured yet</div>
+          <div className="text-xs mt-1">Add your first provider to start tracking equipment locations.</div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {providers.map(p => (
+            <ProviderCard key={p.id} provider={p} onEdit={handleEdit} onDelete={handleDelete} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,77 @@
+{
+  "name": "EquipmentGPSLink",
+  "type": "object",
+  "properties": {
+    "equipmentId": {
+      "type": "string",
+      "description": "Reference to Equipment record"
+    },
+    "equipmentName": {
+      "type": "string",
+      "description": "Equipment name (denormalized)"
+    },
+    "providerId": {
+      "type": "string",
+      "description": "Reference to GPSProvider record"
+    },
+    "providerType": {
+      "type": "string",
+      "description": "Provider type (denormalized for quick filtering)"
+    },
+    "deviceId": {
+      "type": "string",
+      "description": "The device/asset/vehicle ID as known by the GPS provider"
+    },
+    "deviceLabel": {
+      "type": "string",
+      "description": "Human-readable label from the provider (e.g. 'Unit 42 - Generator')"
+    },
+    "lastKnownLat": {
+      "type": "number",
+      "description": "Last known latitude"
+    },
+    "lastKnownLng": {
+      "type": "number",
+      "description": "Last known longitude"
+    },
+    "lastKnownAddress": {
+      "type": "string",
+      "description": "Reverse-geocoded address of last known location"
+    },
+    "lastKnownSpeed": {
+      "type": "number",
+      "description": "Last known speed in MPH"
+    },
+    "ignitionOn": {
+      "type": "boolean",
+      "description": "Whether ignition/power was on at last ping"
+    },
+    "batteryLevel": {
+      "type": "number",
+      "description": "Battery level percentage (for battery-powered trackers)"
+    },
+    "lastSeenAt": {
+      "type": "string",
+      "description": "ISO timestamp of last GPS ping"
+    },
+    "geofenceBreached": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if equipment is currently outside its assigned rental worksite fence"
+    },
+    "geofenceBreachedAt": {
+      "type": "string",
+      "description": "ISO timestamp when breach was first detected"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether tracking is currently active for this equipment"
+    }
+  },
+  "required": [
+    "equipmentId",
+    "providerId",
+    "deviceId"
+  ]
+}
