@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShieldAlert } from 'lucide-react';
 import FraudIntelTab from '@/components/reports/FraudIntelTab';
+import PremiumGate from '@/components/premium/PremiumGate';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -551,7 +552,11 @@ export default function AIReports() {
             {activeTab === 'demand' && <DemandTab rentals={filteredRentals} />}
             {activeTab === 'aging' && <AgingTab equipment={filteredEquipment} />}
             {activeTab === 'health' && <HealthTab equipment={filteredEquipment} rentals={filteredRentals} />}
-            {activeTab === 'fraud' && <FraudIntelTab rentals={filteredRentals} />}
+            {activeTab === 'fraud' && (
+              <PremiumGate requiredTier="pro" featureName="Fraud Intelligence" returnPath="/aireports">
+                <FraudIntelTab rentals={filteredRentals} />
+              </PremiumGate>
+            )}
           </>
         )}
       </div>

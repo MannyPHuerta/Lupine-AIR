@@ -10,6 +10,7 @@ import TheftIntelPanel from '@/components/recovery/TheftIntelPanel';
 import BoundaryVigilancePanel from '@/components/recovery/BoundaryVigilancePanel';
 import ThreatWatchPanel from '@/components/recovery/ThreatWatchPanel';
 import ThreatNotificationBanner from '@/components/recovery/ThreatNotificationBanner';
+import PremiumGate from '@/components/premium/PremiumGate';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
@@ -430,15 +431,21 @@ Provide a strategic recovery action plan for the operations manager.`,
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Intelligence Panels */}
+        {/* Intelligence Panels — Security+ gated */}
         {mainTab === 'theft_intel' && (
-          <TheftIntelPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+          <PremiumGate requiredTier="security_plus" featureName="Theft Intelligence" returnPath="/airecovery">
+            <TheftIntelPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+          </PremiumGate>
         )}
         {mainTab === 'boundary' && (
-          <BoundaryVigilancePanel rentals={rentals} recoveries={recoveries} />
+          <PremiumGate requiredTier="security_plus" featureName="Boundary Vigilance" returnPath="/airecovery">
+            <BoundaryVigilancePanel rentals={rentals} recoveries={recoveries} />
+          </PremiumGate>
         )}
         {mainTab === 'threatwatch' && (
-          <ThreatWatchPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+          <PremiumGate requiredTier="security_plus" featureName="ThreatWatch" returnPath="/airecovery">
+            <ThreatWatchPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+          </PremiumGate>
         )}
 
         {mainTab !== 'recoveries' && null}
