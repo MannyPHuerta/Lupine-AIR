@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, AlertCircle, TrendingUp, Clock, Loader2, Truck, DollarSign, Droplets } from 'lucide-react';
+import { ArrowLeft, RefreshCw, AlertCircle, TrendingUp, Clock, Loader2, Truck, DollarSign, Droplets, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function ManagerDashboard() {
@@ -121,6 +121,12 @@ export default function ManagerDashboard() {
             className="flex items-center gap-1.5 bg-cyan-700 hover:bg-cyan-600 px-3 py-1.5 rounded-lg text-xs font-medium"
           >
             <Droplets className="w-4 h-4" /> Laundry
+          </button>
+          <button
+            onClick={() => navigate('/airecovery')}
+            className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-600 px-3 py-1.5 rounded-lg text-xs font-medium"
+          >
+            <RotateCcw className="w-4 h-4" /> Recovery
           </button>
           <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
             <RefreshCw className="w-4 h-4" />

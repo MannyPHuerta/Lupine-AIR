@@ -80,6 +80,7 @@ import RFQDetail from "./pages/RFQDetail";
 import AgreementSigningFlow from "./pages/AgreementSigningFlow";
 import Timesheets from "./pages/Timesheets";
 import ClockIn from "./pages/ClockIn";
+import AIRecovery from "./pages/AIRecovery";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -181,6 +182,7 @@ const AuthenticatedApp = () => {
         <Route path="/rfq/:id" element={<RFQDetail />} />
         <Route path="/agreement-signing" element={<AgreementSigningFlow />} />
         <Route path="/timesheets" element={<Timesheets />} />
+        <Route path="/airecovery" element={<AIRecovery />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
