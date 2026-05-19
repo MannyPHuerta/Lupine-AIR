@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import BranchSelect from '@/components/invoice/BranchSelect';
 import { formatPhoneUS } from '@/lib/phoneUtils';
-import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, Ban } from 'lucide-react';
+import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, Ban, Building2, User, ExternalLink } from 'lucide-react';
 import { useDLScanner } from '@/hooks/useDLScanner';
 import { base44 } from '@/api/base44Client';
 import PhoneVerificationModal from '@/components/counter/PhoneVerificationModal';
@@ -322,8 +322,35 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
     [history, lines]
   );
 
+  const isBusinessMode = customer.saleType === 'business';
+
   return (
     <div className={`bg-white rounded-xl border shadow-sm p-6 space-y-4 transition-all ${dlScanFlash === 'success' ? 'ring-2 ring-green-400' : dlScanFlash === 'expired' ? 'ring-2 ring-red-400' : ''}`}>
+
+      {/* ── STEP 1: Sale Type — always first ── */}
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">Renter Type</label>
+        <div className="flex gap-2 max-w-xs">
+          {[
+            { value: 'personal', label: '👤 Personal', desc: 'Individual renter' },
+            { value: 'business', label: '🏢 Business', desc: 'Company / contractor' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => set('saleType', opt.value)}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition ${
+                (customer.saleType || 'personal') === opt.value
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+              }`}
+            >
+              <div>{opt.label}</div>
+              <div className={`text-[10px] font-normal mt-0.5 ${(customer.saleType || 'personal') === opt.value ? 'text-indigo-200' : 'text-gray-400'}`}>{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* DL Scan Status Banner */}
       {dlScanFlash === 'success' && (
@@ -338,8 +365,6 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
           <span>⚠️ EXPIRED ID — This driver's license is expired. Do not accept.</span>
         </div>
       )}
-
-      {/* Flag warnings when a known customer is matched */}
       {customer._blacklisted && (
         <div className="flex items-center gap-2 bg-red-50 border border-red-300 rounded-lg px-4 py-2.5 text-sm text-red-800 font-bold">
           <Ban className="w-4 h-4 flex-shrink-0" />
@@ -350,204 +375,281 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5 text-sm text-amber-800 font-semibold">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
           ⚠️ CREDIT HOLD — Collect payment upfront.
-          {customer._creditHoldReason && <span className="font-normal">Reason: {customer._creditHoldReason}</span>}
+          {customer._creditHoldReason && <span className="font-normal"> Reason: {customer._creditHoldReason}</span>}
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Name / DL */}
-        <div className="relative">
-          <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
-            Customer Name *
-            <span className="flex items-center gap-1 text-indigo-400 font-normal" title="Scan driver's license to auto-fill">
-              <ScanLine className="w-3.5 h-3.5" /> <span className="text-xs">Scan DL</span>
-            </span>
-          </label>
-          <Input
-            autoFocus
-            placeholder="Search by name..."
-            value={customer.name}
-            onChange={e => { set('name', toTitleCase(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('name'); setAutoFilled(false); }}
-            onFocus={() => { setSearchQuery(customer.name); setShowSuggestions(true); setActiveSearchField('name'); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            onKeyDown={handleKeyDown}
-          />
-          {history && !showSuggestions && (
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="flex items-center gap-1">
-                <UserCheck className="w-3 h-3 text-green-500" />
-                <span className="text-xs text-green-600 font-medium">{history.rentalCount} past rental{history.rentalCount !== 1 ? 's' : ''}</span>
-              </span>
-              {customer._dlVerified && (
-                <span className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
-                  <ScanLine className="w-3 h-3 text-indigo-500" />
-                  <span className="text-xs text-indigo-700 font-medium">ID Verified · ···{customer._dlLast4}</span>
-                  {customer._dlExpiry && <span className="text-xs text-gray-400">exp {customer._dlExpiry}</span>}
+      {/* ══════════════════════════════════════════
+          BUSINESS MODE
+      ══════════════════════════════════════════ */}
+      {isBusinessMode && (
+        <div className="space-y-4">
+
+          {/* Business info section */}
+          <div className="border border-blue-200 rounded-lg p-4 bg-blue-50 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-blue-800">
+              <Building2 className="w-4 h-4" /> Business Information
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Business Name *</label>
+                <Input
+                  autoFocus
+                  placeholder="e.g. ABC Construction LLC"
+                  value={customer.companyName || ''}
+                  onChange={e => { set('companyName', e.target.value); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('name'); }}
+                  onFocus={() => { setSearchQuery(customer.companyName || ''); setShowSuggestions(true); setActiveSearchField('name'); }}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onKeyDown={handleKeyDown}
+                  className="bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Business Phone *</label>
+                <Input
+                  placeholder="(956) 123-4567"
+                  value={customer.phone}
+                  onChange={e => { set('phone', formatPhoneUS(e.target.value)); setPhoneVerified(false); }}
+                  inputMode="numeric"
+                  className="bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Business Email</label>
+                <Input
+                  ref={emailRef}
+                  type="email"
+                  placeholder="accounts@company.com"
+                  value={customer.email}
+                  onChange={e => set('email', e.target.value)}
+                  className="bg-white"
+                />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-4">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Business Street Address *</label>
+                <Input placeholder="123 Commerce Blvd" value={customer.address} onChange={e => set('address', e.target.value)} className="bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
+                <Input placeholder="McAllen" value={customer.city} onChange={e => set('city', e.target.value)} className="bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
+                <Input placeholder="TX" maxLength="2" value={customer.state} onChange={e => set('state', e.target.value.toUpperCase())} className="bg-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Zip</label>
+                <Input placeholder="78501" value={customer.zip} onChange={e => set('zip', e.target.value)} className="bg-white" />
+              </div>
+            </div>
+
+            {/* TX SOS verification link */}
+            {customer.companyName && (
+              <a
+                href={`https://mycpa.cpa.state.tx.us/coa/Index.html#`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-blue-700 font-semibold hover:underline"
+                title="Look up this business in the Texas Comptroller registry"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Verify with TX Secretary of State / Comptroller →
+              </a>
+            )}
+          </div>
+
+          {/* Business risk check */}
+          <CustomerRiskCheck customer={{ ...customer, name: customer.companyName || customer.name }} rentals={rentals} />
+
+          {/* Contractor / pickup person section */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <User className="w-4 h-4" /> Contractor / Person Picking Up
+              <span className="text-xs font-normal text-gray-500">(scan their DL below)</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="relative sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
+                  Contractor Name
+                  <span className="flex items-center gap-1 text-indigo-400 font-normal" title="Scan driver's license to auto-fill">
+                    <ScanLine className="w-3.5 h-3.5" /> Scan DL
+                  </span>
+                </label>
+                <Input
+                  placeholder="Full name of person picking up"
+                  value={customer.name}
+                  onChange={e => { set('name', toTitleCase(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('name'); setAutoFilled(false); }}
+                  onFocus={() => { setSearchQuery(customer.name); setShowSuggestions(true); setActiveSearchField('name'); }}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onKeyDown={handleKeyDown}
+                  className="bg-white"
+                />
+                {customer._dlVerified && (
+                  <span className="flex items-center gap-1 mt-1 text-xs text-indigo-700">
+                    <ScanLine className="w-3 h-3" /> ID Verified · ···{customer._dlLast4}
+                    {customer._dlExpiry && <span className="text-gray-400"> exp {customer._dlExpiry}</span>}
+                  </span>
+                )}
+                {activeSearchField === 'name' && showSuggestions && suggestions.length > 0 && (
+                  <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Contractor Phone</label>
+                <Input
+                  placeholder="(956) 123-4567"
+                  value={customer.secondaryPhone || ''}
+                  onChange={e => set('secondaryPhone', formatPhoneUS(e.target.value))}
+                  inputMode="numeric"
+                  className="bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Relationship to Business</label>
+                <Input
+                  placeholder="e.g. Employee, Owner, Sub"
+                  value={customer.secondaryPhoneRelation || ''}
+                  onChange={e => set('secondaryPhoneRelation', e.target.value)}
+                  className="bg-white"
+                />
+              </div>
+            </div>
+            {/* Contractor risk check (runs against their name) */}
+            {customer.name && <CustomerRiskCheck customer={customer} rentals={rentals} />}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <Input placeholder="Special requests, PO number, instructions..." value={customer.notes} onChange={e => set('notes', e.target.value)} />
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          PERSONAL MODE (unchanged layout)
+      ══════════════════════════════════════════ */}
+      {!isBusinessMode && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Name / DL */}
+            <div className="relative">
+              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
+                Customer Name *
+                <span className="flex items-center gap-1 text-indigo-400 font-normal" title="Scan driver's license to auto-fill">
+                  <ScanLine className="w-3.5 h-3.5" /> <span className="text-xs">Scan DL</span>
                 </span>
+              </label>
+              <Input
+                autoFocus
+                placeholder="Search by name..."
+                value={customer.name}
+                onChange={e => { set('name', toTitleCase(e.target.value)); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('name'); setAutoFilled(false); }}
+                onFocus={() => { setSearchQuery(customer.name); setShowSuggestions(true); setActiveSearchField('name'); }}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onKeyDown={handleKeyDown}
+              />
+              {history && !showSuggestions && (
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <UserCheck className="w-3 h-3 text-green-500" />
+                    <span className="text-xs text-green-600 font-medium">{history.rentalCount} past rental{history.rentalCount !== 1 ? 's' : ''}</span>
+                  </span>
+                  {customer._dlVerified && (
+                    <span className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+                      <ScanLine className="w-3 h-3 text-indigo-500" />
+                      <span className="text-xs text-indigo-700 font-medium">ID Verified · ···{customer._dlLast4}</span>
+                      {customer._dlExpiry && <span className="text-xs text-gray-400">exp {customer._dlExpiry}</span>}
+                    </span>
+                  )}
+                </div>
+              )}
+              {activeSearchField === 'name' && showSuggestions && suggestions.length > 0 && (
+                <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
               )}
             </div>
-          )}
-          {activeSearchField === 'name' && showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
-          )}
-        </div>
 
-        {/* Phone — required */}
-         <div className="relative">
-           <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
-             Phone *
-             {phoneVerified && customer.phone === lastVerifiedPhone && (
-               <span className="flex items-center gap-1 text-green-600 font-normal text-xs">
-                 <CheckCircle2 className="w-3.5 h-3.5" /> Verified
-               </span>
-             )}
-           </label>
-           <Input
-             ref={phoneRef}
-             placeholder={(() => {
-               const areaCode = getAreaCodeFromBranch(branchSettings[customer.branch]?.phone);
-               return areaCode ? `(${areaCode}) 123-4567` : '(956) 123-4567';
-             })()}
-             value={customer.phone}
-             onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); setPhoneVerified(false); }}
-             onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
-             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-             onKeyDown={handleKeyDown}
-             inputMode="numeric"
-           />
-           {activeSearchField === 'phone' && showSuggestions && suggestions.length > 0 && (
-             <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
-           )}
-         </div>
+            {/* Phone */}
+            <div className="relative">
+              <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1.5">
+                Phone *
+                {phoneVerified && customer.phone === lastVerifiedPhone && (
+                  <span className="flex items-center gap-1 text-green-600 font-normal text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+                  </span>
+                )}
+              </label>
+              <Input
+                ref={phoneRef}
+                placeholder={(() => { const a = getAreaCodeFromBranch(branchSettings[customer.branch]?.phone); return a ? `(${a}) 123-4567` : '(956) 123-4567'; })()}
+                value={customer.phone}
+                onChange={e => { set('phone', formatPhoneUS(e.target.value)); setSearchQuery(e.target.value.replace(/\D/g, '')); setShowSuggestions(true); setActiveSearchField('phone'); setAutoFilled(false); setPhoneVerified(false); }}
+                onFocus={() => { setSearchQuery(customer.phone); setShowSuggestions(true); setActiveSearchField('phone'); }}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onKeyDown={handleKeyDown}
+                inputMode="numeric"
+              />
+              {activeSearchField === 'phone' && showSuggestions && suggestions.length > 0 && (
+                <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
+              )}
+            </div>
 
-        <div className="relative">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-          <Input
-            ref={emailRef}
-            type="email"
-            placeholder="john@example.com"
-            value={customer.email}
-            onChange={e => { set('email', e.target.value); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('email'); }}
-            onFocus={() => { setSearchQuery(customer.email); setShowSuggestions(true); setActiveSearchField('email'); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            onKeyDown={handleKeyDown}
-          />
-          {activeSearchField === 'email' && showSuggestions && suggestions.length > 0 && (
-            <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
-          )}
-        </div>
-        <div className="sm:col-span-2 lg:col-span-4">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Street Address</label>
-          <Input
-            placeholder="123 Main St"
-            value={customer.address}
-            onChange={e => set('address', e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
-          <Input
-            placeholder="McAllen"
-            value={customer.city}
-            onChange={e => set('city', e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
-          <Input
-            placeholder="TX"
-            maxLength="2"
-            value={customer.state}
-            onChange={e => set('state', e.target.value.toUpperCase())}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Zip</label>
-          <Input
-            placeholder="78501"
-            value={customer.zip}
-            onChange={e => set('zip', e.target.value)}
-          />
-        </div>
-      </div>
+            <div className="relative">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+              <Input
+                ref={emailRef}
+                type="email"
+                placeholder="john@example.com"
+                value={customer.email}
+                onChange={e => { set('email', e.target.value); setSearchQuery(e.target.value); setShowSuggestions(true); setActiveSearchField('email'); }}
+                onFocus={() => { setSearchQuery(customer.email); setShowSuggestions(true); setActiveSearchField('email'); }}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onKeyDown={handleKeyDown}
+              />
+              {activeSearchField === 'email' && showSuggestions && suggestions.length > 0 && (
+                <SuggestionDropdown suggestions={suggestions} onSelect={fillFromSuggestion} activeIndex={activeIndex} />
+              )}
+            </div>
 
-      {/* Inline Risk Check — after DL / city/state/zip */}
-      <CustomerRiskCheck customer={customer} rentals={rentals} />
+            <div className="sm:col-span-2 lg:col-span-4">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Street Address</label>
+              <Input placeholder="123 Main St" value={customer.address} onChange={e => set('address', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
+              <Input placeholder="McAllen" value={customer.city} onChange={e => set('city', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
+              <Input placeholder="TX" maxLength="2" value={customer.state} onChange={e => set('state', e.target.value.toUpperCase())} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Zip</label>
+              <Input placeholder="78501" value={customer.zip} onChange={e => set('zip', e.target.value)} />
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="sm:col-span-2 lg:col-span-4">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-          <Input
-            placeholder="Special requests, delivery instructions..."
-            value={customer.notes}
-            onChange={e => set('notes', e.target.value)}
-          />
-        </div>
+          <CustomerRiskCheck customer={customer} rentals={rentals} />
 
-        {/* Secondary contact — spans next row after Notes for proper tab order */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Secondary Phone</label>
-          <Input
-            type="tel"
-            placeholder="(956) 123-4567"
-            value={customer.secondaryPhone || ''}
-            onChange={e => set('secondaryPhone', formatPhoneUS(e.target.value))}
-            inputMode="numeric"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Secondary Contact Name</label>
-          <Input
-            placeholder="e.g. Maria Gomez"
-            value={customer.secondaryPhoneName || ''}
-            onChange={e => set('secondaryPhoneName', e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Relationship</label>
-          <Input
-            placeholder="e.g. Spouse, Parent, Employer"
-            value={customer.secondaryPhoneRelation || ''}
-            onChange={e => set('secondaryPhoneRelation', e.target.value)}
-          />
-        </div>
-
-        {/* Sale Type toggle */}
-        <div className="sm:col-span-2 lg:col-span-1">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Sale Type</label>
-          <div className="flex gap-2">
-            {[
-              { value: 'personal', label: '👤 Personal' },
-              { value: 'business', label: '🏢 Business' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => set('saleType', opt.value)}
-                className={`flex-1 py-1.5 rounded-md text-xs font-semibold border transition ${
-                  (customer.saleType || 'personal') === opt.value
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="sm:col-span-2 lg:col-span-4">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+              <Input placeholder="Special requests, delivery instructions..." value={customer.notes} onChange={e => set('notes', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Secondary Phone</label>
+              <Input type="tel" placeholder="(956) 123-4567" value={customer.secondaryPhone || ''} onChange={e => set('secondaryPhone', formatPhoneUS(e.target.value))} inputMode="numeric" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Secondary Contact Name</label>
+              <Input placeholder="e.g. Maria Gomez" value={customer.secondaryPhoneName || ''} onChange={e => set('secondaryPhoneName', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Relationship</label>
+              <Input placeholder="e.g. Spouse, Parent, Employer" value={customer.secondaryPhoneRelation || ''} onChange={e => set('secondaryPhoneRelation', e.target.value)} />
+            </div>
           </div>
         </div>
-
-        {/* Company name — shown when Business is selected */}
-        {customer.saleType === 'business' && (
-          <div className="sm:col-span-2 lg:col-span-3">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Company Name</label>
-            <Input
-              placeholder="e.g. ABC Construction LLC"
-              value={customer.companyName || ''}
-              onChange={e => set('companyName', e.target.value)}
-            />
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Phone Verification Modal */}
       {showVerifyModal && customer.phone && (
@@ -572,8 +674,8 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
         />
       )}
 
-      {/* Conversational upsell prompt */}
-      {nudges.length > 0 && !nudgeDismissed && (
+      {/* Conversational upsell prompt — personal mode only */}
+      {!isBusinessMode && nudges.length > 0 && !nudgeDismissed && (
         <div className="border border-indigo-200 bg-indigo-50 rounded-lg px-4 py-3">
           {added ? (
             <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
