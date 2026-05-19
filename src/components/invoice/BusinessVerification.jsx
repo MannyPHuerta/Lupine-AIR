@@ -21,17 +21,22 @@ export default function BusinessVerification({ companyName, state, city }) {
     setResult(null);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a business verification assistant for a rental equipment company in Texas. 
+        prompt: `You are a business verification assistant for a rental equipment company in Texas.
 A customer claims to represent the following business:
 - Business Name: "${companyName}"
 - State: "${state || 'TX'}"
 - City: "${city || 'unknown'}"
 
-Search the web for this business. Check:
-1. Does this business appear in Texas Secretary of State (sos.state.tx.us) or Texas Comptroller records?
-2. Does it have a real web presence (website, Google Maps listing, BBB profile)?
-3. Are there any red flags (complaints, fraud reports, very recent registration, no address)?
-4. Is the name consistent with a real operating company (not gibberish or obviously fake)?
+Search the web thoroughly for this business. Check ALL of the following:
+
+1. STATE REGISTRATION: Does this business appear in the relevant Secretary of State or Comptroller records? Is it in good standing or forfeited/dissolved?
+2. WEB PRESENCE: Does it have a real website, Google Maps listing, BBB profile, or LinkedIn page consistent with an operating company?
+3. ADDRESS REUSE (CRITICAL): Look up the business address. Is this address shared by a large number of unrelated businesses (e.g. a registered agent mill, UPS Store, virtual office, or known shell company address)? In recent fraud cases (e.g. Minnesota 2024), dozens of fake LLCs were registered to the same address — flag this prominently if found.
+4. RECENT REGISTRATION: Was the business registered very recently (within the last 6 months)? Newly formed entities renting heavy equipment is a risk signal.
+5. OPERATING EVIDENCE: Is there any real-world evidence this company actually operates — employees, job postings, news mentions, contracts, reviews?
+6. NAME PATTERNS: Is the name generic/vague (e.g. "XYZ Holdings LLC", "Global Resources Group") with no real identity? Does it match a pattern of known fraudulent shell company naming?
+
+Be specific. If you find the address is shared by many businesses, name the address and the approximate count.
 
 Respond with a JSON object only.`,
         add_context_from_internet: true,
