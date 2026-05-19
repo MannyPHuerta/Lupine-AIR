@@ -12,6 +12,8 @@ export default function DeliveryRecommendation({ cartItems, deliveryAddress, onA
   const [recommendation, setRecommendation] = useState(null);
   const [expanded, setExpanded] = useState(true);
   const [addedFee, setAddedFee] = useState(false);
+  const [manualCrew, setManualCrew] = useState(null);
+  const [manualTrucks, setManualTrucks] = useState(null);
 
   const hasAddress = deliveryAddress?.city || deliveryAddress?.address;
 
@@ -74,6 +76,8 @@ Return ONLY a JSON object.`,
         }
       });
       setRecommendation(result);
+      setManualCrew(null);
+      setManualTrucks(null);
       setAddedFee(false);
     } catch (err) {
       setRecommendation({ error: err.message });
@@ -138,19 +142,30 @@ Return ONLY a JSON object.`,
             </div>
           )}
 
-          {recommendation && !recommendation.error && (
+          {recommendation && !recommendation.error && (() => {
+            const displayCrew = manualCrew ?? recommendation.crewCount;
+            const displayTrucks = manualTrucks ?? recommendation.vehicleCount;
+            return (
             <div className="space-y-2">
-              {/* Stats row */}
+              {/* Stats row with +/- adjusters */}
               <div className="grid grid-cols-3 gap-1.5">
                 <div className="bg-white border border-indigo-100 rounded p-2 text-center">
                   <Users className="w-3.5 h-3.5 text-indigo-500 mx-auto mb-0.5" />
-                  <div className="text-base font-bold text-gray-900">{recommendation.crewCount}</div>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <button onClick={() => setManualCrew(c => Math.max(1, (c ?? recommendation.crewCount) - 1))} className="w-5 h-5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 text-xs font-bold leading-none">−</button>
+                    <div className="text-base font-bold text-gray-900 w-5 text-center">{displayCrew}</div>
+                    <button onClick={() => setManualCrew(c => (c ?? recommendation.crewCount) + 1)} className="w-5 h-5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 text-xs font-bold leading-none">+</button>
+                  </div>
                   <div className="text-[10px] text-gray-500">Crew</div>
                 </div>
                 <div className="bg-white border border-indigo-100 rounded p-2 text-center">
                   <Truck className="w-3.5 h-3.5 text-indigo-500 mx-auto mb-0.5" />
-                  <div className="text-base font-bold text-gray-900">{recommendation.vehicleCount}</div>
-                  <div className="text-[10px] text-gray-500">Truck{recommendation.vehicleCount !== 1 ? 's' : ''}</div>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <button onClick={() => setManualTrucks(t => Math.max(1, (t ?? recommendation.vehicleCount) - 1))} className="w-5 h-5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 text-xs font-bold leading-none">−</button>
+                    <div className="text-base font-bold text-gray-900 w-5 text-center">{displayTrucks}</div>
+                    <button onClick={() => setManualTrucks(t => (t ?? recommendation.vehicleCount) + 1)} className="w-5 h-5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 text-xs font-bold leading-none">+</button>
+                  </div>
+                  <div className="text-[10px] text-gray-500">Truck{displayTrucks !== 1 ? 's' : ''}</div>
                 </div>
                 <div className="bg-white border border-indigo-100 rounded p-2 text-center">
                   <DollarSign className="w-3.5 h-3.5 text-green-500 mx-auto mb-0.5" />
@@ -197,7 +212,8 @@ Return ONLY a JSON object.`,
                 </button>
               </div>
             </div>
-          )}
+          );
+          })()}
 
           {recommendation?.error && (
             <div className="text-xs text-red-600 bg-red-50 rounded p-2">{recommendation.error}</div>
