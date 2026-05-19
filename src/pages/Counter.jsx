@@ -35,6 +35,7 @@ export default function Counter() {
   const [promoCodes, setPromoCodes] = useState([]);
   const [volumeRules, setVolumeRules] = useState([]);
   const [appliedPromo, setAppliedPromo] = useState(null);
+  const [saleType, setSaleType] = useState('personal'); // 'personal' | 'business'
   const { aiSuggestions, isSearching: aiSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(equipment);
   const aiTimerRef = useRef(null);
 
@@ -397,6 +398,29 @@ export default function Counter() {
               onSelect={(e) => handleAddToCart(e)}
             />
 
+            {/* Sale type toggle */}
+            <div className="border-t pt-4 space-y-1.5">
+              <div className="text-xs font-semibold text-gray-600">Sale Type</div>
+              <div className="flex gap-2">
+                {[
+                  { value: 'personal', label: 'Personal' },
+                  { value: 'business', label: 'Business' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSaleType(opt.value)}
+                    className={`flex-1 py-1.5 rounded-md text-xs font-semibold border transition ${
+                      saleType === opt.value
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Customer selector */}
             <div className="border-t pt-4 space-y-2">
               <div className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
@@ -480,6 +504,7 @@ export default function Counter() {
             volumeRules={volumeRules}
             equipment={equipment}
             selectedCustomer={selectedCustomer}
+            saleType={saleType}
           />
         </div>
       )}

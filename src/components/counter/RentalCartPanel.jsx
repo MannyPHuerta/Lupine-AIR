@@ -16,6 +16,7 @@ export default function RentalCartPanel({
   volumeRules = [],
   equipment = [],
   selectedCustomer = null,
+  saleType = 'personal',
 }) {
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -124,6 +125,7 @@ export default function RentalCartPanel({
             status: 'completed',
             deliveryMethod: 'customer_pickup',
             returnMethod: 'customer_return',
+            notes: saleType === 'business' ? 'Business sale' : 'Personal sale',
           });
           createdIds.push(rental.id);
         }
@@ -138,6 +140,7 @@ export default function RentalCartPanel({
         autoDiscount: volumeDiscount,
         paymentMethod,
         isCounterSale: true,
+        saleType,
         deliveryMethod: 'customer_pickup',
         returnMethod: 'customer_return',
         customer: { name: selectedCustomer?.fullName || 'Walk-in', phone: selectedCustomer?.phone || '', email: selectedCustomer?.email || '', branch },
