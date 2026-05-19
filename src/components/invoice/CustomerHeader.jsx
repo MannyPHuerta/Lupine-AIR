@@ -6,7 +6,6 @@ import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, 
 import { useDLScanner } from '@/hooks/useDLScanner';
 import { base44 } from '@/api/base44Client';
 import PhoneVerificationModal from '@/components/counter/PhoneVerificationModal';
-import CustomerRiskCheck from '@/components/invoice/CustomerRiskCheck';
 import BusinessVerification from '@/components/invoice/BusinessVerification';
 
 const BRANCHES = [
@@ -452,9 +451,6 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             />
           </div>
 
-          {/* Business risk check */}
-          <CustomerRiskCheck customer={{ ...customer, name: customer.companyName || customer.name }} rentals={rentals} />
-
           {/* Contractor / pickup person section */}
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -508,9 +504,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
                 />
               </div>
             </div>
-            {/* Contractor risk check (runs against their name) */}
-            {customer.name && <CustomerRiskCheck customer={customer} rentals={rentals} />}
-          </div>
+            </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
@@ -621,8 +615,6 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
               <Input placeholder="78501" value={customer.zip} onChange={e => set('zip', e.target.value)} />
             </div>
           </div>
-
-          <CustomerRiskCheck customer={customer} rentals={rentals} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="sm:col-span-2 lg:col-span-4">
