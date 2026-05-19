@@ -2,11 +2,12 @@ import { useRef, useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import BranchSelect from '@/components/invoice/BranchSelect';
 import { formatPhoneUS } from '@/lib/phoneUtils';
-import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, Ban, Building2, User, ExternalLink } from 'lucide-react';
+import { UserCheck, ShoppingCart, Check, ScanLine, AlertTriangle, CheckCircle2, Ban, Building2, User } from 'lucide-react';
 import { useDLScanner } from '@/hooks/useDLScanner';
 import { base44 } from '@/api/base44Client';
 import PhoneVerificationModal from '@/components/counter/PhoneVerificationModal';
 import CustomerRiskCheck from '@/components/invoice/CustomerRiskCheck';
+import BusinessVerification from '@/components/invoice/BusinessVerification';
 
 const BRANCHES = [
   '01 McAllen',
@@ -443,19 +444,12 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
               </div>
             </div>
 
-            {/* TX SOS verification link */}
-            {customer.companyName && (
-              <a
-                href={`https://mycpa.cpa.state.tx.us/coa/Index.html#`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-blue-700 font-semibold hover:underline"
-                title="Look up this business in the Texas Comptroller registry"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Verify with TX Secretary of State / Comptroller →
-              </a>
-            )}
+            {/* AI Business Verification */}
+            <BusinessVerification
+              companyName={customer.companyName}
+              state={customer.state}
+              city={customer.city}
+            />
           </div>
 
           {/* Business risk check */}
