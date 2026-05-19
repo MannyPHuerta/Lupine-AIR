@@ -15,6 +15,7 @@ export default function RentalCartPanel({
   appliedPromo = null,
   volumeRules = [],
   equipment = [],
+  selectedCustomer = null,
 }) {
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -64,17 +65,24 @@ export default function RentalCartPanel({
     return Math.round(total * 100) / 100;
   }, [cart, volumeRules, equipment]);
 
-  // Promo discount applied on top of volume-adjusted subtotal
+  // Loyalty discount
+  const loyaltyDiscount = useMemo(() => {
+    if (!selectedCustomer?.loyaltyDiscountEnabled || !selectedCustomer?.loyaltyDiscountPercent) return 0;
+    const base = subtotal - volumeDiscount;
+    return Math.round(Math.max(0, base) * selectedCustomer.loyaltyDiscountPercent / 100 * 100) / 100;
+  }, [selectedCustomer, subtotal, volumeDiscount]);
+
+  // Promo discount applied on top of volume+loyalty-adjusted subtotal
   const promoDiscount = useMemo(() => {
     if (!appliedPromo) return 0;
-    const base = subtotal - volumeDiscount;
+    const base = subtotal - volumeDiscount - loyaltyDiscount;
     const val = appliedPromo.discountType === 'percent'
       ? base * appliedPromo.discountValue / 100
       : appliedPromo.discountValue;
     return Math.round(Math.min(val, base) * 100) / 100;
-  }, [appliedPromo, subtotal, volumeDiscount]);
+  }, [appliedPromo, subtotal, volumeDiscount, loyaltyDiscount]);
 
-  const totalDiscount = volumeDiscount + promoDiscount;
+  const totalDiscount = volumeDiscount + loyaltyDiscount + promoDiscount;
   const discountedSubtotal = Math.max(0, subtotal - totalDiscount);
   const tax = Math.round(discountedSubtotal * TAX_RATE * 100) / 100;
   const totalDue = Math.round((discountedSubtotal + tax) * 100) / 100;
@@ -104,7 +112,8 @@ export default function RentalCartPanel({
             startDate: new Date().toISOString().split('T')[0],
             endDate: new Date().toISOString().split('T')[0],
             totalDays: 1,
-            customerName: 'Walk-in',
+            customerName: selectedCustomer?.fullName || 'Walk-in',
+            customerId: selectedCustomer?.id !== 'walkin' ? selectedCustomer?.id : undefined,
             branch,
             baseAmount: item.dailyRate || 0,
             taxRate: TAX_RATE,
@@ -131,7 +140,7 @@ export default function RentalCartPanel({
         isCounterSale: true,
         deliveryMethod: 'customer_pickup',
         returnMethod: 'customer_return',
-        customer: { name: 'Walk-in', phone: '', email: '', branch },
+        customer: { name: selectedCustomer?.fullName || 'Walk-in', phone: selectedCustomer?.phone || '', email: selectedCustomer?.email || '', branch },
         branchInfo: branchSettings
           ? { name: branchSettings.branch, address: branchSettings.address || '', phone: branchSettings.phone || '', email: branchSettings.email || '' }
           : { name: branch, address: '', phone: '', email: '' },
@@ -206,6 +215,12 @@ export default function RentalCartPanel({
             <div className="flex justify-between text-green-700">
               <span>Volume Discount</span>
               <span>-${volumeDiscount.toFixed(2)}</span>
+            </div>
+          )}
+          {loyaltyDiscount > 0 && (
+            <div className="flex justify-between text-amber-700">
+              <span>Loyalty ({selectedCustomer.loyaltyDiscountPercent}%)</span>
+              <span>-${loyaltyDiscount.toFixed(2)}</span>
             </div>
           )}
           {promoDiscount > 0 && (

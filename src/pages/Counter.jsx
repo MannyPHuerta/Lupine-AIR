@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles } from 'lucide-react';
+import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles, User, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
@@ -383,8 +383,8 @@ export default function Counter() {
       {/* ── STEP 2: Checkout (RentalCartPanel) ── */}
       {step === 'checkout' && (
         <div className="flex flex-1 h-[calc(100vh-60px)]">
-          {/* Left sidebar: back + add more equipment */}
-          <div className="w-1/3 border-r bg-white flex flex-col p-4 space-y-4">
+          {/* Left sidebar: back + add more equipment + customer */}
+          <div className="w-1/3 border-r bg-white flex flex-col p-4 space-y-4 overflow-y-auto">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-600">Add Equipment</span>
               <button onClick={() => setStep('equipment')} className="text-gray-400 hover:text-gray-600" title="Back to equipment list">
@@ -396,6 +396,75 @@ export default function Counter() {
               placeholder="Search equipment…"
               onSelect={(e) => handleAddToCart(e)}
             />
+
+            {/* Customer selector */}
+            <div className="border-t pt-4 space-y-2">
+              <div className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5" /> Customer (optional)
+              </div>
+              {selectedCustomer && selectedCustomer.id !== 'walkin' ? (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-sm text-indigo-900">{selectedCustomer.fullName}</div>
+                      {selectedCustomer.companyName && <div className="text-xs text-indigo-700">{selectedCustomer.companyName}</div>}
+                      {selectedCustomer.phone && <div className="text-xs text-gray-500">{selectedCustomer.phone}</div>}
+                    </div>
+                    <button onClick={() => setSelectedCustomer(null)} className="text-indigo-400 hover:text-red-500">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {selectedCustomer.loyaltyDiscountEnabled && selectedCustomer.loyaltyDiscountPercent > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1">
+                      <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                      {selectedCustomer.loyaltyDiscountPercent}% loyalty discount applied
+                    </div>
+                  )}
+                  {selectedCustomer.creditHold && (
+                    <div className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-2 py-1">⚠ Credit Hold</div>
+                  )}
+                  {selectedCustomer.blacklisted && (
+                    <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1">🚫 Blacklisted — Do Not Rent</div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <input
+                      placeholder="Search by name or phone…"
+                      value={customerSearch}
+                      onChange={e => setCustomerSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 h-8 border border-input rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </div>
+                  {customerSearch.trim().length > 0 && (
+                    <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                      {customers
+                        .filter(c => {
+                          const t = customerSearch.toLowerCase();
+                          return c.fullName?.toLowerCase().includes(t) || c.phone?.includes(customerSearch) || c.companyName?.toLowerCase().includes(t);
+                        })
+                        .slice(0, 10)
+                        .map(c => (
+                          <button key={c.id} onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); }}
+                            className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition">
+                            <div className="text-xs font-medium text-gray-900 truncate">{c.fullName}</div>
+                            <div className="text-xs text-gray-500 truncate">{c.phone}{c.loyaltyDiscountEnabled ? ' ⭐' : ''}</div>
+                          </button>
+                        ))
+                      }
+                      {customers.filter(c => {
+                        const t = customerSearch.toLowerCase();
+                        return c.fullName?.toLowerCase().includes(t) || c.phone?.includes(customerSearch) || c.companyName?.toLowerCase().includes(t);
+                      }).length === 0 && (
+                        <div className="px-3 py-2 text-xs text-gray-400">No customers found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right: Cart / invoice */}
@@ -410,6 +479,7 @@ export default function Counter() {
             appliedPromo={appliedPromo}
             volumeRules={volumeRules}
             equipment={equipment}
+            selectedCustomer={selectedCustomer}
           />
         </div>
       )}
