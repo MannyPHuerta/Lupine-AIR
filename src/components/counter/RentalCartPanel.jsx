@@ -12,6 +12,9 @@ export default function RentalCartPanel({
   onRemoveItem,
   onCompleteRental,
   practiceMode = false,
+  appliedPromo = null,
+  volumeRules = [],
+  equipment = [],
 }) {
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -30,8 +33,51 @@ export default function RentalCartPanel({
     cart.reduce((sum, item) => sum + (item.dailyRate || 0), 0),
   [cart]);
 
-  const tax = Math.round(subtotal * TAX_RATE * 100) / 100;
-  const totalDue = Math.round((subtotal + tax) * 100) / 100;
+  // Volume discount: sum up savings for applicable rules
+  const volumeDiscount = useMemo(() => {
+    if (!volumeRules?.length) return 0;
+    const qtyById = {};
+    const qtyByCategory = {};
+    cart.forEach(item => {
+      const qty = item.quantity || 1;
+      if (item.id) qtyById[item.id] = (qtyById[item.id] || 0) + qty;
+      const eq = equipment.find(e => e.id === item.id);
+      const cat = eq?.category || item.category;
+      if (cat) qtyByCategory[cat] = (qtyByCategory[cat] || 0) + qty;
+    });
+    let total = 0;
+    volumeRules.forEach(rule => {
+      if (!rule.active) return;
+      const qty = rule.equipmentId ? (qtyById[rule.equipmentId] || 0) : (qtyByCategory[rule.category] || 0);
+      if (qty < rule.minimumQuantity) return;
+      // Find rate for applicable items
+      const applicableItems = cart.filter(item => {
+        if (rule.equipmentId) return item.id === rule.equipmentId;
+        const eq = equipment.find(e => e.id === item.id);
+        return (eq?.category || item.category) === rule.category;
+      });
+      applicableItems.forEach(item => {
+        const rate = item.dailyRate || 0;
+        total += rule.discountType === 'percent' ? (rate * rule.discountValue / 100) : rule.discountValue;
+      });
+    });
+    return Math.round(total * 100) / 100;
+  }, [cart, volumeRules, equipment]);
+
+  // Promo discount applied on top of volume-adjusted subtotal
+  const promoDiscount = useMemo(() => {
+    if (!appliedPromo) return 0;
+    const base = subtotal - volumeDiscount;
+    const val = appliedPromo.discountType === 'percent'
+      ? base * appliedPromo.discountValue / 100
+      : appliedPromo.discountValue;
+    return Math.round(Math.min(val, base) * 100) / 100;
+  }, [appliedPromo, subtotal, volumeDiscount]);
+
+  const totalDiscount = volumeDiscount + promoDiscount;
+  const discountedSubtotal = Math.max(0, subtotal - totalDiscount);
+  const tax = Math.round(discountedSubtotal * TAX_RATE * 100) / 100;
+  const totalDue = Math.round((discountedSubtotal + tax) * 100) / 100;
   const paid = parseFloat(amountPaid) || 0;
   const balance = Math.round((totalDue - paid) * 100) / 100;
 
@@ -79,8 +125,8 @@ export default function RentalCartPanel({
         id: invoiceNumber,
         createdAt: new Date().toISOString(),
         taxRate: TAX_RATE * 100,
-        discount: 0,
-        autoDiscount: 0,
+        discount: promoDiscount,
+        autoDiscount: volumeDiscount,
         paymentMethod,
         isCounterSale: true,
         deliveryMethod: 'customer_pickup',
@@ -156,6 +202,18 @@ export default function RentalCartPanel({
             <span>Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
           </div>
+          {volumeDiscount > 0 && (
+            <div className="flex justify-between text-green-700">
+              <span>Volume Discount</span>
+              <span>-${volumeDiscount.toFixed(2)}</span>
+            </div>
+          )}
+          {promoDiscount > 0 && (
+            <div className="flex justify-between text-green-700">
+              <span>Promo ({appliedPromo.code})</span>
+              <span>-${promoDiscount.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-gray-700">
             <span>Tax (8.25%)</span>
             <span>${tax.toFixed(2)}</span>

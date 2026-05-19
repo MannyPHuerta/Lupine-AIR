@@ -407,6 +407,9 @@ export default function Counter() {
             onRemoveItem={handleRemoveFromCart}
             onCompleteRental={handleCompleteRental}
             practiceMode={practiceMode}
+            appliedPromo={appliedPromo}
+            volumeRules={volumeRules}
+            equipment={equipment}
           />
         </div>
       )}
