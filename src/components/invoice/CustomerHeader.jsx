@@ -7,6 +7,7 @@ import { useDLScanner } from '@/hooks/useDLScanner';
 import { base44 } from '@/api/base44Client';
 import PhoneVerificationModal from '@/components/counter/PhoneVerificationModal';
 import BusinessVerification from '@/components/invoice/BusinessVerification';
+import CustomerRiskCheck from '@/components/invoice/CustomerRiskCheck';
 
 const BRANCHES = [
   '01 McAllen',
@@ -504,7 +505,10 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
                 />
               </div>
             </div>
-            </div>
+
+            {/* Contractor risk check */}
+            {customer.name && <CustomerRiskCheck customer={customer} rentals={rentals} />}
+          </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
