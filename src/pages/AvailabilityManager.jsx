@@ -413,7 +413,11 @@ export default function AvailabilityManager() {
         worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
         worksiteZip: deliveryMethod === 'company_delivery' ? worksiteZip : '',
         signatureDataUrl: status === 'confirmed' ? signatureDataUrl : null,
-        notes: customer.notes,
+        notes: [
+          customer.notes,
+          customer.saleType === 'business' ? 'Business sale' : null,
+          customer.saleType === 'business' && customer.companyName ? `Company: ${customer.companyName}` : null,
+        ].filter(Boolean).join(' | ') || undefined,
         isCrossBranch: line.isCrossBranch || false,
         sourceBranch: line.sourceBranch || null,
         transferOutCompleted: false,

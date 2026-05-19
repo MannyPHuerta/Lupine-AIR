@@ -511,6 +511,42 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
             onChange={e => set('secondaryPhoneRelation', e.target.value)}
           />
         </div>
+
+        {/* Sale Type toggle */}
+        <div className="sm:col-span-2 lg:col-span-1">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Sale Type</label>
+          <div className="flex gap-2">
+            {[
+              { value: 'personal', label: '👤 Personal' },
+              { value: 'business', label: '🏢 Business' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => set('saleType', opt.value)}
+                className={`flex-1 py-1.5 rounded-md text-xs font-semibold border transition ${
+                  (customer.saleType || 'personal') === opt.value
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Company name — shown when Business is selected */}
+        {customer.saleType === 'business' && (
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Company Name</label>
+            <Input
+              placeholder="e.g. ABC Construction LLC"
+              value={customer.companyName || ''}
+              onChange={e => set('companyName', e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Phone Verification Modal */}
