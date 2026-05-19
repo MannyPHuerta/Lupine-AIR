@@ -10,6 +10,8 @@ import { useAIEquipmentSearch } from '@/hooks/useAIEquipmentSearch';
 import AIEquipmentSearchInput from '@/components/equipment/AIEquipmentSearchInput';
 import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
 import RentalAlertModal from '@/components/equipment/RentalAlertModal';
+import PromoNudge from '@/components/counter/PromoNudge';
+import VolumeNudge from '@/components/counter/VolumeNudge';
 
 // Steps: 'equipment' → 'checkout'
 const WALKIN_CUSTOMER = { fullName: 'Walk-in', phone: '', address: '', city: '', state: '', zip: '', id: 'walkin' };
@@ -30,6 +32,9 @@ export default function Counter() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [customers, setCustomers] = useState([]);
   const [practiceMode, setPracticeMode] = useState(() => localStorage.getItem('practiceMode') === 'true');
+  const [promoCodes, setPromoCodes] = useState([]);
+  const [volumeRules, setVolumeRules] = useState([]);
+  const [appliedPromo, setAppliedPromo] = useState(null);
   const { aiSuggestions, isSearching: aiSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(equipment);
   const aiTimerRef = useRef(null);
 
@@ -49,13 +54,17 @@ export default function Counter() {
       base44.entities.CompanySettings.list(),
       base44.entities.Customer.list('-created_date', 500),
       base44.auth.me().catch(() => null),
-    ]).then(([eq, rent, bs, cs, custs, user]) => {
+      base44.entities.PromoCode.filter({ active: true }),
+      base44.entities.VolumeDiscountRule.filter({ active: true }),
+    ]).then(([eq, rent, bs, cs, custs, user, promos, volRules]) => {
       setEquipment(eq);
       setRentals(rent);
       setBranchSettings(bs[0]);
       setCompanySettings(cs[0]);
       setCustomers(custs);
       setCurrentUser(user);
+      setPromoCodes(promos);
+      setVolumeRules(volRules);
       setLoading(false);
     });
     setTimeout(() => equipSearchRef.current?.focus(), 100);
@@ -318,6 +327,22 @@ export default function Counter() {
                 <DollarSign className="w-5 h-5" /> Checkout
               </Button>
             </div>
+
+            {/* Promo / Volume nudges */}
+            {cart.length > 0 && (
+              <div className="px-3 pt-2 space-y-2">
+                <PromoNudge
+                  allPromoCodes={promoCodes}
+                  currentPromo={appliedPromo}
+                  onApplyPromo={(code) => {
+                    const p = promoCodes.find(pc => pc.code === code);
+                    if (p) setAppliedPromo(p);
+                  }}
+                  subtotal={quickTotal}
+                />
+                <VolumeNudge cart={cart} equipment={equipment} volumeRules={volumeRules} />
+              </div>
+            )}
 
             {/* Cart items — scrollable */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">

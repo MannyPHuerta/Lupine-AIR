@@ -27,7 +27,7 @@ export default function PromoNudge({ allPromoCodes, currentPromo, onApplyPromo, 
     });
   }, [allPromoCodes, currentPromo, subtotal]);
 
-  if (!suggestedPromo) return null;
+  if (!suggestedPromo || subtotal <= 0) return null;
 
   const savings = suggestedPromo.discountType === 'percent'
     ? (subtotal * suggestedPromo.discountValue / 100).toFixed(2)
