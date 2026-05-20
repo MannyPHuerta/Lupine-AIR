@@ -63,6 +63,30 @@ function InvoiceLinker({ onLink }) {
   );
 }
 
+function estimateWeight(item) {
+  const cat = (item.category || '').toLowerCase();
+  const name = (item.equipmentName || '').toLowerCase();
+  if (cat === 'tent') return (item.widthFt || 20) * (item.lengthFt || 20) * 2.5;
+  if (cat === 'staging') return (item.widthFt || 4) * (item.lengthFt || 8) * 8;
+  if (cat === 'table') return 35;
+  if (cat === 'chair') return 8;
+  if (cat === 'generator' || name.includes('generator')) return 2200;
+  if (cat === 'light tower' || name.includes('light tower')) return 1800;
+  return 100;
+}
+
+function estimateVolume(item) {
+  const cat = (item.category || '').toLowerCase();
+  const name = (item.equipmentName || '').toLowerCase();
+  if (cat === 'tent') return (item.widthFt || 20) * (item.lengthFt || 20) * 0.5;
+  if (cat === 'staging') return (item.widthFt || 4) * (item.lengthFt || 8) * 0.5;
+  if (cat === 'table') return 12;
+  if (cat === 'chair') return 1.5;
+  if (cat === 'generator' || name.includes('generator')) return 40;
+  if (cat === 'light tower' || name.includes('light tower')) return 30;
+  return 5;
+}
+
 export default function AIRoads() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -97,17 +121,29 @@ export default function AIRoads() {
       setEventPlans(plans);
 
       if (planId) {
-        const plan = plans.find(p => p.id === planId);
-        if (plan) {
-          setEventPlan(plan);
-          if (plan.equipment && Array.isArray(plan.equipment)) {
-            setEventEquipment(plan.equipment);
-          }
-          if (plan.linkedRentalInvoice) {
-            const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
-            if (rentals[0]) setLinkedRental(rentals[0]);
-          }
+      const plan = plans.find(p => p.id === planId);
+      if (plan) {
+        setEventPlan(plan);
+        const items = plan.canvasItems || plan.equipment || [];
+        if (items.length > 0) {
+          // Expand canvas items by quantity and attach weight/volume defaults
+          const expanded = items.flatMap(item => {
+            const qty = item.quantity || 1;
+            return Array.from({ length: qty }).map((_, i) => ({
+              ...item,
+              id: `${item.id}-${i}`,
+              quantity: 1,
+              weight: item.weight || estimateWeight(item),
+              volume: item.volume || estimateVolume(item),
+            }));
+          });
+          setEventEquipment(expanded);
         }
+        if (plan.linkedRentalInvoice) {
+          const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
+          if (rentals[0]) setLinkedRental(rentals[0]);
+        }
+      }
       }
       setLoading(false);
     })();
@@ -302,9 +338,18 @@ export default function AIRoads() {
                   const plan = eventPlans.find(p => p.id === e.target.value);
                   if (plan) {
                     setEventPlan(plan);
-                    if (plan.equipment && Array.isArray(plan.equipment)) {
-                      setEventEquipment(plan.equipment);
-                    }
+                    const items = plan.canvasItems || plan.equipment || [];
+                    const expanded = items.flatMap(item => {
+                      const qty = item.quantity || 1;
+                      return Array.from({ length: qty }).map((_, i) => ({
+                        ...item,
+                        id: `${item.id}-${i}`,
+                        quantity: 1,
+                        weight: item.weight || estimateWeight(item),
+                        volume: item.volume || estimateVolume(item),
+                      }));
+                    });
+                    setEventEquipment(expanded);
                     // Auto-link rental if the plan has one
                     if (plan.linkedRentalInvoice) {
                       const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
