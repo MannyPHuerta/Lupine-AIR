@@ -19,10 +19,11 @@ export default function EquipmentItem({ item, onDragStart, isDragging = false })
     >
       <GripVertical className="w-3 h-3 flex-shrink-0" style={{ color: isPlaceholder ? '#9ca3af' : '#6366f1' }} />
       <div className="text-xs font-medium text-gray-900 whitespace-nowrap truncate max-w-24">
-        {item.name}
+        {item.equipmentName || item.name}
+        {item.quantity > 1 && <span className="ml-1 text-indigo-600">×{item.quantity}</span>}
       </div>
       <span className={`text-xs ml-auto flex-shrink-0 ${isPlaceholder ? 'text-gray-400' : 'text-gray-500'}`}>
-        {vol}cf {isPlaceholder && '(est)'}
+        {vol * (item.quantity || 1)}cf {isPlaceholder && '(est)'}
       </span>
     </div>
   );

@@ -81,8 +81,8 @@ export default function LoadPlanner({
 
   const getTruckStats = (truck) => {
     const spec = truckSpecs[truck.type] || {};
-    const weight = truck.items?.reduce((s, e) => s + (e.weight || 0), 0) || 0;
-    const volume = truck.items?.reduce((s, e) => s + (e.volume || 0), 0) || 0;
+    const weight = truck.items?.reduce((s, e) => s + (e.weight || 0) * (e.quantity || 1), 0) || 0;
+    const volume = truck.items?.reduce((s, e) => s + (e.volume || 0) * (e.quantity || 1), 0) || 0;
     const weightPct = spec.weightCapacity ? ((weight / spec.weightCapacity) * 100).toFixed(0) : 0;
     const volumePct = spec.volumeCapacity ? ((volume / spec.volumeCapacity) * 100).toFixed(0) : 0;
 
@@ -115,11 +115,14 @@ export default function LoadPlanner({
                 <div className="flex gap-2">
                   <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-gray-900 truncate">{item.name}</div>
+                    <div className="font-medium text-sm text-gray-900 truncate">
+                      {item.equipmentName || item.name}
+                      {item.quantity > 1 && <span className="ml-1 text-xs bg-indigo-100 text-indigo-700 rounded px-1">×{item.quantity}</span>}
+                    </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {item.weight && <span>{(item.weight / 1000).toFixed(1)}k lbs</span>}
+                      {item.weight && <span>{((item.weight * (item.quantity || 1)) / 1000).toFixed(1)}k lbs</span>}
                       {item.weight && item.volume && <span className="mx-1">•</span>}
-                      {item.volume && <span>{item.volume} cu ft</span>}
+                      {item.volume && <span>{item.volume * (item.quantity || 1)} cu ft</span>}
                     </div>
                   </div>
                 </div>
