@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Camera, Upload, Loader2, Check, X, Receipt } from 'lucide-react';
+import { Camera, Upload, Loader2, Check, X, Receipt, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const EXPENSE_CATEGORIES = [
@@ -9,6 +9,56 @@ const EXPENSE_CATEGORIES = [
   'Miscellaneous Field', 'Other'
 ];
 
+// Categories typically for field/delivery jobs
+const FIELD_JOB_CATEGORIES = new Set(['Fuel', 'Meals / Per Diem', 'Towing', 'Equipment Rental']);
+
+// Validate expense against job context
+async function validateExpense(form, jobInvoiceNumber, rental) {
+  const warnings = [];
+
+  // Check date window
+  if (rental) {
+    const expDate = new Date(form.date);
+    const rentalStart = new Date(rental.startDate);
+    const rentalEnd = new Date(rental.endDate);
+    
+    if (expDate < rentalStart || expDate > rentalEnd) {
+      const daysBefore = Math.ceil((rentalStart - expDate) / (1000 * 60 * 60 * 24));
+      const daysAfter = Math.ceil((expDate - rentalEnd) / (1000 * 60 * 60 * 24));
+      
+      if (expDate < rentalStart) {
+        warnings.push(`Expense dated ${daysBefore} days BEFORE job start (${rental.startDate})`);
+      } else {
+        warnings.push(`Expense dated ${daysAfter} days AFTER job end (${rental.endDate})`);
+      }
+    }
+  }
+
+  // Check for unusual category
+  if (!FIELD_JOB_CATEGORIES.has(form.category) && form.category !== 'Other') {
+    warnings.push(`Category "${form.category}" is unusual for field jobs`);
+  }
+
+  // Check for duplicates (same amount + vendor in last 24h)
+  if (jobInvoiceNumber && form.amount) {
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const recentExpenses = await base44.entities.Expense.filter({
+      jobInvoiceNumber,
+      amount: parseFloat(form.amount)
+    });
+    const duplicate = recentExpenses.find(e => 
+      e.vendor?.toLowerCase() === form.vendor?.toLowerCase() && 
+      new Date(e.date) > oneDayAgo
+    );
+    if (duplicate) {
+      warnings.push(`Possible duplicate: same vendor & amount from ${duplicate.date}`);
+    }
+  }
+
+  return warnings;
+}
+
 export default function FieldExpenseCapture({ jobInvoiceNumber, jobName, branch, onSaved }) {
   const [open, setOpen] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -16,6 +66,8 @@ export default function FieldExpenseCapture({ jobInvoiceNumber, jobName, branch,
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [warnings, setWarnings] = useState([]);
+  const [rental, setRental] = useState(null);
   const [form, setForm] = useState({
     vendor: '',
     amount: '',
@@ -87,6 +139,7 @@ If any field is unclear, make your best guess. For category, pick the closest ma
       receiptUrl: imageFile?.uploadedUrl || '',
       capturedByDriver: true,
       capturedBy: me?.email || '',
+      flaggedWarnings: warnings.join(' | '),
     });
     setSaving(false);
     setSaved(true);
@@ -97,13 +150,21 @@ If any field is unclear, make your best guess. For category, pick the closest ma
       setImageFile(null);
       setImagePreview(null);
       setForm({ vendor: '', amount: '', date: new Date().toISOString().split('T')[0], category: 'Fuel', description: '', paymentMethod: 'credit_card' });
+      setWarnings([]);
     }, 1500);
   };
 
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        onClick={async () => {
+          setOpen(true);
+          // Load rental data to validate dates
+          if (jobInvoiceNumber) {
+            const rentals = await base44.entities.Rental.filter({ invoiceNumber: jobInvoiceNumber });
+            if (rentals[0]) setRental(rentals[0]);
+          }
+        }}
         className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition"
       >
         <Receipt className="w-4 h-4" />
@@ -224,7 +285,37 @@ If any field is unclear, make your best guess. For category, pick the closest ma
                 onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                 className="w-full h-9 mt-1 px-2 border rounded-md text-sm" />
             </div>
+
+            {/* Validate on amount/date/category change */}
+            {form.amount && form.date && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const warns = await validateExpense(form, jobInvoiceNumber, rental);
+                  setWarnings(warns);
+                }}
+                className="text-xs text-indigo-600 underline hover:text-indigo-700 self-start"
+              >
+                Check for red flags
+              </button>
+            )}
           </div>
+
+          {/* Warnings panel */}
+          {warnings.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-1">
+              <div className="flex items-center gap-2 text-red-700 font-semibold text-xs">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Validation Warnings
+              </div>
+              {warnings.map((w, i) => (
+                <div key={i} className="text-xs text-red-600">• {w}</div>
+              ))}
+              <div className="text-xs text-red-500 pt-2 border-t border-red-200 mt-2">
+                ⚠️ Review these flags as part of theft prevention — expenses outside job window or with unusual categories may need manager approval.
+              </div>
+            </div>
+          )}
 
           <Button
             onClick={handleSave}

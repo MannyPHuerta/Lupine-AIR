@@ -86,6 +86,10 @@
       "type": "string",
       "description": "Email of the driver/staff who captured this expense in the field"
     },
+    "flaggedWarnings": {
+      "type": "string",
+      "description": "AI-detected warnings: date outside job window, unusual category, possible duplicate (pipe-delimited)"
+    },
     "capitalizedEquipmentId": {
       "type": "string",
       "description": "If this was a large equipment purchase (>= threshold) that was capitalized, reference to Equipment record"
