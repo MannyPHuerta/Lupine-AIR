@@ -212,24 +212,28 @@ export default function DailyOps() {
     ), [filtered, nextDay]);
 
   // Cross-branch transfers needed: items that need to move OUT to rental branch before start
+  // Show on BOTH the rental branch AND the source branch (the one sending the equipment)
   const transfersOut = useMemo(() =>
-    filtered.filter(r =>
+    rentals.filter(r =>
       r.isCrossBranch &&
       r.sourceBranch &&
       !r.transferOutCompleted &&
-      ['reservation', 'contract', 'quote'].includes(r.status)
+      ['reservation', 'contract', 'quote'].includes(r.status) &&
+      (branch === 'All Branches' || r.branch === branch || r.sourceBranch === branch)
     ).sort((a, b) => (a.startDate || '').localeCompare(b.startDate || '')),
-  [filtered]);
+  [rentals, branch]);
 
   // Cross-branch returns needed: item was returned by customer but needs to go BACK to source branch
+  // Show on BOTH the rental branch AND the source branch (the one receiving it back)
   const transfersBack = useMemo(() =>
-    filtered.filter(r =>
+    rentals.filter(r =>
       r.isCrossBranch &&
       r.sourceBranch &&
       !r.transferBackCompleted &&
-      ['returned', 'completed'].includes(r.status)
+      ['returned', 'completed'].includes(r.status) &&
+      (branch === 'All Branches' || r.branch === branch || r.sourceBranch === branch)
     ).sort((a, b) => (b.endDate || '').localeCompare(a.endDate || '')),
-  [filtered]);
+  [rentals, branch]);
 
   const handleTransferDone = useCallback((rentalId, field) => {
     setRentals(prev => prev.map(r => r.id === rentalId ? { ...r, [field]: true } : r));
