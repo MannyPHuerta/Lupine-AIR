@@ -20,6 +20,49 @@ const TRUCK_SPECS = {
   'sprinter': { name: 'Sprinter Van', weightCapacity: 5000, volumeCapacity: 300, costPerMile: 1.5 },
 };
 
+function InvoiceLinker({ onLink }) {
+  const [value, setValue] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  const handleSearch = async () => {
+    const inv = value.trim().toUpperCase();
+    if (!inv) return;
+    setSearching(true);
+    setNotFound(false);
+    const rentals = await base44.entities.Rental.filter({ invoiceNumber: inv });
+    if (rentals[0]) {
+      onLink(rentals[0]);
+    } else {
+      setNotFound(true);
+    }
+    setSearching(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="e.g. MCL-9901"
+          value={value}
+          onChange={e => { setValue(e.target.value); setNotFound(false); }}
+          onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          className="flex-1 h-9 border border-amber-300 rounded-md px-3 text-sm bg-white"
+        />
+        <button
+          onClick={handleSearch}
+          disabled={searching || !value.trim()}
+          className="px-4 h-9 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-md disabled:opacity-50 flex items-center gap-1"
+        >
+          {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Link'}
+        </button>
+      </div>
+      {notFound && <div className="text-xs text-red-600">Invoice not found. Try MCL-9901.</div>}
+    </div>
+  );
+}
+
 export default function AIRoads() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -254,13 +297,20 @@ export default function AIRoads() {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <label className="block text-xs font-semibold text-blue-900 mb-2">Load from EventPlan</label>
             <select
-              onChange={e => {
+              onChange={async e => {
                 if (e.target.value) {
                   const plan = eventPlans.find(p => p.id === e.target.value);
                   if (plan) {
                     setEventPlan(plan);
                     if (plan.equipment && Array.isArray(plan.equipment)) {
                       setEventEquipment(plan.equipment);
+                    }
+                    // Auto-link rental if the plan has one
+                    if (plan.linkedRentalInvoice) {
+                      const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
+                      if (rentals[0]) setLinkedRental(rentals[0]);
+                    } else {
+                      setLinkedRental(null);
                     }
                   }
                 }
@@ -271,7 +321,8 @@ export default function AIRoads() {
               <option value="">— Select a plan —</option>
               {eventPlans.map(plan => (
                 <option key={plan.id} value={plan.id}>
-                  {plan.eventName} ({plan.equipment?.length || 0} items)
+                  {plan.title || plan.eventName} ({plan.canvasItems?.length || plan.equipment?.length || 0} items)
+                  {plan.linkedRentalInvoice ? ` · ${plan.linkedRentalInvoice}` : ''}
                 </option>
               ))}
             </select>
@@ -457,21 +508,7 @@ export default function AIRoads() {
               {!linkedRental && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                   <div className="text-sm font-semibold text-amber-800 mb-2">Link a Rental Invoice</div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Invoice # (e.g. MCL-1042)"
-                      className="flex-1 h-9 border border-amber-300 rounded-md px-3 text-sm"
-                      onKeyDown={async (e) => {
-                        if (e.key === 'Enter' && e.target.value.trim()) {
-                          const rentals = await base44.entities.Rental.filter({ invoiceNumber: e.target.value.trim() });
-                          if (rentals[0]) setLinkedRental(rentals[0]);
-                          else alert('Invoice not found');
-                        }
-                      }}
-                    />
-                    <span className="text-xs text-amber-600 self-center">Press Enter to link</span>
-                  </div>
+                  <InvoiceLinker onLink={setLinkedRental} />
                 </div>
               )}
               {linkedRental && (
