@@ -81,7 +81,7 @@ export default function VisualTruckContainer({
 
               {/* Equipment items in container */}
               <div className="relative p-3 h-full flex flex-wrap gap-2 items-start content-start overflow-y-auto max-h-40">
-                {children && children.length > 0 ? (
+                {children ? (
                   children
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none">
