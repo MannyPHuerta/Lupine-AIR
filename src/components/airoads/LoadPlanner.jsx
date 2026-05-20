@@ -14,6 +14,7 @@ export default function LoadPlanner({
   onLoadsChange,
   onEquipmentChange,
   onRemoveTruck,
+  onTruckTypeChange,
 }) {
   const [draggedItem, setDraggedItem] = useState(null);
   const [scannerTruck, setScannerTruck] = useState(null);
@@ -82,7 +83,7 @@ export default function LoadPlanner({
   };
 
   const getTruckStats = (truck) => {
-    const spec = truckSpecs[truck.type] || {};
+    const spec = truckSpecs[truck.type] || truckSpecs['18wheeler'];
     const weight = truck.items?.reduce((s, e) => s + (e.weight || 0) * (e.quantity || 1), 0) || 0;
     const volume = truck.items?.reduce((s, e) => s + (e.volume || 0) * (e.quantity || 1), 0) || 0;
     const weightPct = spec.weightCapacity ? ((weight / spec.weightCapacity) * 100).toFixed(0) : 0;
@@ -183,6 +184,7 @@ export default function LoadPlanner({
                 onDragOver={handleDragOver}
                 onDrop={e => handleDropOnTruck(e, truck.id)}
                 onRemove={loads.length > 1 ? () => onRemoveTruck(truck.id) : null}
+                onTypeChange={onTruckTypeChange}
               >
                 {truck.items?.length === 0 ? null : (
                   <div className="w-full flex flex-wrap gap-2">

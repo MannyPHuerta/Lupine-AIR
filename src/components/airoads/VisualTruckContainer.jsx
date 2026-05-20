@@ -1,6 +1,13 @@
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+const TRUCK_TYPE_OPTIONS = [
+  { value: '18wheeler', label: '18-Wheeler' },
+  { value: '26ft', label: '26ft Box Truck' },
+  { value: '24ft', label: '24ft Box Truck' },
+  { value: 'sprinter', label: 'Sprinter Van' },
+];
+
 export default function VisualTruckContainer({
   truck,
   spec,
@@ -12,6 +19,7 @@ export default function VisualTruckContainer({
   onDrop,
   onDragStart,
   onRemove,
+  onTypeChange,
   children,
 }) {
   const weightStatus = weightPct > 100 ? 'red' : weightPct > 85 ? 'amber' : 'green';
@@ -36,7 +44,20 @@ export default function VisualTruckContainer({
       <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
         <div className="flex-1">
           <div className="font-bold text-lg">{truck.name}</div>
-          <div className="text-xs text-slate-400">{spec.name}</div>
+          {onTypeChange ? (
+            <select
+              value={truck.type}
+              onChange={e => onTypeChange(truck.id, e.target.value)}
+              className="mt-1 text-xs bg-slate-800 text-slate-200 border border-slate-600 rounded px-1 py-0.5"
+              onClick={e => e.stopPropagation()}
+            >
+              {TRUCK_TYPE_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="text-xs text-slate-400">{spec.name}</div>
+          )}
         </div>
         {onRemove && (
           <Button

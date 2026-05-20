@@ -229,6 +229,10 @@ export default function AIRoads() {
     setLoads([...loads, newTruck]);
   };
 
+  const handleTruckTypeChange = (truckId, newType) => {
+    setLoads(loads.map(t => t.id === truckId ? { ...t, type: newType } : t));
+  };
+
   const handleRemoveTruck = (id) => {
     if (loads.length > 1) {
       const removed = loads.find(t => t.id === id);
@@ -480,6 +484,7 @@ export default function AIRoads() {
             onLoadsChange={setLoads}
             onEquipmentChange={setEventEquipment}
             onRemoveTruck={handleRemoveTruck}
+            onTruckTypeChange={handleTruckTypeChange}
           />
         )}
 
