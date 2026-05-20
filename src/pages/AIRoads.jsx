@@ -201,17 +201,35 @@ export default function AIRoads() {
     }
     setAutoPacking(true);
     try {
+      // Summarize items by name to reduce payload size (avoid sending 355 individual chairs)
+      const summarized = [];
+      const seen = {};
+      for (const item of eventEquipment) {
+        const key = item.equipmentName;
+        if (seen[key]) {
+          seen[key].quantity = (seen[key].quantity || 1) + 1;
+        } else {
+          const copy = { ...item, quantity: 1 };
+          seen[key] = copy;
+          summarized.push(copy);
+        }
+      }
+
       const res = await base44.functions.invoke('autoPackEquipment', {
         equipment: eventEquipment,
+        summarized,
         numTrucks,
         truckType,
       });
       if (res.data?.loads) {
         setLoads(res.data.loads);
-        setEventEquipment([]); // Clear unassigned after pack
+        setEventEquipment([]);
+      } else {
+        alert('Auto Pack returned no result. Try again or adjust truck count.');
       }
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      console.error('AutoPack error:', err);
+      alert(`Auto Pack failed: ${err.message}`);
     } finally {
       setAutoPacking(false);
     }
