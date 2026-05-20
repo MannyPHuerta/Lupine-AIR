@@ -5,23 +5,37 @@ import { Button } from '@/components/ui/button';
 export default function AgreementSigningPad({ token, label, type, onSign, onCancel }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
 
-  const startDrawing = (e) => {
+  const getPos = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  };
+
+  const startDrawing = (e) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    const pos = getPos(e);
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1e1b4b';
     setIsDrawing(true);
+    setHasSignature(true);
   };
 
   const draw = (e) => {
+    e.preventDefault();
     if (!isDrawing) return;
     const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.lineWidth = 2;
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
   };
 
@@ -33,6 +47,7 @@ export default function AgreementSigningPad({ token, label, type, onSign, onCanc
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
   };
 
   const save = () => {
@@ -55,20 +70,28 @@ export default function AgreementSigningPad({ token, label, type, onSign, onCanc
 
         <canvas
           ref={canvasRef}
-          width={320}
-          height={120}
+          width={400}
+          height={150}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
-          className="border-2 border-gray-300 rounded bg-white cursor-crosshair w-full mb-3"
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+          className="border-2 border-gray-300 rounded bg-white cursor-crosshair w-full mb-3 touch-none"
+          style={{ display: 'block' }}
         />
+
+        {!hasSignature && (
+          <p className="text-xs text-gray-400 text-center -mt-2 mb-2">Sign in the box above</p>
+        )}
 
         <div className="flex gap-2">
           <Button onClick={clear} variant="outline" className="flex-1">
             Clear
           </Button>
-          <Button onClick={save} className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-2">
+          <Button onClick={save} disabled={!hasSignature} className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 gap-2">
             <Save className="w-4 h-4" /> Save
           </Button>
         </div>
