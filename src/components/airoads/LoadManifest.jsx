@@ -122,9 +122,12 @@ export default function LoadManifest({ loads, truckSpecs, distance }) {
                   {truck.items && truck.items.length > 0 ? (
                     truck.items.map((item, i) => (
                       <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="py-2 text-gray-900 font-medium">{item.name}</td>
-                        <td className="text-right py-2 text-gray-700">{item.weight ? `${(item.weight / 1000).toFixed(1)}k lbs` : '—'}</td>
-                        <td className="text-right py-2 text-gray-700">{item.volume ? `${item.volume} cu ft` : '—'}</td>
+                        <td className="py-2 text-gray-900 font-medium">
+                          {item.equipmentName || item.name}
+                          {item.quantity > 1 && <span className="ml-2 text-xs text-gray-500">×{item.quantity}</span>}
+                        </td>
+                        <td className="text-right py-2 text-gray-700">{item.weight ? `${((item.weight * (item.quantity || 1)) / 1000).toFixed(1)}k lbs` : '—'}</td>
+                        <td className="text-right py-2 text-gray-700">{item.volume ? `${item.volume * (item.quantity || 1)} cu ft` : '—'}</td>
                         <td className="text-center py-2 text-gray-500 text-xs font-semibold bg-gray-100 rounded px-2">{i + 1}</td>
                       </tr>
                     ))
