@@ -91,6 +91,15 @@
       "default": false,
       "description": "True once the returned equipment has been sent back to the sourceBranch."
     },
+    "isMajorJob": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flagged as a major job requiring individual P&L tracking (premium feature)"
+    },
+    "majorJobName": {
+      "type": "string",
+      "description": "Optional display name for this job (e.g. 'McAllen Street Fair 2026')"
+    },
     "totalDays": {
       "type": "integer",
       "description": "Number of rental days"

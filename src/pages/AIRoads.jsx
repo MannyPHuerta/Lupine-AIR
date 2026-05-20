@@ -10,6 +10,8 @@ import EquipmentPicker from '@/components/airoads/EquipmentPicker';
 import ShippingLabels from '@/components/airoads/ShippingLabels';
 import TransitScanner from '@/components/airoads/TransitScanner';
 import LabelStockSelector from '@/components/airoads/LabelStockSelector';
+import JobPLPanel from '@/components/airoads/JobPLPanel';
+import PremiumGate from '@/components/premium/PremiumGate';
 
 const TRUCK_SPECS = {
   '18wheeler': { name: '18-Wheeler', weightCapacity: 80000, volumeCapacity: 3000, costPerMile: 3.5 },
@@ -39,13 +41,15 @@ export default function AIRoads() {
   const [truckType, setTruckType] = useState('18wheeler');
   const [allEquipment, setAllEquipment] = useState([]);
   const [eventPlans, setEventPlans] = useState([]);
+  const [linkedRental, setLinkedRental] = useState(null);
 
   // Load event plan, equipment catalog, and event plans on mount
   useEffect(() => {
-    Promise.all([
-      base44.entities.Equipment.list('name', 2000),
-      base44.entities.EventPlan.list('-created_date', 100),
-    ]).then(([eq, plans]) => {
+    (async () => {
+      const [eq, plans] = await Promise.all([
+        base44.entities.Equipment.list('name', 2000),
+        base44.entities.EventPlan.list('-created_date', 100),
+      ]);
       setAllEquipment(eq);
       setEventPlans(plans);
 
@@ -56,10 +60,14 @@ export default function AIRoads() {
           if (plan.equipment && Array.isArray(plan.equipment)) {
             setEventEquipment(plan.equipment);
           }
+          if (plan.linkedRentalInvoice) {
+            const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
+            if (rentals[0]) setLinkedRental(rentals[0]);
+          }
         }
       }
       setLoading(false);
-    });
+    })();
   }, [planId]);
 
   // Sync loads with numTrucks input
@@ -225,6 +233,16 @@ export default function AIRoads() {
               }`}
             >
               Scanner
+            </button>
+            <button
+              onClick={() => setActiveTab('pl')}
+              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
+                activeTab === 'pl'
+                  ? 'bg-emerald-400 text-indigo-900'
+                  : 'text-emerald-300 hover:bg-indigo-800'
+              }`}
+            >
+              💰 P&amp;L
             </button>
           </div>
         </div>
@@ -430,6 +448,44 @@ export default function AIRoads() {
               </>
             )}
           </div>
+        )}
+
+        {activeTab === 'pl' && (
+          <PremiumGate requiredTier="pro" featureName="Job P&L Tracking">
+            <div className="space-y-4">
+              {/* Link a rental manually if no eventPlan has one */}
+              {!linkedRental && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <div className="text-sm font-semibold text-amber-800 mb-2">Link a Rental Invoice</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Invoice # (e.g. MCL-1042)"
+                      className="flex-1 h-9 border border-amber-300 rounded-md px-3 text-sm"
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter' && e.target.value.trim()) {
+                          const rentals = await base44.entities.Rental.filter({ invoiceNumber: e.target.value.trim() });
+                          if (rentals[0]) setLinkedRental(rentals[0]);
+                          else alert('Invoice not found');
+                        }
+                      }}
+                    />
+                    <span className="text-xs text-amber-600 self-center">Press Enter to link</span>
+                  </div>
+                </div>
+              )}
+              {linkedRental && (
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                  <div>
+                    <div className="font-semibold text-emerald-900 text-sm">{linkedRental.customerName}</div>
+                    <div className="text-xs text-emerald-700">{linkedRental.invoiceNumber} · {linkedRental.equipmentName}</div>
+                  </div>
+                  <button onClick={() => setLinkedRental(null)} className="text-xs text-gray-400 hover:text-gray-600 underline">Unlink</button>
+                </div>
+              )}
+              <JobPLPanel rental={linkedRental} branch={linkedRental?.branch || ''} />
+            </div>
+          </PremiumGate>
         )}
 
         {activeTab === 'scanner' && (

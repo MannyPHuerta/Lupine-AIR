@@ -20,6 +20,14 @@
         "Vehicle",
         "Subcontractors",
         "Equipment Purchase",
+        "Equipment Rental",
+        "Meals / Per Diem",
+        "Lodging",
+        "Permits",
+        "Fines / Tickets",
+        "Hospitality",
+        "Towing",
+        "Miscellaneous Field",
         "Other"
       ],
       "description": "Expense category"
@@ -68,6 +76,15 @@
     "receiptUrl": {
       "type": "string",
       "description": "URL to uploaded receipt image"
+    },
+    "capturedByDriver": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this expense was captured in the field by a driver via receipt photo"
+    },
+    "capturedBy": {
+      "type": "string",
+      "description": "Email of the driver/staff who captured this expense in the field"
     },
     "capitalizedEquipmentId": {
       "type": "string",
