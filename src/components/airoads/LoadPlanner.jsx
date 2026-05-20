@@ -5,6 +5,7 @@ import VisualTruckContainer from './VisualTruckContainer';
 import EquipmentItem from './EquipmentItem';
 import ShippingLabelPrinter from './ShippingLabelPrinter';
 import LoadScanner from './LoadScanner';
+import TruckFloorPlan from './TruckFloorPlan';
 
 export default function LoadPlanner({
   eventEquipment,
@@ -16,6 +17,7 @@ export default function LoadPlanner({
 }) {
   const [draggedItem, setDraggedItem] = useState(null);
   const [scannerTruck, setScannerTruck] = useState(null);
+  const [view, setView] = useState('split'); // 'split' | 'floorplan'
 
   const handleDragStart = (e, item, sourceType, sourceId) => {
     setDraggedItem({ item, sourceType, sourceId });
@@ -91,6 +93,38 @@ export default function LoadPlanner({
 
   return (
     <div className="space-y-6">
+      {/* View toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setView('split')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${view === 'split' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+        >
+          📦 Load Split
+        </button>
+        <button
+          onClick={() => setView('floorplan')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${view === 'floorplan' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+        >
+          🗺️ Floor Plan
+        </button>
+      </div>
+
+      {/* Floor Plan View */}
+      {view === 'floorplan' && (
+        <div className="space-y-6">
+          {loads.length === 0 ? (
+            <div className="bg-white rounded-xl border p-8 text-center text-gray-400">
+              No trucks loaded yet. Use Auto Pack first, then view the floor plan.
+            </div>
+          ) : (
+            loads.map(truck => (
+              <TruckFloorPlan key={truck.id} truck={truck} truckType={truck.type} />
+            ))
+          )}
+        </div>
+      )}
+
+      {view === 'split' && <>
       {/* Unassigned equipment */}
       <div
         onDragOver={handleDragOver}
@@ -198,6 +232,7 @@ export default function LoadPlanner({
           <ShippingLabelPrinter truck={scannerTruck} />
         </div>
       )}
+      </>}
     </div>
   );
 }
