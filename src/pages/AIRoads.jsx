@@ -430,7 +430,7 @@ export default function AIRoads() {
             </Button>
             <Button
               onClick={handleAutoBalance}
-              disabled={autoBalancing || eventEquipment.length === 0}
+              disabled={autoBalancing || (eventEquipment.length === 0 && loads.flatMap(t => t.items || []).length === 0)}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-2 h-9 text-sm"
               title="Minimize trucks while respecting limits"
             >
