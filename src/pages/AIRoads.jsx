@@ -104,8 +104,6 @@ export default function AIRoads() {
   const [autoPacking, setAutoPacking] = useState(false);
   const [distance, setDistance] = useState(350);
   const [loading, setLoading] = useState(true);
-  const [numTrucks, setNumTrucks] = useState(2);
-  const [truckType, setTruckType] = useState('18wheeler');
   const [allEquipment, setAllEquipment] = useState([]);
   const [eventPlans, setEventPlans] = useState([]);
   const [linkedRental, setLinkedRental] = useState(null);
@@ -160,10 +158,13 @@ export default function AIRoads() {
     }
     setAutoBalancing(true);
     try {
+      // Pass per-truck configs so the optimizer respects individual capacities
+      const truckConfigs = loads.map(t => ({ id: t.id, type: t.type, name: t.name }));
       const res = await base44.functions.invoke('optimizeLoadDistribution', {
         equipment: allItems,
-        numTrucks,
-        truckType,
+        numTrucks: loads.length,
+        truckConfigs,
+        truckType: loads[0]?.type || '18wheeler',
       });
       if (res.data?.loads) {
         setLoads(res.data.loads);
@@ -199,11 +200,17 @@ export default function AIRoads() {
         }
       }
 
+      // Pass per-truck configs so packing respects individual vehicle capacities
+      const truckConfigs = loads.length > 0
+        ? loads.map(t => ({ id: t.id, type: t.type, name: t.name }))
+        : [{ id: 'truck-1', type: '18wheeler', name: 'Truck 1' }];
+
       const res = await base44.functions.invoke('autoPackEquipment', {
         equipment: eventEquipment,
         summarized,
-        numTrucks,
-        truckType,
+        numTrucks: truckConfigs.length,
+        truckConfigs,
+        truckType: truckConfigs[0]?.type || '18wheeler',
       });
       if (res.data?.loads) {
         setLoads(res.data.loads);
@@ -223,7 +230,7 @@ export default function AIRoads() {
     const newTruck = {
       id: `truck-${Date.now()}`,
       name: `Truck ${loads.length + 1}`,
-      type: truckType,
+      type: '18wheeler', // default — user can change per-truck in Load Split
       items: [],
     };
     setLoads([...loads, newTruck]);
@@ -249,12 +256,14 @@ export default function AIRoads() {
     const totalVolume = eventEquipment.reduce((sum, e) => sum + (e.volume || 0), 0);
     const assignedWeight = loads.reduce((sum, t) => sum + (t.items?.reduce((s, e) => s + (e.weight || 0), 0) || 0), 0);
     const assignedVolume = loads.reduce((sum, t) => sum + (t.items?.reduce((s, e) => s + (e.volume || 0), 0) || 0), 0);
-    const spec = TRUCK_SPECS[truckType];
-    const costPerTruck = (distance * 2) * (spec?.costPerMile || 2);
-    const totalCost = costPerTruck * loads.length;
+    // Total cost sums each truck's individual type cost
+    const totalCost = loads.reduce((sum, t) => {
+      const spec = TRUCK_SPECS[t.type] || TRUCK_SPECS['18wheeler'];
+      return sum + (distance * 2) * spec.costPerMile;
+    }, 0);
 
-    return { totalWeight, totalVolume, assignedWeight, assignedVolume, costPerTruck, totalCost };
-  }, [eventEquipment, loads, truckType, distance]);
+    return { totalWeight, totalVolume, assignedWeight, assignedVolume, totalCost };
+  }, [eventEquipment, loads, distance]);
 
   if (loading) {
     return (
@@ -381,67 +390,66 @@ export default function AIRoads() {
         )}
 
         {/* Settings & Stats */}
-        <div className="bg-white rounded-xl border shadow-sm p-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          {/* Truck config */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-2">Truck Type</label>
-            <select
-              value={truckType}
-              onChange={e => setTruckType(e.target.value)}
-              className="w-full h-9 border border-input rounded-md px-2 bg-white text-sm"
-            >
-              {Object.entries(TRUCK_SPECS).map(([key, spec]) => (
-                <option key={key} value={key}>{spec.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-2">Number of Trucks</label>
-            <div className="flex gap-1">
+        <div className="bg-white rounded-xl border shadow-sm p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            {/* Trucks */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-2">
+                Trucks <span className="font-normal text-gray-400">— set type per truck in Load Split</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-2 flex-1">
+                  <span className="text-lg font-bold text-gray-900">{loads.length}</span>
+                  <span className="text-sm text-gray-500">truck{loads.length !== 1 ? 's' : ''} configured</span>
+                </div>
+                <Button size="sm" variant="outline" onClick={handleAddTruck} className="gap-1 h-9">
+                  <Plus className="w-4 h-4" /> Add
+                </Button>
+              </div>
+            </div>
+            {/* Distance */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-2">Distance (miles one-way)</label>
               <Input
                 type="number"
-                min="1"
-                max="10"
-                value={numTrucks}
-                onChange={e => setNumTrucks(parseInt(e.target.value) || 1)}
-                className="flex-1 h-9 text-sm"
+                min="0"
+                value={distance}
+                onChange={e => setDistance(parseInt(e.target.value) || 0)}
+                className="h-9 text-sm"
               />
-              <Button size="sm" variant="outline" onClick={handleAddTruck} className="px-2" title="Add truck">
-                <Plus className="w-4 h-4" />
-              </Button>
             </div>
-            <div className="text-xs text-gray-400 mt-1">{loads.length} truck(s) active</div>
+            {/* Actions */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-2">
+                Pack &amp; Optimize <span className="font-normal text-gray-400">— uses each truck's type</span>
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAutoPack}
+                  disabled={autoPacking || eventEquipment.length === 0}
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 gap-2 h-9 text-sm"
+                  title="Distribute equipment across configured trucks"
+                >
+                  {autoPacking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
+                  Auto Pack
+                </Button>
+                <Button
+                  onClick={handleAutoBalance}
+                  disabled={autoBalancing || (eventEquipment.length === 0 && loads.flatMap(t => t.items || []).length === 0)}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-2 h-9 text-sm"
+                  title="Minimize trucks while respecting per-truck limits"
+                >
+                  {autoBalancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
+                  Optimize
+                </Button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-2">Distance (miles)</label>
-            <Input
-              type="number"
-              min="0"
-              value={distance}
-              onChange={e => setDistance(parseInt(e.target.value) || 0)}
-              className="h-9 text-sm"
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <Button
-              onClick={handleAutoPack}
-              disabled={autoPacking || eventEquipment.length === 0}
-              className="flex-1 bg-amber-600 hover:bg-amber-700 gap-2 h-9 text-sm"
-              title="Balance weight distribution across trucks"
-            >
-              {autoPacking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
-              Auto Pack
-            </Button>
-            <Button
-              onClick={handleAutoBalance}
-              disabled={autoBalancing || (eventEquipment.length === 0 && loads.flatMap(t => t.items || []).length === 0)}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-2 h-9 text-sm"
-              title="Minimize trucks while respecting limits"
-            >
-              {autoBalancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
-              Optimize
-            </Button>
-          </div>
+          {loads.length === 0 && (
+            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              ① Add trucks above → ② Set each truck's type in <strong>Load Split</strong> → ③ Hit <strong>Auto Pack</strong> or <strong>Optimize</strong>
+            </div>
+          )}
         </div>
 
         {/* Quick stats */}
@@ -457,9 +465,9 @@ export default function AIRoads() {
             <div className="text-xs text-gray-400 mt-1">{stats.assignedVolume.toLocaleString()} assigned</div>
           </div>
           <div className="bg-white rounded-lg border p-3">
-            <div className="text-xs text-gray-500">Per Truck Cost</div>
-            <div className="font-bold text-gray-900">${stats.costPerTruck.toFixed(0)}</div>
-            <div className="text-xs text-gray-400 mt-1">{distance * 2} mi round-trip</div>
+            <div className="text-xs text-gray-500">Round-Trip Distance</div>
+            <div className="font-bold text-gray-900">{(distance * 2).toLocaleString()} mi</div>
+            <div className="text-xs text-gray-400 mt-1">{distance} mi each way</div>
           </div>
           <div className="bg-indigo-50 rounded-lg border border-indigo-200 p-3">
             <div className="text-xs text-indigo-600">Total Transport Cost</div>
