@@ -35,35 +35,35 @@ Deno.serve(async (req) => {
       usedVolume: 0,
     }));
 
-    // Bin-packing: place each item in the lightest truck that can fit it
+    // Balanced bin-packing: split large quantities across trucks evenly
     for (const item of sorted) {
-      const qty = item.quantity || 1;
-      const itemWeight = (item.weight || 100) * qty;
-      const itemVolume = (item.volume || 5) * qty;
+      const totalQty = item.quantity || 1;
+      const unitWeight = item.weight || 100;
+      const unitVolume = item.volume || 5;
 
-      let bestTruck = null;
-      let lowestWeight = Infinity;
+      let remaining = totalQty;
 
-      for (const truck of trucks) {
-        const canFitWeight = truck.usedWeight + itemWeight <= spec.weightCapacity;
-        const canFitVolume = truck.usedVolume + itemVolume <= spec.volumeCapacity;
+      while (remaining > 0) {
+        // Always pick the truck with the least used weight (most room)
+        const targetTruck = trucks.reduce((best, t) => t.usedWeight < best.usedWeight ? t : best, trucks[0]);
 
-        if (canFitWeight && canFitVolume && truck.usedWeight < lowestWeight) {
-          lowestWeight = truck.usedWeight;
-          bestTruck = truck;
-        }
+        // Figure out how many units can fit in this truck
+        const weightRoom = Math.max(0, spec.weightCapacity - targetTruck.usedWeight);
+        const volumeRoom = Math.max(0, spec.volumeCapacity - targetTruck.usedVolume);
+        const canFitByWeight = unitWeight > 0 ? Math.floor(weightRoom / unitWeight) : remaining;
+        const canFitByVolume = unitVolume > 0 ? Math.floor(volumeRoom / unitVolume) : remaining;
+        const canFit = Math.min(canFitByWeight, canFitByVolume, remaining);
+
+        const assignQty = canFit > 0 ? canFit : remaining; // overflow: force assign
+        targetTruck.items.push({
+          ...item,
+          quantity: assignQty,
+          id: `${item.equipmentName || item.name}-${targetTruck.id}-${Math.random()}`,
+        });
+        targetTruck.usedWeight += unitWeight * assignQty;
+        targetTruck.usedVolume += unitVolume * assignQty;
+        remaining -= assignQty;
       }
-
-      if (!bestTruck) {
-        // Overflow: just add to the truck with the most remaining capacity
-        bestTruck = trucks.reduce((best, t) =>
-          (spec.weightCapacity - t.usedWeight) > (spec.weightCapacity - best.usedWeight) ? t : best
-        , trucks[0]);
-      }
-
-      bestTruck.items.push({ ...item, quantity: qty, id: item.id || `${item.equipmentName || item.name}-${Date.now()}-${Math.random()}` });
-      bestTruck.usedWeight += itemWeight;
-      bestTruck.usedVolume += itemVolume;
     }
 
     const loads = trucks.map(truck => ({
