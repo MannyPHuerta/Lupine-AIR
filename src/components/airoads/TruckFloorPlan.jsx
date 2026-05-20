@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Printer } from 'lucide-react';
 
 // Truck interior dimensions in feet
 const TRUCK_DIMS = {
@@ -70,6 +71,39 @@ function packItems(items, truckW, truckL) {
   return placements;
 }
 
+function printFloorPlan(truck, dims, fillPct, svgContent, legendItems) {
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Floor Plan – ${truck.name}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        .meta { font-size: 12px; color: #666; margin-bottom: 16px; }
+        .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; font-size: 12px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+        .footer { margin-top: 24px; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 8px; }
+        @media print { body { padding: 12px; } }
+      </style>
+    </head>
+    <body>
+      <h1>${truck.name} – Load Floor Plan</h1>
+      <div class="meta">${dims.width}ft wide × ${dims.length}ft long · ${fillPct}% floor used · Top-down view, cab at top</div>
+      ${svgContent}
+      <div class="legend">
+        ${legendItems.map(p => `<div class="legend-item"><div class="legend-swatch" style="background:${p.color}"></div>${p.label}</div>`).join('')}
+      </div>
+      <div class="footer">Printed ${new Date().toLocaleString()} · AIRoads Load Planner</div>
+      <script>window.onload = () => { window.print(); }<\/script>
+    </body>
+    </html>
+  `);
+  win.document.close();
+}
+
 export default function TruckFloorPlan({ truck, truckType }) {
   const dims = TRUCK_DIMS[truckType] || TRUCK_DIMS['26ft'];
   const SCALE = 10; // pixels per foot
@@ -86,6 +120,14 @@ export default function TruckFloorPlan({ truck, truckType }) {
     : 0;
   const fillPct = Math.round((usedLength / dims.length) * 100);
 
+  const legendItems = [...new Map(placements.map(p => [p.color, p])).values()];
+
+  const handlePrint = () => {
+    const svgEl = document.getElementById(`floorplan-svg-${truck.id}`);
+    const svgContent = svgEl ? svgEl.outerHTML : '';
+    printFloorPlan(truck, dims, fillPct, svgContent, legendItems);
+  };
+
   return (
     <div className="bg-white rounded-xl border shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -93,13 +135,21 @@ export default function TruckFloorPlan({ truck, truckType }) {
           <div className="font-bold text-gray-900">{truck.name}</div>
           <div className="text-xs text-gray-500">{dims.width}ft wide × {dims.length}ft long · {fillPct}% floor used</div>
         </div>
-        <div className="text-xs text-gray-400 italic">Top-down view — cab at top</div>
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-gray-400 italic">Top-down view — cab at top</div>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-600 hover:bg-gray-50 transition"
+          >
+            <Printer className="w-3.5 h-3.5" /> Print
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
         <div className="relative inline-block" style={{ width: W + 24, height: L + 24 }}>
           {/* Truck outline */}
-          <svg width={W + 24} height={L + 24} className="absolute inset-0">
+          <svg id={`floorplan-svg-${truck.id}`} width={W + 24} height={L + 24} className="absolute inset-0">
             {/* Cab indicator */}
             <rect x={8} y={2} width={W} height={12} rx={3} fill="#374151" />
             <text x={8 + W / 2} y={11} textAnchor="middle" fill="white" fontSize={8} fontWeight="bold">CAB</text>
@@ -177,7 +227,7 @@ export default function TruckFloorPlan({ truck, truckType }) {
 
       {/* Legend */}
       <div className="mt-3 flex flex-wrap gap-2">
-        {[...new Map(placements.map(p => [p.color, p])).values()].map(p => (
+        {legendItems.map(p => (
           <div key={p.color} className="flex items-center gap-1 text-xs text-gray-600">
             <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: p.color }} />
             {p.label}
