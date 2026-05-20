@@ -149,46 +149,30 @@ export default function AIRoads() {
     })();
   }, [planId]);
 
-  // Sync loads with numTrucks input
-  useEffect(() => {
-    if (numTrucks > loads.length) {
-      // Add trucks
-      const toAdd = numTrucks - loads.length;
-      const newTrucks = Array.from({ length: toAdd }).map((_, i) => ({
-        id: `truck-${Date.now()}-${i}`,
-        name: `Truck ${loads.length + i + 1}`,
-        type: truckType,
-        items: [],
-      }));
-      setLoads([...loads, ...newTrucks]);
-    } else if (numTrucks < loads.length) {
-      // Remove trucks (move items back to unassigned)
-      const removed = loads.slice(numTrucks);
-      removed.forEach(t => {
-        if (t.items) setEventEquipment(prev => [...prev, ...t.items]);
-      });
-      setLoads(loads.slice(0, numTrucks));
-    }
-  }, [numTrucks]);
+  // Apply numTrucks only when the user explicitly changes it via the +/- controls
+  // (handled directly in handleAddTruck / the number input's onBlur)
 
   const handleAutoBalance = async () => {
-    if (eventEquipment.length === 0) {
+    const allItems = [...eventEquipment, ...loads.flatMap(t => t.items || [])];
+    if (allItems.length === 0) {
       alert('Add equipment first before balancing.');
       return;
     }
     setAutoBalancing(true);
     try {
       const res = await base44.functions.invoke('optimizeLoadDistribution', {
-        equipment: eventEquipment,
+        equipment: allItems,
         numTrucks,
         truckType,
       });
       if (res.data?.loads) {
         setLoads(res.data.loads);
-        setEventEquipment([]); // Clear unassigned after balance
+        setEventEquipment([]);
+      } else {
+        alert('Optimize returned no result.');
       }
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      alert(`Optimize failed: ${err.message}`);
     } finally {
       setAutoBalancing(false);
     }
@@ -418,10 +402,11 @@ export default function AIRoads() {
                 onChange={e => setNumTrucks(parseInt(e.target.value) || 1)}
                 className="flex-1 h-9 text-sm"
               />
-              <Button size="sm" variant="outline" onClick={handleAddTruck} className="px-2">
+              <Button size="sm" variant="outline" onClick={handleAddTruck} className="px-2" title="Add truck">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
+            <div className="text-xs text-gray-400 mt-1">{loads.length} truck(s) active</div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-2">Distance (miles)</label>
