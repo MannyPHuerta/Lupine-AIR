@@ -152,9 +152,9 @@ export default function LoadPlanner({
               >
                 {truck.items?.length === 0 ? null : (
                   <div className="w-full flex flex-wrap gap-2">
-                    {truck.items?.map(item => (
+                    {truck.items?.map((item, idx) => (
                       <EquipmentItem
-                        key={item.id}
+                        key={item.id || `${truck.id}-item-${idx}`}
                         item={item}
                         onDragStart={e => handleDragStart(e, item, 'truck', truck.id)}
                       />

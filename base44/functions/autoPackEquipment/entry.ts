@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         , trucks[0]);
       }
 
-      bestTruck.items.push({ ...item, quantity: qty });
+      bestTruck.items.push({ ...item, quantity: qty, id: item.id || `${item.equipmentName || item.name}-${Date.now()}-${Math.random()}` });
       bestTruck.usedWeight += itemWeight;
       bestTruck.usedVolume += itemVolume;
     }
