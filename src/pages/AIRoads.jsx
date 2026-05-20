@@ -11,6 +11,7 @@ import ShippingLabels from '@/components/airoads/ShippingLabels';
 import TransitScanner from '@/components/airoads/TransitScanner';
 import LabelStockSelector from '@/components/airoads/LabelStockSelector';
 import JobPLPanel from '@/components/airoads/JobPLPanel';
+import FleetCostNudge from '@/components/airoads/FleetCostNudge';
 import PremiumGate from '@/components/premium/PremiumGate';
 
 const TRUCK_SPECS = {
@@ -465,6 +466,9 @@ export default function AIRoads() {
             </div>
           )}
         </div>
+
+        {/* Fleet cost nudge */}
+        <FleetCostNudge loads={loads} eventEquipment={eventEquipment} distance={distance} />
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
