@@ -398,13 +398,27 @@ export default function AIRoads() {
                 Trucks <span className="font-normal text-gray-400">— set type per truck in Load Split</span>
               </label>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-2 flex-1">
-                  <span className="text-lg font-bold text-gray-900">{loads.length}</span>
-                  <span className="text-sm text-gray-500">truck{loads.length !== 1 ? 's' : ''} configured</span>
+                <button
+                  onClick={() => {
+                    if (loads.length > 1) {
+                      const last = loads[loads.length - 1];
+                      if (last.items?.length) {
+                        setEventEquipment(prev => [...prev, ...last.items]);
+                      }
+                      setLoads(loads.slice(0, -1));
+                    }
+                  }}
+                  disabled={loads.length <= 1}
+                  className="w-9 h-9 rounded-lg border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-lg font-bold"
+                >−</button>
+                <div className="flex-1 text-center">
+                  <span className="text-2xl font-bold text-gray-900">{loads.length}</span>
+                  <div className="text-xs text-gray-400">truck{loads.length !== 1 ? 's' : ''}</div>
                 </div>
-                <Button size="sm" variant="outline" onClick={handleAddTruck} className="gap-1 h-9">
-                  <Plus className="w-4 h-4" /> Add
-                </Button>
+                <button
+                  onClick={handleAddTruck}
+                  className="w-9 h-9 rounded-lg border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold"
+                >+</button>
               </div>
             </div>
             {/* Distance */}
