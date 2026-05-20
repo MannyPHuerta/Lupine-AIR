@@ -392,9 +392,10 @@ function DeliveryCard({ delivery, onSelect, onMarkReceived, markingReceived, cur
   const isLoading = markingReceived === delivery.id;
   const alreadyReceived = !!delivery.receivedAt;
   const isTeamDelivery = delivery.teamDrivers?.length > 1;
+  const scheduleChanged = !!delivery.scheduleChangedAt;
 
   return (
-    <div className={`border rounded-lg p-4 transition-all ${statusClass}`}>
+    <div className={`border rounded-lg p-4 transition-all ${scheduleChanged ? 'border-red-400 animate-flash' : statusClass}`}>
       <button onClick={onSelect} className="w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -411,6 +412,12 @@ function DeliveryCard({ delivery, onSelect, onMarkReceived, markingReceived, cur
               <div className="text-xs opacity-75 mt-1 flex items-center gap-1">
                 <Users className="w-3 h-3" />
                 Team: {delivery.teamDrivers.map(t => t.driverName).join(', ')}
+              </div>
+            )}
+            {delivery.scheduleChangedAt && (
+              <div className="text-xs mt-1 flex items-center gap-1 font-bold text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">
+                ⚠️ SCHEDULE CHANGED — was {delivery.previousScheduledDate || '?'}{delivery.previousScheduledTime ? ` ${delivery.previousScheduledTime}` : ''}
+                <span className="font-normal text-red-500 ml-1">→ now {delivery.scheduledDate}{delivery.scheduledTime ? ` ${delivery.scheduledTime}` : ''}</span>
               </div>
             )}
             {delivery.assignedAt && (

@@ -36,7 +36,12 @@ export default function PricingEditor() {
   const saveEquipment = async (id) => {
     setSaving(prev => ({ ...prev, [id]: true }));
     try {
-      const updates = edited[id];
+      const me = await base44.auth.me();
+      const updates = {
+        ...edited[id],
+        priceChangedAt: new Date().toISOString(),
+        priceChangedBy: me?.email || 'manager',
+      };
       await base44.entities.Equipment.update(id, updates);
       setEdited(prev => {
         const next = { ...prev };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map, CalendarClock, Check, X } from 'lucide-react';
 import DispatchMap from '@/components/dispatch/DispatchMap';
 import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
 import { getCached, setCached } from '@/lib/geocodeCache';
@@ -231,6 +231,7 @@ export default function DispatchBoard() {
                     driverLocations={driverLocations}
                     onSelect={(item) => navigate(`/delivery/${item.id}`)}
                     statusColors={DELIVERY_STATUS_COLORS}
+                    onRefresh={load}
                   />
                 ))
               )
@@ -249,6 +250,7 @@ export default function DispatchBoard() {
                     driverLocations={driverLocations}
                     onSelect={(item) => navigate(`/recovery/${item.id}`)}
                     statusColors={RECOVERY_STATUS_COLORS}
+                    onRefresh={load}
                   />
                 ))
               )
@@ -260,7 +262,59 @@ export default function DispatchBoard() {
   );
 }
 
-function DriverGroup({ driverName, driverId, items, type, driverLocations, onSelect, statusColors }) {
+function ScheduleEditInline({ item, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [newDate, setNewDate] = useState(item.scheduledDate || '');
+  const [newTime, setNewTime] = useState(item.scheduledTime || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!newDate) return;
+    setSaving(true);
+    const me = await base44.auth.me();
+    await base44.entities.Delivery.update(item.id, {
+      scheduledDate: newDate,
+      scheduledTime: newTime,
+      previousScheduledDate: item.scheduledDate,
+      previousScheduledTime: item.scheduledTime || '',
+      scheduleChangedAt: new Date().toISOString(),
+      scheduleChangedBy: me?.email || 'manager',
+    });
+    setSaving(false);
+    setEditing(false);
+    onSaved();
+  };
+
+  if (!editing) {
+    return (
+      <button
+        onClick={e => { e.stopPropagation(); setEditing(true); }}
+        className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 ml-2 flex-shrink-0"
+        title="Reschedule"
+      >
+        <CalendarClock className="w-3 h-3" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1 ml-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+      <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+        className="text-xs border rounded px-1 py-0.5 w-28" />
+      <input type="text" placeholder="Time" value={newTime} onChange={e => setNewTime(e.target.value)}
+        className="text-xs border rounded px-1 py-0.5 w-20" />
+      <button onClick={handleSave} disabled={saving || !newDate}
+        className="p-0.5 text-green-600 hover:text-green-800 disabled:opacity-50">
+        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+      </button>
+      <button onClick={() => setEditing(false)} className="p-0.5 text-gray-400 hover:text-gray-600">
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+function DriverGroup({ driverName, driverId, items, type, driverLocations, onSelect, statusColors, onRefresh }) {
   const completed = items.filter(i => i.status === 'completed').length;
   const driverLoc = driverLocations.find(d => d.driverEmail === driverId);
 
@@ -278,22 +332,29 @@ function DriverGroup({ driverName, driverId, items, type, driverLocations, onSel
       </div>
       <div className="divide-y">
         {items.map(item => (
-          <button
+          <div
             key={item.id}
-            onClick={() => onSelect(item)}
-            className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center justify-between gap-3"
+            className={`px-4 py-3 transition flex items-center justify-between gap-3 ${item.scheduleChangedAt ? 'bg-red-50' : 'hover:bg-gray-50'}`}
           >
-            <div className="min-w-0">
+            <button onClick={() => onSelect(item)} className="flex-1 text-left min-w-0">
               <div className="font-medium text-sm text-gray-900">{item.customerName}</div>
               <div className="text-xs text-gray-500 mt-0.5">
                 {item.customerCity}, {item.customerState}
                 {item.scheduledTime ? ` · ${item.scheduledTime}` : ''}
               </div>
+              {item.scheduleChangedAt && (
+                <div className="text-xs text-red-600 font-semibold mt-0.5">⚠️ Schedule changed</div>
+              )}
+            </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                {item.status.replace(/_/g, ' ')}
+              </span>
+              {type === 'delivery' && !['completed', 'departed', 'arrived', 'setup_complete', 'signed', 'cancelled'].includes(item.status) && (
+                <ScheduleEditInline item={item} onSaved={onRefresh} />
+              )}
             </div>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${statusColors[item.status] || 'bg-gray-100 text-gray-600'}`}>
-              {item.status.replace(/_/g, ' ')}
-            </span>
-          </button>
+          </div>
         ))}
       </div>
       {/* Route optimizer — only shows if ≥2 stops have geocoded coords */}

@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import BranchMismatchBadge from '@/components/BranchMismatchBadge';
 import {
   Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
-  Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft, ChevronLeft, ChevronRight
+  Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft, ChevronLeft, ChevronRight,
+  Tag, CalendarClock
 } from 'lucide-react';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
@@ -145,6 +146,7 @@ export default function DailyOps() {
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
+  const [allEquipment, setAllEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState('All Branches');
   const [user, setUser] = useState(null);
@@ -162,6 +164,7 @@ export default function DailyOps() {
     setUser(me);
     setRentals(r);
     setEquipment(eq);
+    setAllEquipment(eq);
     setDeliveries(dels);
     const stored = localStorage.getItem('workingBranch');
     setWorkingBranch(stored);
@@ -230,6 +233,21 @@ export default function DailyOps() {
   const handleTransferDone = useCallback((rentalId, field) => {
     setRentals(prev => prev.map(r => r.id === rentalId ? { ...r, [field]: true } : r));
   }, []);
+
+  // Price changes in last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const recentPriceChanges = useMemo(() =>
+    allEquipment.filter(e => e.priceChangedAt && e.priceChangedAt > sevenDaysAgo)
+      .sort((a, b) => b.priceChangedAt.localeCompare(a.priceChangedAt)),
+  [allEquipment]);
+
+  // Schedule-changed deliveries (not yet departed/completed)
+  const scheduleChangedDeliveries = useMemo(() =>
+    deliveries.filter(d =>
+      d.scheduleChangedAt &&
+      !['completed', 'cancelled', 'departed', 'arrived', 'setup_complete', 'signed'].includes(d.status)
+    ).sort((a, b) => b.scheduleChangedAt.localeCompare(a.scheduleChangedAt)),
+  [deliveries]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -330,6 +348,72 @@ export default function DailyOps() {
             </button>
           ))}
         </div>
+
+        {/* Schedule Change Alerts */}
+        {scheduleChangedDeliveries.length > 0 && (
+          <div className="bg-white border-2 border-red-400 rounded-xl shadow-sm overflow-hidden">
+            <SectionHeader
+              icon={<CalendarClock className="w-4 h-4" />}
+              label="⚠️ Delivery Schedule Changed — Drivers Must Be Notified"
+              count={scheduleChangedDeliveries.length}
+              color="bg-red-600 text-white"
+            />
+            {scheduleChangedDeliveries.map(d => (
+              <div
+                key={d.id}
+                className="flex items-start gap-3 px-4 py-3 border-b last:border-0 cursor-pointer hover:bg-red-50"
+                onClick={() => navigate(`/delivery/${d.id}`)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-red-900 text-sm">{d.customerName}</div>
+                  <div className="text-xs text-red-700 font-medium mt-0.5">
+                    Was: {d.previousScheduledDate || '?'}{d.previousScheduledTime ? ` @ ${d.previousScheduledTime}` : ''}
+                    &nbsp;→&nbsp;
+                    Now: <strong>{d.scheduledDate}{d.scheduledTime ? ` @ ${d.scheduledTime}` : ''}</strong>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {d.branch} · Driver: {d.driverName || 'Unassigned'}
+                    {d.scheduleChangedBy && <span> · Changed by {d.scheduleChangedBy.split('@')[0]}</span>}
+                  </div>
+                </div>
+                {d.customerPhone && (
+                  <a href={`tel:${d.customerPhone}`} onClick={e => e.stopPropagation()}
+                    className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 flex-shrink-0">
+                    <Phone className="w-3 h-3" /> Call
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Price Change Broadcast */}
+        {recentPriceChanges.length > 0 && (
+          <div className="bg-white border border-amber-300 rounded-xl shadow-sm overflow-hidden">
+            <SectionHeader
+              icon={<Tag className="w-4 h-4" />}
+              label="Price Updates (Last 7 Days)"
+              count={recentPriceChanges.length}
+              color="bg-amber-500 text-white"
+            />
+            {recentPriceChanges.map(eq => (
+              <div key={eq.id} className="flex items-center gap-3 px-4 py-3 border-b last:border-0">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 text-sm truncate">{eq.name}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {eq.category} · {eq.location}
+                    {eq.priceChangedBy && <span> · Updated by {eq.priceChangedBy.split('@')[0]}</span>}
+                  </div>
+                </div>
+                <div className="flex gap-3 flex-shrink-0 text-xs">
+                  {eq.dailyRate != null && <span className="text-gray-700">Day: <strong>${eq.dailyRate}</strong></span>}
+                  {eq.weeklyRate != null && <span className="text-gray-700">Wk: <strong>${eq.weeklyRate}</strong></span>}
+                  {eq.monthlyRate != null && <span className="text-gray-700">Mo: <strong>${eq.monthlyRate}</strong></span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Going Out Today */}
         <div className="bg-white border rounded-xl shadow-sm overflow-hidden">

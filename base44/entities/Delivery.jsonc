@@ -94,7 +94,7 @@
     "isCrossTransfer": {
       "type": "boolean",
       "default": false,
-      "description": "True when this delivery is a cross-branch equipment transfer (not a customer delivery)"
+      "description": "True when this delivery is a cross-branch equipment transfer"
     },
     "destinationBranch": {
       "type": "string",
@@ -147,6 +147,22 @@
     "scheduledTime": {
       "type": "string",
       "description": "Scheduled delivery time window (e.g. 10am-12pm)"
+    },
+    "scheduleChangedAt": {
+      "type": "string",
+      "description": "ISO timestamp when schedule was last changed by a manager"
+    },
+    "scheduleChangedBy": {
+      "type": "string",
+      "description": "Email of manager who changed the schedule"
+    },
+    "previousScheduledDate": {
+      "type": "string",
+      "description": "Previous scheduled date before the last change"
+    },
+    "previousScheduledTime": {
+      "type": "string",
+      "description": "Previous scheduled time before the last change"
     },
     "departedAt": {
       "type": "string",

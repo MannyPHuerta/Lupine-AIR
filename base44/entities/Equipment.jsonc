@@ -17,11 +17,11 @@
     "consumable": {
       "type": "boolean",
       "default": false,
-      "description": "If true, this item can be sold at the counter without a rental contract (e.g. fuel, small supplies). Non-consumables require the full /availability rental form."
+      "description": "If true, this item can be sold at the counter without a rental contract"
     },
     "rentalAlert": {
       "type": "string",
-      "description": "\u26a0\ufe0f Counter alert shown when this item is selected \u2014 use for required add-ons, special instructions, or warnings (e.g. 'Requires 50ft extension cord for spans over 25ft')"
+      "description": "\u26a0\ufe0f Counter alert shown when this item is selected"
     },
     "dailyRate": {
       "type": "number",
@@ -46,11 +46,11 @@
     },
     "footprintWidth": {
       "type": "number",
-      "description": "Width of equipment footprint in feet (overrides category default)"
+      "description": "Width of equipment footprint in feet"
     },
     "footprintLength": {
       "type": "number",
-      "description": "Length of equipment footprint in feet (overrides category default)"
+      "description": "Length of equipment footprint in feet"
     },
     "status": {
       "type": "string",
@@ -104,7 +104,7 @@
     },
     "specs": {
       "type": "object",
-      "description": "Per-unit technical specifications (key-value pairs, varies by category)",
+      "description": "Per-unit technical specifications",
       "additionalProperties": true
     },
     "condition": {
@@ -151,7 +151,7 @@
     },
     "usefulLifeYears": {
       "type": "number",
-      "description": "Expected useful life in years (for depreciation calculation)"
+      "description": "Expected useful life in years"
     },
     "salvageValue": {
       "type": "number",
@@ -161,32 +161,32 @@
     "depreciationStartDate": {
       "type": "string",
       "format": "date",
-      "description": "Date depreciation begins (defaults to purchaseDate if not set)"
+      "description": "Date depreciation begins"
     },
     "serialized": {
       "type": "boolean",
       "default": true,
-      "description": "True = tracked individually with serial numbers (generators). False = bulk items tracked by qty (chairs, tables)"
+      "description": "True = tracked individually with serial numbers"
     },
     "bulkQuantity": {
       "type": "integer",
       "default": 1,
-      "description": "For bulk items (serialized=false), the quantity of this item available"
+      "description": "For bulk items, the quantity available"
     },
     "bufferDays": {
       "type": "integer",
       "default": 0,
-      "description": "Minimum days between rentals (e.g. 1 = must sit idle 1 day between rentals for cleaning/maintenance)"
+      "description": "Minimum days between rentals"
     },
     "allowOverbook": {
       "type": "boolean",
       "default": false,
-      "description": "Whether this item can be overbooked (reserved beyond available units)"
+      "description": "Whether this item can be overbooked"
     },
     "maxOverbookPercent": {
       "type": "number",
       "default": 0,
-      "description": "Max overbooking allowed as percentage (e.g. 10 = can overbook by 10%)"
+      "description": "Max overbooking allowed as percentage"
     },
     "dependencies": {
       "type": "array",
@@ -213,6 +213,14 @@
         ]
       },
       "description": "Items that should be suggested when this equipment is ordered"
+    },
+    "priceChangedAt": {
+      "type": "string",
+      "description": "ISO timestamp when pricing was last updated by management"
+    },
+    "priceChangedBy": {
+      "type": "string",
+      "description": "Email of manager who last changed the price"
     }
   },
   "required": [
