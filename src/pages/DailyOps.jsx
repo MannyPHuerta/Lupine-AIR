@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import BranchMismatchBadge from '@/components/BranchMismatchBadge';
+import ScheduleEditInline from '@/components/delivery/ScheduleEditInline';
 import {
   Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
   Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft, ChevronLeft, ChevronRight,
@@ -361,10 +362,9 @@ export default function DailyOps() {
             {scheduleChangedDeliveries.map(d => (
               <div
                 key={d.id}
-                className="flex items-start gap-3 px-4 py-3 border-b last:border-0 cursor-pointer hover:bg-red-50"
-                onClick={() => navigate(`/delivery/${d.id}`)}
+                className="flex items-start gap-3 px-4 py-3 border-b last:border-0 hover:bg-red-50"
               >
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/delivery/${d.id}`)}>
                   <div className="font-semibold text-red-900 text-sm">{d.customerName}</div>
                   <div className="text-xs text-red-700 font-medium mt-0.5">
                     Was: {d.previousScheduledDate || '?'}{d.previousScheduledTime ? ` @ ${d.previousScheduledTime}` : ''}
@@ -376,12 +376,15 @@ export default function DailyOps() {
                     {d.scheduleChangedBy && <span> · Changed by {d.scheduleChangedBy.split('@')[0]}</span>}
                   </div>
                 </div>
-                {d.customerPhone && (
-                  <a href={`tel:${d.customerPhone}`} onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 flex-shrink-0">
-                    <Phone className="w-3 h-3" /> Call
-                  </a>
-                )}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <ScheduleEditInline delivery={d} onSaved={load} />
+                  {d.customerPhone && (
+                    <a href={`tel:${d.customerPhone}`} onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800">
+                      <Phone className="w-3 h-3" /> Call
+                    </a>
+                  )}
+                </div>
               </div>
             ))}
           </div>

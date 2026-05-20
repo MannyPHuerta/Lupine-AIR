@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map, CalendarClock, Check, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map } from 'lucide-react';
 import DispatchMap from '@/components/dispatch/DispatchMap';
 import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
+import ScheduleEditInline from '@/components/delivery/ScheduleEditInline';
 import { getCached, setCached } from '@/lib/geocodeCache';
 
 const DELIVERY_STATUS_COLORS = {
@@ -262,58 +263,6 @@ export default function DispatchBoard() {
   );
 }
 
-function ScheduleEditInline({ item, onSaved }) {
-  const [editing, setEditing] = useState(false);
-  const [newDate, setNewDate] = useState(item.scheduledDate || '');
-  const [newTime, setNewTime] = useState(item.scheduledTime || '');
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!newDate) return;
-    setSaving(true);
-    const me = await base44.auth.me();
-    await base44.entities.Delivery.update(item.id, {
-      scheduledDate: newDate,
-      scheduledTime: newTime,
-      previousScheduledDate: item.scheduledDate,
-      previousScheduledTime: item.scheduledTime || '',
-      scheduleChangedAt: new Date().toISOString(),
-      scheduleChangedBy: me?.email || 'manager',
-    });
-    setSaving(false);
-    setEditing(false);
-    onSaved();
-  };
-
-  if (!editing) {
-    return (
-      <button
-        onClick={e => { e.stopPropagation(); setEditing(true); }}
-        className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 ml-2 flex-shrink-0"
-        title="Reschedule"
-      >
-        <CalendarClock className="w-3 h-3" />
-      </button>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-1 ml-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
-      <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-        className="text-xs border rounded px-1 py-0.5 w-28" />
-      <input type="text" placeholder="Time" value={newTime} onChange={e => setNewTime(e.target.value)}
-        className="text-xs border rounded px-1 py-0.5 w-20" />
-      <button onClick={handleSave} disabled={saving || !newDate}
-        className="p-0.5 text-green-600 hover:text-green-800 disabled:opacity-50">
-        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-      </button>
-      <button onClick={() => setEditing(false)} className="p-0.5 text-gray-400 hover:text-gray-600">
-        <X className="w-3 h-3" />
-      </button>
-    </div>
-  );
-}
-
 function DriverGroup({ driverName, driverId, items, type, driverLocations, onSelect, statusColors, onRefresh }) {
   const completed = items.filter(i => i.status === 'completed').length;
   const driverLoc = driverLocations.find(d => d.driverEmail === driverId);
@@ -351,7 +300,7 @@ function DriverGroup({ driverName, driverId, items, type, driverLocations, onSel
                 {item.status.replace(/_/g, ' ')}
               </span>
               {type === 'delivery' && !['completed', 'departed', 'arrived', 'setup_complete', 'signed', 'cancelled'].includes(item.status) && (
-                <ScheduleEditInline item={item} onSaved={onRefresh} />
+                <ScheduleEditInline delivery={item} onSaved={onRefresh} />
               )}
             </div>
           </div>
