@@ -3,56 +3,27 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 /**
  * Topaz SigWeb signature pad (LBK462-HSB) with mouse/touch fallback.
  *
- * Detection strategy:
- * - Load SigWebTablet.js from the LOCAL service (https://tablet.sigwebtablet.com:47290/)
- *   so Chrome's Private Network Access permission carries over to XHR calls.
- * - Call SetTabletState(1) and SigWebSetDisplayTarget(ctx).
- * - SigWeb fires window.tmSignUpdate repeatedly while the pad is active.
- *   The very first tmSignUpdate callback confirms the pad is connected.
- * - If no tmSignUpdate fires within PROBE_TIMEOUT_MS, fall back to mouse/touch.
+ * The SigWebTablet.js library uses synchronous XHR to localhost:47290.
+ * Chrome blocks these from HTTPS pages via Private Network Access (PNA) policy.
+ * The ONLY workaround for a hosted HTTPS app:
+ *   - The user must visit https://tablet.sigwebtablet.com:47290/ once to accept
+ *     the self-signed cert, which whitelists the origin in Chrome's PNA.
+ * 
+ * Detection: use IsSigWebInstalled() which does a sync XHR to TabletState.
+ * If it returns true, activate the pad and poll with SigWebRefresh().
  */
 
 const SIGWEB_LOCAL_URL = 'https://tablet.sigwebtablet.com:47290/SigWebTablet.js';
 const SIGWEB_CDN_URL   = 'https://www.sigplusweb.com/SigWebTablet.js';
-const PROBE_TIMEOUT_MS = 10000;
 
-function loadSigWebScript() {
+function loadSigWebScript(src) {
   return new Promise((resolve, reject) => {
-    // Already loaded
-    if (window.SetTabletState && window.SigWebSetDisplayTarget) { resolve(); return; }
-
-    // Script tag already injected — wait for it
-    const existing = document.querySelector('script[data-sigweb]');
-    if (existing) {
-      if (window.SetTabletState) { resolve(); return; }
-      existing.addEventListener('load', resolve);
-      existing.addEventListener('error', reject);
-      return;
-    }
-
-    const inject = (src, fallback) => {
-      const s = document.createElement('script');
-      s.setAttribute('data-sigweb', '1');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = () => {
-        s.remove();
-        if (fallback) {
-          const s2 = document.createElement('script');
-          s2.setAttribute('data-sigweb', '1');
-          s2.src = fallback;
-          s2.onload = resolve;
-          s2.onerror = () => reject(new Error('SigWeb script unreachable'));
-          document.head.appendChild(s2);
-        } else {
-          reject(new Error('SigWeb script unreachable'));
-        }
-      };
-      document.head.appendChild(s);
-    };
-
-    // Load from local first — required for PNA permission
-    inject(SIGWEB_LOCAL_URL, SIGWEB_CDN_URL);
+    const s = document.createElement('script');
+    s.setAttribute('data-sigweb', '1');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(`Failed to load: ${src}`));
+    document.head.appendChild(s);
   });
 }
 
@@ -62,93 +33,100 @@ export default function SignaturePad({ onSave, onClear }) {
   const [isEmpty, setIsEmpty] = useState(true);
   // 'checking' | 'active' | 'fallback' | 'trust_needed'
   const [sigwebStatus, setSigwebStatus] = useState('checking');
-  const [sigwebError, setSigwebError] = useState('');
   const lastPos = useRef(null);
-  const probeTimer = useRef(null);
-  const confirmedRef = useRef(false);
+  const refreshTimer = useRef(null);
 
-  // ── Size canvas to its container ────────────────────────────────────────────
+  // ── Size canvas to container ─────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const size = () => {
-      canvas.width  = canvas.offsetWidth;
-      canvas.height = 140;
-    };
-    size();
-    window.addEventListener('resize', size);
-    return () => window.removeEventListener('resize', size);
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = 140; };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
   }, []);
 
-  // ── Activate SigWeb pad ─────────────────────────────────────────────────────
+  // ── Activate SigWeb ──────────────────────────────────────────────────────
   useEffect(() => {
     let active = true;
 
     (async () => {
-      try {
-        await loadSigWebScript();
-        if (!active) return;
-
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-
-        // SigWeb draws the signature into this canvas context
-        window.SigWebSetDisplayTarget(ctx);
-
-        // tmSignUpdate is the callback SigWeb calls on every pen sample.
-        // This is the ONLY reliable way to know the pad is alive.
-        window.tmSignUpdate = () => {
-          if (!active) return;
-          if (!confirmedRef.current) {
-            confirmedRef.current = true;
-            clearTimeout(probeTimer.current);
-            setSigwebStatus('active');
-          }
-          // If there are points, the canvas is no longer empty
+      // 1. Try loading JS from LOCAL SigWeb service first.
+      //    If this fails, the cert hasn't been trusted yet.
+      const alreadyLoaded = !!(window.IsSigWebInstalled && window.SetTabletState);
+      
+      if (!alreadyLoaded) {
+        // Remove any old script tag
+        document.querySelectorAll('script[data-sigweb]').forEach(s => s.remove());
+        try {
+          await loadSigWebScript(SIGWEB_LOCAL_URL);
+        } catch {
+          // Local failed — cert not trusted. Fall back to CDN load but note trust issue.
           try {
-            const pts = window.NumberOfTabletPoints ? window.NumberOfTabletPoints() : 0;
-            if (pts > 0) setSigEmpty(false);
-          } catch {}
-        };
-
-        // Also hook into the display refresh so signature strokes render
-        window.SigWebSetDisplayXSize && window.SigWebSetDisplayXSize(canvas.width);
-        window.SigWebSetDisplayYSize && window.SigWebSetDisplayYSize(canvas.height);
-
-        // Activate the pad
-        try { window.ClearTablet(); } catch {}
-        window.SetTabletState(1, window.tmSignUpdate, 50);
-
-        // Fallback timeout — if tmSignUpdate never fires, the pad isn't connected
-        probeTimer.current = setTimeout(() => {
-          if (!confirmedRef.current && active) {
-            try { window.SetTabletState(0); } catch {}
-            setSigwebStatus('fallback');
-            setSigwebError('No response from Topaz pad after 10 seconds.');
+            await loadSigWebScript(SIGWEB_CDN_URL);
+            // CDN loaded OK but XHR to localhost will still be blocked.
+            // We'll try anyway and surface trust_needed if it fails.
+          } catch {
+            if (active) setSigwebStatus('fallback');
+            return;
           }
-        }, PROBE_TIMEOUT_MS);
-
-      } catch (err) {
-        if (!active) return;
-        const msg = err.message || '';
-        setSigwebStatus(msg.includes('unreachable') ? 'trust_needed' : 'fallback');
-        setSigwebError(msg);
+        }
       }
+
+      if (!active) return;
+
+      // 2. Check if SigWeb service is actually running & responding.
+      //    IsSigWebInstalled() uses a synchronous XHR — it will throw or return false
+      //    if Chrome's PNA blocks it.
+      let installed = false;
+      try {
+        installed = window.IsSigWebInstalled ? window.IsSigWebInstalled() : false;
+      } catch (e) {
+        console.warn('[SignaturePad] IsSigWebInstalled threw:', e);
+      }
+
+      if (!installed) {
+        if (active) {
+          // If local script loaded but sync XHR failed → cert not trusted
+          setSigwebStatus('trust_needed');
+        }
+        return;
+      }
+
+      // 3. Pad is reachable — set up canvas and start signing session
+      const canvas = canvasRef.current;
+      if (!canvas || !active) return;
+      const ctx = canvas.getContext('2d');
+
+      try { window.ClearTablet(); } catch {}
+      try { window.SetTabletState(1); } catch {}
+      try { window.SigWebSetDisplayTarget(ctx); } catch {}
+
+      // 4. Poll with SigWebRefresh every 200ms — it draws strokes onto our canvas
+      let lastPts = 0;
+      refreshTimer.current = setInterval(() => {
+        if (!active) return;
+        try {
+          window.SigWebRefresh();
+          const pts = window.NumberOfTabletPoints ? window.NumberOfTabletPoints() : 0;
+          if (pts !== lastPts) {
+            lastPts = pts;
+            if (pts > 0) setIsEmpty(false);
+          }
+        } catch {}
+      }, 200);
+
+      if (active) setSigwebStatus('active');
     })();
 
     return () => {
       active = false;
-      clearTimeout(probeTimer.current);
+      clearInterval(refreshTimer.current);
       try { if (window.SetTabletState) window.SetTabletState(0); } catch {}
-      if (window.tmSignUpdate) window.tmSignUpdate = null;
     };
   }, []);
 
-  // Helper — avoids stale closure issue in tmSignUpdate
-  function setSigEmpty(val) { setIsEmpty(val); }
-
-  // ── Mouse / touch fallback drawing ─────────────────────────────────────────
+  // ── Mouse / touch fallback ───────────────────────────────────────────────
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const src = e.touches ? e.touches[0] : e;
@@ -181,7 +159,7 @@ export default function SignaturePad({ onSave, onClear }) {
 
   const stopDraw = useCallback(() => { setDrawing(false); lastPos.current = null; }, []);
 
-  // ── Clear ───────────────────────────────────────────────────────────────────
+  // ── Clear ────────────────────────────────────────────────────────────────
   const handleClear = () => {
     const c = canvasRef.current;
     c.getContext('2d').clearRect(0, 0, c.width, c.height);
@@ -190,7 +168,7 @@ export default function SignaturePad({ onSave, onClear }) {
     if (onClear) onClear();
   };
 
-  // ── Accept ──────────────────────────────────────────────────────────────────
+  // ── Accept ───────────────────────────────────────────────────────────────
   const handleAccept = () => {
     if (isEmpty) return;
     if (sigwebStatus === 'active' && window.GetSigImageB64) {
@@ -261,9 +239,9 @@ export default function SignaturePad({ onSave, onClear }) {
           {sigwebStatus === 'trust_needed' ? (
             <>
               <p className="text-amber-700">
-                SigWeb is installed but <strong>Chrome hasn't trusted the local cert yet.</strong>
+                SigWeb is running but <strong>Chrome is blocking access</strong> to the local pad service.
+                One-time fix:
               </p>
-              <p className="text-amber-700 font-medium">One-time setup:</p>
               <ol className="list-decimal ml-4 space-y-1.5 text-amber-700">
                 <li>
                   <button
@@ -279,27 +257,21 @@ export default function SignaturePad({ onSave, onClear }) {
                   </button>
                 </li>
                 <li>Click <strong>Advanced</strong> → <strong>Proceed to tablet.sigwebtablet.com (unsafe)</strong></li>
-                <li>Close that tab — this page will reload automatically.</li>
+                <li>Close that tab — this page reloads automatically.</li>
               </ol>
               <p className="text-amber-600">You only need to do this once per browser / PC.</p>
             </>
           ) : (
-            <>
-              <p className="text-amber-700">
-                Make sure SigWeb is running (check system tray), then{' '}
-                <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-medium">
-                  reload this page
-                </button>.
-              </p>
-              <p className="text-amber-600">
-                Need the one-time cert setup?{' '}
-                <button onClick={() => setSigwebStatus('trust_needed')} className="underline text-indigo-600">
-                  Show instructions
-                </button>
-              </p>
-            </>
+            <p className="text-amber-700">
+              Make sure SigWeb is running (check system tray), then{' '}
+              <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-medium">
+                reload this page
+              </button>.{' '}
+              <button onClick={() => setSigwebStatus('trust_needed')} className="underline text-indigo-600">
+                Need cert setup?
+              </button>
+            </p>
           )}
-          {sigwebError && <p className="text-red-500 font-mono text-xs mt-1 break-all">{sigwebError}</p>}
         </div>
       )}
     </div>
