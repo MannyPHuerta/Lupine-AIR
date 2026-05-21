@@ -240,27 +240,35 @@ export default function SignaturePad({ onSave, onClear }) {
           </p>
           <ol className="list-decimal ml-4 space-y-2 text-amber-700">
             <li>
-              Copy this address and paste it into a new Chrome tab:&nbsp;
+              Open a <strong>new Chrome tab</strong>, click the address bar, and <strong>manually type</strong> (do not paste from a link):<br />
+              <code className="bg-white border border-amber-300 rounded px-2 py-0.5 text-amber-900 font-mono select-all block mt-1">
+                chrome://settings/content/localNetworkAccess
+              </code>
               <button
-                onClick={() => { navigator.clipboard.writeText('chrome://settings/content/localNetworkAccess'); }}
-                className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded px-2 py-0.5"
+                onClick={() => navigator.clipboard.writeText('chrome://settings/content/localNetworkAccess')}
+                className="mt-1 inline-flex items-center gap-1 border border-indigo-300 text-indigo-600 hover:bg-indigo-50 rounded px-2 py-0.5 text-xs"
               >
-                📋 Copy chrome://settings/content/localNetworkAccess
+                📋 Copy to clipboard
               </button>
             </li>
             <li>Under <strong>"Allowed to connect to any device on your local network"</strong>, click <strong>Add</strong>.</li>
-            <li>Enter <strong>{window.location.origin}</strong> and click <strong>Add</strong>.</li>
+            <li>
+              Enter this app's URL and click <strong>Add</strong>:<br />
+              <code className="bg-white border border-amber-300 rounded px-2 py-0.5 text-amber-900 font-mono select-all block mt-1">
+                {window.location.origin}
+              </code>
+            </li>
             <li>
               <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-semibold">
                 Reload this page
               </button>
-              {' '}— the pad should now connect.
+              {' '}— the Topaz pad should now connect.
             </li>
           </ol>
           <p className="text-amber-600 mt-1">
-            <strong>Alternative (temporary):</strong> In Chrome go to{' '}
-            <code className="bg-amber-100 px-1 rounded">chrome://flags/#local-network-access-check</code>
-            , set it to <strong>Disabled</strong>, and restart Chrome.
+            <strong>Quickest fix:</strong> Open a new tab, type{' '}
+            <code className="bg-amber-100 px-1 rounded font-mono">chrome://flags/#local-network-access-check</code>
+            , set it to <strong>Disabled</strong>, restart Chrome, then reload this page.
           </p>
         </div>
       )}
