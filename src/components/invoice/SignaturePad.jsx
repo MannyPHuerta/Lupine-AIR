@@ -67,7 +67,7 @@ export default function SignaturePad({ onSave, onClear }) {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
-  const [sigwebStatus, setSigwebStatus] = useState('checking'); // 'checking' | 'active' | 'fallback'
+  const [sigwebStatus, setSigwebStatus] = useState('checking'); // 'checking' | 'active' | 'fallback' | 'trust_needed'
   const [sigwebError, setSigwebError] = useState('');
   const lastPos = useRef(null);
   const refreshTimer = useRef(null);
@@ -140,8 +140,14 @@ export default function SignaturePad({ onSave, onClear }) {
       } catch (err) {
         console.warn('[SignaturePad] SigWeb setup error:', err.message);
         if (active) {
-          setSigwebStatus('fallback');
-          setSigwebError(err.message);
+          // Script failed to load from local URL = cert not yet trusted
+          const msg = err.message || '';
+          if (msg.includes('not reachable') || msg.includes('local or CDN') || msg.includes('failed to load')) {
+            setSigwebStatus('trust_needed');
+          } else {
+            setSigwebStatus('fallback');
+          }
+          setSigwebError(msg);
         }
       }
     })();
@@ -260,40 +266,55 @@ export default function SignaturePad({ onSave, onClear }) {
         </button>
       </div>
 
-      {sigwebStatus === 'fallback' && (
+      {(sigwebStatus === 'fallback' || sigwebStatus === 'trust_needed') && (
         <div className="text-xs space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-1">
           <p className="font-semibold text-amber-800">⚠ Topaz pad not detected — using mouse/touch fallback</p>
-          <p className="text-amber-700">
-            SigWeb is installed and running, but <strong>Chrome is blocking access</strong> to the local pad service.
-            Fix it in 2 steps:
-          </p>
-          <ol className="list-decimal ml-4 space-y-1.5 text-amber-700">
-            <li>
-              Open the{' '}
-              <a
-                href="https://tablet.sigwebtablet.com:47290/SigWebTablet.js"
-                target="_blank"
-                rel="noreferrer"
-                className="underline text-indigo-600 font-medium"
-              >
-                SigWeb local script URL
-              </a>{' '}
-              — Chrome will show a security warning. Click <strong>Advanced → Proceed</strong> to trust the local cert.
-            </li>
-            <li>
-              Then{' '}
-              <button
-                onClick={() => window.location.reload()}
-                className="underline text-indigo-600 font-medium"
-              >
-                reload this page
-              </button>
-              . The pad should activate automatically.
-            </li>
-          </ol>
-          <p className="text-amber-600 text-xs">
-            You only need to do this once per browser. After that it works every time.
-          </p>
+
+          {sigwebStatus === 'trust_needed' ? (
+            <>
+              <p className="text-amber-700">
+                SigWeb is installed but <strong>Chrome hasn't trusted the local cert yet.</strong>
+              </p>
+              <p className="text-amber-700 font-medium">One-time setup (30 seconds):</p>
+              <ol className="list-decimal ml-4 space-y-1.5 text-amber-700">
+                <li>
+                  Click:{' '}
+                  <button
+                    onClick={() => {
+                      const w = window.open('https://tablet.sigwebtablet.com:47290/', '_blank');
+                      // After user trusts cert and closes tab, reload
+                      const t = setInterval(() => {
+                        if (w && w.closed) { clearInterval(t); window.location.reload(); }
+                      }, 500);
+                    }}
+                    className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded px-2 py-0.5"
+                  >
+                    Open SigWeb Trust Page ↗
+                  </button>
+                </li>
+                <li>In the new tab, click <strong>Advanced</strong> → <strong>Proceed to tablet.sigwebtablet.com (unsafe)</strong></li>
+                <li>Close that tab — <strong>this page will reload automatically.</strong></li>
+              </ol>
+              <p className="text-amber-600">You only need to do this once per browser / PC.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-amber-700">Make sure SigWeb is running (check system tray), then{' '}
+                <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-medium">
+                  reload this page
+                </button>.
+              </p>
+              <p className="text-amber-600">
+                Need the one-time cert setup?{' '}
+                <button
+                  onClick={() => setSigwebStatus('trust_needed')}
+                  className="underline text-indigo-600"
+                >
+                  Show instructions
+                </button>
+              </p>
+            </>
+          )}
           {sigwebError && <p className="text-red-500 font-mono text-xs mt-1 break-all">{sigwebError}</p>}
         </div>
       )}
