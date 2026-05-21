@@ -200,29 +200,17 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Render backend
-    console.log('[sendRentalConfirmation] Sending email via Render to:', customerEmail);
-
-    const formData = new FormData();
-    formData.append('to', customerEmail);
-    formData.append('subject', `Rental Invoice ${invoiceNumber || 'Quote'}`);
-    formData.append('html', invoiceHtml);
-    formData.append('from', 'Rental World <rentals@lupine.rental>');
+    // Send email via Base44 SendEmail integration
+    console.log('[sendRentalConfirmation] Sending email via Base44 to:', customerEmail);
 
     try {
-      const renderRes = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
-        method: 'POST',
-        body: formData,
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: customerEmail,
+        subject: `Rental Invoice ${invoiceNumber || 'Confirmation'}`,
+        body: invoiceHtml,
+        from_name: invoiceOrder.companyInfo.companyName || 'Rental World LLC',
       });
-
-      if (!renderRes.ok) {
-        const err = await renderRes.text();
-        console.error('[sendRentalConfirmation] Render error status:', renderRes.status);
-        console.error('[sendRentalConfirmation] Render error body:', err);
-        return Response.json({ error: `Email service error: ${err}`, emailSent: false }, { status: 500 });
-      }
-
-      console.log('[sendRentalConfirmation] Email sent successfully via Render');
+      console.log('[sendRentalConfirmation] Email sent successfully');
     } catch (emailErr) {
       console.error('[sendRentalConfirmation] Email error:', emailErr.message);
       return Response.json({ error: `Email error: ${emailErr.message}`, emailSent: false }, { status: 500 });
