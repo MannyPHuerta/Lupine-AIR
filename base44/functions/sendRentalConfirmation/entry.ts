@@ -200,37 +200,33 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Resend
-    console.log('[sendRentalConfirmation] Sending email via Resend to:', customerEmail);
+    // Send email via Render backend
+    console.log('[sendRentalConfirmation] Sending email via Render to:', customerEmail);
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendApiKey) {
-      console.error('[sendRentalConfirmation] RESEND_API_KEY not configured');
-      return Response.json({ error: 'Email service not configured', emailSent: false }, { status: 500 });
+    const formData = new FormData();
+    formData.append('to', customerEmail);
+    formData.append('subject', `Rental Invoice ${invoiceNumber || 'Quote'}`);
+    formData.append('html', invoiceHtml);
+    formData.append('from', 'Rental World <rentals@lupine.rental>');
+
+    try {
+      const renderRes = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!renderRes.ok) {
+        const err = await renderRes.text();
+        console.error('[sendRentalConfirmation] Render error status:', renderRes.status);
+        console.error('[sendRentalConfirmation] Render error body:', err);
+        return Response.json({ error: `Email service error: ${err}`, emailSent: false }, { status: 500 });
+      }
+
+      console.log('[sendRentalConfirmation] Email sent successfully via Render');
+    } catch (emailErr) {
+      console.error('[sendRentalConfirmation] Email error:', emailErr.message);
+      return Response.json({ error: `Email error: ${emailErr.message}`, emailSent: false }, { status: 500 });
     }
-
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'Rental World <onboarding@resend.dev>',
-        to: customerEmail,
-        subject: `Rental Invoice ${invoiceNumber || 'Quote'}`,
-        html: invoiceHtml,
-      }),
-    });
-
-    if (!resendRes.ok) {
-      const err = await resendRes.text();
-      console.error('[sendRentalConfirmation] Resend error status:', resendRes.status);
-      console.error('[sendRentalConfirmation] Resend error body:', err);
-      return Response.json({ error: `Resend error: ${err}`, emailSent: false }, { status: 500 });
-    }
-
-    console.log('[sendRentalConfirmation] Email sent successfully via Resend');
 
     // Also send SMS via Twilio if phone available
     let smsSent = false;
