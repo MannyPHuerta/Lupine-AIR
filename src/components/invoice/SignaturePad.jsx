@@ -17,27 +17,29 @@ import { useRef, useEffect, useState, useCallback } from 'react';
  *   GetSigImageB64(callback)      — returns base64 PNG
  */
 
-function getSigWebScriptUrl() {
-  const port = location.protocol === 'https:' ? 47290 : 47289;
-  return `${location.protocol}//tablet.sigwebtablet.com:${port}/SigWeb/SigWebTablet.js`;
-}
+// SigWeb serves its JS from the local service OR from sigplusweb.com (CDN fallback)
+// Topaz recommends the CDN copy so the cert is always trusted
+const SIGWEB_CDN_URL = 'https://www.sigplusweb.com/SigWebTablet.js';
 
 function loadSigWebScript() {
   return new Promise((resolve, reject) => {
     if (window.SigWebSetDisplayTarget && window.SetTabletState) { resolve(); return; }
-    const url = getSigWebScriptUrl();
-    const existing = document.querySelector(`script[data-sigweb]`);
+
+    const existing = document.querySelector('script[data-sigweb]');
     if (existing) {
+      // Already injected — wait for it or resolve immediately
       if (window.SigWebSetDisplayTarget) { resolve(); return; }
       existing.addEventListener('load', resolve);
       existing.addEventListener('error', reject);
       return;
     }
+
     const script = document.createElement('script');
     script.setAttribute('data-sigweb', '1');
-    script.src = url;
+    // Use Topaz's own CDN — avoids cert/LNA issues with tablet.sigwebtablet.com
+    script.src = SIGWEB_CDN_URL;
     script.onload = resolve;
-    script.onerror = () => reject(new Error('SigWeb not reachable'));
+    script.onerror = () => reject(new Error('SigWeb JS not reachable'));
     document.head.appendChild(script);
   });
 }
@@ -47,6 +49,7 @@ export default function SignaturePad({ onSave, onClear }) {
   const [drawing, setDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
   const [sigwebStatus, setSigwebStatus] = useState('checking'); // 'checking' | 'active' | 'fallback'
+  const [sigwebError, setSigwebError] = useState('');
   const lastPos = useRef(null);
   const refreshTimer = useRef(null);
 
@@ -83,7 +86,10 @@ export default function SignaturePad({ onSave, onClear }) {
 
       } catch (err) {
         console.warn('[SignaturePad] SigWeb unavailable:', err.message);
-        if (active) setSigwebStatus('fallback');
+        if (active) {
+          setSigwebStatus('fallback');
+          setSigwebError(err.message);
+        }
       }
     })();
 
@@ -174,7 +180,7 @@ export default function SignaturePad({ onSave, onClear }) {
             Topaz pad active
           </div>
         )}
-        {sigwebStatus === 'fallback' && <div className="text-xs text-gray-400">Mouse / touch mode</div>}
+        {sigwebStatus === 'fallback' && <div className="text-xs text-amber-500">Mouse / touch mode</div>}
         {sigwebStatus === 'checking' && <div className="text-xs text-gray-300 animate-pulse">Detecting pad…</div>}
       </div>
 
@@ -218,12 +224,20 @@ export default function SignaturePad({ onSave, onClear }) {
       </div>
 
       {sigwebStatus === 'fallback' && (
-        <p className="text-xs text-gray-400">
-          No Topaz pad detected. Install{' '}
-          <a href="https://www.topazsystems.com/software/sigweb.exe" target="_blank" rel="noreferrer"
-            className="underline hover:text-gray-600">SigWeb</a>{' '}
-          then reload to activate the LBK462.
-        </p>
+        <div className="text-xs text-gray-500 space-y-1">
+          <p>
+            Topaz pad not detected — using mouse/touch fallback.{' '}
+            {sigwebError && <span className="text-red-400">({sigwebError})</span>}
+          </p>
+          <p>
+            If your pad is plugged in and SigWeb is installed, your browser may be blocking local network access.{' '}
+            <strong>Look for a permission prompt</strong> in the browser address bar and click <strong>Allow</strong>.
+            Then <button onClick={() => window.location.reload()} className="underline text-indigo-500">reload the page</button>.
+          </p>
+          <p>
+            Test SigWeb: <a href="https://www.sigplusweb.com/webdemo_sign.htm" target="_blank" rel="noreferrer" className="underline text-indigo-500">Open Topaz Web Demo</a> — if signing works there, it will work here after reload.
+          </p>
+        </div>
       )}
     </div>
   );
