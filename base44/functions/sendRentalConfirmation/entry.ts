@@ -200,13 +200,16 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Resend
+    // Send email via Resend (requires verified domain at resend.com/domains)
     console.log('[sendRentalConfirmation] Sending email via Resend to:', customerEmail);
     const resendKey = Deno.env.get('RESEND_API_KEY');
     if (!resendKey) {
       console.error('[sendRentalConfirmation] RESEND_API_KEY not set');
       return Response.json({ error: 'RESEND_API_KEY not configured', emailSent: false }, { status: 500 });
     }
+
+    const fromDomain = Deno.env.get('RESEND_FROM_DOMAIN') || 'lupine.rental';
+    const fromAddress = `${invoiceOrder.companyInfo.companyName || 'Rental World LLC'} <rentals@${fromDomain}>`;
 
     try {
       const resendRes = await fetch('https://api.resend.com/emails', {
@@ -216,7 +219,7 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: `${invoiceOrder.companyInfo.companyName || 'Rental World LLC'} <onboarding@resend.dev>`,
+          from: fromAddress,
           to: [customerEmail],
           subject: `Rental Invoice ${invoiceNumber || 'Confirmation'}`,
           html: invoiceHtml,
@@ -225,9 +228,18 @@ Deno.serve(async (req) => {
       const resendData = await resendRes.json();
       if (!resendRes.ok) {
         console.error('[sendRentalConfirmation] Resend error:', resendData);
-        return Response.json({ error: `Resend error: ${JSON.stringify(resendData)}`, emailSent: false }, { status: 500 });
+        // Fall back to Base44 SendEmail
+        console.log('[sendRentalConfirmation] Falling back to Base44 SendEmail');
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: customerEmail,
+          subject: `Rental Invoice ${invoiceNumber || 'Confirmation'}`,
+          body: invoiceHtml,
+          from_name: invoiceOrder.companyInfo.companyName || 'Rental World LLC',
+        });
+        console.log('[sendRentalConfirmation] Email sent via Base44 fallback');
+      } else {
+        console.log('[sendRentalConfirmation] Email sent via Resend, id:', resendData.id);
       }
-      console.log('[sendRentalConfirmation] Email sent via Resend, id:', resendData.id);
     } catch (emailErr) {
       console.error('[sendRentalConfirmation] Email error:', emailErr.message);
       return Response.json({ error: `Email error: ${emailErr.message}`, emailSent: false }, { status: 500 });
