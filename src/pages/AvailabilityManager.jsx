@@ -562,22 +562,30 @@ export default function AvailabilityManager() {
       const emailToSend = customer.email;
       const phoneToSend = customer.phone;
 
+      console.log('[PrintConfirm] emailToSend:', emailToSend, '| autoSend:', autoSendCommunications, '| practiceMode:', practiceMode);
+
       // In practice mode, write the invoice first (with practice watermark), then reset — no DB writes
       writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl, practiceMode);
       const rentalIds = await handleSave('confirmed');
 
+      console.log('[PrintConfirm] rentalIds after save:', rentalIds);
+
       if (!practiceMode && autoSendCommunications && emailToSend && rentalIds.length > 0) {
+        console.log('[PrintConfirm] Sending confirmation email...');
         try {
-          await base44.functions.invoke('sendRentalConfirmation', {
+          const emailRes = await base44.functions.invoke('sendRentalConfirmation', {
             rentalIds,
             customerEmail: emailToSend,
             customerPhone: phoneToSend,
             invoiceNumber: invNumber,
             autoSendCommunications,
           });
+          console.log('[PrintConfirm] Email result:', emailRes?.data);
         } catch (err) {
-          console.error('Failed to send confirmation:', err);
+          console.error('[PrintConfirm] Failed to send confirmation:', err);
         }
+      } else {
+        console.warn('[PrintConfirm] Email skipped — practiceMode:', practiceMode, '| autoSend:', autoSendCommunications, '| email:', emailToSend, '| rentalIds:', rentalIds);
       }
       return;
     }
