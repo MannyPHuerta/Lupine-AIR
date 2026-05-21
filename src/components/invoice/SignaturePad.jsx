@@ -235,43 +235,33 @@ export default function SignaturePad({ onSave, onClear }) {
       {(sigwebStatus === 'fallback' || sigwebStatus === 'trust_needed') && (
         <div className="text-xs space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-1">
           <p className="font-semibold text-amber-800">⚠ Topaz pad not detected — using mouse/touch fallback</p>
-
-          {sigwebStatus === 'trust_needed' ? (
-            <>
-              <p className="text-amber-700">
-                SigWeb is running but <strong>Chrome is blocking access</strong> to the local pad service.
-                One-time fix:
-              </p>
-              <ol className="list-decimal ml-4 space-y-1.5 text-amber-700">
-                <li>
-                  <button
-                    onClick={() => {
-                      const w = window.open('https://tablet.sigwebtablet.com:47290/', '_blank');
-                      const t = setInterval(() => {
-                        if (w && w.closed) { clearInterval(t); window.location.reload(); }
-                      }, 500);
-                    }}
-                    className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded px-2 py-0.5"
-                  >
-                    Open SigWeb Trust Page ↗
-                  </button>
-                </li>
-                <li>Click <strong>Advanced</strong> → <strong>Proceed to tablet.sigwebtablet.com (unsafe)</strong></li>
-                <li>Close that tab — this page reloads automatically.</li>
-              </ol>
-              <p className="text-amber-600">You only need to do this once per browser / PC.</p>
-            </>
-          ) : (
-            <p className="text-amber-700">
-              Make sure SigWeb is running (check system tray), then{' '}
-              <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-medium">
-                reload this page
-              </button>.{' '}
-              <button onClick={() => setSigwebStatus('trust_needed')} className="underline text-indigo-600">
-                Need cert setup?
+          <p className="text-amber-700">
+            Chrome 142+ blocks local hardware services by default. One-time fix per PC:
+          </p>
+          <ol className="list-decimal ml-4 space-y-2 text-amber-700">
+            <li>
+              Copy this address and paste it into a new Chrome tab:&nbsp;
+              <button
+                onClick={() => { navigator.clipboard.writeText('chrome://settings/content/localNetworkAccess'); }}
+                className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded px-2 py-0.5"
+              >
+                📋 Copy chrome://settings/content/localNetworkAccess
               </button>
-            </p>
-          )}
+            </li>
+            <li>Under <strong>"Allowed to connect to any device on your local network"</strong>, click <strong>Add</strong>.</li>
+            <li>Enter <strong>{window.location.origin}</strong> and click <strong>Add</strong>.</li>
+            <li>
+              <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-semibold">
+                Reload this page
+              </button>
+              {' '}— the pad should now connect.
+            </li>
+          </ol>
+          <p className="text-amber-600 mt-1">
+            <strong>Alternative (temporary):</strong> In Chrome go to{' '}
+            <code className="bg-amber-100 px-1 rounded">chrome://flags/#local-network-access-check</code>
+            , set it to <strong>Disabled</strong>, and restart Chrome.
+          </p>
         </div>
       )}
     </div>
