@@ -50,6 +50,12 @@ export default function PhoneVerificationModal({ customer, onVerified, onFailed,
     setState('failed');
   };
 
+  // Note on caller ID display name (#4): Twilio outbound PSTN calls show the
+  // phone number as caller ID by default. To show a business name, you must
+  // register a "CNAM" (Caller Name) record with your Twilio number — this is
+  // done in the Twilio console under Phone Numbers → Manage → your number → 
+  // Caller Name. CNAM support varies by carrier and is not guaranteed to display.
+
   const handleProceedAnyway = async () => {
     await logOutcome('override', `Counter staff overrode failed verification — ${currentUser?.email || 'unknown'}`);
     onFailed({ override: true, by: currentUser?.email });

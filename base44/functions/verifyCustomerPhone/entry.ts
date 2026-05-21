@@ -18,13 +18,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Twilio credentials not configured' }, { status: 500 });
     }
 
-    // TwiML: customer hears message and presses 1 to confirm
+    // TwiML: customer hears greeting, presses 1, hears "thank you", call ends.
+    // We use Twiml parameter directly (no action URL needed).
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather numDigits="1" action="https://demo.twilio.com/welcome/voice/" method="POST" timeout="10">
-    <Say voice="alice">Hello, this is A I R Equipment Rental calling to verify your phone number for a rental. Please press 1 to confirm your identity.</Say>
+  <Gather numDigits="1" timeout="10">
+    <Say voice="Polly.Joanna">Thank you for your visit to our equipment rental facility. Please press 1 to verify your identity.</Say>
   </Gather>
-  <Say voice="alice">We did not receive your input. Goodbye.</Say>
+  <Say voice="Polly.Joanna">Thank you for your business.</Say>
 </Response>`;
 
     const cleanPhone = phoneNumber.replace(/\D/g, '');

@@ -657,7 +657,7 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
           }}
           onFailed={({ override } = {}) => {
             setShowVerifyModal(false);
-            if (!override) setPhoneVerified(false);
+            setPhoneVerified(false);
             setTimeout(() => emailRef.current?.focus(), 50);
           }}
           onClose={() => {

@@ -557,16 +557,20 @@ export default function AvailabilityManager() {
         clockInUrl: (() => { const p = new URLSearchParams(); if (customer.branch) p.set('branch', customer.branch); if (invNumber) p.set('job', invNumber); p.set('jobType', deliveryMethod === 'company_delivery' ? 'delivery' : 'general'); return `${window.location.origin}/clockin?${p.toString()}`; })(),
       };
 
+      // Capture email/phone before handleSave resets the form
+      const emailToSend = customer.email;
+      const phoneToSend = customer.phone;
+
       // In practice mode, write the invoice first (with practice watermark), then reset — no DB writes
       writeInvoiceToWindow(win, invoiceOrder, paid, signatureDataUrl, practiceMode);
       const rentalIds = await handleSave('confirmed');
 
-      if (!practiceMode && autoSendCommunications && customer.email && rentalIds.length > 0) {
+      if (!practiceMode && autoSendCommunications && emailToSend && rentalIds.length > 0) {
         try {
           await base44.functions.invoke('sendRentalConfirmation', {
             rentalIds,
-            customerEmail: customer.email,
-            customerPhone: customer.phone,
+            customerEmail: emailToSend,
+            customerPhone: phoneToSend,
             invoiceNumber: invNumber,
             autoSendCommunications,
           });
@@ -608,6 +612,10 @@ export default function AvailabilityManager() {
   const handlePaymentSuccess = async (paymentData) => {
     if (!pendingInvoice) return;
 
+    // Capture email/phone before handleSave resets the form
+    const emailToSend = customer.email;
+    const phoneToSend = customer.phone;
+
     try {
     // Save the rental records
     const rentalIds = await handleSave('confirmed');
@@ -618,12 +626,12 @@ export default function AvailabilityManager() {
     writeInvoiceToWindow(win, { ...pendingInvoice.invoiceOrder, rentalAgreement: rentalAgreements[customer.branch] || null }, paid, signatureDataUrl, practiceMode);
 
       // Send email/SMS if enabled
-      if (autoSendCommunications && customer.email && rentalIds.length > 0) {
+      if (autoSendCommunications && emailToSend && rentalIds.length > 0) {
         try {
           await base44.functions.invoke('sendRentalConfirmation', {
             rentalIds,
-            customerEmail: customer.email,
-            customerPhone: customer.phone,
+            customerEmail: emailToSend,
+            customerPhone: phoneToSend,
             invoiceNumber: pendingInvoice.invNumber,
             autoSendCommunications,
           });

@@ -73,7 +73,8 @@ export default function SignaturePad({ onSignatureCapture }) {
       <div className="text-xs font-semibold text-gray-700">Customer Signature</div>
       <canvas
         ref={canvasRef}
-        className="border-2 border-gray-300 rounded bg-white cursor-crosshair w-full"
+        tabIndex={0}
+        className="border-2 border-gray-300 rounded bg-white cursor-crosshair w-full focus:outline-none focus:ring-2 focus:ring-indigo-400"
         style={{ height: '90px', display: 'block' }}
         onMouseDown={startDrawing}
         onMouseMove={draw}
