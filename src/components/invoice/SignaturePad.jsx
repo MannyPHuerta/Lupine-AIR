@@ -62,6 +62,15 @@ export default function SignaturePad({ onSave, onClear }) {
         await loadSigWebScript();
         if (!active) return;
 
+        // Pre-flight: verify the local SigWeb service is actually reachable
+        // before calling any SigWeb API functions (which use XHR internally)
+        const port = 47290;
+        const preflightUrl = `https://tablet.sigwebtablet.com:${port}/SigWeb/SigWebVersion`;
+        await fetch(preflightUrl, { mode: 'no-cors', cache: 'no-store' })
+          .catch(() => { throw new Error('SigWeb service not reachable on port 47290 — is SigWeb running?'); });
+
+        if (!active) return;
+
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -224,19 +233,18 @@ export default function SignaturePad({ onSave, onClear }) {
       </div>
 
       {sigwebStatus === 'fallback' && (
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>
-            Topaz pad not detected — using mouse/touch fallback.{' '}
-            {sigwebError && <span className="text-red-400">({sigwebError})</span>}
+        <div className="text-xs text-gray-500 space-y-1.5 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-1">
+          <p className="font-semibold text-amber-800">⚠ Topaz pad not detected — using mouse/touch fallback</p>
+          <p className="text-amber-700">
+            The SigWeb service at <code className="bg-amber-100 px-1 rounded">tablet.sigwebtablet.com:47290</code> is not responding.
           </p>
-          <p>
-            If your pad is plugged in and SigWeb is installed, your browser may be blocking local network access.{' '}
-            <strong>Look for a permission prompt</strong> in the browser address bar and click <strong>Allow</strong>.
-            Then <button onClick={() => window.location.reload()} className="underline text-indigo-500">reload the page</button>.
-          </p>
-          <p>
-            Test SigWeb: <a href="https://www.sigplusweb.com/webdemo_sign.htm" target="_blank" rel="noreferrer" className="underline text-indigo-500">Open Topaz Web Demo</a> — if signing works there, it will work here after reload.
-          </p>
+          <ol className="list-decimal ml-4 space-y-1 text-amber-700">
+            <li>Make sure <strong>SigWeb is running</strong> — look for its icon in the system tray (taskbar).</li>
+            <li>Open <a href="https://www.sigplusweb.com/webdemo_sign.htm" target="_blank" rel="noreferrer" className="underline text-indigo-600 font-medium">Topaz Web Demo</a> — if signing works there, SigWeb is running correctly.</li>
+            <li>If the demo works, <strong>check for a browser permission prompt</strong> (shield icon in address bar) for local network access and click <strong>Allow</strong>.</li>
+            <li>Then <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-medium">reload this page</button>.</li>
+          </ol>
+          {sigwebError && <p className="text-red-500 text-xs font-mono mt-1">{sigwebError}</p>}
         </div>
       )}
     </div>
