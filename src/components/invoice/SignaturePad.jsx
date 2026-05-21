@@ -8,8 +8,20 @@ import { useRef, useEffect, useState, useCallback } from 'react';
  * to mouse/touch canvas drawing. No preflight fetch needed.
  */
 
-const SIGWEB_CDN_URL = 'https://www.sigplusweb.com/SigWebTablet.js';
-const PROBE_TIMEOUT_MS = 3000; // wait this long for first successful XHR
+// SigWeb v1.7+ supports a "tmPort" override so we can point it at the
+// HTTP port (47289) instead of the default HTTPS port (47290).
+// HTTPS→HTTPS (47290) gets blocked by Chrome's Private Network Access policy
+// because tablet.sigwebtablet.com resolves to 127.0.0.1.
+// HTTP (47289) is also blocked from an HTTPS page (mixed content).
+// The ONLY working approach for a hosted HTTPS app is to use the
+// HTTPS port WITH the browser's LNA permission — which Chrome grants
+// automatically once the user visits the Topaz Web Demo first (same origin cert).
+// We load the script from the LOCAL SigWeb service so the browser's
+// permission grant for tablet.sigwebtablet.com:47290 carries over.
+
+const SIGWEB_LOCAL_URL = 'https://tablet.sigwebtablet.com:47290/SigWebTablet.js';
+const SIGWEB_CDN_URL   = 'https://www.sigplusweb.com/SigWebTablet.js';
+const PROBE_TIMEOUT_MS = 4000;
 
 function loadSigWebScript() {
   return new Promise((resolve, reject) => {
@@ -21,12 +33,33 @@ function loadSigWebScript() {
       existing.addEventListener('error', reject);
       return;
     }
-    const script = document.createElement('script');
-    script.setAttribute('data-sigweb', '1');
-    script.src = SIGWEB_CDN_URL;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('SigWeb JS failed to load from CDN'));
-    document.head.appendChild(script);
+
+    // Try loading from LOCAL service first — this triggers the LNA permission grant
+    // which then allows subsequent XHR calls to succeed.
+    // Fall back to CDN if local isn't reachable (e.g. SigWeb not installed).
+    const tryLoad = (src, fallbackSrc) => {
+      const script = document.createElement('script');
+      script.setAttribute('data-sigweb', '1');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = () => {
+        script.remove();
+        if (fallbackSrc) {
+          // CDN fallback — script loads but XHR calls may still be blocked
+          const s2 = document.createElement('script');
+          s2.setAttribute('data-sigweb', '1');
+          s2.src = fallbackSrc;
+          s2.onload = resolve;
+          s2.onerror = () => reject(new Error('SigWeb JS not reachable (local or CDN)'));
+          document.head.appendChild(s2);
+        } else {
+          reject(new Error('SigWeb JS not reachable'));
+        }
+      };
+      document.head.appendChild(script);
+    };
+
+    tryLoad(SIGWEB_LOCAL_URL, SIGWEB_CDN_URL);
   });
 }
 
@@ -228,13 +261,39 @@ export default function SignaturePad({ onSave, onClear }) {
       </div>
 
       {sigwebStatus === 'fallback' && (
-        <div className="text-xs space-y-1.5 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-1">
+        <div className="text-xs space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-1">
           <p className="font-semibold text-amber-800">⚠ Topaz pad not detected — using mouse/touch fallback</p>
-          <ol className="list-decimal ml-4 space-y-1 text-amber-700">
-            <li>Make sure <strong>SigWeb is running</strong> — look for its icon in the system tray.</li>
-            <li>Test it: open <a href="https://www.sigplusweb.com/webdemo_sign.htm" target="_blank" rel="noreferrer" className="underline text-indigo-600 font-medium">Topaz Web Demo</a>. If signing works there, SigWeb is running.</li>
-            <li>Then <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-medium">reload this page</button>.</li>
+          <p className="text-amber-700">
+            SigWeb is installed and running, but <strong>Chrome is blocking access</strong> to the local pad service.
+            Fix it in 2 steps:
+          </p>
+          <ol className="list-decimal ml-4 space-y-1.5 text-amber-700">
+            <li>
+              Open the{' '}
+              <a
+                href="https://tablet.sigwebtablet.com:47290/SigWebTablet.js"
+                target="_blank"
+                rel="noreferrer"
+                className="underline text-indigo-600 font-medium"
+              >
+                SigWeb local script URL
+              </a>{' '}
+              — Chrome will show a security warning. Click <strong>Advanced → Proceed</strong> to trust the local cert.
+            </li>
+            <li>
+              Then{' '}
+              <button
+                onClick={() => window.location.reload()}
+                className="underline text-indigo-600 font-medium"
+              >
+                reload this page
+              </button>
+              . The pad should activate automatically.
+            </li>
           </ol>
+          <p className="text-amber-600 text-xs">
+            You only need to do this once per browser. After that it works every time.
+          </p>
           {sigwebError && <p className="text-red-500 font-mono text-xs mt-1 break-all">{sigwebError}</p>}
         </div>
       )}
