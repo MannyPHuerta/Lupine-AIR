@@ -63,10 +63,10 @@ export default function SignaturePad({ onSave, onClear }) {
         if (!active) return;
 
         // Pre-flight: verify the local SigWeb service is actually reachable
-        // before calling any SigWeb API functions (which use XHR internally)
+        // This fetch WITHOUT 'no-cors' will trigger the browser's Local Network Access permission dialog
         const port = 47290;
         const preflightUrl = `https://tablet.sigwebtablet.com:${port}/SigWeb/SigWebVersion`;
-        await fetch(preflightUrl, { mode: 'no-cors', cache: 'no-store' })
+        await fetch(preflightUrl, { cache: 'no-store' })
           .catch(() => { throw new Error('SigWeb service not reachable on port 47290 — is SigWeb running?'); });
 
         if (!active) return;
