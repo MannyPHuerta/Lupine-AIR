@@ -532,8 +532,9 @@ export default function AvailabilityManager() {
     const rFee = returnMethod === 'company_pickup' ? matrixDeliveryFee : 0;
     const totalDue = Math.max(0, subtotal + taxAmount + depositTotal - discountAmount + dFee + rFee);
 
-    // If non-card payment method, skip payment processor and go straight to confirmation
-    if (practiceMode || ['Cash', 'Check', 'Net 30'].includes(paymentMethod)) {
+    // If non-card payment method (or none selected), skip payment processor and go straight to confirmation
+    const CARD_METHODS = ['Credit Card', 'Debit Card'];
+    if (practiceMode || !CARD_METHODS.includes(paymentMethod)) {
       const paid = parseFloat(amountPaid) || 0;
       const win = openInvoiceWindow();
       
