@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather numDigits="1" timeout="10">
-    <Say voice="Polly.Joanna">Thank you for your visit to our equipment rental facility. Please press 1 to verify your identity.</Say>
+    <Say voice="Polly.Joanna">Rental Equipment verification call. Please press 1 to verify your identity.</Say>
   </Gather>
   <Say voice="Polly.Joanna">Thank you for your business.</Say>
 </Response>`;
