@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import PaymentSettingsPanel from '@/components/settings/PaymentSettingsPanel';
+import HardwareDiagnostic from '@/components/settings/HardwareDiagnostic';
 import { rentalDayModeLabel } from '@/lib/rentalDayCalc';
 
 export default function CompanySettingsPage() {
@@ -475,6 +476,11 @@ export default function CompanySettingsPage() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Hardware Diagnostic */}
+            <div className="bg-white rounded-xl border shadow-sm p-5">
+              <HardwareDiagnostic />
             </div>
 
             {/* Payment Processing */}
