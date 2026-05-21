@@ -236,26 +236,51 @@ export default function SignaturePad({ onSave, onClear }) {
         <div className="text-xs space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-1">
           <p className="font-semibold text-amber-800">⚠ Topaz pad not detected — using mouse/touch fallback</p>
           <p className="text-amber-700">
-            Chrome 142+ blocks local hardware services by default. One-time fix per PC:
+            Chrome 142+ blocks local hardware by default. Your IT admin needs to whitelist this site once per machine using one of these methods:
           </p>
-          <ol className="list-decimal ml-4 space-y-2 text-amber-700">
-            <li>
-              Click the <strong>🔒 padlock / info icon</strong> to the left of the address bar at the top of this page.
-            </li>
-            <li>Select <strong>Site settings</strong> from the dropdown.</li>
-            <li>In the settings tab that opens, <strong>scroll to the bottom</strong> and find <strong>Local network access</strong>.</li>
-            <li>Change it to <strong>Allow</strong>.</li>
-            <li>
-              <button onClick={() => window.location.reload()} className="underline text-indigo-600 font-semibold">
-                Reload this page
-              </button>
-              {' '}— the Topaz pad should now connect.
-            </li>
-          </ol>
-          <p className="text-amber-600 mt-1 border-t border-amber-200 pt-2">
-            <strong>Alternative:</strong> In Chrome's address bar type{' '}
-            <code className="bg-amber-100 px-1 rounded font-mono select-all">chrome://flags/#local-network-access-check</code>
-            , set to <strong>Disabled</strong>, restart Chrome, reload this page.
+
+          <div className="space-y-3 mt-2">
+            {/* Method 1 - Chrome Settings */}
+            <div className="bg-white border border-amber-200 rounded p-2">
+              <p className="font-semibold text-amber-900 mb-1">Method 1 — Chrome Settings (try first)</p>
+              <ol className="list-decimal ml-4 space-y-1 text-amber-700">
+                <li>In Chrome, open a new tab and type in the address bar:<br />
+                  <code className="bg-amber-100 px-1 rounded font-mono select-all">chrome://settings/content/localNetworkAccess</code>
+                  <button onClick={() => navigator.clipboard.writeText('chrome://settings/content/localNetworkAccess')} className="ml-1 text-indigo-600 underline">copy</button>
+                </li>
+                <li>Under <strong>"Allowed to connect to any device on your local network"</strong>, click <strong>Add</strong>.</li>
+                <li>Enter <code className="bg-amber-100 px-1 rounded font-mono select-all">{window.location.origin}</code> and click <strong>Add</strong>.</li>
+                <li><button onClick={() => window.location.reload()} className="underline text-indigo-600 font-semibold">Reload this page</button> — pad should connect.</li>
+              </ol>
+            </div>
+
+            {/* Method 2 - Windows Registry */}
+            <div className="bg-white border border-amber-200 rounded p-2">
+              <p className="font-semibold text-amber-900 mb-1">Method 2 — Windows Registry (Chrome 145+, requires admin)</p>
+              <ol className="list-decimal ml-4 space-y-1 text-amber-700">
+                <li>Open <strong>Registry Editor</strong> (regedit) as Administrator.</li>
+                <li>Navigate to:<br />
+                  <code className="bg-amber-100 px-1 rounded font-mono select-all text-xs">HKLM\SOFTWARE\Policies\Google\Chrome</code>
+                </li>
+                <li>Create a new <strong>String value</strong> key named <code className="bg-amber-100 px-1 rounded font-mono">LocalNetworkAccessAllowedForUrls</code>.</li>
+                <li>Set its value to <code className="bg-amber-100 px-1 rounded font-mono select-all">{window.location.origin}</code>.</li>
+                <li>Restart Chrome and reload this page.</li>
+              </ol>
+            </div>
+
+            {/* Method 3 - PowerShell (Topaz official) */}
+            <div className="bg-white border border-amber-200 rounded p-2">
+              <p className="font-semibold text-amber-900 mb-1">Method 3 — Topaz Official PowerShell Script (easiest for IT)</p>
+              <p className="text-amber-700">Topaz provides an official script. Run in PowerShell as Administrator:</p>
+              <code className="block bg-amber-100 rounded px-2 py-1 font-mono text-xs mt-1 select-all whitespace-pre-wrap">
+                {`.\\SigWeb_Allow_LocalNetworkAccess_for_website.ps1 -Websites "${window.location.origin}"`}
+              </code>
+              <p className="text-amber-600 mt-1">Download the script from: <strong>topazsystems.com</strong> → Software → SigWeb → Local Network Access Guide</p>
+            </div>
+          </div>
+
+          <p className="text-amber-600 mt-2 border-t border-amber-200 pt-2 font-medium">
+            Mouse/touch fallback is active — you can still capture signatures while troubleshooting.
           </p>
         </div>
       )}
