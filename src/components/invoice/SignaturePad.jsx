@@ -21,7 +21,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 
 const SIGWEB_LOCAL_URL = 'https://tablet.sigwebtablet.com:47290/SigWebTablet.js';
 const SIGWEB_CDN_URL   = 'https://www.sigplusweb.com/SigWebTablet.js';
-const PROBE_TIMEOUT_MS = 4000;
+const PROBE_TIMEOUT_MS = 8000;
 
 function loadSigWebScript() {
   return new Promise((resolve, reject) => {
@@ -103,26 +103,28 @@ export default function SignaturePad({ onSave, onClear }) {
         // Pass the 2D context to SigWeb (required by API)
         window.SigWebSetDisplayTarget(ctx);
 
-        // Attempt to activate pad — this internally fires XHR to tablet.sigwebtablet.com:47290
-        // If SigWeb isn't running, these calls silently fail
+        // Attempt to activate pad
         try { window.ClearTablet(); } catch {}
         try { window.SetTabletState(1); } catch {}
 
-        // Poll every 50ms — if we ever get a successful response,
-        // NumberOfTabletPoints() will return a value (even 0 is a valid response meaning connected)
+        // Small delay to let SigWeb's async XHR initialize before we start polling
+        await new Promise(r => setTimeout(r, 300));
+        if (!active) return;
+
         let pollCount = 0;
         refreshTimer.current = setInterval(() => {
           if (!active) return;
           try {
             window.SigWebRefresh();
             const pts = window.NumberOfTabletPoints ? window.NumberOfTabletPoints() : -1;
+            // pts >= 0 means SigWeb responded — even 0 means pad is connected and idle
             if (!confirmed && pts >= 0) {
-              // Got a valid numeric response → pad is connected
               confirmed = true;
               clearTimeout(probeTimer.current);
               setSigwebStatus('active');
+              setIsEmpty(true); // reset — pad is ready but blank
             }
-            if (pts > 0) setIsEmpty(false);
+            if (confirmed && pts > 0) setIsEmpty(false);
           } catch {}
           pollCount++;
         }, 50);
