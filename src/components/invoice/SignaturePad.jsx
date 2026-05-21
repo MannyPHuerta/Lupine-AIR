@@ -251,46 +251,7 @@ export default function SignaturePad({ onSave, onClear }) {
         </button>
       </div>
 
-      {sigwebStatus === 'prompting' && (
-        <div className="text-xs bg-blue-50 border border-blue-200 rounded-lg p-3 mt-1">
-          <p className="font-semibold text-blue-800">👀 Check for a Chrome permission popup</p>
-          <p className="text-blue-700 mt-1">
-            Chrome should be showing a prompt asking to <strong>"Allow [this site] to connect to devices on your local network"</strong>.
-            Click <strong>Allow</strong> to activate the Topaz pad.
-          </p>
-          <p className="text-blue-600 mt-1">If no popup appeared, click <button onClick={() => tryActivate()} className="underline font-semibold">Try again</button>.</p>
-        </div>
-      )}
 
-      {sigwebStatus === 'fallback' && (
-        <div className="text-xs space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-1">
-          <p className="font-semibold text-amber-800">⚠ Topaz pad not detected — using mouse/touch fallback</p>
-          <p className="text-amber-700">
-            SigWeb is installed correctly (v1.7.3.0). Chrome is blocking the local connection.
-            <button onClick={() => tryActivate()} className="ml-1 underline text-indigo-600 font-semibold">Try connecting again</button>
-            {' '}— Chrome may show a permission popup this time.
-          </p>
-
-          <div className="bg-white border border-amber-200 rounded p-2 mt-1">
-            <p className="font-semibold text-amber-900 mb-1">Manual Chrome permission fix</p>
-            <ol className="list-decimal ml-4 space-y-1 text-amber-700">
-              <li>
-                Open a new Chrome tab, click the address bar and <strong>type</strong> (must type, not click):<br />
-                <code className="bg-amber-100 px-1 rounded font-mono select-all">chrome://settings/content/localNetworkAccess</code>
-                <button onClick={() => navigator.clipboard.writeText('chrome://settings/content/localNetworkAccess')} className="ml-1 text-indigo-500 underline">copy</button>
-              </li>
-              <li>Click <strong>Add</strong> → enter <code className="bg-amber-100 px-1 rounded font-mono select-all">{window.location.origin}</code> → <strong>Add</strong>.</li>
-              <li><button onClick={() => tryActivate()} className="underline text-indigo-600 font-semibold">Retry connection.</button></li>
-            </ol>
-          </div>
-
-          <p className="text-amber-600 mt-1 text-xs">
-            Need more help? <a href="https://www.topazsystems.com/software/SigWeb_Local_Network_Access_Guide.pdf" target="_blank" rel="noopener noreferrer" className="underline text-indigo-600">Topaz LNA Guide (PDF)</a>
-            {' · '}
-            <a href="https://www.topazsystems.com/software/SigWeb_Test_Utility.exe" target="_blank" rel="noopener noreferrer" className="underline text-indigo-600">SigWeb Test Utility</a>
-          </p>
-        </div>
-      )}
     </div>
   );
 }
