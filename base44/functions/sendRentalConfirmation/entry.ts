@@ -200,46 +200,28 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Resend (requires verified domain at resend.com/domains)
-    console.log('[sendRentalConfirmation] Sending email via Resend to:', customerEmail);
-    const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendKey) {
-      console.error('[sendRentalConfirmation] RESEND_API_KEY not set');
-      return Response.json({ error: 'RESEND_API_KEY not configured', emailSent: false }, { status: 500 });
-    }
-
-    const fromDomain = Deno.env.get('RESEND_FROM_DOMAIN') || 'lupine.rental';
-    const fromAddress = `${invoiceOrder.companyInfo.companyName || 'Rental World LLC'} <rentals@${fromDomain}>`;
-
+    // Send email via Render / Asset Wolf (proven working)
+    console.log('[sendRentalConfirmation] Sending email via Render to:', customerEmail);
     try {
-      const resendRes = await fetch('https://api.resend.com/emails', {
+      const formData = new FormData();
+      formData.append('itemName', `Rental Invoice ${invoiceNumber || 'Confirmation'}`);
+      formData.append('itemType', 'Rental');
+      formData.append('action', 'Email');
+      formData.append('comments', invoiceHtml);
+      formData.append('sendTo', customerEmail);
+      formData.append('sentBy', invoiceOrder.companyInfo.companyName || 'Rental World LLC');
+
+      const renderRes = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${resendKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [customerEmail],
-          subject: `Rental Invoice ${invoiceNumber || 'Confirmation'}`,
-          html: invoiceHtml,
-        }),
+        body: formData,
       });
-      const resendData = await resendRes.json();
-      if (!resendRes.ok) {
-        console.error('[sendRentalConfirmation] Resend error:', resendData);
-        // Fall back to Base44 SendEmail
-        console.log('[sendRentalConfirmation] Falling back to Base44 SendEmail');
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: customerEmail,
-          subject: `Rental Invoice ${invoiceNumber || 'Confirmation'}`,
-          body: invoiceHtml,
-          from_name: invoiceOrder.companyInfo.companyName || 'Rental World LLC',
-        });
-        console.log('[sendRentalConfirmation] Email sent via Base44 fallback');
-      } else {
-        console.log('[sendRentalConfirmation] Email sent via Resend, id:', resendData.id);
+
+      if (!renderRes.ok) {
+        const errText = await renderRes.text();
+        console.error('[sendRentalConfirmation] Render error:', renderRes.status, errText);
+        return Response.json({ error: `Render returned ${renderRes.status}`, emailSent: false }, { status: 502 });
       }
+      console.log('[sendRentalConfirmation] Email sent via Render successfully');
     } catch (emailErr) {
       console.error('[sendRentalConfirmation] Email error:', emailErr.message);
       return Response.json({ error: `Email error: ${emailErr.message}`, emailSent: false }, { status: 500 });
