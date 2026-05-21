@@ -200,17 +200,34 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Base44 SendEmail integration
-    console.log('[sendRentalConfirmation] Sending email via Base44 to:', customerEmail);
+    // Send email via Resend
+    console.log('[sendRentalConfirmation] Sending email via Resend to:', customerEmail);
+    const resendKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendKey) {
+      console.error('[sendRentalConfirmation] RESEND_API_KEY not set');
+      return Response.json({ error: 'RESEND_API_KEY not configured', emailSent: false }, { status: 500 });
+    }
 
     try {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: customerEmail,
-        subject: `Rental Invoice ${invoiceNumber || 'Confirmation'}`,
-        body: invoiceHtml,
-        from_name: invoiceOrder.companyInfo.companyName || 'Rental World LLC',
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `${invoiceOrder.companyInfo.companyName || 'Rental World LLC'} <onboarding@resend.dev>`,
+          to: [customerEmail],
+          subject: `Rental Invoice ${invoiceNumber || 'Confirmation'}`,
+          html: invoiceHtml,
+        }),
       });
-      console.log('[sendRentalConfirmation] Email sent successfully');
+      const resendData = await resendRes.json();
+      if (!resendRes.ok) {
+        console.error('[sendRentalConfirmation] Resend error:', resendData);
+        return Response.json({ error: `Resend error: ${JSON.stringify(resendData)}`, emailSent: false }, { status: 500 });
+      }
+      console.log('[sendRentalConfirmation] Email sent via Resend, id:', resendData.id);
     } catch (emailErr) {
       console.error('[sendRentalConfirmation] Email error:', emailErr.message);
       return Response.json({ error: `Email error: ${emailErr.message}`, emailSent: false }, { status: 500 });
