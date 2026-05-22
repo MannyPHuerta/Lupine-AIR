@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, X, Loader2, UserPlus, Truck, CheckCircle, Users, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X, Loader2, UserPlus, Truck, CheckCircle, Users, Sparkles, CalendarClock } from 'lucide-react';
+import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, isToday, parseISO
@@ -196,6 +197,7 @@ function AssignDeliveryPanel({ rental, users, deliveries, currentUser, onAssigne
 function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onClose, onAssigned, onStatusChange }) {
   const [showAssign, setShowAssign] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
   if (!rental) return null;
   const color = STATUS_COLORS[rental.status] || STATUS_COLORS.quote;
 
@@ -303,7 +305,16 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
         </div>
 
         {isManager && needsDelivery && (
-          <div className="mt-2">
+          <div className="mt-2 space-y-1">
+            {delivery && !['completed','departed','arrived','setup_complete','signed','cancelled'].includes(delivery.status) && (
+              <button
+                onClick={() => setShowReschedule(true)}
+                className="w-full text-xs border border-amber-300 text-amber-700 rounded px-2 py-1 hover:bg-amber-50 flex items-center justify-center gap-1"
+              >
+                <CalendarClock className="w-3 h-3" />
+                Reschedule Delivery
+              </button>
+            )}
             {!showAssign ? (
               <button
                 onClick={() => setShowAssign(true)}
@@ -323,6 +334,13 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
               />
             )}
           </div>
+        )}
+        {showReschedule && delivery && (
+          <DeliveryRescheduleModal
+            delivery={delivery}
+            onClose={() => setShowReschedule(false)}
+            onSaved={(updated) => { onAssigned?.(updated); setShowReschedule(false); onClose(); }}
+          />
         )}
       </div>
     </div>

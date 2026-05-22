@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, Check, MapPin, Phone, AlertCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, MapPin, Phone, AlertCircle, MessageSquare, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ManifestChecklist from '@/components/delivery/ManifestChecklist';
 import PhotoCapture from '@/components/delivery/PhotoCapture';
 import SignaturePad from '@/components/delivery/SignaturePad';
+import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
 
 export default function DeliveryDetail() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function DeliveryDetail() {
   const [photos, setPhotos] = useState([]);
   const [signature, setSignature] = useState(null);
   const [sendingSMS, setSendingSMS] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
 
   useEffect(() => {
     if (!id || id === ':id') {
@@ -157,6 +159,14 @@ export default function DeliveryDetail() {
             <div className="text-lg font-bold">{delivery.customerName}</div>
             <div className="text-indigo-300 text-xs">{delivery.customerCity}, {delivery.customerState}</div>
           </div>
+          {!['completed','cancelled','departed','arrived','setup_complete','signed'].includes(delivery.status) && (
+            <button
+              onClick={() => setShowReschedule(true)}
+              className="flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+            >
+              <CalendarClock className="w-3.5 h-3.5" /> Reschedule
+            </button>
+          )}
           <StatusIndicator status={delivery.status} />
         </div>
       </div>
@@ -290,6 +300,14 @@ export default function DeliveryDetail() {
           )}
         </div>
       </div>
+
+      {showReschedule && (
+        <DeliveryRescheduleModal
+          delivery={delivery}
+          onClose={() => setShowReschedule(false)}
+          onSaved={(updated) => { setDelivery(updated); setShowReschedule(false); }}
+        />
+      )}
     </div>
   );
 }

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map, CalendarClock } from 'lucide-react';
 import DispatchMap from '@/components/dispatch/DispatchMap';
 import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
-import ScheduleEditInline from '@/components/delivery/ScheduleEditInline';
+import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
 import { getCached, setCached } from '@/lib/geocodeCache';
 
 const DELIVERY_STATUS_COLORS = {
@@ -266,6 +266,7 @@ export default function DispatchBoard() {
 function DriverGroup({ driverName, driverId, items, type, driverLocations, onSelect, statusColors, onRefresh }) {
   const completed = items.filter(i => i.status === 'completed').length;
   const driverLoc = driverLocations.find(d => d.driverEmail === driverId);
+  const [rescheduling, setRescheduling] = useState(null);
 
   return (
     <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
@@ -300,7 +301,13 @@ function DriverGroup({ driverName, driverId, items, type, driverLocations, onSel
                 {item.status.replace(/_/g, ' ')}
               </span>
               {type === 'delivery' && !['completed', 'departed', 'arrived', 'setup_complete', 'signed', 'cancelled'].includes(item.status) && (
-                <ScheduleEditInline delivery={item} onSaved={onRefresh} />
+                <button
+                  onClick={e => { e.stopPropagation(); setRescheduling(item); }}
+                  className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 border border-indigo-200 rounded px-2 py-1 hover:bg-indigo-50 transition flex-shrink-0"
+                  title="Reschedule delivery"
+                >
+                  <CalendarClock className="w-3 h-3" /> Reschedule
+                </button>
               )}
             </div>
           </div>
@@ -313,6 +320,13 @@ function DriverGroup({ driverName, driverId, items, type, driverLocations, onSel
         onSelectItem={onSelect}
         type={type}
       />
+      {rescheduling && (
+        <DeliveryRescheduleModal
+          delivery={rescheduling}
+          onClose={() => setRescheduling(null)}
+          onSaved={() => { setRescheduling(null); onRefresh(); }}
+        />
+      )}
     </div>
   );
 }
