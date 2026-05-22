@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { CalendarClock, Check, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ScheduleEditInline({ delivery, onSaved }) {
   const [editing, setEditing] = useState(false);
@@ -11,18 +12,49 @@ export default function ScheduleEditInline({ delivery, onSaved }) {
   const handleSave = async () => {
     if (!newDate) return;
     setSaving(true);
-    const me = await base44.auth.me();
-    await base44.entities.Delivery.update(delivery.id, {
-      scheduledDate: newDate,
-      scheduledTime: newTime,
-      previousScheduledDate: delivery.scheduledDate,
-      previousScheduledTime: delivery.scheduledTime || '',
-      scheduleChangedAt: new Date().toISOString(),
-      scheduleChangedBy: me?.email || 'user',
-    });
-    setSaving(false);
-    setEditing(false);
-    if (onSaved) onSaved();
+    try {
+      const me = await base44.auth.me();
+      await base44.entities.Delivery.update(delivery.id, {
+        scheduledDate: newDate,
+        scheduledTime: newTime,
+        previousScheduledDate: delivery.scheduledDate,
+        previousScheduledTime: delivery.scheduledTime || '',
+        scheduleChangedAt: new Date().toISOString(),
+        scheduleChangedBy: me?.email || 'user',
+      });
+
+      // Auto-text the assigned driver about the schedule change
+      if (delivery.driverId) {
+        try {
+          const staffPhones = await base44.entities.StaffPhone.list();
+          const sp = staffPhones.find(p =>
+            p.email === delivery.driverId ||
+            p.staffName?.toLowerCase() === delivery.driverName?.toLowerCase()
+          );
+          if (sp?.phone) {
+            const oldStr = `${delivery.scheduledDate || '?'}${delivery.scheduledTime ? ' @ ' + delivery.scheduledTime : ''}`;
+            const newStr = `${newDate}${newTime ? ' @ ' + newTime : ''}`;
+            const msg = `⚠️ SCHEDULE CHANGE — ${delivery.customerName}: was ${oldStr}, now ${newStr}. Please update your plans. – Rental World Operations`;
+            await base44.functions.invoke('driverSMS', {
+              phone: sp.phone,
+              message: msg,
+              driverName: delivery.driverName,
+            });
+            toast.success(`📱 ${delivery.driverName} texted about schedule change`);
+          } else {
+            toast.warning(`Schedule saved — no phone on file for ${delivery.driverName}`);
+          }
+        } catch (smsErr) {
+          // SMS failure is non-fatal — schedule was already saved
+          toast.warning('Schedule saved, but SMS failed: ' + smsErr.message);
+        }
+      }
+
+      setEditing(false);
+      if (onSaved) onSaved();
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!editing) {

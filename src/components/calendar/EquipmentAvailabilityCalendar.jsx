@@ -430,6 +430,13 @@ export default function EquipmentAvailabilityCalendar({
   // Has delivery assigned indicator
   const rentalHasDelivery = (rentalId) => deliveries.some(d => d.rentalId === rentalId && d.driverId);
 
+  // Delivery has a pending schedule change (changed but driver not yet departed/completed)
+  const rentalHasScheduleChange = (rentalId) => deliveries.some(d =>
+    d.rentalId === rentalId &&
+    d.scheduleChangedAt &&
+    !['completed', 'cancelled', 'departed', 'arrived', 'setup_complete', 'signed'].includes(d.status)
+  );
+
   return (
     <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
       {/* Toolbar */}
@@ -537,6 +544,7 @@ export default function EquipmentAvailabilityCalendar({
                   const color = rental ? (STATUS_COLORS[rental.status] || STATUS_COLORS.quote) : null;
                   const isTodayCol = isToday(day);
                   const hasDelivery = rental && rentalHasDelivery(rental.id);
+                  const hasScheduleChange = rental && rentalHasScheduleChange(rental.id);
 
                   return (
                     <td
@@ -547,13 +555,14 @@ export default function EquipmentAvailabilityCalendar({
                     >
                       {rental ? (
                         <div
-                          className={`h-full w-full flex items-center ${color.bg} ${isStart ? 'rounded-l-md pl-1' : ''}`}
-                          title={`${rental.customerName} · ${rental.startDate} – ${rental.endDate}`}
+                          className={`h-full w-full flex items-center ${color.bg} ${isStart ? 'rounded-l-md pl-1' : ''} ${hasScheduleChange ? 'animate-flash' : ''}`}
+                          title={`${rental.customerName} · ${rental.startDate} – ${rental.endDate}${hasScheduleChange ? ' ⚠️ Schedule Changed' : ''}`}
                         >
                           {isStart && (
                             <span className="text-white font-semibold text-[10px] truncate leading-none px-1 whitespace-nowrap overflow-hidden flex items-center gap-0.5">
                               {rental.customerName?.split(' ')[0]}
                               {hasDelivery && <Truck className="w-2 h-2 flex-shrink-0 opacity-80" />}
+                              {hasScheduleChange && <span className="text-yellow-200 flex-shrink-0">⚠</span>}
                             </span>
                           )}
                         </div>
