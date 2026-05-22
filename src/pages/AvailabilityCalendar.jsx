@@ -1,9 +1,23 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Printer } from 'lucide-react';
+import {
+  ArrowLeft, RefreshCw, Printer, ChevronLeft, ChevronRight,
+  LayoutGrid, CalendarDays, List, MessageSquare
+} from 'lucide-react';
+import { format, addDays, subDays, addWeeks, subWeeks, startOfWeek } from 'date-fns';
 import EquipmentAvailabilityCalendar from '@/components/calendar/EquipmentAvailabilityCalendar';
 import CalendarPrintModal from '@/components/calendar/CalendarPrintModal';
+import CalendarDayView from '@/components/calendar/CalendarDayView';
+import CalendarWeekView from '@/components/calendar/CalendarWeekView';
+import TextCrewModal from '@/components/calendar/TextCrewModal';
+
+const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
+const VIEWS = [
+  { id: 'gantt', label: 'Gantt', icon: LayoutGrid },
+  { id: 'week',  label: 'Week',  icon: CalendarDays },
+  { id: 'day',   label: 'Day',   icon: List },
+];
 
 export default function AvailabilityCalendar() {
   const navigate = useNavigate();
@@ -11,14 +25,19 @@ export default function AvailabilityCalendar() {
   const focusRentalId = urlParams.get('rentalId');
   const focusDate = urlParams.get('date');
 
-  const [equipment, setEquipment] = useState([]);
-  const [rentals, setRentals] = useState([]);
-  const [deliveries, setDeliveries] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [equipment, setEquipment]     = useState([]);
+  const [rentals, setRentals]         = useState([]);
+  const [deliveries, setDeliveries]   = useState([]);
+  const [users, setUsers]             = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showPrint, setShowPrint] = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const [refreshing, setRefreshing]   = useState(false);
+  const [showPrint, setShowPrint]     = useState(false);
+  const [showTextCrew, setShowTextCrew] = useState(false);
+
+  const [view, setView]     = useState('gantt'); // 'gantt' | 'week' | 'day'
+  const [branch, setBranch] = useState('All Branches');
+  const [viewDate, setViewDate] = useState(() => focusDate ? new Date(focusDate + 'T12:00:00') : new Date());
 
   const load = async () => {
     const [me, eq, rent, dels, usrs] = await Promise.all([
@@ -35,9 +54,7 @@ export default function AvailabilityCalendar() {
     setUsers(usrs);
   };
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { load().finally(() => setLoading(false)); }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -47,11 +64,52 @@ export default function AvailabilityCalendar() {
 
   const handleDeliveryAssigned = (newDelivery) => {
     setDeliveries(prev => {
-      const exists = prev.find(d => d.id === newDelivery.id);
+      const exists = prev.find(d => d.id === newDelivery?.id);
       if (exists) return prev.map(d => d.id === newDelivery.id ? newDelivery : d);
-      return [...prev, newDelivery];
+      return newDelivery ? [...prev, newDelivery] : prev;
     });
   };
+
+  // Filter rentals/deliveries by branch
+  const filteredRentals = branch === 'All Branches'
+    ? rentals
+    : rentals.filter(r => r.branch === branch);
+
+  const filteredDeliveries = branch === 'All Branches'
+    ? deliveries
+    : deliveries.filter(d => d.branch === branch);
+
+  const filteredEquipment = branch === 'All Branches'
+    ? equipment
+    : equipment.filter(e => e.location === branch || filteredRentals.some(r => r.equipmentId === e.id));
+
+  // Navigation helpers per view
+  const goBack = () => {
+    if (view === 'day') setViewDate(d => subDays(d, 1));
+    else if (view === 'week') setViewDate(d => subWeeks(d, 1));
+  };
+  const goForward = () => {
+    if (view === 'day') setViewDate(d => addDays(d, 1));
+    else if (view === 'week') setViewDate(d => addWeeks(d, 1));
+  };
+
+  const dateLabel = () => {
+    if (view === 'day') return format(viewDate, 'EEEE, MMMM d, yyyy');
+    if (view === 'week') {
+      const ws = startOfWeek(viewDate, { weekStartsOn: 0 });
+      const we = addDays(ws, 6);
+      return `${format(ws, 'MMM d')} – ${format(we, 'MMM d, yyyy')}`;
+    }
+    return format(viewDate, 'MMMM yyyy');
+  };
+
+  // Stats
+  const today = new Date().toISOString().split('T')[0];
+  const activeRentals = filteredRentals.filter(r => !['cancelled','completed'].includes(r.status));
+  const todayDeliveries = filteredDeliveries.filter(d => d.scheduledDate === today && !['completed','cancelled'].includes(d.status));
+  const unassignedDeliveries = todayDeliveries.filter(d => !d.driverId);
+
+  const isManager = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
   if (loading) {
     return (
@@ -61,66 +119,163 @@ export default function AvailabilityCalendar() {
     );
   }
 
-  const isManager = currentUser?.role === 'admin' || currentUser?.role === 'manager';
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-full mx-auto">
-          <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Availability Calendar</div>
-            <div className="text-indigo-300 text-xs">
-              {equipment.length} items · {rentals.filter(r => !['cancelled','completed'].includes(r.status)).length} active rentals
+        <div className="px-4 py-3 max-w-full mx-auto space-y-3">
+          {/* Top row */}
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-indigo-800">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="text-lg font-bold">Availability Calendar</div>
+              <div className="text-indigo-300 text-xs">
+                {filteredEquipment.length} items · {activeRentals.length} active rentals
+                {unassignedDeliveries.length > 0 && (
+                  <span className="ml-2 text-amber-300 font-semibold">⚠️ {unassignedDeliveries.length} unassigned delivery{unassignedDeliveries.length !== 1 ? 's' : ''} today</span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {/* Text Crew button */}
+              <button
+                onClick={() => setShowTextCrew(true)}
+                className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
+                title="Text today's schedule to assigned drivers"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Text Crew</span>
+              </button>
+              <button onClick={() => setShowPrint(true)} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 transition" title="Print">
+                <Printer className="w-4 h-4" />
+              </button>
+              <button onClick={handleRefresh} disabled={refreshing} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 transition" title="Refresh">
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => setShowPrint(true)}
-            className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 transition"
-            title="Print calendar"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200 transition"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
+
+          {/* Controls row: view toggle + branch + date nav */}
+          <div className="flex items-center gap-2 flex-wrap pb-1">
+            {/* View toggle */}
+            <div className="flex items-center bg-indigo-800 rounded-lg p-0.5">
+              {VIEWS.map(v => (
+                <button
+                  key={v.id}
+                  onClick={() => setView(v.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                    view === v.id ? 'bg-white text-indigo-900' : 'text-indigo-300 hover:text-white'
+                  }`}
+                >
+                  <v.icon className="w-3.5 h-3.5" />
+                  {v.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Branch filter */}
+            <select
+              value={branch}
+              onChange={e => setBranch(e.target.value)}
+              className="h-8 border-0 rounded-lg px-2 bg-indigo-800 text-white text-xs"
+            >
+              {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+
+            {/* Date nav (day/week only) */}
+            {view !== 'gantt' && (
+              <div className="flex items-center gap-1 ml-auto">
+                <button onClick={goBack} className="p-1.5 rounded-lg hover:bg-indigo-800 text-indigo-200">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-xs text-indigo-200 font-medium min-w-48 text-center">{dateLabel()}</span>
+                <button onClick={goForward} className="p-1.5 rounded-lg hover:bg-indigo-800 text-indigo-200">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button onClick={() => setViewDate(new Date())} className="text-xs px-2 py-1 bg-indigo-700 hover:bg-indigo-600 text-indigo-200 rounded-lg transition ml-1">
+                  Today
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Stats bar */}
+      <div className="bg-white border-b px-4 py-2.5 flex items-center gap-6 text-xs text-gray-600 flex-wrap">
+        <span><strong className="text-gray-900">{activeRentals.length}</strong> active rentals</span>
+        <span><strong className="text-red-600">{activeRentals.filter(r=>r.status==='out').length}</strong> out</span>
+        <span><strong className="text-orange-500">{activeRentals.filter(r=>r.status==='contract').length}</strong> contracts</span>
+        <span><strong className="text-blue-500">{activeRentals.filter(r=>r.status==='reservation').length}</strong> reservations</span>
+        <span className="border-l border-gray-200 pl-4">
+          <strong className="text-indigo-600">{todayDeliveries.length}</strong> deliveries today
+          {unassignedDeliveries.length > 0 && (
+            <span className="ml-1 text-amber-600 font-semibold">({unassignedDeliveries.length} unassigned)</span>
+          )}
+        </span>
+      </div>
+
       <div className="px-2 py-4 sm:px-4">
-        <EquipmentAvailabilityCalendar
-          equipment={equipment}
-          rentals={rentals}
-          deliveries={deliveries}
-          users={users}
-          currentUser={currentUser}
-          isManager={isManager}
-          focusRentalId={focusRentalId}
-          focusDate={focusDate}
-          onDateSelect={(date) => {}}
-          onDeliveryAssigned={handleDeliveryAssigned}
-        />
+        {view === 'gantt' && (
+          <EquipmentAvailabilityCalendar
+            equipment={filteredEquipment}
+            rentals={filteredRentals}
+            deliveries={filteredDeliveries}
+            users={users}
+            currentUser={currentUser}
+            isManager={isManager}
+            focusRentalId={focusRentalId}
+            focusDate={focusDate}
+            onDateSelect={() => {}}
+            onDeliveryAssigned={handleDeliveryAssigned}
+          />
+        )}
+
+        {view === 'week' && (
+          <CalendarWeekView
+            date={viewDate}
+            rentals={filteredRentals}
+            deliveries={filteredDeliveries}
+            onRentalClick={(rental) => {
+              setView('gantt');
+            }}
+          />
+        )}
+
+        {view === 'day' && (
+          <CalendarDayView
+            date={viewDate}
+            rentals={filteredRentals}
+            deliveries={filteredDeliveries}
+            onRentalClick={(rental) => {
+              setView('gantt');
+            }}
+          />
+        )}
 
         {showPrint && (
           <CalendarPrintModal
             onClose={() => setShowPrint(false)}
-            rentals={rentals}
-            equipment={equipment}
-            deliveries={deliveries}
-            currentDate={new Date()}
+            rentals={filteredRentals}
+            equipment={filteredEquipment}
+            deliveries={filteredDeliveries}
+            currentDate={viewDate}
+          />
+        )}
+
+        {showTextCrew && (
+          <TextCrewModal
+            date={viewDate}
+            rentals={filteredRentals}
+            deliveries={filteredDeliveries}
+            onClose={() => setShowTextCrew(false)}
           />
         )}
 
         <div className="mt-4 text-xs text-gray-400 text-center">
-          Click any booking bar to see details · {isManager ? 'As manager, you can assign deliveries from the booking popup.' : ''}
+          Gantt: click any booking bar for details · Week/Day: click to switch views · Text Crew sends today's schedule to assigned drivers
         </div>
       </div>
     </div>

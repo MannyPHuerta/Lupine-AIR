@@ -6,8 +6,9 @@ import ScheduleEditInline from '@/components/delivery/ScheduleEditInline';
 import {
   Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
   Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft, ChevronLeft, ChevronRight,
-  Tag, CalendarClock
+  Tag, CalendarClock, MessageSquare
 } from 'lucide-react';
+import TextCrewModal from '@/components/calendar/TextCrewModal';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
@@ -153,6 +154,7 @@ export default function DailyOps() {
   const [user, setUser] = useState(null);
   const [workingBranch, setWorkingBranch] = useState(null);
   const [viewDate, setViewDate] = useState(today);
+  const [showTextCrew, setShowTextCrew] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -310,6 +312,14 @@ export default function DailyOps() {
               {user?.homeBranch && workingBranch && user.homeBranch !== workingBranch && (
                 <BranchMismatchBadge userHomeBranch={user.homeBranch} />
               )}
+              <button
+                onClick={() => setShowTextCrew(true)}
+                className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white font-semibold px-3 py-2 rounded-lg text-sm transition"
+                title="Text today's schedule to assigned drivers"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span className="hidden sm:inline">Text Crew</span>
+              </button>
               <button
                 onClick={() => navigate('/counter')}
                 className="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg text-sm transition"
@@ -523,6 +533,15 @@ export default function DailyOps() {
         </div>
 
       </div>
+
+      {showTextCrew && (
+        <TextCrewModal
+          date={new Date(viewDate + 'T12:00:00')}
+          rentals={filtered}
+          deliveries={deliveries}
+          onClose={() => setShowTextCrew(false)}
+        />
+      )}
     </div>
   );
 }
