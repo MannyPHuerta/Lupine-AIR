@@ -83,6 +83,33 @@ export default function AppPageHeader({ title, subtitle, icon: Icon, action, chi
     );
   }
 
+  if (style === 'navy') {
+    return (
+      <div className={`${stickyClass} relative overflow-hidden shadow-lg`} style={{ backgroundColor: '#0d1b3e' }}>
+        {/* Content */}
+        <div className="relative px-6 py-4 max-w-4xl mx-auto">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              {Icon && (
+                <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  <Icon className="w-5 h-5" style={{ color: '#F5A623' }} />
+                </div>
+              )}
+              <div>
+                <h1 className="text-lg font-bold text-white leading-tight">{title}</h1>
+                {subtitle && <p className="text-xs mt-0.5" style={{ color: '#a0aec0' }}>{subtitle}</p>}
+              </div>
+            </div>
+            {action && <div className="flex items-center gap-2 flex-wrap">{action}</div>}
+          </div>
+          {children && <div className="mt-4">{children}</div>}
+        </div>
+        {/* Gold bottom accent line */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: '#F5A623' }} />
+      </div>
+    );
+  }
+
   // Default: classic (original indigo)
   return (
     <div className={`${stickyClass} bg-indigo-900 text-white shadow-lg`}>

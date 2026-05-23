@@ -141,7 +141,7 @@ export default function BrandingSettings() {
         <div className="bg-white rounded-lg border shadow-sm p-6 space-y-4">
           <h2 className="font-semibold text-gray-900">Page Header Style</h2>
           <p className="text-xs text-gray-600">Controls the look of headers across all staff pages.</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               {
                 value: 'classic',
@@ -161,6 +161,12 @@ export default function BrandingSettings() {
                 preview: 'bg-gray-950',
                 desc: 'Dark mode with glowing cyan/violet accents',
               },
+              {
+                value: 'navy',
+                label: 'Navy',
+                preview: null,
+                desc: 'Deep navy with gold accent line',
+              },
             ].map(opt => (
               <button
                 key={opt.value}
@@ -171,7 +177,7 @@ export default function BrandingSettings() {
                     : 'border-gray-200 hover:border-indigo-300'
                 }`}
               >
-                <div className={`h-12 w-full ${opt.preview}`} />
+                <div className={`h-12 w-full ${opt.preview || ''}`} style={opt.value === 'navy' ? { backgroundColor: '#0d1b3e', borderBottom: '3px solid #F5A623' } : {}} />
                 <div className="p-2">
                   <div className="text-xs font-semibold text-gray-800">{opt.label}</div>
                   <div className="text-[10px] text-gray-500 mt-0.5">{opt.desc}</div>

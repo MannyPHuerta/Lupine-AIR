@@ -86,7 +86,8 @@
       "enum": [
         "classic",
         "glassmorphism",
-        "neon"
+        "neon",
+        "navy"
       ],
       "default": "classic",
       "description": "Visual style for page headers across the staff app"
