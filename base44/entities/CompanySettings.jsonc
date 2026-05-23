@@ -81,6 +81,16 @@
         }
       }
     },
+    "headerStyle": {
+      "type": "string",
+      "enum": [
+        "classic",
+        "glassmorphism",
+        "neon"
+      ],
+      "default": "classic",
+      "description": "Visual style for page headers across the staff app"
+    },
     "authMethod": {
       "type": "string",
       "enum": [

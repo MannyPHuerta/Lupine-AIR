@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Loader2, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { invalidateHeaderStyleCache } from '@/lib/useHeaderStyle';
 
 export default function BrandingSettings() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function BrandingSettings() {
   const [form, setForm] = useState({
     companyName: '',
     logoUrl: '',
+    headerStyle: 'classic',
     brandingTheme: {
       primaryColor: '#1E40AF',
       secondaryColor: '#6B7280',
@@ -30,6 +32,7 @@ export default function BrandingSettings() {
           setForm({
             companyName: s.companyName || '',
             logoUrl: s.logoUrl || '',
+            headerStyle: s.headerStyle || 'classic',
             brandingTheme: s.brandingTheme || form.brandingTheme,
           });
         }
@@ -57,6 +60,7 @@ export default function BrandingSettings() {
       } else {
         await base44.entities.CompanySettings.create(form);
       }
+      invalidateHeaderStyleCache();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -133,6 +137,50 @@ export default function BrandingSettings() {
               </label>
               <p className="text-xs text-gray-500 mt-2">PNG or JPG, max 2MB, square or wide format</p>
             </div>
+          </div>
+        </div>
+
+        {/* Header Style */}
+        <div className="bg-white rounded-lg border shadow-sm p-6 space-y-4">
+          <h2 className="font-semibold text-gray-900">Page Header Style</h2>
+          <p className="text-xs text-gray-600">Controls the look of headers across all staff pages.</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              {
+                value: 'classic',
+                label: 'Classic',
+                preview: 'bg-indigo-900',
+                desc: 'Clean indigo — professional & familiar',
+              },
+              {
+                value: 'glassmorphism',
+                label: 'Glassmorphism',
+                preview: 'bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700',
+                desc: 'Dark gradient with frosted glass',
+              },
+              {
+                value: 'neon',
+                label: 'Neon',
+                preview: 'bg-gray-950',
+                desc: 'Dark mode with glowing cyan/violet accents',
+              },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setForm(f => ({ ...f, headerStyle: opt.value }))}
+                className={`rounded-lg border-2 overflow-hidden text-left transition ${
+                  (form.headerStyle || 'classic') === opt.value
+                    ? 'border-indigo-600 ring-2 ring-indigo-300'
+                    : 'border-gray-200 hover:border-indigo-300'
+                }`}
+              >
+                <div className={`h-12 w-full ${opt.preview}`} />
+                <div className="p-2">
+                  <div className="text-xs font-semibold text-gray-800">{opt.label}</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">{opt.desc}</div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw, FileBarChart, Bell, Users, Printer, Truck } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import PageHeader from '@/components/PageHeader';
+import AppPageHeader from '@/components/AppPageHeader';
 
 const STATUS_COLORS = {
   scheduled: 'bg-blue-50 border-blue-200 text-blue-900',
@@ -224,18 +224,16 @@ export default function DriverDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 pt-6">
-        <PageHeader 
-          title="Driver Dashboard"
-          subtitle={`${todaysDeliveries.length + overdueDeliveries.length} deliveries · ${todaysRecoveries.length} recoveries today`}
-          icon={Truck}
-          action={
-            <button onClick={() => navigate('/driver-report')} className="p-2 rounded-lg hover:bg-white/10 transition" title="Performance Report">
-              <FileBarChart className="w-5 h-5 text-white" />
-            </button>
-          }
-        />
-      </div>
+      <AppPageHeader
+        title="Driver Dashboard"
+        subtitle={`${todaysDeliveries.length + overdueDeliveries.length} deliveries · ${todaysRecoveries.length} recoveries today`}
+        icon={Truck}
+        action={
+          <button onClick={() => navigate('/driver-report')} className="p-2 rounded-lg hover:bg-white/10 transition" title="Performance Report">
+            <FileBarChart className="w-5 h-5 text-white" />
+          </button>
+        }
+      />
 
       <div className="max-w-4xl mx-auto px-4 mb-6">
         <div className="flex items-center gap-3 flex-wrap bg-slate-100 p-4 rounded-lg">
