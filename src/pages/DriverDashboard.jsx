@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw, FileBarChart, Bell, Users, Printer } from 'lucide-react';
+import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, RotateCcw, FileBarChart, Bell, Users, Printer, Truck } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import PageHeader from '@/components/PageHeader';
 
 const STATUS_COLORS = {
   scheduled: 'bg-blue-50 border-blue-200 text-blue-900',
@@ -223,64 +224,64 @@ export default function DriverDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-4 max-w-4xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="text-lg font-bold">🚚 Driver Dashboard</div>
-            <button onClick={() => navigate('/driver-report')} className="p-2 rounded-lg hover:bg-indigo-800" title="Performance Report">
-              <FileBarChart className="w-5 h-5" />
+      <div className="max-w-4xl mx-auto px-4 pt-6">
+        <PageHeader 
+          title="Driver Dashboard"
+          subtitle={`${todaysDeliveries.length + overdueDeliveries.length} deliveries · ${todaysRecoveries.length} recoveries today`}
+          icon={Truck}
+          action={
+            <button onClick={() => navigate('/driver-report')} className="p-2 rounded-lg hover:bg-white/10 transition" title="Performance Report">
+              <FileBarChart className="w-5 h-5 text-white" />
+            </button>
+          }
+        />
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 mb-6">
+        <div className="flex items-center gap-3 flex-wrap bg-slate-100 p-4 rounded-lg">
+          {driver?.role === 'admin' && driversList.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-600">Drivers:</span>
+              <button
+                onClick={() => setSelectedDriver(null)}
+                className={`text-xs px-2 py-1 rounded transition ${!selectedDriver ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-700 hover:border-slate-400'}`}
+              >
+                All
+              </button>
+              {driversList.map(d => (
+                <button
+                  key={d.driverId}
+                  onClick={() => setSelectedDriver(d.driverId)}
+                  className={`text-xs px-2 py-1 rounded transition ${selectedDriver === d.driverId ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-700 hover:border-slate-400'}`}
+                >
+                  {d.driverName?.split(' ')[0]}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-600">Sort:</span>
+            <button
+              onClick={() => setSortBy('date')}
+              className={`text-xs px-2 py-1 rounded transition ${sortBy === 'date' ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-700 hover:border-slate-400'}`}
+            >
+              Date
+            </button>
+            <button
+              onClick={() => setSortBy('status')}
+              className={`text-xs px-2 py-1 rounded transition ${sortBy === 'status' ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-700 hover:border-slate-400'}`}
+            >
+              Status
             </button>
           </div>
-          <div className="text-indigo-300 text-xs mt-1">{driver?.full_name} • {driver?.email}</div>
-          <div className="mt-2 text-sm text-indigo-200">
-            {todaysDeliveries.length + overdueDeliveries.length} deliveries · {todaysRecoveries.length} recoveries today
-          </div>
-          <div className="mt-3 flex items-center gap-3 flex-wrap">
-            {driver?.role === 'admin' && driversList.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-indigo-300">Drivers:</span>
-                <button
-                  onClick={() => setSelectedDriver(null)}
-                  className={`text-xs px-2 py-1 rounded transition ${!selectedDriver ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
-                >
-                  All
-                </button>
-                {driversList.map(d => (
-                  <button
-                    key={d.driverId}
-                    onClick={() => setSelectedDriver(d.driverId)}
-                    className={`text-xs px-2 py-1 rounded transition ${selectedDriver === d.driverId ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
-                  >
-                    {d.driverName?.split(' ')[0]}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-indigo-300">Sort:</span>
-              <button
-                onClick={() => setSortBy('date')}
-                className={`text-xs px-2 py-1 rounded transition ${sortBy === 'date' ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
-              >
-                Date
-              </button>
-              <button
-                onClick={() => setSortBy('status')}
-                className={`text-xs px-2 py-1 rounded transition ${sortBy === 'status' ? 'bg-white text-indigo-900' : 'bg-indigo-800 hover:bg-indigo-700 text-indigo-200'}`}
-              >
-                Status
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-indigo-300">Filter by date:</span>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="text-xs px-2 py-1 rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none"
-              />
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-600">Filter by date:</span>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="text-xs px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
           </div>
         </div>
       </div>
