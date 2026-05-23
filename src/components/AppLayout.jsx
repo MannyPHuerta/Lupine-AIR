@@ -294,7 +294,7 @@ export default function AppLayout() {
       {/* Footer */}
       <div className="border-t border-slate-700 px-4 py-3 space-y-2">
         {user && (
-          <div className="text-xs text-slate-500 truncate">{user.email}</div>
+          <div className="text-xs text-slate-400 truncate">{user.email}</div>
         )}
         <div className="flex items-center justify-between">
           <Link
@@ -306,7 +306,7 @@ export default function AppLayout() {
           </Link>
           <button
             onClick={() => base44.auth.logout('/')}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition"
+            className="flex items-center gap-1.5 text-xs text-white hover:text-red-300 transition font-semibold"
             title="Log out"
           >
             <LogOut className="w-3.5 h-3.5" /> Log out
