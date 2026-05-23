@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Truck, Package, Scale, Printer, Download, AlertCircle, Loader2, Plus, Trash2 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LoadPlanner from '@/components/airoads/LoadPlanner';
@@ -276,72 +277,25 @@ export default function AIRoads() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-7xl mx-auto">
-          <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">AIRoads – Load Planner</div>
-            <div className="text-indigo-300 text-xs">
-              {eventPlan ? `${eventPlan.eventName} • ${eventEquipment.length} items` : 'Load optimization & logistics'}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('planner')}
-              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
-                activeTab === 'planner'
-                  ? 'bg-white text-indigo-900'
-                  : 'text-indigo-200 hover:bg-indigo-800'
-              }`}
-            >
-              Planner
-            </button>
-            <button
-              onClick={() => setActiveTab('manifest')}
-              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
-                activeTab === 'manifest'
-                  ? 'bg-white text-indigo-900'
-                  : 'text-indigo-200 hover:bg-indigo-800'
-              }`}
-            >
-              Manifest
-            </button>
-            <button
-              onClick={() => setActiveTab('labels')}
-              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
-                activeTab === 'labels'
-                  ? 'bg-white text-indigo-900'
-                  : 'text-indigo-200 hover:bg-indigo-800'
-              }`}
-            >
-              Labels
-            </button>
-            <button
-              onClick={() => setActiveTab('scanner')}
-              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
-                activeTab === 'scanner'
-                  ? 'bg-white text-indigo-900'
-                  : 'text-indigo-200 hover:bg-indigo-800'
-              }`}
-            >
-              Scanner
-            </button>
-            <button
-              onClick={() => setActiveTab('pl')}
-              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${
-                activeTab === 'pl'
-                  ? 'bg-emerald-400 text-indigo-900'
-                  : 'text-emerald-300 hover:bg-indigo-800'
-              }`}
-            >
+      <AppPageHeader
+        title="AIRoads – Load Planner"
+        subtitle={eventPlan ? `${eventPlan.eventName || eventPlan.title} · ${eventEquipment.length} items` : 'Load optimization & logistics'}
+        icon={Truck}
+        action={
+          <div className="flex items-center gap-1 flex-wrap">
+            {['planner', 'manifest', 'labels', 'scanner'].map(t => (
+              <button key={t} onClick={() => setActiveTab(t)}
+                className={`px-3 py-1.5 rounded text-sm font-semibold transition capitalize ${activeTab === t ? 'bg-white text-slate-900' : 'text-white/70 hover:bg-white/10'}`}>
+                {t}
+              </button>
+            ))}
+            <button onClick={() => setActiveTab('pl')}
+              className={`px-3 py-1.5 rounded text-sm font-semibold transition ${activeTab === 'pl' ? 'bg-emerald-400 text-slate-900' : 'text-emerald-300 hover:bg-white/10'}`}>
               💰 P&amp;L
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* EventPlan Selector */}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShieldAlert } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import FraudIntelTab from '@/components/reports/FraudIntelTab';
 import PremiumGate from '@/components/premium/PremiumGate';
 import {
@@ -473,71 +474,43 @@ export default function AIReports() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <div className="bg-black border-b border-white/10 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
-          <button onClick={() => navigate('/lupine')} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-3">
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/6aafe877e_AIReports_final.svg" alt="AIReports" className="h-8 w-8 rounded-lg" />
-            <div>
-              <div className="text-white font-bold text-sm leading-none">AIReports</div>
-              <div className="text-white/40 text-xs">Business Intelligence</div>
-            </div>
-          </div>
-
-          <div className="ml-auto flex items-center gap-2">
-            <select
-              value={branch}
-              onChange={e => setBranch(e.target.value)}
-              className="bg-slate-800 border border-white/10 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-            >
-              {branches.map(b => (
-                <option key={b} value={b}>{b === 'all' ? 'All Branches' : b}</option>
-              ))}
+      <AppPageHeader
+        title="AIReports"
+        subtitle="Business Intelligence"
+        icon={BarChart3}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <select value={branch} onChange={e => setBranch(e.target.value)}
+              className="bg-white/10 border border-white/20 text-white text-xs rounded-lg px-3 py-1.5">
+              {branches.map(b => <option key={b} value={b} className="text-black">{b === 'all' ? 'All Branches' : b}</option>)}
             </select>
             {!loading && (
               <>
-                <button
-                  onClick={handleExport}
-                  title="Export CSV"
-                  className="flex items-center gap-1.5 text-white/70 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition text-xs font-medium border border-white/10"
-                >
+                <button onClick={handleExport} className="flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition text-xs font-medium border border-white/20">
                   <Download className="w-3.5 h-3.5" /> CSV
                 </button>
-                <button
-                  onClick={() => window.print()}
-                  title="Print / Save PDF"
-                  className="flex items-center gap-1.5 text-white/70 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition text-xs font-medium border border-white/10"
-                >
+                <button onClick={() => window.print()} className="flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition text-xs font-medium border border-white/20">
                   <Printer className="w-3.5 h-3.5" /> Print
                 </button>
               </>
             )}
-            <button onClick={load} disabled={loading}
-              className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
+            <button onClick={load} disabled={loading} className="p-1.5 rounded-lg hover:bg-white/10 text-white">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-black border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
+        }
+      >
+        <div className="flex gap-1 overflow-x-auto">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition ${
-                activeTab === tab.id
-                  ? 'border-cyan-400 text-cyan-400'
-                  : 'border-transparent text-white/50 hover:text-white/80'
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium whitespace-nowrap rounded-lg transition ${
+                activeTab === tab.id ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white'
               }`}>
               {tab.icon} {tab.label}
             </button>
           ))}
         </div>
-      </div>
+      </AppPageHeader>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">

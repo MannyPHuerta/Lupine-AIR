@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Search, AlertTriangle, Ban, ShieldCheck, User } from 'lucide-react';
+import { ArrowLeft, Plus, Search, AlertTriangle, Ban, ShieldCheck, User, Users } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CustomerCard from '@/components/customers/CustomerCard';
@@ -73,26 +74,16 @@ export default function Customers() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="text-lg font-bold">Customer Records</div>
-            <div className="text-indigo-300 text-xs">{customers.length} customers</div>
-          </div>
-          <div className="ml-auto">
-            <Button
-              onClick={() => setShowNew(true)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-sm gap-2"
-            >
-              <Plus className="w-4 h-4" /> New Customer
-            </Button>
-          </div>
-        </div>
-      </div>
+      <AppPageHeader
+        title="Customer Records"
+        subtitle={`${customers.length} customers`}
+        icon={Users}
+        action={
+          <Button onClick={() => setShowNew(true)} className="bg-white text-slate-900 hover:bg-slate-100 gap-2 text-sm">
+            <Plus className="w-4 h-4" /> New Customer
+          </Button>
+        }
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
         {/* Stats */}

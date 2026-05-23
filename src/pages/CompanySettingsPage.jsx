@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Loader2, Building2 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -133,17 +134,11 @@ export default function CompanySettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-3xl mx-auto">
-          <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="text-lg font-bold">Company Settings</div>
-            <div className="text-indigo-300 text-xs">Configure company info and invoice branding</div>
-          </div>
-        </div>
-      </div>
+      <AppPageHeader
+        title="Company Settings"
+        subtitle="Configure company info and invoice branding"
+        icon={Building2}
+      />
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {loading ? (

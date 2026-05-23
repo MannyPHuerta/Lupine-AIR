@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Tag, BarChart2, Trash2, Edit2, Check, X, TrendingDown } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -111,18 +112,11 @@ export default function DiscountManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-          <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="text-lg font-bold">Discount Manager</div>
-            <div className="text-indigo-300 text-xs">Promo codes · Volume rules · Audit log</div>
-          </div>
-        </div>
-      </div>
+      <AppPageHeader
+        title="Discount Manager"
+        subtitle="Promo codes · Volume rules · Audit log"
+        icon={Tag}
+      />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
 

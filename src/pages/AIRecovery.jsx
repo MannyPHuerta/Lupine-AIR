@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, Truck, MapPin, Camera, Zap, TrendingUp,
   Download, Phone, Calendar, DollarSign, Package, ShieldAlert, Navigation, Radar
 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import TheftIntelPanel from '@/components/recovery/TheftIntelPanel';
 import BoundaryVigilancePanel from '@/components/recovery/BoundaryVigilancePanel';
 import ThreatWatchPanel from '@/components/recovery/ThreatWatchPanel';
@@ -351,83 +352,47 @@ Provide a strategic recovery action plan for the operations manager.`,
   return (
     <div className="min-h-screen bg-gray-50">
       <ThreatNotificationBanner />
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-bold">AIRecovery Intelligence</div>
-            <div className="text-indigo-300 text-xs">{filteredRecoveries.length} recover{filteredRecoveries.length !== 1 ? 'ies' : 'y'} shown</div>
-          </div>
-          <select
-            value={branch}
-            onChange={e => setBranch(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-indigo-800 text-white text-sm"
-          >
-            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-          {!loading && filteredRecoveries.length > 0 && (
-            <button onClick={handleExportCSV} title="Export CSV" className="flex items-center gap-1.5 text-indigo-200 hover:text-white px-3 py-1.5 rounded-lg hover:bg-indigo-800 transition text-xs font-medium border border-indigo-700">
-              <Download className="w-3.5 h-3.5" /> CSV
+      <AppPageHeader
+        title="AIRecovery Intelligence"
+        subtitle={`${filteredRecoveries.length} recover${filteredRecoveries.length !== 1 ? 'ies' : 'y'} shown`}
+        icon={RotateCcw}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <select value={branch} onChange={e => setBranch(e.target.value)}
+              className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
+              {BRANCHES.map(b => <option key={b} value={b} className="text-black">{b}</option>)}
+            </select>
+            {!loading && filteredRecoveries.length > 0 && (
+              <button onClick={handleExportCSV} className="flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition text-xs font-medium border border-white/20">
+                <Download className="w-3.5 h-3.5" /> CSV
+              </button>
+            )}
+            <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-white/10 text-white">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
-          )}
-          <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-
-        {/* Main Tabs */}
-        <div className="px-4 max-w-5xl mx-auto flex gap-1 flex-wrap items-center">
-          {[
-            { key: 'recoveries', label: '🔄 Recoveries', icon: null },
-            { key: 'theft_intel', label: '🕵️ Theft Intel', icon: null },
-            { key: 'boundary', label: '🛰️ Boundary', icon: null },
-            { key: 'threatwatch', label: '📡 ThreatWatch', icon: null },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setMainTab(tab.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
-                mainTab === tab.key
-                  ? 'border-white text-white'
-                  : 'border-transparent text-indigo-300 hover:text-white'
-              }`}
-            >
+          </div>
+        }
+      >
+        <div className="flex gap-1 flex-wrap items-center">
+          {[{ key: 'recoveries', label: '🔄 Recoveries' }, { key: 'theft_intel', label: '🕵️ Theft Intel' }, { key: 'boundary', label: '🛰️ Boundary' }, { key: 'threatwatch', label: '📡 ThreatWatch' }].map(tab => (
+            <button key={tab.key} onClick={() => setMainTab(tab.key)}
+              className={`px-4 py-1.5 text-xs font-medium rounded-lg transition ${mainTab === tab.key ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white'}`}>
               {tab.label}
             </button>
           ))}
-          <button
-            onClick={() => navigate('/dispatch')}
-            className="ml-auto px-3 py-1.5 text-sm font-medium bg-cyan-600 hover:bg-cyan-700 rounded transition"
-          >
-            🚚 Dispatch
-          </button>
+          {mainTab === 'recoveries' && (
+            <>
+              {[{ key: 'open', label: 'Active' }, { key: 'completed', label: 'Completed' }, { key: 'all', label: 'All' }].map(tab => (
+                <button key={tab.key} onClick={() => setStatusFilter(tab.key)}
+                  className={`px-3 py-1 text-xs font-medium rounded transition ${statusFilter === tab.key ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white'}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </>
+          )}
+          <button onClick={() => navigate('/dispatch')} className="ml-auto px-3 py-1.5 text-xs font-medium bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-lg transition">🚚 Dispatch</button>
         </div>
-        {/* Recovery sub-tabs only when on recoveries tab */}
-        {mainTab === 'recoveries' && (
-          <div className="px-4 max-w-5xl mx-auto flex gap-1 pb-1">
-            {[
-              { key: 'open', label: 'Active' },
-              { key: 'completed', label: 'Completed' },
-              { key: 'all', label: 'All' },
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setStatusFilter(tab.key)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-t transition ${
-                  statusFilter === tab.key
-                    ? 'bg-white/20 text-white'
-                    : 'text-indigo-400 hover:text-white'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      </AppPageHeader>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 

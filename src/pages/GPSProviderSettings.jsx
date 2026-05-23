@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Plus, Pencil, Trash2, Wifi, WifiOff, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -266,27 +268,23 @@ export default function GPSProviderSettings() {
     load();
   };
 
+  const navigate = useNavigate();
+
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Settings className="w-6 h-6 text-indigo-600" /> GPS Provider Settings
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Configure GPS tracking providers for equipment location monitoring and geo-fence alerts.
-          </p>
-        </div>
-        {!showForm && (
-          <Button
-            onClick={() => { setEditing(null); setShowForm(true); }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Add Provider
-          </Button>
-        )}
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <AppPageHeader
+        title="GPS Provider Settings"
+        subtitle="Configure GPS tracking providers for equipment location monitoring and geo-fence alerts"
+        icon={Settings}
+        action={
+          !showForm && (
+            <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-white text-slate-900 hover:bg-slate-100 gap-2">
+              <Plus className="w-4 h-4" /> Add Provider
+            </Button>
+          )
+        }
+      />
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
       {/* Supported providers info */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
@@ -328,6 +326,7 @@ export default function GPSProviderSettings() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }

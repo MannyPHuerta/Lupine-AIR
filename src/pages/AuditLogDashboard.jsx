@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Download, RefreshCw, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Search, Download, RefreshCw, Loader2, ChevronDown, ChevronRight, ScrollText } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -177,24 +178,21 @@ export default function AuditLogDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-bold">Audit Log Dashboard</div>
-            <div className="text-indigo-300 text-xs">{logs.length} total events | {filtered.length} shown</div>
+      <AppPageHeader
+        title="Audit Log Dashboard"
+        subtitle={`${logs.length} total events | ${filtered.length} shown`}
+        icon={ScrollText}
+        action={
+          <div className="flex items-center gap-2">
+            <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-white/10 text-white">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <Button onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-2 bg-white text-slate-900 hover:bg-slate-100">
+              <Download className="w-4 h-4" /> Export CSV
+            </Button>
           </div>
-          <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <Button onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-2 bg-white text-indigo-900 hover:bg-indigo-50">
-            <Download className="w-4 h-4" /> Export CSV
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
         {/* Search & Date Range */}

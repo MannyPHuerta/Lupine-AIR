@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Edit2, Trash2, Loader2, Shield, Users, Mail, UserPlus, RefreshCw } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PERMISSIONS, BUILT_IN_ROLES } from '@/lib/permissions';
@@ -337,40 +338,29 @@ export default function RoleManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Role & Employee Manager</div>
-            <div className="text-indigo-300 text-xs">{roles.length} roles defined</div>
+      <AppPageHeader
+        title="Role & Employee Manager"
+        subtitle={`${roles.length} roles defined`}
+        icon={Shield}
+        action={
+          <div className="flex items-center gap-2">
+            {tab === 'roles' && (
+              <Button onClick={() => { setEditing(null); setShowForm(true); }} className="gap-2 bg-white text-slate-900 hover:bg-slate-100">
+                <Plus className="w-4 h-4" /> New Role
+              </Button>
+            )}
           </div>
-          {tab === 'roles' && (
-            <Button
-              onClick={() => { setEditing(null); setShowForm(true); }}
-              className="gap-2 bg-white text-indigo-900 hover:bg-indigo-50"
-            >
-              <Plus className="w-4 h-4" /> New Role
-            </Button>
-          )}
-        </div>
-        {/* Tabs */}
-        <div className="px-4 max-w-5xl mx-auto flex gap-1">
+        }
+      >
+        <div className="flex gap-1">
           {[{ key: 'roles', label: 'Roles' }, { key: 'employees', label: 'Employees' }].map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
-                tab === t.key ? 'border-white text-white' : 'border-transparent text-indigo-300 hover:text-white'
-              }`}
-            >
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-lg transition ${tab === t.key ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white'}`}>
               {t.label}
             </button>
           ))}
         </div>
-      </div>
+      </AppPageHeader>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
         {tab === 'roles' ? (
