@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles, User, Star } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import RentalCartPanel from '@/components/counter/RentalCartPanel';
@@ -175,63 +176,40 @@ export default function Counter() {
           ⚠ PRACTICE MODE — Nothing will be saved ⚠
         </div>
       )}
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-20 shadow-lg">
-        <div className="px-4 py-2 flex items-center gap-3">
-          <button onClick={() => step === 'checkout' ? setStep('equipment') : navigate('/')} className="p-2 rounded hover:bg-indigo-800 text-sm">
-            ← Back
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Counter</div>
-            <div className="text-indigo-300 text-xs">{branch}</div>
-          </div>
-
-          {/* View toggle */}
-          <div className="flex items-center gap-1 bg-indigo-800 rounded-lg p-0.5 text-xs">
-            <button className="px-3 py-1.5 rounded-md bg-white text-indigo-900 font-semibold">Quick</button>
-            <button onClick={() => navigate('/availability')} className="px-3 py-1.5 rounded-md text-indigo-300 hover:text-white font-semibold transition">Full Form</button>
-          </div>
-
-          {/* Practice Mode toggle */}
-          <button
-            onClick={() => setPracticeMode(p => { const next = !p; localStorage.setItem('practiceMode', next); return next; })}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
-              practiceMode
-                ? 'bg-red-500 border-red-400 text-white animate-pulse'
-                : 'bg-indigo-800 border-indigo-600 text-indigo-300 hover:text-white'
-            }`}
-            title="Toggle Practice Mode — no data is saved"
-          >
-            <FlaskConical className="w-3.5 h-3.5" />
-            {practiceMode ? 'PRACTICE ON' : 'Practice'}
-          </button>
-
-          {/* Step pills */}
-          <div className="hidden sm:flex items-center gap-1 text-xs">
-            {[
-              { key: 'equipment', label: '1. Equipment' },
-              { key: 'checkout', label: '2. Checkout' },
-            ].map((s, i, arr) => (
-              <span key={s.key} className="flex items-center gap-1">
-                <span className={`px-2 py-1 rounded font-semibold ${step === s.key ? 'bg-cyan-500 text-black' : 'text-indigo-400'}`}>
-                  {s.label}
+      <AppPageHeader
+        title="Counter"
+        subtitle={branch}
+        icon={ShoppingCart}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5 text-xs">
+              <button className="px-3 py-1.5 rounded-md bg-white text-slate-900 font-semibold">Quick</button>
+              <button onClick={() => navigate('/availability')} className="px-3 py-1.5 rounded-md text-white/70 hover:text-white font-semibold transition">Full Form</button>
+            </div>
+            <button
+              onClick={() => setPracticeMode(p => { const next = !p; localStorage.setItem('practiceMode', next); return next; })}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${practiceMode ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              {practiceMode ? 'PRACTICE ON' : 'Practice'}
+            </button>
+            <div className="hidden sm:flex items-center gap-1 text-xs">
+              {[{ key: 'equipment', label: '1. Equipment' }, { key: 'checkout', label: '2. Checkout' }].map((s, i, arr) => (
+                <span key={s.key} className="flex items-center gap-1">
+                  <span className={`px-2 py-1 rounded font-semibold ${step === s.key ? 'bg-cyan-500 text-black' : 'text-white/50'}`}>{s.label}</span>
+                  {i < arr.length - 1 && <ChevronRight className="w-3 h-3 text-white/30" />}
                 </span>
-                {i < arr.length - 1 && <ChevronRight className="w-3 h-3 text-indigo-600" />}
-              </span>
-            ))}
+              ))}
+            </div>
+            <select value={branch} onChange={e => setBranch(e.target.value)}
+              className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs backdrop-blur-sm">
+              {['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'].map(b => (
+                <option key={b} value={b} className="text-black">{b}</option>
+              ))}
+            </select>
           </div>
-
-          <select
-            value={branch}
-            onChange={e => setBranch(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-indigo-800 text-white text-sm"
-          >
-            {['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'].map(b => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── STEP 1: Equipment search + cart ── */}
       {step === 'equipment' && (

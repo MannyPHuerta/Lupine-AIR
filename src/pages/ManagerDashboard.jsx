@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, AlertCircle, TrendingUp, Clock, Loader2, Truck, DollarSign, Droplets, RotateCcw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, AlertCircle, TrendingUp, Clock, Loader2, Truck, DollarSign, Droplets, RotateCcw, BarChart3 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 
 export default function ManagerDashboard() {
@@ -73,66 +74,42 @@ export default function ManagerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Manager Dashboard</div>
-            <div className="text-indigo-300 text-xs">Branch operations overview</div>
+      <AppPageHeader
+        title="Manager Dashboard"
+        subtitle="Branch operations overview"
+        icon={BarChart3}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <select value={branch} onChange={e => setBranch(e.target.value)}
+              className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs backdrop-blur-sm">
+              {['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'].map(b => (
+                <option key={b} value={b} className="text-black">{b}</option>
+              ))}
+            </select>
+            <button onClick={() => navigate('/dispatch')} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition">
+              <Truck className="w-3.5 h-3.5" /> Dispatch
+            </button>
+            <button onClick={() => navigate('/accounting')} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition">
+              <DollarSign className="w-3.5 h-3.5" /> Accounting
+            </button>
+            <button onClick={() => navigate('/planner-queue')} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition">
+              🎪 Planner Queue
+            </button>
+            <button onClick={() => navigate('/shop-floor')} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition">
+              🔧 Shop
+            </button>
+            <button onClick={() => navigate('/laundry')} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition">
+              <Droplets className="w-3.5 h-3.5" /> Laundry
+            </button>
+            <button onClick={() => navigate('/airecovery')} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition">
+              <RotateCcw className="w-3.5 h-3.5" /> Recovery
+            </button>
+            <button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white">
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
-          <select
-            value={branch}
-            onChange={e => setBranch(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-indigo-800 text-white text-sm"
-          >
-            {['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'].map(b => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => navigate('/dispatch')}
-            className="flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-xs font-medium"
-          >
-            <Truck className="w-4 h-4" /> Dispatch
-          </button>
-          <button
-            onClick={() => navigate('/accounting')}
-            className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-lg text-xs font-medium"
-          >
-            <DollarSign className="w-4 h-4" /> Accounting
-          </button>
-          <button
-            onClick={() => navigate('/planner-queue')}
-            className="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-600 px-3 py-1.5 rounded-lg text-xs font-medium"
-          >
-            🎪 Planner Queue
-          </button>
-          <button
-            onClick={() => navigate('/shop-floor')}
-            className="flex items-center gap-1.5 bg-orange-700 hover:bg-orange-600 px-3 py-1.5 rounded-lg text-xs font-medium"
-          >
-            🔧 Shop
-          </button>
-          <button
-            onClick={() => navigate('/laundry')}
-            className="flex items-center gap-1.5 bg-cyan-700 hover:bg-cyan-600 px-3 py-1.5 rounded-lg text-xs font-medium"
-          >
-            <Droplets className="w-4 h-4" /> Laundry
-          </button>
-          <button
-            onClick={() => navigate('/airecovery')}
-            className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-600 px-3 py-1.5 rounded-lg text-xs font-medium"
-          >
-            <RotateCcw className="w-4 h-4" /> Recovery
-          </button>
-          <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* KPI Cards */}

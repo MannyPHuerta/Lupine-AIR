@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload, Palette } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { invalidateHeaderStyleCache } from '@/lib/useHeaderStyle';
+import AppPageHeader from '@/components/AppPageHeader';
 
 export default function BrandingSettings() {
   const navigate = useNavigate();
@@ -80,26 +81,22 @@ export default function BrandingSettings() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-          <button onClick={() => navigate('/company-settings')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Branding & Theme</div>
-            <div className="text-indigo-300 text-xs">Customize your internal staff application</div>
+      <AppPageHeader
+        title="Branding & Theme"
+        subtitle="Customize your internal staff application"
+        icon={Palette}
+        action={
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate('/company-settings')} className="p-2 rounded-lg hover:bg-white/10 text-white transition">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <Button onClick={handleSave} disabled={saving} className="gap-2 bg-white text-slate-900 hover:bg-slate-100">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saved ? 'Saved!' : 'Save'}
+            </Button>
           </div>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="gap-2 bg-white text-indigo-900 hover:bg-indigo-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saved ? 'Saved!' : 'Save'}
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {saved && (

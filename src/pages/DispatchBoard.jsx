@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, RefreshCw, Loader2, Truck, RotateCcw, Map, CalendarClock } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import DispatchMap from '@/components/dispatch/DispatchMap';
 import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
 import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
@@ -149,57 +150,36 @@ export default function DispatchBoard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Dispatch Board</div>
-            <div className="text-indigo-300 text-xs">{inProgress} in progress · {completed} completed</div>
+      <AppPageHeader
+        title="Dispatch Board"
+        subtitle={`${inProgress} in progress · ${completed} completed`}
+        icon={Truck}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
+              className="h-8 text-xs px-2 rounded bg-white/10 text-white border-0 backdrop-blur-sm">
+              <option value="" className="text-black">All Branches</option>
+              {BRANCHES.map(b => <option key={b} value={b} className="text-black">{b}</option>)}
+            </select>
+            <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)}
+              className="h-8 text-xs px-2 rounded bg-white/10 text-white border-0 backdrop-blur-sm" />
+            <button onClick={load} className="p-2 rounded-lg hover:bg-white/10 text-white"><RefreshCw className="w-4 h-4" /></button>
           </div>
-          <select
-            value={branchFilter}
-            onChange={e => setBranchFilter(e.target.value)}
-            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
-          >
-            <option value="">All Branches</option>
-            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={e => setDateFilter(e.target.value)}
-            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
-          />
-          <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-
+        }
+      >
         {/* Tabs */}
-        <div className="px-4 pb-2 flex gap-2 max-w-6xl mx-auto">
-          <button
-            onClick={() => setTab('deliveries')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${tab === 'deliveries' ? 'bg-white text-indigo-900' : 'text-indigo-300 hover:text-white'}`}
-          >
+        <div className="flex gap-2">
+          <button onClick={() => setTab('deliveries')} className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${tab === 'deliveries' ? 'bg-white text-slate-900' : 'text-white/60 hover:text-white'}`}>
             🚚 Deliveries ({filteredDeliveries.length})
           </button>
-          <button
-            onClick={() => setTab('recoveries')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${tab === 'recoveries' ? 'bg-white text-indigo-900' : 'text-indigo-300 hover:text-white'}`}
-          >
+          <button onClick={() => setTab('recoveries')} className={`px-4 py-1.5 rounded-full text-xs font-medium transition ${tab === 'recoveries' ? 'bg-white text-slate-900' : 'text-white/60 hover:text-white'}`}>
             🔄 Recoveries ({filteredRecoveries.length})
           </button>
-          <button
-            onClick={() => setTab('map')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition flex items-center gap-1 ${tab === 'map' ? 'bg-white text-indigo-900' : 'text-indigo-300 hover:text-white'}`}
-          >
+          <button onClick={() => setTab('map')} className={`px-4 py-1.5 rounded-full text-xs font-medium transition flex items-center gap-1 ${tab === 'map' ? 'bg-white text-slate-900' : 'text-white/60 hover:text-white'}`}>
             <Map className="w-3 h-3" /> Map
           </button>
         </div>
-      </div>
+      </AppPageHeader>
 
       {tab === 'map' && !loading && (
         <DispatchMap

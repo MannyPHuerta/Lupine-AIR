@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench, FlaskConical } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import DeliveryRecommendation from '@/components/counter/DeliveryRecommendation';
 import PracticeModeWatermark from '@/components/PracticeModeWatermark';
 import RentalAlertModal from '@/components/equipment/RentalAlertModal';
@@ -679,131 +680,43 @@ export default function AvailabilityManager() {
           ⚠ PRACTICE MODE — Nothing will be saved ⚠
         </div>
       )}
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg print:hidden">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="text-lg font-bold">New Rental Quote</div>
-            <div className="text-indigo-300 text-xs">{equipment.length} items in catalog</div>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex items-center gap-1 bg-indigo-800 rounded-lg p-0.5 text-xs mr-1">
-              <button onClick={() => navigate('/counter')} className="px-3 py-1.5 rounded-md text-indigo-300 hover:text-white font-semibold transition">Quick</button>
-              <button className="px-3 py-1.5 rounded-md bg-white text-indigo-900 font-semibold">Full Form</button>
+      <AppPageHeader
+        title="New Rental Quote"
+        subtitle={`${equipment.length} items in catalog`}
+        icon={Plus}
+        action={
+          <div className="flex items-center gap-2 flex-wrap print:hidden">
+            <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5 text-xs">
+              <button onClick={() => navigate('/counter')} className="px-3 py-1.5 rounded-md text-white/70 hover:text-white font-semibold transition">Quick</button>
+              <button className="px-3 py-1.5 rounded-md bg-white text-slate-900 font-semibold">Full Form</button>
             </div>
-            {/* Practice Mode toggle */}
             <button
               onClick={() => setPracticeMode(p => { const next = !p; localStorage.setItem('practiceMode', next); return next; })}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
-                practiceMode
-                  ? 'bg-red-500 border-red-400 text-white animate-pulse'
-                  : 'bg-indigo-800 border-indigo-600 text-indigo-300 hover:text-white'
-              }`}
-              title="Toggle Practice Mode — no data is saved"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition border ${practiceMode ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
             >
               <FlaskConical className="w-3.5 h-3.5" />
               {practiceMode ? 'PRACTICE ON' : 'Practice'}
             </button>
-            <button
-              onClick={() => {
-                if (confirm('Restore last saved form state?')) {
-                  const saved = localStorage.getItem('rentalFormState');
-                  if (saved) {
-                    try {
-                      const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p } = JSON.parse(saved);
-                      setCustomer(c || EMPTY_CUSTOMER);
-                      setLines(l || [newLine()]);
-                      setDiscount(d || '');
-                      setTaxRate(t || '8.25');
-                      setAmountPaid(a || '');
-                      setPaymentMethod(p || '');
-                    } catch (_) {}
-                  }
-                }
-              }}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Restore saved form state"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/rental-history')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Rental history"
-            >
-              <History className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => navigate('/pricing-editor')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Edit pricing"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/dependencies-editor')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Manage dependencies"
-            >
-              <Link2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/branch-settings')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Branch invoice settings"
-            >
-              <Building2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/company-settings')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Company settings & logo"
-            >
-              <Cog className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/equipment-status')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Equipment status board"
-            >
-              <Activity className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/customers')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Customer records"
-            >
-              <Users className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/delivery-matrix')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Delivery matrix & rates"
-            >
-              <Truck className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/discounts')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Discount manager"
-            >
-              <Tag className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/shop')}
-              className="text-indigo-200 hover:bg-indigo-800 p-2 rounded-lg transition"
-              title="Shop dashboard"
-            >
-              <Wrench className="w-4 h-4" />
-            </button>
+            {[
+              { icon: RotateCcw, title: 'Restore saved form', onClick: () => { if (confirm('Restore last saved form state?')) { const s = localStorage.getItem('rentalFormState'); if (s) { try { const { customer: c, lines: l, discount: d, taxRate: t, amountPaid: a, paymentMethod: p } = JSON.parse(s); setCustomer(c || EMPTY_CUSTOMER); setLines(l || [newLine()]); setDiscount(d || ''); setTaxRate(t || '8.25'); setAmountPaid(a || ''); setPaymentMethod(p || ''); } catch(_) {} } } } },
+              { icon: History, title: 'Rental history', onClick: () => navigate('/rental-history') },
+              { icon: Settings, title: 'Pricing editor', onClick: () => navigate('/pricing-editor') },
+              { icon: Link2, title: 'Dependencies', onClick: () => navigate('/dependencies-editor') },
+              { icon: Building2, title: 'Branch settings', onClick: () => navigate('/branch-settings') },
+              { icon: Cog, title: 'Company settings', onClick: () => navigate('/company-settings') },
+              { icon: Activity, title: 'Equipment status', onClick: () => navigate('/equipment-status') },
+              { icon: Users, title: 'Customers', onClick: () => navigate('/customers') },
+              { icon: Truck, title: 'Delivery matrix', onClick: () => navigate('/delivery-matrix') },
+              { icon: Tag, title: 'Discounts', onClick: () => navigate('/discounts') },
+              { icon: Wrench, title: 'Shop', onClick: () => navigate('/shop') },
+            ].map(({ icon: Ic, title, onClick }) => (
+              <button key={title} onClick={onClick} title={title} className="p-2 rounded-lg hover:bg-white/10 text-white transition">
+                <Ic className="w-4 h-4" />
+              </button>
+            ))}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {/* Branch selector — top of form, establishes context for everything below */}
