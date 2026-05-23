@@ -8,7 +8,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -292,14 +292,26 @@ export default function AppLayout() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-slate-700 px-4 py-3">
-        <Link
-          to="/air"
-          onClick={() => setSidebarOpen(false)}
-          className="flex items-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition"
-        >
-          <Globe className="w-3.5 h-3.5" /> View Public Website
-        </Link>
+      <div className="border-t border-slate-700 px-4 py-3 space-y-2">
+        {user && (
+          <div className="text-xs text-slate-500 truncate">{user.email}</div>
+        )}
+        <div className="flex items-center justify-between">
+          <Link
+            to="/air"
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition"
+          >
+            <Globe className="w-3.5 h-3.5" /> Public Site
+          </Link>
+          <button
+            onClick={() => base44.auth.logout('/')}
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition"
+            title="Log out"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Log out
+          </button>
+        </div>
       </div>
     </div>
   );
