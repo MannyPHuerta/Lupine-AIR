@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, TrendingUp, DollarSign, Package, Users, Zap, Printer, Download, Filter, X } from 'lucide-react';
+import { Loader2, RefreshCw, TrendingUp, DollarSign, Package, Users, Zap, Printer, Download, Filter, X } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
@@ -176,29 +177,19 @@ export default function DemandPatterns() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-             <ArrowLeft className="w-5 h-5" />
-           </button>
-           <div>
-             <div className="text-lg font-bold">Customer Demand Patterns</div>
-             <div className="text-xs" style={{ color: '#F5A623' }}>AI-powered rental intelligence</div>
+      <AppPageHeader
+        title="Demand Patterns"
+        subtitle="AI-powered rental intelligence"
+        icon={TrendingUp}
+        backTo="/lupine"
+        action={
+          <div className="flex items-center gap-1">
+            <button onClick={() => window.print()} disabled={loading} className="p-2 rounded-lg hover:bg-white/10 text-white disabled:opacity-40"><Printer className="w-4 h-4" /></button>
+            <button onClick={() => handlePDFDownload('Customer Demand Patterns', 'printable-area')} disabled={loading} className="p-2 rounded-lg hover:bg-white/10 text-white disabled:opacity-40"><Download className="w-4 h-4" /></button>
+            <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-white/10 text-white"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
           </div>
-          <div className="ml-auto flex items-center gap-1">
-            <button onClick={() => window.print()} disabled={loading} className="p-2 rounded-lg hover:opacity-80 disabled:opacity-40" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)', color: '#a0aec0' }} title="Print">
-              <Printer className="w-4 h-4" />
-            </button>
-            <button onClick={() => handlePDFDownload('Customer Demand Patterns', 'printable-area')} disabled={loading} className="p-2 rounded-lg hover:opacity-80 disabled:opacity-40" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)', color: '#a0aec0' }} title="Download PDF">
-              <Download className="w-4 h-4" />
-            </button>
-            <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)', color: '#a0aec0' }}>
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filters Bar */}
       <div className="bg-white border-b shadow-sm">

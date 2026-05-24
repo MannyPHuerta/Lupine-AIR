@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle2, AlertTriangle, Package, Wrench } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertTriangle, Package, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import AppPageHeader from '@/components/AppPageHeader';
 
 export default function InspectionQueue() {
   const navigate = useNavigate();
@@ -82,23 +83,13 @@ export default function InspectionQueue() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-          <button onClick={() => navigate('/shop-floor')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Equipment Inspection Queue</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>
-              {flaggedForInspection.length} item{flaggedForInspection.length !== 1 ? 's' : ''} waiting for inspection
-            </div>
-          </div>
-          <button onClick={load} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            ↻
-          </button>
-        </div>
-      </div>
+      <AppPageHeader
+        title="Inspection Queue"
+        subtitle={`${flaggedForInspection.length} item${flaggedForInspection.length !== 1 ? 's' : ''} waiting`}
+        icon={CheckCircle2}
+        backTo="/shop-floor"
+        action={<button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white">↻</button>}
+      />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {flaggedForInspection.length === 0 ? (

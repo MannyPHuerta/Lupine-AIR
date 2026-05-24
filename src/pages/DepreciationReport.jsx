@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Download, Loader2 } from 'lucide-react';
+import { RefreshCw, Download, Loader2 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { calculateDepreciation } from '@/lib/depreciation';
@@ -84,21 +85,13 @@ export default function DepreciationReport() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-             <ArrowLeft className="w-5 h-5" />
-           </button>
-           <div className="flex-1 min-w-0">
-             <div className="text-lg font-bold">Depreciation Report</div>
-             <div className="text-xs" style={{ color: '#F5A623' }}>{equipment.length} assets in catalog</div>
-           </div>
-           <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)', color: '#a0aec0' }}>
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
+      <AppPageHeader
+        title="Depreciation Report"
+        subtitle={`${equipment.length} assets in catalog`}
+        icon={Download}
+        backTo="/lupine"
+        action={<button onClick={load} disabled={loading} className="p-1.5 rounded-lg hover:bg-white/10 text-white"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>}
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
         {/* Controls */}
