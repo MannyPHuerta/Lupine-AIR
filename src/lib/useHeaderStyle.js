@@ -4,9 +4,14 @@ import { base44 } from '@/api/base44Client';
 let _cached = null;
 const _listeners = new Set();
 
-export function invalidateHeaderStyleCache() {
-  _cached = null;
-  _listeners.forEach(fn => fn());
+export function invalidateHeaderStyleCache(newStyle) {
+  if (newStyle) {
+    _cached = newStyle;
+    _listeners.forEach(fn => fn(newStyle));
+  } else {
+    _cached = null;
+    _listeners.forEach(fn => fn());
+  }
 }
 
 /**
@@ -27,12 +32,16 @@ export function useHeaderStyle() {
       setStyle(s);
     }).catch(() => {});
 
-    const refresh = () => {
-      base44.entities.CompanySettings.list().then(list => {
-        const s = list[0]?.headerStyle || 'classic';
-        _cached = s;
-        setStyle(s);
-      }).catch(() => {});
+    const refresh = (newStyle) => {
+      if (newStyle) {
+        setStyle(newStyle);
+      } else {
+        base44.entities.CompanySettings.list().then(list => {
+          const s = list[0]?.headerStyle || 'classic';
+          _cached = s;
+          setStyle(s);
+        }).catch(() => {});
+      }
     };
     _listeners.add(refresh);
     return () => _listeners.delete(refresh);

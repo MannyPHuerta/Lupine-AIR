@@ -61,7 +61,7 @@ export default function BrandingSettings() {
       } else {
         await base44.entities.CompanySettings.create(form);
       }
-      invalidateHeaderStyleCache();
+      invalidateHeaderStyleCache(form.headerStyle);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
