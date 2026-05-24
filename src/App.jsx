@@ -83,6 +83,7 @@ import Timesheets from "./pages/Timesheets";
 import ClockIn from "./pages/ClockIn";
 import AIRecovery from "./pages/AIRecovery";
 import GPSProviderSettings from "./pages/GPSProviderSettings";
+import UserManagement from "./pages/UserManagement";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -187,6 +188,7 @@ const AuthenticatedApp = () => {
         <Route path="/timesheets" element={<Timesheets />} />
         <Route path="/airecovery" element={<AIRecovery />} />
         <Route path="/gps-settings" element={<GPSProviderSettings />} />
+        <Route path="/user-management" element={<UserManagement />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
