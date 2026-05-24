@@ -116,6 +116,7 @@ const navGroups = [
       { label: 'Branch Settings', path: '/branch-settings', icon: Building2 },
       { label: 'Company Settings', path: '/company-settings', icon: Building2 },
       { label: 'Employee Profiles', path: '/employee-profiles', icon: UserCog },
+      { label: 'User Management', path: '/user-management', icon: Users },
       { label: 'Roles', path: '/roles', icon: Shield },
       { label: 'Discounts & Promos', path: '/discounts', icon: Star },
       { label: 'Branding', path: '/branding', icon: Star },
