@@ -22,6 +22,12 @@ export default function WorkingBranchModal({ user, onClose }) {
         return;
       }
 
+      // If no branches at all, nothing to show — close
+      if (names.length === 0) {
+        onClose();
+        return;
+      }
+
       // Default selection: home branch if available and in list, else first
       if (user?.homeBranch && names.includes(user.homeBranch)) {
         setSelected(user.homeBranch);
