@@ -206,7 +206,7 @@ export default function DeliveryDetail() {
 
       {/* Offline / Pending Sync Banner */}
       {(!isOnline || pendingCount > 0) && (
-        <div className={`px-4 py-4 flex items-center gap-3 text-base font-semibold ${!isOnline ? 'bg-amber-500 text-white' : 'bg-blue-600 text-white'}`}>
+        <div className={`px-4 py-6 flex items-center gap-4 text-lg font-bold ${!isOnline ? 'bg-amber-400 text-white shadow-lg' : 'bg-blue-500 text-white shadow-lg'}`}>
           {!isOnline ? (
             <>
               <WifiOff className="w-4 h-4 flex-shrink-0" />
