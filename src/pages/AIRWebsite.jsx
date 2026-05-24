@@ -4,7 +4,7 @@ import { motion, useInView } from 'framer-motion';
 import {
   Zap, BarChart3, MapPin, Clock, Users, Calendar, FileText,
   DollarSign, CheckCircle, ChevronRight, ArrowRight, Menu, X,
-  Truck, Shield, Brain, Star, Play, Building2, TrendingUp, Package, AlertTriangle, Wrench, Route
+  Truck, Shield, Brain, Star, Play, Building2, TrendingUp, Package, AlertTriangle, Wrench, Route, Phone
 } from 'lucide-react';
 
 const fadeUp = { hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
@@ -152,6 +152,7 @@ function Hero() {
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg', anchor: '#aireports' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/2e3d7b226_AIRepair_png_transparentBlack-01.svg', anchor: '#airepair' },
             { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/aea5997d3_AIRoads_black.png', anchor: '#airoads' },
+            { icon: 'https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg', anchor: '#airecovery' },
           ].map((p, idx) => (
             <button key={idx} onClick={() => document.querySelector(p.anchor)?.scrollIntoView({ behavior: 'smooth' })}
               className="group">
@@ -496,6 +497,53 @@ function AIRepairPreview() {
       </div>
       <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg px-3 py-2 text-xs text-orange-300">
         🚨 2 units blocked by parts — expedited delivery ETA Friday
+      </div>
+    </div>
+  );
+}
+
+// ─── AIRecovery Preview ───────────────────────────────────────────────────────
+function AIRecoveryPreview() {
+  return (
+    <div className="bg-slate-900 rounded-2xl border border-red-500/20 p-6 space-y-4 shadow-2xl shadow-red-500/5">
+      <div className="flex items-center justify-between">
+        <div className="text-white font-bold text-sm">Theft Alert — Unit #4201</div>
+        <div className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded-full">🚨 Active Breach</div>
+      </div>
+      <div className="bg-slate-800 rounded-lg p-3 space-y-2">
+        <div className="text-xs text-white/40 uppercase tracking-wider">Last Known Location</div>
+        <div className="font-semibold text-white text-sm">Generator (Serial: GEN-4201)</div>
+        <div className="text-xs text-white/50">📍 26.2034° N, 98.2301° W · 2 hours ago</div>
+      </div>
+      <div className="space-y-2">
+        {[
+          { label: 'Geofence Breach', time: '2h 14m ago', color: 'text-red-400' },
+          { label: 'Last Check-in', time: '2h 0m ago', color: 'text-amber-400' },
+          { label: 'Battery Level', time: '67%', color: 'text-green-400' },
+        ].map((item, i) => (
+          <div key={i} className="flex items-center justify-between bg-slate-800 rounded-lg px-3 py-2">
+            <div className="text-white text-xs font-medium">{item.label}</div>
+            <div className={`font-bold text-sm ${item.color}`}>{item.time}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2 pt-2">
+        {[
+          { label: 'Distance from Base', val: '47 mi', color: 'text-red-400' },
+          { label: 'Customer', val: 'Juan Pérez', color: 'text-white' },
+        ].map((s, i) => (
+          <div key={i} className="bg-slate-800 rounded-lg py-2 text-center">
+            <div className={`font-bold text-sm ${s.color}`}>{s.val}</div>
+            <div className="text-white/40 text-xs">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-xs text-red-300">
+        🚔 Customer unresponsive — Police report #2026-04821 filed. Recovery team notified.
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1 bg-slate-700 rounded-lg py-2 text-center text-xs text-white/50">View History</div>
+        <div className="flex-1 bg-red-500 rounded-lg py-2 text-center text-xs font-bold text-black">Track Live →</div>
       </div>
     </div>
   );
@@ -873,6 +921,25 @@ export default function AIRWebsite() {
         cta="Open AIRoads"
         ctaRoute="/airoads"
         preview={<AIRoadsPreview />}
+      />
+
+      <ProductSection
+        id="airecovery"
+        tag="AIRecovery · Theft Prevention"
+        title={<img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/359e95609_AIReportsBlack-01.svg" alt="AIRecovery" className="h-20 w-20 rounded-2xl" />}
+        tagline="Know where your equipment is. Always."
+        description="GPS integration with Samsara, CalAmp, and Verizon Connect provides real-time location tracking, geofence breach alerts, and theft recovery support. When equipment goes missing, AIRecovery gives you the intel to act fast — from last known location to police report documentation."
+        color="red"
+        features={[
+          { icon: <MapPin className="w-5 h-5" />, title: 'Real-Time GPS Tracking', desc: 'Live location data from major GPS providers — Samsara, CalAmp, Verizon Connect.' },
+          { icon: <AlertTriangle className="w-5 h-5" />, title: 'Geofence Breach Alerts', desc: 'Instant notifications when equipment leaves authorized zones without authorization.' },
+          { icon: <Shield className="w-5 h-5" />, title: 'Theft Recovery Support', desc: 'Police report documentation, customer communication logs, and recovery team coordination.' },
+          { icon: <Clock className="w-5 h-5" />, title: 'Movement History', desc: 'Complete audit trail of location pings, check-ins, and battery status for investigations.' },
+          { icon: <Phone className="w-5 h-5" />, title: 'Customer Verification', desc: 'DL scan, phone verification, and secondary contact tracking for fraud prevention.' },
+        ]}
+        cta="Open AIRecovery"
+        ctaRoute="/airecovery"
+        preview={<AIRecoveryPreview />}
       />
 
       <PlatformSection />
