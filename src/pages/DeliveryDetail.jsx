@@ -151,57 +151,60 @@ export default function DeliveryDetail() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-white p-2 rounded-lg hover:bg-indigo-800">
+        <div className="px-4 py-4 flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="text-white p-3 rounded-xl hover:bg-indigo-800 active:bg-indigo-700 flex-shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">{delivery.customerName}</div>
-            <div className="text-indigo-300 text-xs">{delivery.customerCity}, {delivery.customerState}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xl font-bold leading-tight truncate">{delivery.customerName}</div>
+            <div className="text-indigo-300 text-sm mt-0.5">{delivery.customerCity}, {delivery.customerState}</div>
           </div>
           {!['completed','cancelled','departed','arrived','setup_complete','signed'].includes(delivery.status) && (
             <button
               onClick={() => setShowReschedule(true)}
-              className="flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+              className="flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-600 active:bg-indigo-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition flex-shrink-0"
             >
-              <CalendarClock className="w-3.5 h-3.5" /> Reschedule
+              <CalendarClock className="w-4 h-4" /> Reschedule
             </button>
           )}
           <StatusIndicator status={delivery.status} />
         </div>
+
+        {/* Progress stepper */}
+        <DeliveryProgressBar status={delivery.status} />
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Customer Info */}
-        <div className="bg-white rounded-lg border p-4 space-y-3">
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-gray-700">
+        <div className="bg-white rounded-xl border p-4 space-y-3 shadow-sm">
+          <div className="flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+            <div className="text-base text-gray-700">
               {delivery.customerAddress}<br />
               {delivery.customerCity}, {delivery.customerState} {delivery.customerZip}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <a href={`tel:${delivery.customerPhone}`} className="text-sm text-indigo-600 hover:underline">
+          {delivery.customerPhone && (
+            <a href={`tel:${delivery.customerPhone}`} className="flex items-center gap-3 text-base text-indigo-600 active:text-indigo-800">
+              <Phone className="w-5 h-5 flex-shrink-0" />
               {delivery.customerPhone}
             </a>
-          </div>
+          )}
           {delivery.customerPhone && (
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => sendSMS('on_my_way')}
                 disabled={sendingSMS}
-                className="flex items-center gap-1 text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100 disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-3 rounded-xl hover:bg-indigo-100 active:bg-indigo-200 disabled:opacity-50 transition"
               >
-                <MessageSquare className="w-3 h-3" /> On My Way
+                <MessageSquare className="w-4 h-4" /> On My Way
               </button>
               <button
                 onClick={() => sendSMS('arrived')}
                 disabled={sendingSMS}
-                className="flex items-center gap-1 text-xs bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-100 disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1.5 text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-700 px-3 py-3 rounded-xl hover:bg-amber-100 active:bg-amber-200 disabled:opacity-50 transition"
               >
-                <MessageSquare className="w-3 h-3" /> Arrived
+                <MessageSquare className="w-4 h-4" /> Arrived
               </button>
             </div>
           )}
@@ -237,14 +240,14 @@ export default function DeliveryDetail() {
         ) : null}
 
         {/* Action Buttons */}
-        <div className="space-y-2">
+        <div className="space-y-3 pb-8">
           {delivery.status === 'scheduled' && (
             <Button
               onClick={() => handleStatusUpdate('departed')}
               disabled={updating}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              className="w-full h-14 text-base font-bold bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+              {updating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
               Mark as Departed
             </Button>
           )}
@@ -253,9 +256,9 @@ export default function DeliveryDetail() {
             <Button
               onClick={() => handleStatusUpdate('arrived')}
               disabled={updating || !canProceed.arrived}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              className="w-full h-14 text-base font-bold bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+              {updating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
               Mark as Arrived
             </Button>
           )}
@@ -264,9 +267,9 @@ export default function DeliveryDetail() {
             <Button
               onClick={() => handleStatusUpdate('setup_complete')}
               disabled={updating}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              className="w-full h-14 text-base font-bold bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+              {updating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
               Setup Complete
             </Button>
           )}
@@ -275,9 +278,9 @@ export default function DeliveryDetail() {
             <Button
               onClick={() => handleStatusUpdate('signed')}
               disabled={updating || photos.length === 0}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              className="w-full h-14 text-base font-bold bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+              {updating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
               Get Signature
             </Button>
           )}
@@ -286,15 +289,15 @@ export default function DeliveryDetail() {
             <Button
               onClick={() => handleStatusUpdate('completed')}
               disabled={updating || !signature}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full h-14 text-base font-bold bg-green-600 hover:bg-green-700 active:bg-green-800 rounded-xl shadow-md"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-              Complete Delivery
+              {updating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
+              Complete Delivery ✓
             </Button>
           )}
 
           {delivery.status === 'completed' && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center text-sm text-green-800 font-medium">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center text-base text-green-800 font-semibold">
               ✅ Delivery Completed at {new Date(delivery.completedAt).toLocaleTimeString()}
             </div>
           )}
@@ -314,15 +317,50 @@ export default function DeliveryDetail() {
 
 function StatusIndicator({ status }) {
   const colors = {
-    scheduled: 'bg-blue-600',
-    departed: 'bg-indigo-600',
-    arrived: 'bg-amber-600',
-    setup_complete: 'bg-purple-600',
-    signed: 'bg-green-600',
-    completed: 'bg-green-700',
+    scheduled: 'bg-blue-400',
+    departed: 'bg-indigo-400',
+    arrived: 'bg-amber-400',
+    setup_complete: 'bg-purple-400',
+    signed: 'bg-green-400',
+    completed: 'bg-green-500',
   };
 
   return (
-    <div className={`h-3 w-3 rounded-full ${colors[status]}`} />
+    <div className={`h-3.5 w-3.5 rounded-full flex-shrink-0 ${colors[status] || 'bg-gray-400'}`} />
+  );
+}
+
+function DeliveryProgressBar({ status }) {
+  const steps = [
+    { key: 'scheduled', label: 'Scheduled' },
+    { key: 'departed',  label: 'Departed' },
+    { key: 'arrived',   label: 'Arrived' },
+    { key: 'setup_complete', label: 'Setup' },
+    { key: 'signed',    label: 'Signed' },
+    { key: 'completed', label: 'Done' },
+  ];
+  const currentIdx = steps.findIndex(s => s.key === status);
+
+  return (
+    <div className="px-4 pb-3">
+      <div className="flex items-center gap-0">
+        {steps.map((step, idx) => {
+          const done = idx < currentIdx;
+          const active = idx === currentIdx;
+          return (
+            <div key={step.key} className="flex-1 flex flex-col items-center">
+              <div className="flex items-center w-full">
+                {idx > 0 && <div className={`flex-1 h-0.5 ${done || active ? 'bg-indigo-300' : 'bg-white/20'}`} />}
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${done ? 'bg-green-400' : active ? 'bg-white' : 'bg-white/30'}`} />
+                {idx < steps.length - 1 && <div className={`flex-1 h-0.5 ${done ? 'bg-indigo-300' : 'bg-white/20'}`} />}
+              </div>
+              <div className={`text-[9px] mt-1 ${active ? 'text-white font-bold' : done ? 'text-indigo-300' : 'text-white/40'}`}>
+                {step.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

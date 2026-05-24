@@ -36,16 +36,17 @@ export default function ManifestChecklist({ items, onCheckItem, branch, jobRefer
           <button
             key={idx}
             onClick={() => onCheckItem(idx, !item.checked)}
-            className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-indigo-50 transition text-left"
+            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition active:scale-[0.99] text-left
+              ${item.checked ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50'}`}
           >
             {item.checked ? (
-              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <CheckCircle2 className="w-7 h-7 text-green-600 flex-shrink-0" />
             ) : (
-              <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+              <Circle className="w-7 h-7 text-gray-300 flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-gray-900">{item.equipmentName}</div>
-              <div className="text-xs text-gray-600">Qty: {item.quantity}</div>
+              <div className={`font-semibold text-base ${item.checked ? 'text-green-800 line-through opacity-70' : 'text-gray-900'}`}>{item.equipmentName}</div>
+              <div className="text-sm text-gray-500 mt-0.5">Qty: {item.quantity}</div>
             </div>
           </button>
         ))}

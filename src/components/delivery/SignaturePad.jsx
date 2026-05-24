@@ -92,7 +92,7 @@ export default function SignaturePad({ onSignatureCapture, existingSignature }) 
         onTouchStart={startDraw}
         onTouchMove={draw}
         onTouchEnd={endDraw}
-        className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-crosshair bg-white touch-none"
+        className="w-full h-56 border-2 border-dashed border-gray-300 rounded-xl cursor-crosshair bg-white touch-none"
       />
 
       <div className="flex gap-2">

@@ -65,17 +65,17 @@ export default function PhotoCapture({ photos, onAddPhoto, onRemovePhoto }) {
       <Button
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700"
+        className="w-full h-14 text-base font-bold gap-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md"
       >
         {uploading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" />
             Uploading…
           </>
         ) : (
           <>
-            <Camera className="w-4 h-4" />
-            Take Photo
+            <Camera className="w-5 h-5" />
+            Take / Add Photo
           </>
         )}
       </Button>
