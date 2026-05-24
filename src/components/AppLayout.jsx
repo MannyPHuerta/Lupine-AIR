@@ -27,7 +27,7 @@ const navGroups = [
       { label: 'Availability Calendar', path: '/availability-calendar', icon: Calendar },
       { label: 'Rental History', path: '/rental-history', icon: ClipboardList },
       { label: 'Customers', path: '/customers', icon: Users },
-      { label: 'Discounts & Promos', path: '/discounts', icon: Star },
+
       { label: 'Driver View', path: '/driver', icon: Truck },
     ],
   },
@@ -117,6 +117,7 @@ const navGroups = [
       { label: 'Timesheets', path: '/timesheets', icon: Clock },
       { label: 'Employee Profiles', path: '/employee-profiles', icon: UserCog },
       { label: 'Roles', path: '/roles', icon: Shield },
+      { label: 'Discounts & Promos', path: '/discounts', icon: Star },
       { label: 'Branding', path: '/branding', icon: Star },
       { label: 'Inventory Export', path: '/inventory-export', icon: FileText },
     ],
