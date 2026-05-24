@@ -13,6 +13,19 @@ import CustomerSearchPanel from '@/components/counter/CustomerSearchPanel';
 import RentalAlertModal from '@/components/equipment/RentalAlertModal';
 import PromoNudge from '@/components/counter/PromoNudge';
 import VolumeNudge from '@/components/counter/VolumeNudge';
+import CustomerVerificationStatus from '@/components/counter/CustomerVerificationStatus';
+
+/**
+ * SMART VERIFICATION CACHING
+ * 
+ * To reduce AI costs and phone verification hassle:
+ * - If customer.idVerified = true → skip AI DL check, show cached badge
+ * - If customer.phoneVerified = true → skip phone outbound call, show cached badge
+ * - If customer.blacklisted or creditHold = true → show immediate flag, block rental
+ * - Only re-run checks if: new customer, ID changed, or cert expired
+ * 
+ * CustomerVerificationStatus component displays all cached verification states.
+ */
 
 // Steps: 'equipment' → 'checkout'
 const WALKIN_CUSTOMER = { fullName: 'Walk-in', phone: '', address: '', city: '', state: '', zip: '', id: 'walkin' };
@@ -405,7 +418,7 @@ export default function Counter() {
                 <User className="w-3.5 h-3.5" /> Customer (optional)
               </div>
               {selectedCustomer && selectedCustomer.id !== 'walkin' ? (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-1">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-medium text-sm text-indigo-900">{selectedCustomer.fullName}</div>
@@ -416,17 +429,12 @@ export default function Counter() {
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  <CustomerVerificationStatus customer={selectedCustomer} />
                   {selectedCustomer.loyaltyDiscountEnabled && selectedCustomer.loyaltyDiscountPercent > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1">
+                    <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
                       <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                       {selectedCustomer.loyaltyDiscountPercent}% loyalty discount applied
                     </div>
-                  )}
-                  {selectedCustomer.creditHold && (
-                    <div className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-2 py-1">⚠ Credit Hold</div>
-                  )}
-                  {selectedCustomer.blacklisted && (
-                    <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1">🚫 Blacklisted — Do Not Rent</div>
                   )}
                 </div>
               ) : (
