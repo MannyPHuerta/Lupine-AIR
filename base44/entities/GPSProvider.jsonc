@@ -62,6 +62,22 @@
     "notes": {
       "type": "string",
       "description": "Internal notes about this provider setup"
+    },
+    "lastTestedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last connection test"
+    },
+    "lastTestResult": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "fail"
+      ],
+      "description": "Result of last connection test"
+    },
+    "lastTestMessage": {
+      "type": "string",
+      "description": "Message returned from last connection test"
     }
   },
   "required": [

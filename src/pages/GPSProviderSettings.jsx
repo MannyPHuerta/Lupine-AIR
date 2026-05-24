@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Pencil, Trash2, Wifi, WifiOff, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wifi, WifiOff, Settings, ChevronDown, ChevronUp, FlaskConical, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
@@ -194,35 +194,83 @@ function ProviderForm({ initial, onSave, onCancel }) {
   );
 }
 
-function ProviderCard({ provider, onEdit, onDelete }) {
+function ProviderCard({ provider, onEdit, onDelete, onTestResult }) {
   const meta = PROVIDER_META[provider.providerType] || PROVIDER_META.custom;
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(
+    provider.lastTestResult
+      ? { success: provider.lastTestResult === 'ok', message: provider.lastTestMessage, latencyMs: null, testedAt: provider.lastTestedAt }
+      : null
+  );
+
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      const res = await base44.functions.invoke('gpsTestConnection', { providerId: provider.id });
+      const result = { ...res.data, testedAt: new Date().toISOString() };
+      setTestResult(result);
+      onTestResult && onTestResult(provider.id, result);
+    } catch (err) {
+      setTestResult({ success: false, message: err.message, testedAt: new Date().toISOString() });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
-    <div className={`bg-white border rounded-xl p-4 flex items-start gap-4 ${!provider.isActive ? 'opacity-60' : ''}`}>
-      <div className="text-3xl flex-shrink-0 mt-0.5">{meta.logo}</div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-gray-900">{provider.name}</span>
-          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{meta.label}</span>
-          {provider.branch && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{provider.branch}</span>}
-          {provider.isActive
-            ? <span className="flex items-center gap-1 text-xs text-green-600"><Wifi className="w-3 h-3" /> Active</span>
-            : <span className="flex items-center gap-1 text-xs text-gray-400"><WifiOff className="w-3 h-3" /> Inactive</span>
-          }
+    <div className={`bg-white border rounded-xl p-4 space-y-2 ${!provider.isActive ? 'opacity-60' : ''}`}>
+      <div className="flex items-start gap-4">
+        <div className="text-3xl flex-shrink-0 mt-0.5">{meta.logo}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-gray-900">{provider.name}</span>
+            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{meta.label}</span>
+            {provider.branch && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{provider.branch}</span>}
+            {provider.isActive
+              ? <span className="flex items-center gap-1 text-xs text-green-600"><Wifi className="w-3 h-3" /> Active</span>
+              : <span className="flex items-center gap-1 text-xs text-gray-400"><WifiOff className="w-3 h-3" /> Inactive</span>
+            }
+          </div>
+          <div className="text-xs text-gray-500 mt-1 flex gap-4 flex-wrap">
+            <span>📍 {provider.geofenceRadiusMiles || 1} mi fence</span>
+            <span>⏱ Poll every {provider.pollIntervalMinutes || 30} min</span>
+            {provider.accountId && <span>Account: {provider.accountId}</span>}
+          </div>
+          {provider.notes && <p className="text-xs text-gray-400 mt-1 italic">{provider.notes}</p>}
         </div>
-        <div className="text-xs text-gray-500 mt-1 flex gap-4 flex-wrap">
-          <span>📍 {provider.geofenceRadiusMiles || 1} mi fence</span>
-          <span>⏱ Poll every {provider.pollIntervalMinutes || 30} min</span>
-          {provider.accountId && <span>Account: {provider.accountId}</span>}
+        <div className="flex gap-1 flex-shrink-0">
+          <Button size="icon" variant="ghost" onClick={() => onEdit(provider)}>
+            <Pencil className="w-4 h-4 text-gray-400" />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={() => onDelete(provider)}>
+            <Trash2 className="w-4 h-4 text-red-400" />
+          </Button>
         </div>
-        {provider.notes && <p className="text-xs text-gray-400 mt-1 italic">{provider.notes}</p>}
       </div>
-      <div className="flex gap-1 flex-shrink-0">
-        <Button size="icon" variant="ghost" onClick={() => onEdit(provider)}>
-          <Pencil className="w-4 h-4 text-gray-400" />
+
+      {/* Test Connection row */}
+      <div className="flex items-center gap-3 pt-1 border-t border-gray-100">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleTest}
+          disabled={testing}
+          className="gap-1.5 text-xs h-7 px-3 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+        >
+          {testing ? <Loader2 className="w-3 h-3 animate-spin" /> : <FlaskConical className="w-3 h-3" />}
+          {testing ? 'Testing…' : 'Test Connection'}
         </Button>
-        <Button size="icon" variant="ghost" onClick={() => onDelete(provider)}>
-          <Trash2 className="w-4 h-4 text-red-400" />
-        </Button>
+
+        {testResult && (
+          <div className={`flex items-center gap-1.5 text-xs font-medium ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
+            {testResult.success
+              ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              : <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            }
+            <span className="truncate max-w-xs">{testResult.message}</span>
+            {testResult.latencyMs && <span className="text-gray-400 font-normal">({testResult.latencyMs}ms)</span>}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -322,7 +370,7 @@ export default function GPSProviderSettings() {
       ) : (
         <div className="space-y-3">
           {providers.map(p => (
-            <ProviderCard key={p.id} provider={p} onEdit={handleEdit} onDelete={handleDelete} />
+            <ProviderCard key={p.id} provider={p} onEdit={handleEdit} onDelete={handleDelete} onTestResult={() => load()} />
           ))}
         </div>
       )}
