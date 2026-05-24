@@ -510,6 +510,10 @@ function PlatformSection() {
     { icon: <BarChart3 className="w-6 h-6" />, title: 'Business Intelligence', desc: 'Utilization rates, revenue by branch, equipment ROI, seasonal forecasting — see what CPro never showed you.' },
     { icon: <Building2 className="w-6 h-6" />, title: 'Multi-Branch', desc: 'McAllen, Weslaco, Harlingen, Brownsville — one platform, full cross-branch visibility and transfer logic.' },
     { icon: <DollarSign className="w-6 h-6" />, title: 'QuickBooks Ready', desc: 'Syncs invoices and payments automatically. No migration headache — your history stays in CPro.' },
+    { icon: <Users className="w-6 h-6" />, title: 'User Management', desc: 'Invite staff, assign roles, bulk CSV import for employee onboarding — with branch and permission controls.' },
+    { icon: <Clock className="w-6 h-6" />, title: 'Time Tracking', desc: 'Clock in/out with QR codes, job context capture, timesheet approval workflows, and payroll export.' },
+    { icon: <Wrench className="w-6 h-6" />, title: 'Shop Management', desc: 'Work order queue, mechanic skill-based assignment, parts procurement, and repair cost tracking.' },
+    { icon: <Route className="w-6 h-6" />, title: 'GPS Integration', desc: 'Samsara, CalAmp, Verizon Connect — real-time tracking, geofence breach alerts, and theft recovery support.' },
   ];
   return (
     <section id="platform" className="py-24 bg-gradient-to-b from-black to-slate-950 border-t border-white/5">
@@ -761,10 +765,12 @@ export default function AIRWebsite() {
         description="From quote to signed contract in under 3 minutes. Multi-branch, multi-item, with dynamic pricing, delivery matrix, customer management, and a dispatch board that puts your drivers on the map."
         color="cyan"
         features={[
-          { icon: <Zap className="w-5 h-5" />, title: 'Instant Invoicing', desc: 'Quote → Contract → Printed invoice with one click.' },
-          { icon: <MapPin className="w-5 h-5" />, title: 'Multi-Branch', desc: 'Full cross-branch availability and transfer support.' },
-          { icon: <Truck className="w-5 h-5" />, title: 'Dispatch Board', desc: 'Live driver GPS, delivery routes, real-time status.' },
-          { icon: <BarChart3 className="w-5 h-5" />, title: 'Smart Pricing', desc: 'Volume, loyalty, promo, and duration discounts — automatic.' },
+          { icon: <Zap className="w-5 h-5" />, title: '3-Minute Invoicing', desc: 'Quote → Contract → Printed invoice with signatures, all in under 3 minutes.' },
+          { icon: <MapPin className="w-5 h-5" />, title: 'Multi-Branch + Transfers', desc: 'Cross-branch availability, equipment transfers, and centralized reporting.' },
+          { icon: <Truck className="w-5 h-5" />, title: 'Dispatch + Driver App', desc: 'Live GPS tracking, delivery manifests, photo capture, and customer signatures — offline-capable.' },
+          { icon: <BarChart3 className="w-5 h-5" />, title: 'Smart Pricing Engine', desc: 'Volume discounts, loyalty programs, promo codes, and duration-based pricing — automatic.' },
+          { icon: <FileText className="w-5 h-5" />, title: 'Digital Rental Agreements', desc: 'ARA-compliant contracts with e-signatures, initials on every page, and PDF generation.' },
+          { icon: <Clock className="w-5 h-5" />, title: 'Timesheets + Clock In/Out', desc: 'Staff time tracking with QR codes, job context, and payroll export.' },
         ]}
         cta="Open AIRental"
         ctaRoute="/availability"
@@ -779,10 +785,11 @@ export default function AIRWebsite() {
         description="Drag equipment onto a live-inventory canvas — every item auto-checks availability, soft-reserves the unit, and adds to the quote. ADA compliance engine, permit tracker, surface & anchoring system built in. PartyCad, replaced."
         color="purple"
         features={[
-          { icon: <Calendar className="w-5 h-5" />, title: 'Live Canvas', desc: 'Floor plan linked directly to your rental catalog.' },
-          { icon: <Shield className="w-5 h-5" />, title: 'ADA Engine', desc: 'Pathway widths, accessible routes, and audit reports.' },
-          { icon: <CheckCircle className="w-5 h-5" />, title: 'Permit Tracker', desc: 'Fire marshal, health dept, noise variance — all tracked.' },
-          { icon: <Brain className="w-5 h-5" />, title: 'Smart Suggestions', desc: 'No generator? Outdoor? AI recommends before you ask.' },
+          { icon: <Calendar className="w-5 h-5" />, title: 'Live Canvas', desc: 'Drag-and-drop floor plans linked to real-time inventory and auto-reservations.' },
+          { icon: <Shield className="w-5 h-5" />, title: 'ADA Compliance Engine', desc: 'Automatic pathway validation (72" clear), accessible route reports, audit-ready documentation.' },
+          { icon: <CheckCircle className="w-5 h-5" />, title: 'Permit + Certification Tracker', desc: 'Fire marshal, health dept, anchoring, noise variance — tracked with expiry alerts.' },
+          { icon: <Brain className="w-5 h-5" />, title: 'AI Event Suggestions', desc: 'Missing power? Outdoor setup? AI recommends generators, stakes, and accessories before you ask.' },
+          { icon: <Users className="w-5 h-5" />, title: 'Guest Count Logic', desc: 'Auto-calculates required chairs, tables, and staging based on expected attendance.' },
         ]}
         cta="Explore AIREvents"
         ctaRoute="/airevents"
@@ -797,10 +804,11 @@ export default function AIRWebsite() {
         description="AI reads the government RFQ, matches every line item to your catalog, drafts the full bid response, flags every missing certification, and won't let you submit until it's complete. What used to take a day takes an hour."
         color="blue"
         features={[
-          { icon: <FileText className="w-5 h-5" />, title: 'AI Parsing', desc: 'PDF, Word, Excel — AI extracts every requirement.' },
-          { icon: <Brain className="w-5 h-5" />, title: 'Auto-Draft', desc: 'Full bid built from your catalog, pricing, and certs.' },
-          { icon: <CheckCircle className="w-5 h-5" />, title: 'Compliance Gate', desc: 'Cannot submit until every requirement is resolved.' },
-          { icon: <DollarSign className="w-5 h-5" />, title: 'Bid Intelligence', desc: 'Win/loss history, authority patterns, pricing guidance.' },
+          { icon: <FileText className="w-5 h-5" />, title: 'AI RFQ Parsing', desc: 'Upload PDF/Word/Excel — AI extracts every line item, certification, and deadline requirement.' },
+          { icon: <Brain className="w-5 h-5" />, title: 'Auto-Draft Response', desc: 'Complete bid drafted from your catalog, with pricing, site plans, and compliance docs attached.' },
+          { icon: <CheckCircle className="w-5 h-5" />, title: 'Compliance Gate', desc: 'System blocks submission until every requirement (certs, references, insurance) is resolved.' },
+          { icon: <DollarSign className="w-5 h-5" />, title: 'Bid Intelligence', desc: 'Win/loss tracking, authority spending patterns, competitive pricing guidance.' },
+          { icon: <TrendingUp className="w-5 h-5" />, title: 'Line Item Matching', desc: 'AI maps RFQ items to your catalog with confidence scores and gap alerts.' },
         ]}
         cta="Learn About AIRfq"
         ctaRoute="/airfq"
@@ -815,10 +823,12 @@ export default function AIRWebsite() {
         description="Live dashboards built on your real rental data — equipment utilization by category, seasonal demand curves, asset aging, fleet health, and branch revenue side by side. No spreadsheets, no exports, no waiting."
         color="green"
         features={[
-          { icon: <BarChart3 className="w-5 h-5" />, title: 'Utilization Analytics', desc: 'See which categories earn the most and sit the most.' },
-          { icon: <TrendingUp className="w-5 h-5" />, title: 'Seasonal Trends', desc: '18-month demand curves to plan purchasing and staffing.' },
-          { icon: <Package className="w-5 h-5" />, title: 'Asset Aging', desc: 'Know what\'s aging out before it becomes a breakdown.' },
-          { icon: <AlertTriangle className="w-5 h-5" />, title: 'Fleet Health', desc: 'Units in shop, awaiting parts, and due for inspection — all flagged.' },
+          { icon: <BarChart3 className="w-5 h-5" />, title: 'Utilization Analytics', desc: 'Real-time utilization by category, branch, and individual unit — see what earns vs. what sits.' },
+          { icon: <TrendingUp className="w-5 h-5" />, title: 'Seasonal Demand Forecasting', desc: '18-month demand curves with AI predictions to optimize purchasing and staffing.' },
+          { icon: <Package className="w-5 h-5" />, title: 'Asset Aging + Depreciation', desc: 'Track book value, depreciation schedules, and replacement timing for every unit.' },
+          { icon: <AlertTriangle className="w-5 h-5" />, title: 'Fleet Health Dashboard', desc: 'Units in shop, awaiting parts, due for inspection — with cost-to-repair estimates.' },
+          { icon: <DollarSign className="w-5 h-5" />, title: 'Revenue per Branch', desc: 'Side-by-side branch performance, profitability, and equipment ROI comparisons.' },
+          { icon: <Wrench className="w-5 h-5" />, title: 'Predictive Maintenance Alerts', desc: 'AI flags equipment likely to fail based on rental frequency and repair history.' },
         ]}
         cta="Open AIReports"
         ctaRoute="/aireports"
@@ -833,10 +843,12 @@ export default function AIRWebsite() {
         description="Equipment flagged by field ops flows directly into a work order queue. AI routes jobs to the right mechanic based on skills and availability. Track parts procurement, labor costs, condition before/after. Predict failures before they happen with automated preventive maintenance alerts."
         color="orange"
         features={[
-          { icon: <Wrench className="w-5 h-5" />, title: 'Smart Assignment', desc: 'AI recommends mechanics based on skills and workload.' },
-          { icon: <Package className="w-5 h-5" />, title: 'Parts Tracking', desc: 'Know which jobs are blocked by parts and ETA for delivery.' },
-          { icon: <AlertTriangle className="w-5 h-5" />, title: 'Predictive Alerts', desc: 'AI flags equipment likely to fail before breakdown.' },
-          { icon: <TrendingUp className="w-5 h-5" />, title: 'Labor Costing', desc: 'Per-job labor, parts, and ROI tracking for every repair.' },
+          { icon: <Wrench className="w-5 h-5" />, title: 'Smart Mechanic Assignment', desc: 'AI recommends mechanics based on equipment expertise, current workload, and parts availability.' },
+          { icon: <Package className="w-5 h-5" />, title: 'Parts Procurement', desc: 'RFQ generation for vendors, parts tracking, and job block alerts when critical parts are missing.' },
+          { icon: <AlertTriangle className="w-5 h-5" />, title: 'Predictive Health Alerts', desc: 'AI analyzes rental patterns and repair history to flag units at risk of failure.' },
+          { icon: <TrendingUp className="w-5 h-5" />, title: 'Job Costing + ROI', desc: 'Per-repair labor, parts, and total cost tracking — compare repair vs. replace decisions.' },
+          { icon: <Users className="w-5 h-5" />, title: 'Shop Floor Board', desc: 'Real-time view of unassigned jobs, mechanic workloads, and parts pending status.' },
+          { icon: <Clock className="w-5 h-5" />, title: 'Preventive Maintenance', desc: 'Automated PM scheduling based on rental cycles, hours, or calendar intervals.' },
         ]}
         cta="Open AIRepair"
         ctaRoute="/airepair"
@@ -851,10 +863,12 @@ export default function AIRWebsite() {
         description="Multi-truck load planner with auto-balancing and bin-packing algorithms. Drag items onto virtual trucks, print QR-coded shipping labels, and track deliveries with real-time transit scanning. Minimize cost-per-mile while respecting capacity constraints."
         color="blue"
         features={[
-          { icon: <Route className="w-5 h-5" />, title: 'Smart Optimization', desc: 'Auto-balance by weight & volume or minimize truck count.' },
-          { icon: <Truck className="w-5 h-5" />, title: 'Multi-Truck Planner', desc: 'Drag-drop interface with live capacity visualization.' },
-          { icon: <Package className="w-5 h-5" />, title: 'QR Labels', desc: 'Print thermal or sheet labels for every item instantly.' },
-          { icon: <CheckCircle className="w-5 h-5" />, title: 'Transit Scanning', desc: 'Mobile QR scanner to confirm loads and deliveries.' },
+          { icon: <Route className="w-5 h-5" />, title: 'Load Optimization', desc: 'Bin-packing algorithms auto-balance by weight, volume, or minimize total truck count.' },
+          { icon: <Truck className="w-5 h-5" />, title: 'Multi-Truck Visual Planner', desc: 'Drag-and-drop interface with real-time capacity (weight/volume) visualization per truck.' },
+          { icon: <Package className="w-5 h-5" />, title: 'Shipping Label Printer', desc: 'Generate QR-coded labels for thermal or sheet printers — one click for all items.' },
+          { icon: <CheckCircle className="w-5 h-5" />, title: 'Transit Scanning', desc: 'Mobile QR scanner confirms load-in, delivery, and customer signature with GPS stamp.' },
+          { icon: <DollarSign className="w-5 h-5" />, title: 'Cost Optimization', desc: 'Minimize cost-per-mile, fuel estimates, and driver assignment recommendations.' },
+          { icon: <MapPin className="w-5 h-5" />, title: 'GPS Fleet Tracking', desc: 'Integration with Samsara, CalAmp, Verizon Connect for real-time location and geofence breach alerts.' },
         ]}
         cta="Open AIRoads"
         ctaRoute="/airoads"
