@@ -103,14 +103,14 @@ export default function DeliveryAssignment() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <div className="text-lg font-bold">📦 Delivery Assignment</div>
-            <div className="text-indigo-300 text-xs">
+            <div className="text-xs" style={{ color: '#F5A623' }}>
               {pendingDeliveries.filter(r => !deliveries.some(d => d.rentalId === r.id)).length} unassigned deliveries · {pendingTransfers.filter(d => !d.driverId).length} unassigned transfers
               {currentUser && <span className="ml-2 opacity-70">· Assigning as {currentUser.full_name}</span>}
             </div>
@@ -118,7 +118,7 @@ export default function DeliveryAssignment() {
           <select
             value={branchFilter}
             onChange={e => setBranchFilter(e.target.value)}
-            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
+            className="h-8 text-xs px-2 rounded text-white border-0" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }}
           >
             <option value="">All Branches</option>
             {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
@@ -327,7 +327,7 @@ function DeliveryAssignmentCard({ rental, drivers, deliveries, onAssign, isCreat
           <button
             onClick={handleAssign}
             disabled={isCreating || selectedDrivers.length === 0}
-            className="mt-2 w-full h-8 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+            className="mt-2 w-full h-8 text-white text-xs font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1 hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
           >
             {isCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Truck className="w-3 h-3" />}
             {existingDelivery ? 'Reassign' : `Assign${selectedDrivers.length > 1 ? ` Team (${selectedDrivers.length})` : ''}`}

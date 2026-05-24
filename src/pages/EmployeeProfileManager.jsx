@@ -134,14 +134,14 @@ export default function EmployeeProfileManager() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/shop-floor')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate('/shop-floor')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <div className="text-lg font-bold">Employee Credentials</div>
-            <div className="text-indigo-300 text-xs">Manage mechanic skills, certifications & planner qualifications</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>Manage mechanic skills, certifications & planner qualifications</div>
           </div>
         </div>
         {/* Tabs */}
@@ -152,9 +152,8 @@ export default function EmployeeProfileManager() {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-1.5 ${
-                  tab === t.key ? 'border-white text-white' : 'border-transparent text-indigo-300 hover:text-white'
-                }`}
+                className="px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-1.5"
+                style={{ borderBottomColor: tab === t.key ? '#F5A623' : 'transparent', color: tab === t.key ? '#F5A623' : '#a0aec0' }}
               >
                 <Icon className="w-4 h-4" /> {t.label}
               </button>
@@ -201,7 +200,7 @@ export default function EmployeeProfileManager() {
                         </div>
                         <div className="flex gap-2 justify-end pt-2 border-t">
                           <Button variant="outline" size="sm" onClick={cancelEditUser}>Cancel</Button>
-                          <Button size="sm" onClick={handleSaveUser} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+                          <Button size="sm" onClick={handleSaveUser} disabled={saving} className="text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
                             {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
                             Save
                           </Button>
@@ -358,7 +357,7 @@ export default function EmployeeProfileManager() {
 
                         <div className="flex gap-2 justify-end pt-2 border-t">
                           <Button variant="outline" size="sm" onClick={cancelEdit}>Cancel</Button>
-                          <Button size="sm" onClick={handleSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+                          <Button size="sm" onClick={handleSave} disabled={saving} className="text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
                             {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
                             Save
                           </Button>

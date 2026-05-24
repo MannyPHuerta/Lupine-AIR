@@ -104,17 +104,17 @@ export default function DependenciesEditor() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-purple-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-7xl mx-auto">
           <button
             onClick={() => navigate('/availability')}
-            className="text-white p-2 rounded-lg hover:bg-purple-800"
+            className="text-white p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="text-lg font-bold">Equipment Dependencies</div>
-            <div className="text-purple-300 text-xs">Manage which items go together</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>Manage which items go together</div>
           </div>
         </div>
       </div>
@@ -222,7 +222,7 @@ export default function DependenciesEditor() {
               <Button
                 onClick={handleAddDependency}
                 disabled={saving || !selectedDepId}
-                className="w-full bg-purple-600 hover:bg-purple-700 gap-2"
+                className="w-full gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {saving ? 'Adding...' : 'Add Dependency'}

@@ -75,19 +75,19 @@ export default function AvailabilityConfigPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <div className="text-lg font-bold">Availability Configuration</div>
-            <div className="text-indigo-300 text-xs">Branch-level overbooking & buffer settings</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>Branch-level overbooking & buffer settings</div>
           </div>
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="gap-2 bg-white text-indigo-900 hover:bg-indigo-50"
+            className="gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saved ? 'Saved!' : 'Save Changes'}
@@ -220,7 +220,7 @@ export default function AvailabilityConfigPage() {
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+            className="gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saved ? 'Saved!' : 'Save All Changes'}

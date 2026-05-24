@@ -99,7 +99,7 @@ function EquipmentRow({ eq, onSave, onDetail }) {
             <button
               onClick={handleSave}
               disabled={saving || !isDirty}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+              className="disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
             >
               {saving ? 'Saving…' : 'Save'}
             </button>
@@ -158,23 +158,24 @@ export default function EquipmentStatusManager() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="text-lg font-bold">Equipment Status</div>
-            <div className="text-indigo-300 text-xs">{equipment.length} units in catalog</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>{equipment.length} units in catalog</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => navigate('/inventory-export')}
-              className="flex items-center gap-1.5 text-xs bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-3 py-1.5 rounded-lg transition"
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition text-white hover:opacity-90"
+              style={{ backgroundColor: '#F5A623' }}
             >
               <Download className="w-3.5 h-3.5" /> Export CSV
             </button>
-            <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
+            <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)', color: '#a0aec0' }}>
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>

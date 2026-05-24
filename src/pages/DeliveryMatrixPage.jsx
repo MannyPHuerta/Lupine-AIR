@@ -94,17 +94,17 @@ export default function DeliveryMatrixPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-          <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="text-lg font-bold">Delivery Matrix</div>
-            <div className="text-indigo-300 text-xs">Branch-specific delivery rates & zones</div>
-          </div>
-        </div>
-      </div>
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
+         <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
+           <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
+             <ArrowLeft className="w-5 h-5" />
+           </button>
+           <div>
+             <div className="text-lg font-bold">Delivery Matrix</div>
+             <div className="text-xs" style={{ color: '#F5A623' }}>Branch-specific delivery rates & zones</div>
+           </div>
+         </div>
+       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
@@ -121,7 +121,7 @@ export default function DeliveryMatrixPage() {
             <div key={branch} className="bg-white rounded-xl border shadow-sm overflow-hidden">
               <div className="bg-gray-50 border-b px-5 py-3 flex items-center justify-between">
                 <div className="font-semibold text-gray-800">{branch}</div>
-                <Button size="sm" onClick={() => handleSave(branch)} disabled={isSaving} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                <Button size="sm" onClick={() => handleSave(branch)} disabled={isSaving} className="gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
                   {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   {isSaved ? 'Saved!' : 'Save'}
                 </Button>
