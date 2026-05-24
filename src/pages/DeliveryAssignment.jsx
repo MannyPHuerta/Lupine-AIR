@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, CheckCircle, Truck, Clock, User, ArrowRightLeft } from 'lucide-react';
+import { Loader2, CheckCircle, Truck, Clock, User, ArrowRightLeft } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { format, parseISO } from 'date-fns';
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
@@ -102,29 +103,17 @@ export default function DeliveryAssignment() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">📦 Delivery Assignment</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>
-              {pendingDeliveries.filter(r => !deliveries.some(d => d.rentalId === r.id)).length} unassigned deliveries · {pendingTransfers.filter(d => !d.driverId).length} unassigned transfers
-              {currentUser && <span className="ml-2 opacity-70">· Assigning as {currentUser.full_name}</span>}
-            </div>
-          </div>
-          <select
-            value={branchFilter}
-            onChange={e => setBranchFilter(e.target.value)}
-            className="h-8 text-xs px-2 rounded text-white border-0" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }}
-          >
+      <AppPageHeader
+        title="📦 Delivery Assignment"
+        subtitle={`${pendingDeliveries.filter(r => !deliveries.some(d => d.rentalId === r.id)).length} unassigned deliveries · ${pendingTransfers.filter(d => !d.driverId).length} unassigned transfers${currentUser ? ` · Assigning as ${currentUser.full_name}` : ''}`}
+        backTo="/manager"
+        action={
+          <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="h-8 text-xs px-2 rounded border border-white/20 bg-white/10 text-white">
             <option value="">All Branches</option>
             {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Cross-Branch Transfers */}

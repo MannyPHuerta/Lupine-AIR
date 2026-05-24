@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Clock, Plus, CheckCircle, XCircle, DollarSign, Download, Loader2, QrCode } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import QRCodeGenerator from '@/components/timesheets/QRCodeGenerator';
@@ -247,30 +248,28 @@ export default function Timesheets() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-2"><Clock className="w-5 h-5" /> Timesheets</h1>
-            <p className="text-indigo-300 text-sm">Staff hours tracking &amp; payroll prep</p>
-          </div>
+      <AppPageHeader
+        icon={Clock}
+        title="Timesheets"
+        subtitle="Staff hours tracking & payroll prep"
+        action={
           <div className="flex gap-2">
             {isAdmin && (
               <>
-                <Button onClick={handleExportCSV} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
+                <Button onClick={handleExportCSV} variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 gap-1">
                   <Download className="w-4 h-4" /> Export CSV
                 </Button>
-                <Button onClick={() => setShowQR(true)} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
+                <Button onClick={() => setShowQR(true)} variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 gap-1">
                   <QrCode className="w-4 h-4" /> QR Code
                 </Button>
               </>
             )}
-            <Button onClick={() => { setEditEntry(null); setShowModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 gap-1">
+            <Button onClick={() => { setEditEntry(null); setShowModal(true); }} className="gap-1 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
               <Plus className="w-4 h-4" /> Log Hours
             </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
         {/* Personal view banner for non-admins */}

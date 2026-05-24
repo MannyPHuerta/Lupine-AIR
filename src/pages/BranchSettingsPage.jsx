@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatPhoneUS } from '@/lib/phoneUtils';
@@ -85,17 +86,7 @@ export default function BranchSettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-         <div className="px-4 py-3 flex items-center gap-3 max-w-3xl mx-auto">
-           <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-             <ArrowLeft className="w-5 h-5" />
-           </button>
-           <div>
-             <div className="text-lg font-bold">Branch Invoice Settings</div>
-             <div className="text-xs" style={{ color: '#F5A623' }}>Configure invoice numbering per branch</div>
-           </div>
-         </div>
-       </div>
+      <AppPageHeader title="Branch Invoice Settings" subtitle="Configure invoice numbering per branch" backTo="/availability" />
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {loading ? (

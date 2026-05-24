@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, RefreshCw, Filter } from 'lucide-react';
+import { Download, RefreshCw, Filter } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -98,31 +99,21 @@ export default function InventoryExport() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/equipment-status')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="text-lg font-bold">Inventory Export</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>{filtered.length} of {equipment.length} items</div>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={load} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)', color: '#a0aec0' }}>
+      <AppPageHeader
+        title="Inventory Export"
+        subtitle={`${filtered.length} of ${equipment.length} items`}
+        backTo="/equipment-status"
+        action={
+          <div className="flex items-center gap-2">
+            <button onClick={load} className="p-2 rounded-lg hover:opacity-80 text-white transition" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <Button
-              onClick={() => exportToCSV(filtered)}
-              disabled={filtered.length === 0}
-              className="font-bold gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
-            >
-              <Download className="w-4 h-4" />
-              Export CSV ({filtered.length})
+            <Button onClick={() => exportToCSV(filtered)} disabled={filtered.length === 0} className="font-bold gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
+              <Download className="w-4 h-4" /> Export CSV ({filtered.length})
             </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-5">
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit2, Trash2, Loader2, Badge, Wrench, Calendar, Save, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Wrench, Calendar, Save, Users } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -133,34 +134,27 @@ export default function EmployeeProfileManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/shop-floor')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Employee Credentials</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>Manage mechanic skills, certifications & planner qualifications</div>
-          </div>
-        </div>
-        {/* Tabs */}
-        <div className="px-4 max-w-6xl mx-auto flex gap-1">
+      <AppPageHeader
+        title="Employee Credentials"
+        subtitle="Manage mechanic skills, certifications & planner qualifications"
+        backTo="/shop-floor"
+      >
+        <div className="flex gap-1 -mb-1">
           {[{ key: 'staff', label: 'Staff Home Branches', icon: Users }, { key: 'mechanics', label: 'Mechanics', icon: Wrench }, { key: 'planners', label: 'Planners', icon: Calendar }].map(t => {
-            const Icon = t.icon;
+            const TabIcon = t.icon;
             return (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className="px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-1.5"
+                className="px-4 py-2 text-sm font-medium border-b-2 transition flex items-center gap-1.5"
                 style={{ borderBottomColor: tab === t.key ? '#F5A623' : 'transparent', color: tab === t.key ? '#F5A623' : '#a0aec0' }}
               >
-                <Icon className="w-4 h-4" /> {t.label}
+                <TabIcon className="w-4 h-4" /> {t.label}
               </button>
             );
           })}
         </div>
-      </div>
+      </AppPageHeader>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {tab === 'staff' ? (

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw, Upload, FileUp, CheckCircle2 } from 'lucide-react';
+import { Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw, Upload, FileUp, CheckCircle2 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -271,18 +272,7 @@ Requirements:
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/')} className="text-white p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Rental Agreement Manager</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>Customize your rental terms by branch</div>
-          </div>
-        </div>
-      </div>
+      <AppPageHeader title="Rental Agreement Manager" subtitle="Customize your rental terms by branch" backTo="/" />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {saved && (

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -74,26 +75,17 @@ export default function AvailabilityConfigPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1">
-            <div className="text-lg font-bold">Availability Configuration</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>Branch-level overbooking & buffer settings</div>
-          </div>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
-          >
+      <AppPageHeader
+        title="Availability Configuration"
+        subtitle="Branch-level overbooking & buffer settings"
+        backTo="/lupine"
+        action={
+          <Button onClick={handleSave} disabled={saving} className="gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saved ? 'Saved!' : 'Save Changes'}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
         {/* Info box */}

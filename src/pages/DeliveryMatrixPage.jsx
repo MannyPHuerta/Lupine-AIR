@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, Loader2 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -94,17 +95,7 @@ export default function DeliveryMatrixPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-         <div className="px-4 py-3 flex items-center gap-3 max-w-4xl mx-auto">
-           <button onClick={() => navigate('/availability')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-             <ArrowLeft className="w-5 h-5" />
-           </button>
-           <div>
-             <div className="text-lg font-bold">Delivery Matrix</div>
-             <div className="text-xs" style={{ color: '#F5A623' }}>Branch-specific delivery rates & zones</div>
-           </div>
-         </div>
-       </div>
+      <AppPageHeader title="Delivery Matrix" subtitle="Branch-specific delivery rates & zones" backTo="/availability" />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
