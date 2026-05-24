@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Loader2, Check, MapPin, Phone, AlertCircle, MessageSquare, CalendarClock } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, MapPin, Phone, AlertCircle, MessageSquare, CalendarClock, WifiOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ManifestChecklist from '@/components/delivery/ManifestChecklist';
 import PhotoCapture from '@/components/delivery/PhotoCapture';
 import SignaturePad from '@/components/delivery/SignaturePad';
 import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
+import { useDeliveryOfflineQueue } from '@/hooks/useDeliveryOfflineQueue';
 
 export default function DeliveryDetail() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export default function DeliveryDetail() {
   const [signature, setSignature] = useState(null);
   const [sendingSMS, setSendingSMS] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const { isOnline, pendingCount, syncing, enqueue, syncQueue } = useDeliveryOfflineQueue();
 
   useEffect(() => {
     if (!id || id === ':id') {
@@ -52,43 +54,71 @@ export default function DeliveryDetail() {
   const handleStatusUpdate = async (newStatus) => {
     setUpdating(true);
     const updates = { status: newStatus };
-    
+    const now = new Date().toISOString();
+
     if (newStatus === 'departed') {
-      updates.departedAt = new Date().toISOString();
+      updates.departedAt = now;
     } else if (newStatus === 'arrived') {
-      updates.arrivedAt = new Date().toISOString();
+      updates.arrivedAt = now;
     } else if (newStatus === 'setup_complete') {
       updates.photos = photos;
     } else if (newStatus === 'signed') {
       updates.signatureDataUrl = signature;
-      updates.signedAt = new Date().toISOString();
+      updates.signedAt = now;
     } else if (newStatus === 'completed') {
-      updates.completedAt = new Date().toISOString();
+      updates.completedAt = now;
+    }
+
+    // Optimistically update UI immediately
+    setDelivery(d => ({ ...d, ...updates }));
+
+    if (!isOnline) {
+      // Queue all changes for later sync
+      enqueue('delivery_status', { deliveryId: id, updates });
+      if (newStatus === 'setup_complete' && photos.length > 0) {
+        enqueue('delivery_photos', { deliveryId: id, photos });
+      }
+      if (newStatus === 'signed' && signature) {
+        enqueue('delivery_signature', { deliveryId: id, signatureDataUrl: signature, signedAt: now });
+      }
+      if (newStatus === 'departed' && rental?.id && ['contract', 'reservation', 'quote'].includes(rental.status)) {
+        enqueue('rental_status', { rentalId: rental.id, status: 'out' });
+        setRental(r => ({ ...r, status: 'out' }));
+      }
+      if (newStatus === 'completed' && rental?.id) {
+        if (['contract', 'reservation', 'quote'].includes(rental.status)) {
+          enqueue('rental_status', { rentalId: rental.id, status: 'out' });
+          setRental(r => ({ ...r, status: 'out' }));
+        }
+        if (rental.equipmentId) {
+          enqueue('equipment_status', { equipmentId: rental.equipmentId, unitStatus: 'out_on_rental' });
+        }
+      }
+      setUpdating(false);
+      return;
     }
 
     try {
       await base44.entities.Delivery.update(id, updates);
-      setDelivery({ ...delivery, ...updates });
 
-      // Auto-advance Rental status when driver departs (equipment is now "out")
       if (newStatus === 'departed' && rental?.id && ['contract', 'reservation', 'quote'].includes(rental.status)) {
         await base44.entities.Rental.update(rental.id, { status: 'out' });
         setRental(r => ({ ...r, status: 'out' }));
       }
 
-      // On delivery complete: also ensure rental is "out" and update Equipment unitStatus
       if (newStatus === 'completed' && rental?.id) {
         if (['contract', 'reservation', 'quote'].includes(rental.status)) {
           await base44.entities.Rental.update(rental.id, { status: 'out' });
           setRental(r => ({ ...r, status: 'out' }));
         }
-        // Mark equipment as out_on_rental
         if (rental.equipmentId) {
           await base44.entities.Equipment.update(rental.equipmentId, { unitStatus: 'out_on_rental' });
         }
       }
     } catch (err) {
-      alert(`Error: ${err.message}`);
+      // Roll back optimistic update and queue for retry
+      enqueue('delivery_status', { deliveryId: id, updates });
+      alert(`Saved offline — will sync when connection is restored.`);
     } finally {
       setUpdating(false);
     }
@@ -173,6 +203,26 @@ export default function DeliveryDetail() {
         {/* Progress stepper */}
         <DeliveryProgressBar status={delivery.status} />
       </div>
+
+      {/* Offline / Pending Sync Banner */}
+      {(!isOnline || pendingCount > 0) && (
+        <div className={`px-4 py-2.5 flex items-center gap-3 text-sm font-medium ${!isOnline ? 'bg-amber-500 text-white' : 'bg-blue-600 text-white'}`}>
+          {!isOnline ? (
+            <>
+              <WifiOff className="w-4 h-4 flex-shrink-0" />
+              <span>You're offline — changes saved locally and will sync automatically.</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className={`w-4 h-4 flex-shrink-0 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Syncing…' : `${pendingCount} pending change(s) — tap to sync`}</span>
+              {!syncing && (
+                <button onClick={syncQueue} className="ml-auto underline text-xs font-semibold">Sync now</button>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Customer Info */}
