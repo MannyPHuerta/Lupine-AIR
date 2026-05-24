@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Mail, Loader2, Shield, User } from 'lucide-react';
+import { Users, UserPlus, Mail, Loader2, Shield, User, ToggleLeft, ToggleRight } from 'lucide-react';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -14,6 +14,7 @@ export default function UserManagement() {
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -25,6 +26,20 @@ export default function UserManagement() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  const handleToggleActive = async (u) => {
+    if (u.id === currentUser?.id) return; // can't deactivate yourself
+    setTogglingId(u.id);
+    const nowActive = !(u.isActive !== false);
+    const updates = { isActive: nowActive };
+    if (!nowActive) {
+      updates.deactivatedAt = new Date().toISOString();
+      updates.deactivatedBy = currentUser?.email;
+    }
+    await base44.entities.User.update(u.id, updates);
+    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, ...updates } : x));
+    setTogglingId(null);
+  };
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -108,19 +123,36 @@ export default function UserManagement() {
         ) : (
           <div className="divide-y">
             {users.map(u => (
-              <div key={u.id} className="flex items-center justify-between px-6 py-4">
+              <div key={u.id} className={`flex items-center justify-between px-6 py-4 ${u.isActive === false ? 'opacity-50 bg-gray-50' : ''}`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-indigo-600" />
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${u.isActive === false ? 'bg-gray-200' : 'bg-indigo-100'}`}>
+                    <User className={`w-4 h-4 ${u.isActive === false ? 'text-gray-400' : 'text-indigo-600'}`} />
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">{u.full_name || '—'}</div>
                     <div className="text-sm text-gray-500">{u.email}</div>
                   </div>
                 </div>
-                <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>
-                  {u.role || 'user'}
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>
+                    {u.role || 'user'}
+                  </Badge>
+                  {u.id !== currentUser?.id && (
+                    <button
+                      onClick={() => handleToggleActive(u)}
+                      disabled={togglingId === u.id}
+                      title={u.isActive === false ? 'Activate user' : 'Deactivate user'}
+                      className="text-gray-400 hover:text-gray-700 transition disabled:opacity-40"
+                    >
+                      {togglingId === u.id
+                        ? <Loader2 className="w-5 h-5 animate-spin" />
+                        : u.isActive === false
+                          ? <ToggleLeft className="w-6 h-6 text-gray-400" />
+                          : <ToggleRight className="w-6 h-6 text-green-500" />
+                      }
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {users.length === 0 && (

@@ -6,43 +6,31 @@
       "type": "string",
       "enum": [
         "admin",
+        "manager",
+        "counter_staff",
+        "driver",
+        "mechanic",
         "user"
       ],
       "default": "user",
-      "description": "User role"
+      "description": "User role within the platform"
     },
-    "homeBranch": {
-      "type": "string",
-      "description": "Employee's home/primary branch location"
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this user account is active. Inactive users are blocked from app access."
     },
-    "subscriptionTier": {
+    "branch": {
       "type": "string",
-      "enum": [
-        "core",
-        "pro",
-        "security_plus"
-      ],
-      "default": "core",
-      "description": "Subscription tier: core (free), pro (Fraud Intel + Digest), security_plus (GPS/Geofence + all Pro features)"
+      "description": "Home branch for this employee"
     },
-    "subscriptionStatus": {
+    "deactivatedAt": {
       "type": "string",
-      "enum": [
-        "active",
-        "cancelled",
-        "past_due",
-        "trialing"
-      ],
-      "description": "Current subscription billing status"
+      "description": "ISO timestamp when account was deactivated"
     },
-    "stripeCustomerId": {
+    "deactivatedBy": {
       "type": "string",
-      "description": "Stripe customer ID for subscription management"
-    },
-    "stripeSubscriptionId": {
-      "type": "string",
-      "description": "Stripe subscription ID"
+      "description": "Email of admin who deactivated this account"
     }
-  },
-  "required": []
+  }
 }

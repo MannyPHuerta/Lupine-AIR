@@ -102,6 +102,16 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     }
+    if (authError.type === 'account_deactivated') {
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-gray-50 gap-4 text-center px-6">
+          <div className="text-4xl">🔒</div>
+          <h1 className="text-xl font-bold text-gray-800">Account Deactivated</h1>
+          <p className="text-gray-500 max-w-sm">Your account has been deactivated. Please contact your administrator to restore access.</p>
+          <button onClick={() => base44.auth.logout('/')} className="mt-2 text-sm text-indigo-600 hover:underline">Sign out</button>
+        </div>
+      );
+    }
     if (authError.type === 'auth_required') {
       base44.auth.redirectToLogin();
       return null;

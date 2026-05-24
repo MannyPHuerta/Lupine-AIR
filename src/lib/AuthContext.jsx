@@ -92,6 +92,12 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+      if (currentUser?.isActive === false) {
+        setAuthError({ type: 'account_deactivated', message: 'Your account has been deactivated.' });
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        return;
+      }
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
