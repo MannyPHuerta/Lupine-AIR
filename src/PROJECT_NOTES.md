@@ -290,4 +290,24 @@ Stripe, Square, PayPal, Authorize.Net, Amazon Pay, Wise, QuickBooks
 
 ---
 
+---
+
+## Releases & Changelog
+
+Track all meaningful changes here for subscriber rollouts.
+
+### v0.1.0 — Golden Master Initial (2026-05-24)
+- Seeded default "00 Main Branch" for zero-config first-run experience
+- Auto-selects single branch in modal, skips picker entirely
+- All AIR core features functional: Counter, DailyOps, Manager dashboard, Dispatch, Recovery, EventPlanner, RFQ pipeline, AIRoads, Shop/Repair, Laundry
+- Branding system stable: 4 header styles (classic, glassmorphism, neon, navy) + color customization
+- All payment processors integrated: Stripe, Square, PayPal, Authorize.Net, Amazon Pay, Wise, QuickBooks
+- GPS geofence + theft recovery intelligence operational
+- Subscription tiers + premium gates functional
+
+### Future Releases
+- [ ] Push update mechanism for multi-subscriber deployment
+- [ ] Webhook-based automated update notifications
+- [ ] Per-subscriber feature flags for gradual rollout testing
+
 *Last updated: 2026-05-24*
