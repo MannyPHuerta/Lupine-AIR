@@ -69,32 +69,33 @@ export default function RFQManager() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-green-900 text-white px-4 py-4 shadow-lg">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          <div>
-            <div className="text-xl font-bold">AIRfq — RFQ Manager</div>
-            <div className="text-green-300 text-sm">Bid intelligence & response workspace</div>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate('/rfq/templates')} variant="outline" className="border-green-600 text-white hover:bg-green-800 gap-1">
+       <div className="text-white px-4 py-4 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
+         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+           <div>
+             <div className="text-xl font-bold">AIRfq — RFQ Manager</div>
+             <div className="text-sm" style={{ color: '#F5A623' }}>Bid intelligence & response workspace</div>
+           </div>
+           <div className="flex gap-2">
+             <Button onClick={() => navigate('/rfq/templates')} variant="outline" className="gap-1" style={{ borderColor: 'rgba(245, 166, 35, 0.5)', color: '#F5A623' }}>
               <Star className="w-4 h-4" /> Templates
             </Button>
-            <Button onClick={() => navigate('/rfq/new')} className="bg-green-600 hover:bg-green-700 text-white">
+            <Button onClick={() => navigate('/rfq/new')} style={{ backgroundColor: '#F5A623' }} className="text-white hover:opacity-90">
               <Plus className="w-4 h-4 mr-1" /> New RFQ
             </Button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-green-800 mt-2">
+        <div className="flex gap-1 mt-2" style={{ borderBottom: '1px solid rgba(245, 166, 35, 0.3)' }}>
           {[
             { id: 'rfqs', label: 'RFQ List', icon: <FileText className="w-4 h-4" /> },
             { id: 'intel', label: '📊 Bid Intel', icon: <BarChart3 className="w-4 h-4" /> },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition ${
-                activeTab === tab.id ? 'border-white text-white' : 'border-transparent text-green-300 hover:text-white'
-              }`}>
+                activeTab === tab.id ? 'text-white' : 'hover:text-white'
+              }`}
+              style={{ borderBottomColor: activeTab === tab.id ? '#F5A623' : 'transparent', color: activeTab === tab.id ? '#F5A623' : '#a0aec0' }}>
               {tab.icon} {tab.label}
             </button>
           ))}

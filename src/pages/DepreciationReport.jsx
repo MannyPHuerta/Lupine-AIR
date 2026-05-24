@@ -85,16 +85,16 @@ export default function DepreciationReport() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-bold">Depreciation Report</div>
-            <div className="text-indigo-300 text-xs">{equipment.length} assets in catalog</div>
-          </div>
-          <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:bg-indigo-800 text-indigo-200">
+          <button onClick={() => navigate('/lupine')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
+             <ArrowLeft className="w-5 h-5" />
+           </button>
+           <div className="flex-1 min-w-0">
+             <div className="text-lg font-bold">Depreciation Report</div>
+             <div className="text-xs" style={{ color: '#F5A623' }}>{equipment.length} assets in catalog</div>
+           </div>
+           <button onClick={load} disabled={loading} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)', color: '#a0aec0' }}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
@@ -132,7 +132,7 @@ export default function DepreciationReport() {
               {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
           </div>
-          <Button onClick={handleExport} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+          <Button onClick={handleExport} className="gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
             <Download className="w-4 h-4" /> Export CSV
           </Button>
         </div>

@@ -225,25 +225,25 @@ export default function AccountingDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-emerald-900 text-white sticky top-0 z-10 shadow-lg">
+       <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto flex-wrap">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-emerald-800">
+          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
             <div className="text-lg font-bold">Accounting</div>
-            <div className="text-emerald-300 text-xs">Financial summary & QB export</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>Financial summary & QB export</div>
           </div>
           <select value={branch} onChange={e => setBranch(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-emerald-800 text-white text-sm">
+            className="h-9 border-0 rounded px-2 text-white text-sm" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }}>
             {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-emerald-800 text-white text-sm" />
-          <span className="text-emerald-400 text-sm">→</span>
+            className="h-9 border-0 rounded px-2 text-white text-sm" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }} />
+          <span className="text-sm" style={{ color: '#F5A623' }}>→</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-emerald-800 text-white text-sm" />
-          <button onClick={load} className="p-2 rounded-lg hover:bg-emerald-800">
+            className="h-9 border-0 rounded px-2 text-white text-sm" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }} />
+          <button onClick={load} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
@@ -252,11 +252,11 @@ export default function AccountingDashboard() {
         <div className="px-4 max-w-6xl mx-auto flex gap-1 overflow-x-auto">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition ${
-                activeTab === tab.id
-                  ? 'border-white text-white'
-                  : 'border-transparent text-emerald-300 hover:text-white'
-              }`}>
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition`}
+              style={{
+                borderBottomColor: activeTab === tab.id ? '#F5A623' : 'transparent',
+                color: activeTab === tab.id ? '#F5A623' : '#a0aec0'
+              }}>
               {tab.icon} {tab.label}
             </button>
           ))}
@@ -337,7 +337,7 @@ export default function AccountingDashboard() {
               <div className="px-5 py-3 border-b flex items-center justify-between">
                 <div className="font-semibold text-gray-900 text-sm">Transactions ({filtered.length})</div>
                 <button onClick={handleExport} disabled={exporting || filtered.length === 0}
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                  className="flex items-center gap-2 disabled:opacity-40 text-white text-xs font-semibold px-4 py-2 rounded-lg transition" style={{ backgroundColor: '#F5A623' }}>
                   <Download className="w-3.5 h-3.5" />
                   {exporting ? 'Generating…' : 'Export to QuickBooks (.IIF)'}
                 </button>

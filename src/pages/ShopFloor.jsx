@@ -138,16 +138,16 @@ export default function ShopFloor() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto flex-wrap">
-          <button onClick={() => navigate('/airepair')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate('/airepair')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-48">
             <div className="text-lg font-bold">Shop Floor</div>
-            <div className="text-indigo-300 text-xs">{workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>{workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs</div>
           </div>
-          <button onClick={() => navigate('/inspection-queue')} className="px-3 py-2 bg-indigo-800 hover:bg-indigo-700 rounded text-xs font-medium flex items-center gap-1 transition">
+          <button onClick={() => navigate('/inspection-queue')} className="px-3 py-2 rounded text-xs font-medium flex items-center gap-1 transition text-white hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.2)' }}>
             📋 Inspection Queue
           </button>
           <button onClick={() => navigate('/parts-procurement')} className="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
@@ -156,12 +156,12 @@ export default function ShopFloor() {
           <select
             value={branchFilter}
             onChange={e => setBranchFilter(e.target.value)}
-            className="h-8 text-xs px-2 rounded bg-indigo-800 text-white border-0"
+            className="h-8 text-xs px-2 rounded text-white border-0" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }}
           >
             <option value="">All Branches</option>
             {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
-          <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={load} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             ↻
           </button>
         </div>

@@ -79,14 +79,14 @@ export default function LoyaltyManager() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:bg-indigo-800">
+          <button onClick={() => navigate('/')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <div className="text-lg font-bold">Loyalty Manager</div>
-            <div className="text-indigo-300 text-xs">AI-powered customer re-engagement & retention</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>AI-powered customer re-engagement & retention</div>
           </div>
         </div>
       </div>
@@ -141,7 +141,8 @@ export default function LoyaltyManager() {
           <Button
             onClick={handleRun}
             disabled={running}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2 h-10"
+            className="w-full gap-2 h-10 text-white hover:opacity-90"
+            style={{ backgroundColor: '#F5A623' }}
           >
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
             Run Outreach Analysis

@@ -89,18 +89,19 @@ export default function PartsProcurementReport() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-orange-900 text-white sticky top-0 z-10 shadow-lg">
+      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
         <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/shop-floor')} className="p-2 rounded-lg hover:bg-orange-800">
+          <button onClick={() => navigate('/shop-floor')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <div className="text-lg font-bold">Parts Procurement Report</div>
-            <div className="text-orange-300 text-xs">{filtered.length} parts tracked</div>
+            <div className="text-xs" style={{ color: '#F5A623' }}>{filtered.length} parts tracked</div>
           </div>
           <Button
             onClick={handleExportCSV}
-            className="bg-white text-orange-900 hover:bg-orange-50 gap-2"
+            className="gap-2 text-white hover:opacity-90"
+            style={{ backgroundColor: '#F5A623' }}
           >
             <Download className="w-4 h-4" /> Export CSV
           </Button>
