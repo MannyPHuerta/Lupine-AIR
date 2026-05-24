@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Mail, Loader2, Shield, User, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Users, UserPlus, Mail, Loader2, Shield, User, ToggleLeft, ToggleRight, Upload } from 'lucide-react';
+import CSVImportPanel from '@/components/users/CSVImportPanel';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -15,6 +16,7 @@ export default function UserManagement() {
   const [inviteMessage, setInviteMessage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [showCSVImport, setShowCSVImport] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -71,10 +73,29 @@ export default function UserManagement() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-8">
-        <Users className="w-7 h-7 text-indigo-600" />
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <Users className="w-7 h-7 text-indigo-600" />
+          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => setShowCSVImport(v => !v)}
+          className="gap-2"
+        >
+          <Upload className="w-4 h-4" /> Bulk Import CSV
+        </Button>
       </div>
+
+      {showCSVImport && (
+        <CSVImportPanel
+          onClose={() => setShowCSVImport(false)}
+          onImportDone={async () => {
+            const updated = await base44.entities.User.list();
+            setUsers(updated);
+          }}
+        />
+      )}
 
       {/* Invite Form */}
       <div className="bg-white border rounded-xl p-6 mb-8 shadow-sm">
