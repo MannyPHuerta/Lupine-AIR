@@ -29,6 +29,7 @@ const navGroups = [
       { label: 'Customers', path: '/customers', icon: Users },
 
       { label: 'Driver View', path: '/driver', icon: Truck },
+      { label: 'Timesheets', path: '/timesheets', icon: Clock },
     ],
   },
   {
@@ -114,7 +115,6 @@ const navGroups = [
       { label: 'Rental Agreement', path: '/rental-agreement', icon: FileText },
       { label: 'Branch Settings', path: '/branch-settings', icon: Building2 },
       { label: 'Company Settings', path: '/company-settings', icon: Building2 },
-      { label: 'Timesheets', path: '/timesheets', icon: Clock },
       { label: 'Employee Profiles', path: '/employee-profiles', icon: UserCog },
       { label: 'Roles', path: '/roles', icon: Shield },
       { label: 'Discounts & Promos', path: '/discounts', icon: Star },

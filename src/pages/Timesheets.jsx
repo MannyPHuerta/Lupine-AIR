@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Clock, Plus, CheckCircle, XCircle, DollarSign, Download, Filter, Loader2, ChevronDown, QrCode, ShieldAlert } from 'lucide-react';
+import { Clock, Plus, CheckCircle, XCircle, DollarSign, Download, Loader2, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import QRCodeGenerator from '@/components/timesheets/QRCodeGenerator';
@@ -163,14 +163,20 @@ export default function Timesheets() {
     base44.auth.me().then(u => { setUser(u); setAuthChecked(true); }).catch(() => setAuthChecked(true));
   }, []);
 
-  const load = async () => {
+  const load = async (currentUser) => {
     setLoading(true);
-    const data = await base44.entities.Timesheet.list('-workDate', 200);
+    let data;
+    if (currentUser?.role === 'admin') {
+      data = await base44.entities.Timesheet.list('-workDate', 200);
+    } else {
+      // Regular users only see their own entries, matched by email
+      data = await base44.entities.Timesheet.filter({ staffEmail: currentUser?.email }, '-workDate', 200);
+    }
     setEntries(data);
     setLoading(false);
   };
 
-  useEffect(() => { if (authChecked && user?.role === 'admin') load(); }, [authChecked]);
+  useEffect(() => { if (authChecked && user) load(user); }, [authChecked, user]);
 
   const filtered = entries.filter(e => {
     if (filterStatus !== 'all' && e.status !== filterStatus) return false;
@@ -195,7 +201,7 @@ export default function Timesheets() {
     setSaving(false);
     setShowModal(false);
     setEditEntry(null);
-    load();
+    load(user);
   };
 
   const handleApprove = async (entry) => {
@@ -203,28 +209,22 @@ export default function Timesheets() {
       status: 'approved',
       approvedAt: new Date().toISOString(),
     });
-    load();
+    load(user);
   };
 
   const handleReject = async (entry) => {
     await base44.entities.Timesheet.update(entry.id, { status: 'rejected' });
-    load();
+    load(user);
   };
 
   const handleMarkPaid = async (entry) => {
     await base44.entities.Timesheet.update(entry.id, { status: 'paid' });
-    load();
+    load(user);
   };
 
-  // Admin gate
+  const isAdmin = user?.role === 'admin';
+
   if (!authChecked) return <div className="flex justify-center items-center min-h-screen"><Loader2 className="w-6 h-6 animate-spin text-indigo-600" /></div>;
-  if (user?.role !== 'admin') return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-gray-500">
-      <ShieldAlert className="w-12 h-12 text-red-400" />
-      <div className="text-lg font-semibold">Admin Access Required</div>
-      <div className="text-sm">Contact your manager to access timesheets.</div>
-    </div>
-  );
 
   const handleExportCSV = () => {
     const rows = [
@@ -255,12 +255,16 @@ export default function Timesheets() {
             <p className="text-indigo-300 text-sm">Staff hours tracking &amp; payroll prep</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleExportCSV} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
-              <Download className="w-4 h-4" /> Export CSV
-            </Button>
-            <Button onClick={() => setShowQR(true)} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
-              <QrCode className="w-4 h-4" /> QR Code
-            </Button>
+            {isAdmin && (
+              <>
+                <Button onClick={handleExportCSV} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
+                  <Download className="w-4 h-4" /> Export CSV
+                </Button>
+                <Button onClick={() => setShowQR(true)} variant="outline" size="sm" className="border-indigo-500 text-white hover:bg-indigo-800 gap-1">
+                  <QrCode className="w-4 h-4" /> QR Code
+                </Button>
+              </>
+            )}
             <Button onClick={() => { setEditEntry(null); setShowModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 gap-1">
               <Plus className="w-4 h-4" /> Log Hours
             </Button>
@@ -269,6 +273,12 @@ export default function Timesheets() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+        {/* Personal view banner for non-admins */}
+        {!isAdmin && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3 text-sm text-indigo-800">
+            Showing your personal timesheet entries. Your email (<strong>{user?.email}</strong>) must match the <em>Staff Email</em> field on each entry.
+          </div>
+        )}
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -354,30 +364,32 @@ export default function Timesheets() {
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <div className="flex gap-1">
-                        {e.status === 'pending' && (
-                          <>
-                            <button onClick={() => handleApprove(e)} title="Approve"
-                              className="p-1 text-green-600 hover:bg-green-50 rounded">
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleReject(e)} title="Reject"
-                              className="p-1 text-red-500 hover:bg-red-50 rounded">
-                              <XCircle className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        {e.status === 'approved' && (
-                          <button onClick={() => handleMarkPaid(e)} title="Mark Paid"
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                            <DollarSign className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button onClick={() => { setEditEntry(e); setShowModal(true); }}
-                          className="p-1 text-gray-400 hover:bg-gray-100 rounded text-xs px-2">
-                          Edit
-                        </button>
-                      </div>
+                     <div className="flex gap-1">
+                       {isAdmin && e.status === 'pending' && (
+                         <>
+                           <button onClick={() => handleApprove(e)} title="Approve"
+                             className="p-1 text-green-600 hover:bg-green-50 rounded">
+                             <CheckCircle className="w-4 h-4" />
+                           </button>
+                           <button onClick={() => handleReject(e)} title="Reject"
+                             className="p-1 text-red-500 hover:bg-red-50 rounded">
+                             <XCircle className="w-4 h-4" />
+                           </button>
+                         </>
+                       )}
+                       {isAdmin && e.status === 'approved' && (
+                         <button onClick={() => handleMarkPaid(e)} title="Mark Paid"
+                           className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                           <DollarSign className="w-4 h-4" />
+                         </button>
+                       )}
+                       {e.status === 'pending' && (
+                         <button onClick={() => { setEditEntry(e); setShowModal(true); }}
+                           className="p-1 text-gray-400 hover:bg-gray-100 rounded text-xs px-2">
+                           Edit
+                         </button>
+                       )}
+                     </div>
                     </td>
                   </tr>
                 ))}
