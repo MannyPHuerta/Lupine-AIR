@@ -1,0 +1,60 @@
+{
+  "name": "RentalAgreement",
+  "type": "object",
+  "properties": {
+    "branch": {
+      "type": "string",
+      "description": "Branch identifier (e.g. '01 McAllen') \u2014 one agreement per branch"
+    },
+    "agreementType": {
+      "type": "string",
+      "enum": [
+        "ARA_standard",
+        "bespoke",
+        "custom_url"
+      ],
+      "default": "ARA_standard",
+      "description": "Type of agreement: ARA_standard = built-in ARA template, bespoke = custom uploaded/edited text, custom_url = link to an external PDF (future)"
+    },
+    "title": {
+      "type": "string",
+      "default": "Equipment Rental Agreement",
+      "description": "Agreement title/header"
+    },
+    "content": {
+      "type": "string",
+      "description": "Full agreement text (supports multi-line, markdown-style)"
+    },
+    "customPdfUrl": {
+      "type": "string",
+      "description": "For agreementType=custom_url: URL to an externally hosted PDF agreement"
+    },
+    "pages": {
+      "type": "integer",
+      "default": 1,
+      "description": "Number of pages in the agreement (determines initial/signature prompts)"
+    },
+    "requiresInitials": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to collect initials on each page before the final signature"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this agreement is currently in use"
+    },
+    "lastUpdatedAt": {
+      "type": "string",
+      "description": "ISO timestamp of last edit"
+    },
+    "lastUpdatedBy": {
+      "type": "string",
+      "description": "Email of user who last edited"
+    }
+  },
+  "required": [
+    "branch",
+    "content"
+  ]
+}

@@ -189,14 +189,17 @@ Requirements:
     setSaving(true);
     try {
       const existing = agreements[branch];
+      const agreementType = content === ARA_AGREEMENT ? 'ARA_standard' : 'bespoke';
+      const me = (await base44.auth.me())?.email || 'unknown';
       if (existing) {
         await base44.entities.RentalAgreement.update(existing.id, {
           title,
           content,
           pages,
           requiresInitials,
+          agreementType,
           lastUpdatedAt: new Date().toISOString(),
-          lastUpdatedBy: (await base44.auth.me())?.email || 'unknown',
+          lastUpdatedBy: me,
         });
         setAgreementId(existing.id);
       } else {
@@ -206,9 +209,10 @@ Requirements:
           content,
           pages,
           requiresInitials,
+          agreementType,
           isActive: true,
           lastUpdatedAt: new Date().toISOString(),
-          lastUpdatedBy: (await base44.auth.me())?.email || 'unknown',
+          lastUpdatedBy: me,
         });
         setAgreements(prev => ({ ...prev, [branch]: created }));
         setAgreementId(created.id);
