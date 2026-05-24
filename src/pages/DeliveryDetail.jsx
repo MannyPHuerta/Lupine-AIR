@@ -204,8 +204,9 @@ export default function DeliveryDetail() {
         <DeliveryProgressBar status={delivery.status} />
       </div>
 
-      {/* Offline / Pending Sync Banner */}
-      {(!isOnline || pendingCount > 0) && (
+      {/* Offline / Pending Sync Banner — always show when offline OR has pending */}
+      {/* DEBUG: remove the forced show below once confirmed working */}
+      {(true || !isOnline || pendingCount > 0) && (
         <div style={{ background: !isOnline ? '#f59e0b' : '#3b82f6', color: 'white', padding: '16px', fontSize: '16px', fontWeight: 'bold', minHeight: '56px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           {!isOnline ? (
             <>
