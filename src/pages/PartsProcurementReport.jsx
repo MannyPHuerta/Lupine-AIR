@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Download, Filter, Loader2, Package, DollarSign, CheckCircle, TrendingUp } from 'lucide-react';
+import { Download, Filter, Loader2, Package, DollarSign, CheckCircle, TrendingUp, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
+import FindPartModal from '@/components/parts/FindPartModal';
 
 export default function PartsProcurementReport() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function PartsProcurementReport() {
   const [status, setStatus] = useState('all');
   const [dateFrom, setDateFrom] = useState(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
+  const [findPart, setFindPart] = useState(null);
 
   useEffect(() => {
     base44.entities.PartsProcurement.list('-purchaseDate', 1000)
@@ -208,12 +210,13 @@ export default function PartsProcurementReport() {
                   <th className="px-4 py-3 text-left font-semibold text-gray-900">Status</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-900">Purchase Date</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-900">Received Date</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan="9" className="px-4 py-8 text-center text-gray-400">
                       No parts found for selected filters
                     </td>
                   </tr>
@@ -221,7 +224,7 @@ export default function PartsProcurementReport() {
                   filtered.map(p => (
                     <tr key={p.id} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-3 text-gray-900">{p.partName}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.vendor}</td>
+                      <td className="px-4 py-3 text-gray-600">{p.vendor || <span className="text-gray-300 italic text-xs">No vendor</span>}</td>
                       <td className="px-4 py-3 text-center text-gray-900 font-medium">{p.quantity}</td>
                       <td className="px-4 py-3 text-right text-gray-900">${(p.unitCost || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-right text-gray-900 font-semibold">${(p.totalCost || 0).toFixed(2)}</td>
@@ -232,6 +235,16 @@ export default function PartsProcurementReport() {
                       </td>
                       <td className="px-4 py-3 text-gray-600 text-xs">{p.purchaseDate || '—'}</td>
                       <td className="px-4 py-3 text-gray-600 text-xs">{p.receivedDate || '—'}</td>
+                      <td className="px-4 py-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setFindPart(p)}
+                          className="gap-1.5 text-xs h-7 text-orange-700 border-orange-200 hover:bg-orange-50 whitespace-nowrap"
+                        >
+                          <Search className="w-3 h-3" /> Find Part
+                        </Button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -295,6 +308,8 @@ export default function PartsProcurementReport() {
           </div>
         )}
       </div>
+
+      {findPart && <FindPartModal part={findPart} onClose={() => setFindPart(null)} />}
     </div>
   );
 }
