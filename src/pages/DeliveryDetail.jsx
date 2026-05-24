@@ -206,18 +206,18 @@ export default function DeliveryDetail() {
 
       {/* Offline / Pending Sync Banner */}
       {(!isOnline || pendingCount > 0) && (
-        <div className={`px-4 py-6 flex flex-wrap items-center gap-4 text-lg font-bold ${!isOnline ? 'bg-amber-400 text-white shadow-lg' : 'bg-blue-500 text-white shadow-lg'}`}>
-           {!isOnline ? (
+        <div style={{ background: !isOnline ? '#f59e0b' : '#3b82f6', color: 'white', padding: '16px', fontSize: '16px', fontWeight: 'bold', minHeight: '56px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {!isOnline ? (
             <>
-              <WifiOff className="w-5 h-5 flex-shrink-0" />
+              <WifiOff style={{ width: '20px', height: '20px', flexShrink: 0 }} />
               <span>You're offline — changes saved locally and will sync automatically.</span>
             </>
           ) : (
             <>
-              <RefreshCw className={`w-5 h-5 flex-shrink-0 ${syncing ? 'animate-spin' : ''}`} />
+              <RefreshCw style={{ width: '20px', height: '20px', flexShrink: 0 }} className={syncing ? 'animate-spin' : ''} />
               <span>{syncing ? 'Syncing…' : `${pendingCount} pending change(s) — tap to sync`}</span>
               {!syncing && (
-                <button onClick={syncQueue} className="ml-auto underline text-sm font-semibold">Sync now</button>
+                <button onClick={syncQueue} style={{ marginLeft: 'auto', textDecoration: 'underline', fontSize: '14px' }}>Sync now</button>
               )}
             </>
           )}
