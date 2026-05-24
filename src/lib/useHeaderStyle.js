@@ -22,18 +22,19 @@ export function useHeaderStyle() {
   const [style, setStyle] = useState(_cached || 'classic');
 
   useEffect(() => {
-    if (_cached) {
-      setStyle(_cached);
-      return;
+    // Always fetch on mount if no cache
+    if (!_cached) {
+      base44.entities.CompanySettings.list().then(list => {
+        const s = list[0]?.headerStyle || 'classic';
+        _cached = s;
+        setStyle(s);
+      }).catch(() => {});
     }
-    base44.entities.CompanySettings.list().then(list => {
-      const s = list[0]?.headerStyle || 'classic';
-      _cached = s;
-      setStyle(s);
-    }).catch(() => {});
 
+    // Always register listener so invalidation reaches every mounted component
     const refresh = (newStyle) => {
       if (newStyle) {
+        _cached = newStyle;
         setStyle(newStyle);
       } else {
         base44.entities.CompanySettings.list().then(list => {
