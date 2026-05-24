@@ -28,19 +28,26 @@ function saveQueue(queue) {
 export function useDeliveryOfflineQueue() {
   const [queue, setQueue] = useState(loadQueue);
   const [syncing, setSyncing] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [lastSyncResult, setLastSyncResult] = useState(null);
   const isSyncingRef = useRef(false);
 
-  // Track online/offline state
+  // Track online/offline state — poll every 3s as fallback for cases where
+  // the browser event fires late or not at all (e.g. DevTools offline mode)
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+
+    const poll = setInterval(() => {
+      setIsOnline(navigator.onLine);
+    }, 3000);
+
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      clearInterval(poll);
     };
   }, []);
 
