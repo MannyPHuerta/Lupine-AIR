@@ -47,7 +47,7 @@ export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, on
     onCancelEdit();
   };
 
-  const save = () => {
+  const save = async () => {
     const partsCost = (form.partsRequired || []).reduce((s, p) => s + ((p.cost || 0) * (p.quantity || 1)), 0);
     const laborCost = parseFloat(form.laborCost) || 0;
     const updates = {
@@ -60,6 +60,48 @@ export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, on
       updates.completedDate = new Date().toISOString().split('T')[0];
     }
     onUpdate(updates);
+
+    // Sync partsRequired → PartRequirement records so ShopFloor blocking
+    // and the Procurement report both use a single source of truth.
+    try {
+      const existing = await base44.entities.PartRequirement.filter({ workOrderId: wo.id });
+      const existingByName = {};
+      existing.forEach(r => { existingByName[r.partName] = r; });
+
+      const newParts = form.partsRequired || [];
+      const newNames = new Set(newParts.map(p => p.partName));
+
+      // Upsert each part
+      for (const part of newParts) {
+        if (!part.partName) continue;
+        const prev = existingByName[part.partName];
+        const data = {
+          workOrderId: wo.id,
+          partName: part.partName,
+          quantity: part.quantity || 1,
+          vendor: part.vendor || '',
+          cost: part.cost || 0,
+          status: part.received ? 'received' : (prev?.status || 'in_stock'),
+          isCritical: prev?.isCritical || false,
+          eta: part.eta || prev?.eta || '',
+        };
+        if (prev) {
+          await base44.entities.PartRequirement.update(prev.id, data);
+        } else {
+          await base44.entities.PartRequirement.create(data);
+        }
+      }
+
+      // Remove PartRequirement records for parts that were deleted
+      for (const r of existing) {
+        if (!newNames.has(r.partName)) {
+          await base44.entities.PartRequirement.delete(r.id);
+        }
+      }
+    } catch (err) {
+      console.warn('PartRequirement sync failed:', err.message);
+    }
+
     setForm(null);
   };
 
@@ -313,6 +355,7 @@ export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, on
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-3 py-1.5 text-left">Part</th>
+                        <th className="px-3 py-1.5 text-left">Vendor</th>
                         <th className="px-3 py-1.5 text-right">Qty</th>
                         <th className="px-3 py-1.5 text-right">Unit $</th>
                         <th className="px-3 py-1.5 text-right">Total</th>
@@ -322,7 +365,8 @@ export default function WorkOrderCard({ workOrder: wo, statusMeta, isEditing, on
                     <tbody className="divide-y">
                       {wo.partsRequired.map((p, i) => (
                         <tr key={i} className={p.received ? 'bg-green-50' : ''}>
-                          <td className="px-3 py-1.5">{p.partName}</td>
+                          <td className="px-3 py-1.5 font-medium">{p.partName}</td>
+                          <td className="px-3 py-1.5 text-gray-500">{p.vendor || '—'}</td>
                           <td className="px-3 py-1.5 text-right">{p.quantity}</td>
                           <td className="px-3 py-1.5 text-right">${(p.cost || 0).toFixed(2)}</td>
                           <td className="px-3 py-1.5 text-right">${((p.cost || 0) * (p.quantity || 1)).toFixed(2)}</td>
