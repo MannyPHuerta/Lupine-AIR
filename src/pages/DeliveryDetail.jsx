@@ -204,23 +204,16 @@ export default function DeliveryDetail() {
         <DeliveryProgressBar status={delivery.status} />
       </div>
 
-      {/* Offline / Pending Sync Banner — always show when offline OR has pending */}
-      {/* DEBUG: remove the forced show below once confirmed working */}
-      {(true || !isOnline || pendingCount > 0) && (
-        <div style={{ background: !isOnline ? '#f59e0b' : '#3b82f6', color: 'white', padding: '16px', fontSize: '16px', fontWeight: 'bold', minHeight: '56px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      {/* Offline / Pending Sync Banner */}
+      {(!isOnline || pendingCount > 0) && (
+        <div style={{ background: !isOnline ? '#d97706' : '#2563eb', color: '#ffffff', padding: '20px 16px', fontSize: '17px', fontWeight: '700', lineHeight: '1.4', boxSizing: 'border-box', width: '100%' }}>
           {!isOnline ? (
-            <>
-              <WifiOff style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-              <span>You're offline — changes saved locally and will sync automatically.</span>
-            </>
+            <p style={{ margin: 0 }}>⚠️ You're offline — changes are saved locally and will sync when you reconnect.</p>
           ) : (
-            <>
-              <RefreshCw style={{ width: '20px', height: '20px', flexShrink: 0 }} className={syncing ? 'animate-spin' : ''} />
-              <span>{syncing ? 'Syncing…' : `${pendingCount} pending change(s) — tap to sync`}</span>
-              {!syncing && (
-                <button onClick={syncQueue} style={{ marginLeft: 'auto', textDecoration: 'underline', fontSize: '14px' }}>Sync now</button>
-              )}
-            </>
+            <p style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <span>🔄 {syncing ? 'Syncing changes…' : `${pendingCount} pending change(s) not yet synced.`}</span>
+              {!syncing && <button onClick={syncQueue} style={{ textDecoration: 'underline', fontWeight: '700', background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '17px' }}>Sync now</button>}
+            </p>
           )}
         </div>
       )}
