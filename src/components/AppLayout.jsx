@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useWorkingBranch } from '@/lib/WorkingBranchContext';
+import { useHeaderStyle } from '@/lib/useHeaderStyle';
 import WorkingBranchModal from '@/components/WorkingBranchModal';
 import { base44 } from '@/api/base44Client';
 import {
@@ -253,6 +254,7 @@ export default function AppLayout() {
   const [user, setUser] = useState(null);
   const [showBranchModal, setShowBranchModal] = useState(false);
   const allGroupRefs = useRef({});
+  const headerStyle = useHeaderStyle();
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -320,7 +322,7 @@ export default function AppLayout() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {showBranchModal && <WorkingBranchModal user={user} onClose={() => setShowBranchModal(false)} />}
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-56 bg-slate-800 flex-shrink-0 overflow-hidden">
+      <aside className={`hidden md:flex flex-col w-56 flex-shrink-0 overflow-hidden ${headerStyle === 'navy' ? '' : 'bg-slate-800'}`} style={headerStyle === 'navy' ? { backgroundColor: '#0d1b3e' } : {}}>
         <SidebarContent />
       </aside>
 
@@ -328,7 +330,7 @@ export default function AppLayout() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-slate-800 overflow-hidden flex flex-col">
+          <aside className={`absolute left-0 top-0 bottom-0 w-64 overflow-hidden flex flex-col ${headerStyle === 'navy' ? '' : 'bg-slate-800'}`} style={headerStyle === 'navy' ? { backgroundColor: '#0d1b3e' } : {}}>
             <SidebarContent />
           </aside>
         </div>
@@ -337,7 +339,7 @@ export default function AppLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-slate-800 text-white">
+        <div className={`md:hidden flex items-center gap-3 px-4 py-3 text-white ${headerStyle === 'navy' ? '' : 'bg-slate-800'}`} style={headerStyle === 'navy' ? { backgroundColor: '#0d1b3e' } : {}}>
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
