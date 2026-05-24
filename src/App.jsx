@@ -118,7 +118,7 @@ const AuthenticatedApp = () => {
     <Routes>
       {/* All internal routes wrapped in sidebar layout */}
       <Route element={<AppLayout />}>
-        <Route path="/" element={<ReportForm />} />
+        <Route path="/" element={<DailyOps />} />
         <Route path="/report-form" element={<ReportForm />} />
         <Route path="/pending" element={<PendingReports />} />
         <Route path="/history" element={<ReportHistory />} />
