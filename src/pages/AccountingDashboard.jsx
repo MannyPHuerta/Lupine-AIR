@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, RefreshCw, Download, Loader2, BarChart2, FileText, Receipt, Brain
+  RefreshCw, Download, Loader2, BarChart2, FileText, Receipt, Brain
 } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import InvoiceDrawer from '@/components/accounting/InvoiceDrawer';
 import ProfitLossStatement from '@/components/accounting/ProfitLossStatement';
@@ -224,44 +225,33 @@ export default function AccountingDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-       <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto flex-wrap">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-bold">Accounting</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>Financial summary & QB export</div>
+      <AppPageHeader
+        title="Accounting"
+        subtitle="Financial summary & QB export"
+        backTo="/manager"
+        icon={BarChart2}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <select value={branch} onChange={e => setBranch(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
+              {BRANCHES.map(b => <option key={b} value={b} className="text-black">{b}</option>)}
+            </select>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs" />
+            <span className="text-white/60 text-xs">→</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs" />
+            <button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white"><RefreshCw className="w-4 h-4" /></button>
           </div>
-          <select value={branch} onChange={e => setBranch(e.target.value)}
-            className="h-9 border-0 rounded px-2 text-white text-sm" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }}>
-            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            className="h-9 border-0 rounded px-2 text-white text-sm" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }} />
-          <span className="text-sm" style={{ color: '#F5A623' }}>→</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            className="h-9 border-0 rounded px-2 text-white text-sm" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }} />
-          <button onClick={load} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="px-4 max-w-6xl mx-auto flex gap-1 overflow-x-auto">
+        }
+      >
+        <div className="flex gap-1 overflow-x-auto -mb-1">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition`}
-              style={{
-                borderBottomColor: activeTab === tab.id ? '#F5A623' : 'transparent',
-                color: activeTab === tab.id ? '#F5A623' : '#a0aec0'
-              }}>
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition"
+              style={{ borderBottomColor: activeTab === tab.id ? '#F5A623' : 'transparent', color: activeTab === tab.id ? '#F5A623' : 'rgba(255,255,255,0.5)' }}>
               {tab.icon} {tab.label}
             </button>
           ))}
         </div>
-      </div>
+      </AppPageHeader>
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 

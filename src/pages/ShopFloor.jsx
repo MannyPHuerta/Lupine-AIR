@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Clock, User, Zap, Plus, Loader2, Check, Send, Package } from 'lucide-react';
+import { AlertTriangle, Clock, User, Zap, Plus, Loader2, Check, Send, Package, Wrench } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
@@ -137,35 +138,25 @@ export default function ShopFloor() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="text-white sticky top-0 z-10 shadow-lg" style={{ backgroundColor: '#0d1b3e' }}>
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto flex-wrap">
-          <button onClick={() => navigate('/airepair')} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-48">
-            <div className="text-lg font-bold">Shop Floor</div>
-            <div className="text-xs" style={{ color: '#F5A623' }}>{workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs</div>
+      <AppPageHeader
+        title="Shop Floor"
+        subtitle={`${workOrders.filter(w => ['scheduled', 'in_progress', 'awaiting_parts'].includes(w.status)).length} active jobs`}
+        icon={Wrench}
+        backTo="/airepair"
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => navigate('/inspection-queue')} className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-medium transition">📋 Inspection Queue</button>
+            <button onClick={() => navigate('/parts-procurement')} className="flex items-center gap-1 px-3 py-1.5 bg-orange-500/80 hover:bg-orange-500 text-white rounded text-xs font-medium transition">
+              <Package className="w-3.5 h-3.5" /> Procurement
+            </button>
+            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
+              <option value="" className="text-black">All Branches</option>
+              {BRANCHES.map(b => <option key={b} value={b} className="text-black">{b}</option>)}
+            </select>
+            <button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white text-sm">↻</button>
           </div>
-          <button onClick={() => navigate('/inspection-queue')} className="px-3 py-2 rounded text-xs font-medium flex items-center gap-1 transition text-white hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.2)' }}>
-            📋 Inspection Queue
-          </button>
-          <button onClick={() => navigate('/parts-procurement')} className="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded text-xs font-medium flex items-center gap-1 transition">
-            <Package className="w-4 h-4" /> Procurement Report
-          </button>
-          <select
-            value={branchFilter}
-            onChange={e => setBranchFilter(e.target.value)}
-            className="h-8 text-xs px-2 rounded text-white border-0" style={{ backgroundColor: 'rgba(245, 166, 35, 0.15)' }}
-          >
-            <option value="">All Branches</option>
-            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-          <button onClick={load} className="p-2 rounded-lg hover:opacity-80" style={{ backgroundColor: 'rgba(245, 166, 35, 0.1)' }}>
-            ↻
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Unassigned queue */}

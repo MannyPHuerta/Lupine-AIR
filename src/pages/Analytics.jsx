@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Printer, FileDown } from "lucide-react";
+import { Loader2, Printer, FileDown } from "lucide-react";
+import AppPageHeader from "@/components/AppPageHeader";
 import { jsPDF } from "jspdf";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid } from "recharts";
 
@@ -207,43 +208,22 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* AppBar */}
-      <div className="no-print bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="px-2 py-2 flex items-center justify-between">
-          <button className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1" onClick={() => navigate("/history")}>
-            <ArrowLeft className="w-6 h-6" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          <span className="text-xl font-bold flex items-center gap-2">
-            <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/7bc9512a2_wolf_silhouette.png" className="w-8 h-8 rounded-md object-cover" alt="wolf" />
-            Analytics
-          </span>
+      <AppPageHeader
+        className="no-print"
+        title="Analytics"
+        subtitle={currentUserEmail || "Asset reporting & trends"}
+        backTo="/history"
+        action={
           <div className="flex items-center gap-1">
-            <button
-              className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1"
-              onClick={exportPDF}
-              title="Export PDF"
-            >
-              <FileDown className="w-5 h-5" />
-              <span className="text-sm font-medium hidden sm:inline">PDF</span>
+            <button onClick={exportPDF} className="flex items-center gap-1 p-2 rounded-lg hover:bg-white/10 text-white transition" title="Export PDF">
+              <FileDown className="w-5 h-5" /><span className="text-sm hidden sm:inline">PDF</span>
             </button>
-            <button
-              className="text-white p-3 rounded-lg hover:bg-blue-600 active:bg-blue-500 flex items-center gap-1"
-              onClick={() => window.print()}
-              title="Print Analytics"
-            >
-              <Printer className="w-5 h-5" />
-              <span className="text-sm font-medium hidden sm:inline">Print</span>
+            <button onClick={() => window.print()} className="flex items-center gap-1 p-2 rounded-lg hover:bg-white/10 text-white transition" title="Print">
+              <Printer className="w-5 h-5" /><span className="text-sm hidden sm:inline">Print</span>
             </button>
           </div>
-        </div>
-      </div>
-
-      {currentUserEmail && (
-        <div className="no-print bg-blue-900 text-blue-200 text-xs text-center py-1 px-4">
-          Logged in as: {currentUserEmail}
-        </div>
-      )}
+        }
+      />
 
       <div id="analytics-print-area" className="max-w-4xl mx-auto p-4 space-y-6">
         <div className="hidden print:block text-center mb-4">

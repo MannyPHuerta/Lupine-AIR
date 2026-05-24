@@ -116,35 +116,20 @@ export default function DriverDashboard() {
     return (
       <>
         <div className="min-h-screen bg-gray-50">
-        {/* Screen view */}
-        <div className="screen-only bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-          <div className="px-4 py-4 max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="text-lg font-bold">🚚 Driver Dashboard</div>
-              <button onClick={() => navigate('/driver-report')} className="p-2 rounded-lg hover:bg-indigo-800" title="Performance Report">
-                <FileBarChart className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="text-indigo-300 text-xs mt-1">{driver?.full_name} • {driver?.email}</div>
-            <div className="mt-2 text-sm text-indigo-200">
-              {format(parseISO(filterDate), 'MMMM d, yyyy')} — {filteredDeliveries.length} deliveries · {filteredRecoveries.length} recoveries
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={() => setFilterDate('')}
-                className="px-3 py-1 bg-indigo-800 hover:bg-indigo-700 rounded text-xs text-indigo-200 transition"
-              >
-                ← Back to Dashboard
-              </button>
-              <button
-                onClick={() => setPrintDate(filterDate)}
-                className="px-3 py-1 bg-indigo-800 hover:bg-indigo-700 rounded text-xs text-indigo-200 transition flex items-center gap-1.5"
-              >
+        <AppPageHeader
+          className="screen-only"
+          title="🚚 Driver Dashboard"
+          subtitle={`${driver?.full_name} • ${format(parseISO(filterDate), 'MMMM d, yyyy')} — ${filteredDeliveries.length} deliveries · ${filteredRecoveries.length} recoveries`}
+          icon={Truck}
+          action={
+            <div className="flex items-center gap-2">
+              <button onClick={() => setFilterDate('')} className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs text-white transition">← Back</button>
+              <button onClick={() => setPrintDate(filterDate)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs text-white transition">
                 <Printer className="w-3.5 h-3.5" /> Print
               </button>
             </div>
-          </div>
-        </div>
+          }
+        />
 
 
 

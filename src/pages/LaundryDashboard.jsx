@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Clock, CheckCircle2, AlertTriangle, Zap, TrendingUp, Droplets, FileBarChart } from 'lucide-react';
+import { Loader2, Clock, CheckCircle2, AlertTriangle, Zap, TrendingUp, Droplets, FileBarChart, RefreshCw } from 'lucide-react';
+import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
@@ -113,34 +114,23 @@ export default function LaundryDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-indigo-900 text-white sticky top-0 z-10 shadow-lg">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <button onClick={() => navigate('/manager')} className="p-2 rounded-lg hover:bg-indigo-800">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 flex items-center gap-3">
-            <Droplets className="w-6 h-6 text-cyan-300" />
-            <div>
-              <div className="text-lg font-bold">Laundry Operations</div>
-              <div className="text-indigo-300 text-xs">{metrics.inQueue} items in queue</div>
-            </div>
+      <AppPageHeader
+        title="Laundry Operations"
+        subtitle={`${metrics.inQueue} items in queue`}
+        icon={Droplets}
+        backTo="/manager"
+        action={
+          <div className="flex items-center gap-2">
+            <select value={branch} onChange={e => setBranch(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
+              {BRANCHES.map(b => <option key={b} value={b} className="text-black">{b}</option>)}
+            </select>
+            <button onClick={() => navigate('/laundry-report')} className="p-1.5 rounded-lg hover:bg-white/10 text-white" title="Monthly Report">
+              <FileBarChart className="w-4 h-4" />
+            </button>
+            <button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white">↻</button>
           </div>
-          <select
-            value={branch}
-            onChange={e => setBranch(e.target.value)}
-            className="h-9 border-0 rounded px-2 bg-indigo-800 text-white text-sm"
-          >
-            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-          </select>
-          <button onClick={() => navigate('/laundry-report')} className="p-2 rounded-lg hover:bg-indigo-800" title="Monthly Report">
-            <FileBarChart className="w-5 h-5" />
-          </button>
-          <button onClick={load} className="p-2 rounded-lg hover:bg-indigo-800">
-            ↻
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* KPI Cards */}
