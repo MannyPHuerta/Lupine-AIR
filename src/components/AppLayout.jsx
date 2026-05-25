@@ -256,7 +256,9 @@ export default function AppLayout() {
   const [user, setUser] = useState(null);
   const [showBranchModal, setShowBranchModal] = useState(false);
   const allGroupRefs = useRef({});
-  const { style: headerStyle, seasonalTheme } = useHeaderStyle();
+  const headerStyleResult = useHeaderStyle();
+  const headerStyle = headerStyleResult?.style ?? null;
+  const seasonalTheme = headerStyleResult?.seasonalTheme ?? null;
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -329,7 +331,7 @@ export default function AppLayout() {
           : headerStyle === 'glassmorphism' ? '#1e293b'
           : headerStyle === 'neon' ? '#09090b'
           : headerStyle === 'seasonal' && seasonalTheme ? seasonalTheme.sidebarBg
-          : '#1e293b' // slate-800 equivalent
+          : '#1e293b'
       }}>
         <SidebarContent />
       </aside>

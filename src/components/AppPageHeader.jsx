@@ -15,8 +15,14 @@ import { ArrowLeft } from 'lucide-react';
  *   sticky      — bool, default true
  */
 export default function AppPageHeader({ title, subtitle, icon: Icon, action, children, sticky = true, backTo }) {
-  const { style, seasonalTheme } = useHeaderStyle();
+  const headerStyleResult = useHeaderStyle();
+  const style = headerStyleResult?.style ?? null;
+  const seasonalTheme = headerStyleResult?.seasonalTheme ?? null;
+
   const navigate = useNavigate();
+
+  // Still loading — render nothing to avoid flash
+  if (!style) return null;
 
   const stickyClass = sticky ? 'sticky top-0 z-10' : '';
 

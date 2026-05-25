@@ -3,8 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { getActiveSeasonalTheme, SEASONAL_THEMES } from '@/lib/seasonalThemes';
 
 const _listeners = new Set();
+const CACHE_KEY = 'headerStyleCache';
 
 export function invalidateHeaderStyleCache() {
+  sessionStorage.removeItem(CACHE_KEY);
   _listeners.forEach(fn => fn());
 }
 
@@ -30,7 +32,8 @@ function resolveStyle(settings) {
  * seasonalTheme = the matching SEASONAL_THEMES entry (when style === 'seasonal'), else null
  */
 export function useHeaderStyle() {
-  const [result, setResult] = useState({ style: 'classic', seasonalTheme: null });
+  const cached = sessionStorage.getItem(CACHE_KEY);
+  const [result, setResult] = useState(cached ? JSON.parse(cached) : null);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,12 +41,11 @@ export function useHeaderStyle() {
       base44.entities.CompanySettings.list().then(list => {
         if (cancelled) return;
         const resolved = resolveStyle(list[0]);
-        console.log('[useHeaderStyle] settings:', JSON.stringify(list[0]?.headerStyle), list[0]?.seasonalAutoActivate, list[0]?.seasonalThemeKey, '→ resolved:', JSON.stringify(resolved));
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(resolved));
         setResult(resolved);
       }).catch(err => console.error('[useHeaderStyle] fetch error:', err));
     };
 
-    // Always fetch on mount to ensure freshness
     doFetch();
     _listeners.add(doFetch);
     return () => {
