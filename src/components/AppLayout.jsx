@@ -95,66 +95,69 @@ const navGroups = [
     ],
   },
   {
-    label: 'Pricing & Catalog',
+    label: 'Admin',
     color: 'text-slate-400',
-    description: 'Rates, specs & categories',
+    description: 'System administration',
     items: [
-      { label: 'Pricing Editor', path: '/pricing-editor', icon: DollarSign },
-      { label: 'Equipment Specs', path: '/equipment-specs', icon: Settings },
-      { label: 'Categories', path: '/categories', icon: Layers },
-      { label: 'Dependencies Editor', path: '/dependencies-editor', icon: Layers },
-      { label: 'Discounts & Promos', path: '/discounts', icon: Star },
-    ],
-  },
-  {
-    label: 'Operations',
-    color: 'text-slate-400',
-    description: 'Availability, delivery & agreements',
-    items: [
-      { label: 'Availability Config', path: '/availability-config', icon: Settings },
-      { label: 'Delivery Matrix', path: '/delivery-matrix', icon: MapPin },
-      { label: 'Rental Agreement', path: '/rental-agreement', icon: FileText },
-    ],
-  },
-  {
-    label: 'Company & Branches',
-    color: 'text-slate-400',
-    description: 'Locations & branding',
-    items: [
-      { label: 'Branch Settings', path: '/branch-settings', icon: Building2 },
-      { label: 'Company Settings', path: '/company-settings', icon: Building2 },
-      { label: 'Branding', path: '/branding', icon: Star },
-    ],
-  },
-  {
-    label: 'People and Access',
-    color: 'text-slate-400',
-    description: 'Staff, users & roles',
-    items: [
-      { label: 'Employee Profiles', path: '/employee-profiles', icon: UserCog },
-      { label: 'User Management', path: '/user-management', icon: Users },
-      { label: 'Roles', path: '/roles', icon: Shield },
-    ],
-  },
-  {
-    label: 'System',
-    color: 'text-slate-400',
-    description: 'Exports & system tools',
-    items: [
-      { label: 'Inventory Export', path: '/inventory-export', icon: FileText },
-      { label: 'Data Export / Backup', path: '/data-export', icon: Download },
-      { label: 'Demo Mode Manager', path: '/demo-manager', icon: Star },
+      {
+        label: 'Pricing & Catalog',
+        description: 'Rates, specs & categories',
+        children: [
+          { label: 'Pricing Editor', path: '/pricing-editor', icon: DollarSign },
+          { label: 'Equipment Specs', path: '/equipment-specs', icon: Settings },
+          { label: 'Categories', path: '/categories', icon: Layers },
+          { label: 'Dependencies Editor', path: '/dependencies-editor', icon: Layers },
+          { label: 'Discounts & Promos', path: '/discounts', icon: Star },
+        ],
+      },
+      {
+        label: 'Operations',
+        description: 'Availability, delivery & agreements',
+        children: [
+          { label: 'Availability Config', path: '/availability-config', icon: Settings },
+          { label: 'Delivery Matrix', path: '/delivery-matrix', icon: MapPin },
+          { label: 'Rental Agreement', path: '/rental-agreement', icon: FileText },
+        ],
+      },
+      {
+        label: 'Company & Branches',
+        description: 'Locations & branding',
+        children: [
+          { label: 'Branch Settings', path: '/branch-settings', icon: Building2 },
+          { label: 'Company Settings', path: '/company-settings', icon: Building2 },
+          { label: 'Branding', path: '/branding', icon: Star },
+        ],
+      },
+      {
+        label: 'People and Access',
+        description: 'Staff, users & roles',
+        children: [
+          { label: 'Employee Profiles', path: '/employee-profiles', icon: UserCog },
+          { label: 'User Management', path: '/user-management', icon: Users },
+          { label: 'Roles', path: '/roles', icon: Shield },
+        ],
+      },
+      {
+        label: 'System',
+        description: 'Exports & system tools',
+        children: [
+          { label: 'Inventory Export', path: '/inventory-export', icon: FileText },
+          { label: 'Data Export / Backup', path: '/data-export', icon: Download },
+          { label: 'Demo Mode Manager', path: '/demo-manager', icon: Star },
+        ],
+      },
     ],
   },
 ];
 
 function NavGroup({ group, location, onNavigate, allGroupRefs }) {
-  const isActive = group.items.some(i => i.path === location.pathname);
-  const singleItem = group.items.filter(i => !i.divider && i.path).length === 1;
-  const [open, setOpen] = useState(isActive || singleItem);
+  // Flatten nested children for activity detection and navigation
+  const flatItems = group.items.flatMap(i => i.children || [i]);
+  const isActive = flatItems.some(i => i.path === location.pathname);
+  const [open, setOpen] = useState(isActive);
   const headerRef = useRef(null);
   const itemRefs = useRef([]);
-  const navigableItems = group.items.filter(i => !i.divider && i.path);
+  const navigableItems = group.items.filter(i => !i.divider && (i.path || i.children));
 
   // Expose refs upward so sibling groups can be reached via arrow keys
   useEffect(() => {
@@ -244,6 +247,37 @@ function NavGroup({ group, location, onNavigate, allGroupRefs }) {
                 </div>
               );
             }
+            // Handle nested subcategory
+            if (item.children) {
+              return (
+                <div key={item.label} className="pb-1">
+                  <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    {item.label}
+                  </div>
+                  {item.children.map((child) => {
+                    const active = location.pathname === child.path;
+                    const Icon = child.icon;
+                    return (
+                      <Link
+                        key={child.path}
+                        to={child.path}
+                        onClick={onNavigate}
+                        className={`flex items-center gap-2.5 px-6 py-1.5 text-sm transition border-l-4 focus:outline-none focus:bg-slate-700/60 ${
+                          active
+                            ? `font-semibold ${group.color} bg-slate-700/60 border-current`
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 border-transparent'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            // Handle regular item
             const active = location.pathname === item.path;
             const Icon = item.icon;
             const navIdx = navigableItems.indexOf(item);
