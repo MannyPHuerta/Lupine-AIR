@@ -37,7 +37,7 @@ const navGroups = [
     color: 'text-violet-400',
     description: 'Management & finance',
     items: [
-      { label: 'Analytics', path: '/aireports', icon: ChartNoAxesCombined },
+      { label: 'Business Intelligence', path: '/aireports', icon: ChartNoAxesCombined },
       { label: 'Accounting', path: '/accounting', icon: Receipt },
       { label: 'Depreciation', path: '/depreciation', icon: FileText },
       { label: 'Loyalty Manager', path: '/loyalty-manager', icon: Star },

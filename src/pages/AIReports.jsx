@@ -475,8 +475,7 @@ export default function AIReports() {
   return (
     <div className="min-h-screen bg-slate-950">
       <AppPageHeader
-        title="AIReports"
-        subtitle="Business Intelligence"
+        title="Business Intelligence"
         icon={BarChart3}
         action={
           <div className="flex items-center gap-2 flex-wrap">
