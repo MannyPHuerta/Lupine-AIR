@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Mail, Loader2, Shield, User, ToggleLeft, ToggleRight, Upload } from 'lucide-react';
+import { Users, UserPlus, Mail, Loader2, Shield, User, ToggleLeft, ToggleRight, Upload, List } from 'lucide-react';
 import CSVImportPanel from '@/components/users/CSVImportPanel';
+import RosterPanel from '@/components/users/RosterPanel';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -17,6 +18,7 @@ export default function UserManagement() {
   const [currentUser, setCurrentUser] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [activeTab, setActiveTab] = useState('users'); // 'users' | 'roster'
 
   useEffect(() => {
     Promise.all([
@@ -73,7 +75,7 @@ export default function UserManagement() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Users className="w-7 h-7 text-indigo-600" />
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
@@ -97,6 +99,24 @@ export default function UserManagement() {
         />
       )}
 
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 border-b">
+        {[{ key: 'users', label: 'Active Users', icon: Users }, { key: 'roster', label: 'Saved Roster', icon: List }].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${activeTab === t.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            <t.icon className="w-4 h-4" /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'roster' && (
+        <RosterPanel onRosterChange={async () => { const updated = await base44.entities.User.list(); setUsers(updated); }} />
+      )}
+
+      {activeTab === 'users' && <>
       {/* Invite Form */}
       <div className="bg-white border rounded-xl p-6 mb-8 shadow-sm">
         <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -188,6 +208,7 @@ export default function UserManagement() {
           </div>
         )}
       </div>
+      </>}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Upload, X, Send, CheckCircle, Loader2, AlertCircle, Download } from 'lucide-react';
+import { Upload, X, Send, CheckCircle, Loader2, AlertCircle, Download, Save } from 'lucide-react';
 import { BRANCH_DATA } from '@/lib/branchData';
 
 const BRANCHES = Object.keys(BRANCH_DATA);
@@ -36,6 +36,8 @@ export default function CSVImportPanel({ onClose, onImportDone }) {
   const [bulkBranch, setBulkBranch] = useState('');
   const [sending, setSending] = useState({});
   const [sendingAll, setSendingAll] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedCount, setSavedCount] = useState(null);
 
   const handleFile = (e) => {
     const file = e.target.files[0];
@@ -45,6 +47,7 @@ export default function CSVImportPanel({ onClose, onImportDone }) {
       const { rows: parsed, error } = parseCSV(ev.target.result);
       setParseError(error);
       setRows(parsed);
+      setSavedCount(null);
     };
     reader.readAsText(file);
   };
@@ -90,6 +93,24 @@ export default function CSVImportPanel({ onClose, onImportDone }) {
     onImportDone?.();
   };
 
+  const saveToRoster = async () => {
+    setSaving(true);
+    try {
+      const toSave = rows.map(r => ({
+        fullName: r.fullName,
+        email: r.email,
+        branch: r.branch,
+        role: r.role || 'user',
+        inviteStatus: 'pending',
+      }));
+      await base44.entities.UserRoster.bulkCreate(toSave);
+      setSavedCount(toSave.length);
+      onImportDone?.();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const pendingCount = rows.filter(r => r.status === 'pending').length;
   const invitedCount = rows.filter(r => r.status === 'invited').length;
 
@@ -130,6 +151,12 @@ export default function CSVImportPanel({ onClose, onImportDone }) {
       {parseError && (
         <div className="mb-4 flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" /> {parseError}
+        </div>
+      )}
+
+      {savedCount !== null && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" /> {savedCount} employees saved to roster. You can invite them later from the Roster tab.
         </div>
       )}
 
@@ -215,23 +242,33 @@ export default function CSVImportPanel({ onClose, onImportDone }) {
             </table>
           </div>
 
-          {/* Summary + bulk send */}
-          <div className="flex items-center justify-between">
+          {/* Summary + actions */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="text-sm text-gray-500">
               {invitedCount > 0 && <span className="text-green-600 font-medium">{invitedCount} invited</span>}
               {invitedCount > 0 && pendingCount > 0 && <span className="mx-2 text-gray-300">·</span>}
               {pendingCount > 0 && <span>{pendingCount} pending</span>}
             </div>
-            {pendingCount > 0 && (
+            <div className="flex items-center gap-2">
               <Button
-                onClick={sendAllInvites}
-                disabled={sendingAll}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                variant="outline"
+                onClick={saveToRoster}
+                disabled={saving || pendingCount === 0}
               >
-                {sendingAll ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                Invite All ({pendingCount})
+                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                Save to Roster (no invite)
               </Button>
-            )}
+              {pendingCount > 0 && (
+                <Button
+                  onClick={sendAllInvites}
+                  disabled={sendingAll}
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {sendingAll ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                  Invite All ({pendingCount})
+                </Button>
+              )}
+            </div>
           </div>
         </>
       )}

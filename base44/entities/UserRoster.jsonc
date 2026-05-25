@@ -1,0 +1,44 @@
+{
+  "name": "UserRoster",
+  "type": "object",
+  "properties": {
+    "fullName": {
+      "type": "string",
+      "description": "Employee full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Employee email address"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Assigned branch"
+    },
+    "role": {
+      "type": "string",
+      "default": "user",
+      "description": "Assigned role"
+    },
+    "inviteStatus": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "invited",
+        "error"
+      ],
+      "default": "pending",
+      "description": "Whether this person has been invited yet"
+    },
+    "invitedAt": {
+      "type": "string",
+      "description": "ISO timestamp when invite was sent"
+    },
+    "inviteError": {
+      "type": "string",
+      "description": "Error message if invite failed"
+    }
+  },
+  "required": [
+    "email"
+  ]
+}
