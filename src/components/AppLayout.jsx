@@ -95,7 +95,7 @@ const navGroups = [
     ],
   },
   {
-    label: 'Admin · Pricing & Catalog',
+    label: 'Pricing & Catalog',
     color: 'text-slate-400',
     description: 'Rates, specs & categories',
     items: [
@@ -107,7 +107,7 @@ const navGroups = [
     ],
   },
   {
-    label: 'Admin · Operations',
+    label: 'Operations',
     color: 'text-slate-400',
     description: 'Availability, delivery & agreements',
     items: [
@@ -117,7 +117,7 @@ const navGroups = [
     ],
   },
   {
-    label: 'Admin · Branch & Company',
+    label: 'Company & Branches',
     color: 'text-slate-400',
     description: 'Locations & branding',
     items: [
@@ -127,7 +127,7 @@ const navGroups = [
     ],
   },
   {
-    label: 'Admin · People & Access',
+    label: 'People and Access',
     color: 'text-slate-400',
     description: 'Staff, users & roles',
     items: [
@@ -137,7 +137,7 @@ const navGroups = [
     ],
   },
   {
-    label: 'Admin · System',
+    label: 'System',
     color: 'text-slate-400',
     description: 'Exports & system tools',
     items: [
