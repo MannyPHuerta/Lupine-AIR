@@ -620,61 +620,85 @@ function PricingSection() {
   const tiers = [
     {
       name: 'Core',
-      price: '$199',
-      per: '/mo · single branch',
-      desc: 'Everything a single-branch operator needs to replace legacy software and go live fast.',
+      price: '$299',
+      per: '/mo · 1 branch',
+      desc: 'Essential rental operations with AI included. No surprise bills, ever.',
       badge: null,
-      compare: 'EZRentOut charges $399 for fewer features.',
+      compare: null,
       features: [
-        'Unlimited contracts & invoices',
-        'Equipment catalog — unlimited units',
-        'Customer management & DL scan',
-        'Counter & manager apps',
+        'Unlimited users, one location',
+        'Catalog, counter POS, rental agreements',
+        'Customer database & ID scan',
+        'AIRental with smart pricing',
+        'AIEvents (basic planning)',
+        'Delivery management',
+        'AIReports — utilization & revenue',
         'Email & SMS notifications',
-        'AI rental assistant (scoped to your catalog)',
-        'Delivery matrix & driver dispatch',
-        'AIReports — utilization & fleet health',
+        'Generous included AI allowance',
       ],
       cta: 'Start Free Trial',
       highlight: false,
     },
     {
       name: 'Pro',
-      price: '$449',
-      per: '/mo · unlimited branches',
-      desc: 'Multi-branch operations with full field ops, event planning, and advanced analytics.',
+      price: '$799',
+      per: '/mo · up to 3 branches',
+      desc: 'Multi-location operations with shop management, GPS tracking, and advanced analytics.',
       badge: 'MOST POPULAR',
-      compare: 'Point of Rental starts at $540/mo for 3 users — one branch.',
+      compare: null,
       features: [
         'Everything in Core',
-        'Unlimited branches',
-        'Cross-branch availability & transfers',
-        'AIREvents canvas & floor plans',
-        'ADA compliance engine',
-        'Permit & anchoring tracker',
-        'QuickBooks sync',
-        'Volume, loyalty & promo discount engine',
-        'Seasonal demand forecasting',
+        'Up to 3 branches, unlimited users',
+        'Cross-branch transfers & visibility',
+        'AIRental, AIEvents, AIRepair',
+        'Shop management & work orders',
+        'GPS tracking (Samsara, CalAmp, etc)',
+        'AIRecovery — theft prevention',
+        'Loyalty programs & volume discounts',
+        '3x AI allowance vs Core',
+        'Priority support',
       ],
       cta: 'Start Free Trial',
       highlight: true,
     },
     {
-      name: 'Enterprise',
-      price: 'Custom',
-      per: '',
-      desc: 'White-label, SSO, government bid intelligence, and dedicated infrastructure.',
+      name: 'Custom',
+      price: '$1,499',
+      per: '/mo · up to 10 branches',
+      desc: 'Regional operations with government bidding, advanced load planning, and dedicated support.',
       badge: null,
       compare: null,
       features: [
         'Everything in Pro',
-        'AIRfq — AI Government Bid Intelligence',
+        'Up to 10 branches',
+        'AIRfq — government bid intelligence',
+        'AIRoads — multi-truck load planning',
+        'Advanced repair & predictive maintenance',
+        'Event profit tracking (major jobs)',
+        'Custom integrations & API access',
+        '8x AI allowance vs Core',
+        'Account manager & SLA',
+      ],
+      cta: 'Contact Sales',
+      highlight: false,
+    },
+    {
+      name: 'Enterprise',
+      price: 'Custom',
+      per: '',
+      desc: 'Unlimited scale with white-label options, SSO, and custom infrastructure.',
+      badge: null,
+      compare: null,
+      features: [
+        'Everything in Custom',
+        'Unlimited branches',
         'White-label domain & branding',
-        'SSO (Google Workspace / Microsoft / Okta)',
+        'SSO (Google Workspace, Microsoft, Okta)',
         'Isolated tenant environment',
-        'Custom API integrations',
-        'Dedicated onboarding & SLA',
-        'Priority support + account manager',
+        'Custom AI model tuning',
+        'Unlimited AI allowance',
+        'Dedicated infrastructure',
+        'Premium support & technical services',
       ],
       cta: 'Contact Sales',
       highlight: false,
@@ -685,12 +709,12 @@ function PricingSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <AnimatedSection>
           <FadeUp className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-black text-white">Simple, transparent pricing</h2>
-          <p className="text-white/50 mt-4 text-lg max-w-2xl mx-auto">No setup fees. No per-contract charges. No per-user nickeling. AI included. Cancel anytime.</p>
+          <h2 className="text-4xl md:text-5xl font-black text-white">Branch-based pricing. No surprises.</h2>
+          <p className="text-white/50 mt-4 text-lg max-w-2xl mx-auto">Pay per branch, not per user. AI included with generous allowance. Your subscription price is your subscription price — no overage bills, ever.</p>
           <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm text-white/40">
-            <span>✓ Booqable: $149/mo — no AI, no dispatch, no field ops</span>
-            <span>✓ Point of Rental: $540+/mo — legacy UX, no AI</span>
-            <span>✓ EZRentOut: $399/mo — no event canvas, no bid tools</span>
+            <span>✓ Point of Rental: $300-500/user = $3-5K for 10 users</span>
+            <span>✓ Lupine Pro: $799 for 3 branches, unlimited users</span>
+            <span>✓ You pay 60-80% less at scale</span>
           </div>
           </FadeUp>
           <div className="grid md:grid-cols-3 gap-6">
