@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getActiveSeasonalTheme, SEASONAL_THEMES } from '@/lib/seasonalThemes';
 
-let _cached = null;
 const _listeners = new Set();
 
 export function invalidateHeaderStyleCache() {
-  _cached = null;
   _listeners.forEach(fn => fn());
 }
 
@@ -32,7 +30,7 @@ function resolveStyle(settings) {
  * seasonalTheme = the matching SEASONAL_THEMES entry (when style === 'seasonal'), else null
  */
 export function useHeaderStyle() {
-  const [result, setResult] = useState(_cached || { style: 'classic', seasonalTheme: null });
+  const [result, setResult] = useState({ style: 'classic', seasonalTheme: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +38,6 @@ export function useHeaderStyle() {
       base44.entities.CompanySettings.list().then(list => {
         if (cancelled) return;
         const resolved = resolveStyle(list[0]);
-        _cached = resolved;
         setResult(resolved);
       }).catch(() => {});
     };
