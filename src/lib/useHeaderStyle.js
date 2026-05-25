@@ -35,23 +35,23 @@ export function useHeaderStyle() {
   const [result, setResult] = useState(_cached || { style: 'classic', seasonalTheme: null });
 
   useEffect(() => {
-    if (!_cached) {
+    let cancelled = false;
+    const doFetch = () => {
       base44.entities.CompanySettings.list().then(list => {
-        const resolved = resolveStyle(list[0]);
-        _cached = resolved;
-        setResult(resolved);
-      }).catch(() => {});
-    }
-
-    const refresh = () => {
-      base44.entities.CompanySettings.list().then(list => {
+        if (cancelled) return;
         const resolved = resolveStyle(list[0]);
         _cached = resolved;
         setResult(resolved);
       }).catch(() => {});
     };
-    _listeners.add(refresh);
-    return () => _listeners.delete(refresh);
+
+    // Always fetch on mount to ensure freshness
+    doFetch();
+    _listeners.add(doFetch);
+    return () => {
+      cancelled = true;
+      _listeners.delete(doFetch);
+    };
   }, []);
 
   return result;
