@@ -332,18 +332,18 @@ export default function EventPlanner() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="h-12 bg-black border-b border-white/10 flex items-center gap-3 px-4 flex-shrink-0">
-        <button onClick={() => navigate(-1)} className="text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
+      <div className="h-12 bg-white border-b border-gray-200 flex items-center gap-3 px-4 flex-shrink-0 shadow-sm">
+        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
+        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-pink-400 to-indigo-500 flex items-center justify-center flex-shrink-0">
           <span className="text-white text-xs font-bold">AE</span>
         </div>
-        <span className="text-white/60 font-semibold text-sm truncate max-w-48">{title || 'New Event Plan'}</span>
+        <span className="text-gray-700 font-semibold text-sm truncate max-w-48">{title || 'New Event Plan'}</span>
         {plan?.status && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50 capitalize">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 capitalize">
             {plan.status.replace('_', ' ')}
           </span>
         )}
@@ -351,14 +351,14 @@ export default function EventPlanner() {
           {!isUnlocked && (
             <button
               onClick={() => setShowPaywall(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-xs font-medium transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 text-xs font-medium transition"
             >
               <Lock className="w-3.5 h-3.5" /> Unlock Plan · $20
             </button>
           )}
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-medium transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 text-white text-xs font-semibold transition shadow-sm"
           >
             <Wand2 className="w-3.5 h-3.5" /> Customer Wizard
           </button>
@@ -467,7 +467,7 @@ export default function EventPlanner() {
 
           {/* Keyboard hint */}
           {!selectedItem && canvasItems.length > 0 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/20 text-xs pointer-events-none">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-400 text-xs pointer-events-none bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
               Click item to select · Drag to move · R to rotate · Delete to remove
             </div>
           )}
@@ -476,8 +476,8 @@ export default function EventPlanner() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center space-y-2">
                 <div className="text-4xl">🎪</div>
-                <div className="text-white/30 text-sm font-medium">Drag equipment onto the canvas</div>
-                <div className="text-white/20 text-xs">Set venue dimensions in the toolbar to see the scaled floor plan</div>
+                <div className="text-gray-400 text-sm font-medium">Drag equipment onto the canvas</div>
+                <div className="text-gray-300 text-xs">Set venue dimensions in the toolbar to see the scaled floor plan</div>
               </div>
             </div>
           )}
