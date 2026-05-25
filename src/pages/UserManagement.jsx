@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Mail, Loader2, Shield, User, ToggleLeft, ToggleRight, Upload, List } from 'lucide-react';
+import { Users, UserPlus, Mail, Loader2, Shield, User, ToggleLeft, ToggleRight, Upload, List, Trash2 } from 'lucide-react';
 import CSVImportPanel from '@/components/users/CSVImportPanel';
 import RosterPanel from '@/components/users/RosterPanel';
 
@@ -185,19 +185,32 @@ export default function UserManagement() {
                     {u.role || 'user'}
                   </Badge>
                   {u.id !== currentUser?.id && (
-                    <button
-                      onClick={() => handleToggleActive(u)}
-                      disabled={togglingId === u.id}
-                      title={u.isActive === false ? 'Activate user' : 'Deactivate user'}
-                      className="text-gray-400 hover:text-gray-700 transition disabled:opacity-40"
-                    >
-                      {togglingId === u.id
-                        ? <Loader2 className="w-5 h-5 animate-spin" />
-                        : u.isActive === false
-                          ? <ToggleLeft className="w-6 h-6 text-gray-400" />
-                          : <ToggleRight className="w-6 h-6 text-green-500" />
-                      }
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleToggleActive(u)}
+                        disabled={togglingId === u.id}
+                        title={u.isActive === false ? 'Activate user' : 'Deactivate user'}
+                        className="text-gray-400 hover:text-gray-700 transition disabled:opacity-40"
+                      >
+                        {togglingId === u.id
+                          ? <Loader2 className="w-5 h-5 animate-spin" />
+                          : u.isActive === false
+                            ? <ToggleLeft className="w-6 h-6 text-gray-400" />
+                            : <ToggleRight className="w-6 h-6 text-green-500" />
+                        }
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Permanently delete "${u.full_name || u.email}"? This cannot be undone.`)) return;
+                          await base44.entities.User.delete(u.id);
+                          setUsers(prev => prev.filter(x => x.id !== u.id));
+                        }}
+                        title="Delete user"
+                        className="text-gray-300 hover:text-red-500 transition ml-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

@@ -235,9 +235,22 @@ export default function EmployeeProfileManager() {
                               </div>
                             )}
                         </div>
-                        <button onClick={() => startEditUser(user)} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded hover:bg-gray-50">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex gap-1">
+                          <button onClick={() => startEditUser(user)} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded hover:bg-gray-50">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Delete user "${user.full_name || user.email}"? This cannot be undone.`)) return;
+                              await base44.entities.User.delete(user.id);
+                              setUsers(prev => prev.filter(u => u.id !== user.id));
+                            }}
+                            className="text-gray-400 hover:text-red-600 p-1.5 rounded hover:bg-gray-50"
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
