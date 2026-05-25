@@ -431,6 +431,14 @@ function StepAI({ data, equipment, generatedItems, aiSummary, onGenerated, onBac
     setLoading(true);
     setError(null);
 
+    console.log('Generating layout, equipment count:', equipment?.length);
+
+    if (!equipment || equipment.length === 0) {
+      setError('Equipment catalog is not loaded. Please refresh the page.');
+      setLoading(false);
+      return;
+    }
+
     const seen = new Set();
     const catalogSummary = equipment
       .filter(e => {
@@ -449,6 +457,8 @@ function StepAI({ data, equipment, generatedItems, aiSummary, onGenerated, onBac
         footprintW: e.footprintWidth || DEFAULT_FOOTPRINTS[e.category]?.w || 10,
         footprintL: e.footprintLength || DEFAULT_FOOTPRINTS[e.category]?.l || 10,
       }));
+
+    console.log('Catalog summary prepared:', catalogSummary.length, 'items');
 
     const eventTypeGuide = {
       birthday: 'casual party setup: round tables, chairs, a bounce house or inflatable if kids event, canopy/tent if outdoor',
@@ -486,6 +496,7 @@ INSTRUCTIONS:
 - Write a friendly 1-sentence summary explaining what you included and why`;
 
     try {
+      console.log('Calling LLM with prompt length:', prompt.length);
       const response = await base44.integrations.Core.InvokeLLM({
         prompt,
         response_json_schema: {
@@ -510,9 +521,14 @@ INSTRUCTIONS:
         },
       });
 
+      console.log('LLM response:', response);
+
       const canvasItems = (response.items || []).map(item => {
         const eq = equipment.find(e => e.id === item.equipmentId);
-        if (!eq) return null;
+        if (!eq) {
+          console.warn('Equipment not found for ID:', item.equipmentId);
+          return null;
+        }
         const fp = {
           w: eq.footprintWidth || DEFAULT_FOOTPRINTS[eq.category]?.w || 10,
           l: eq.footprintLength || DEFAULT_FOOTPRINTS[eq.category]?.l || 10,
@@ -535,8 +551,10 @@ INSTRUCTIONS:
         };
       }).filter(Boolean);
 
+      console.log('Generated canvas items:', canvasItems.length);
       handleGenerated(canvasItems, response.summary || '');
     } catch (err) {
+      console.error('LLM generation error:', err);
       setError('Something went wrong generating the layout. Please try again.');
     }
     setLoading(false);
