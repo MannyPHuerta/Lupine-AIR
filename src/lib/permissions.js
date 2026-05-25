@@ -38,6 +38,13 @@ export const PERMISSIONS = {
   REPORT_CREATE: 'report.create',
   REPORT_EXPORT: 'report.export',
 
+  // Accounting
+  ACCOUNTING_VIEW: 'accounting.view',
+  ACCOUNTING_MANAGE: 'accounting.manage',
+  EXPENSE_CREATE: 'expense.create',
+  EXPENSE_DELETE: 'expense.delete',
+  INVOICE_VOID: 'invoice.void',
+
   // Admin
   USER_MANAGE: 'user.manage',
   ROLE_MANAGE: 'role.manage',
@@ -153,6 +160,26 @@ export const BUILT_IN_ROLES = {
     permissions: [
       PERMISSIONS.RENTAL_READ,
       PERMISSIONS.RENTAL_UPDATE,
+    ],
+    isBuiltIn: true,
+  },
+  ACCOUNTANT: {
+    name: 'Accountant',
+    description: 'Full access to accounting, expenses, invoices, and financial reports. No rental or equipment management.',
+    level: 50,
+    scope: 'subscriber',
+    permissions: [
+      PERMISSIONS.ACCOUNTING_VIEW,
+      PERMISSIONS.ACCOUNTING_MANAGE,
+      PERMISSIONS.EXPENSE_CREATE,
+      PERMISSIONS.EXPENSE_DELETE,
+      PERMISSIONS.INVOICE_VOID,
+      PERMISSIONS.REPORT_FINANCIAL,
+      PERMISSIONS.REPORT_READ,
+      PERMISSIONS.REPORT_EXPORT,
+      PERMISSIONS.RENTAL_READ,
+      PERMISSIONS.CUSTOMER_READ,
+      PERMISSIONS.AUDIT_VIEW,
     ],
     isBuiltIn: true,
   },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Loader2, Wrench, Calendar, Save, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Wrench, Calendar, Save, Users, Shield } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,7 +96,10 @@ export default function EmployeeProfileManager() {
   const handleSaveUser = async () => {
     setSaving(true);
     try {
-      await base44.entities.User.update(editingUserId, { homeBranch: editingUserForm.homeBranch });
+      await base44.entities.User.update(editingUserId, { 
+        homeBranch: editingUserForm.homeBranch,
+        role: editingUserForm.role,
+      });
       setUsers(prev => prev.map(u => u.id === editingUserId ? editingUserForm : u));
       cancelEditUser();
     } catch (err) {
@@ -192,6 +195,18 @@ export default function EmployeeProfileManager() {
                             ))}
                           </select>
                         </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-2">Role</label>
+                          <select
+                            value={editingUserForm.role || 'user'}
+                            onChange={e => setEditingUserForm(f => ({ ...f, role: e.target.value }))}
+                            className="w-full border border-input rounded-md px-3 py-2 text-sm bg-white"
+                          >
+                            {['admin','manager','counter','driver','mechanic','accountant','planner','user'].map(r => (
+                              <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                            ))}
+                          </select>
+                        </div>
                         <div className="flex gap-2 justify-end pt-2 border-t">
                           <Button variant="outline" size="sm" onClick={cancelEditUser}>Cancel</Button>
                           <Button size="sm" onClick={handleSaveUser} disabled={saving} className="text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
@@ -208,12 +223,17 @@ export default function EmployeeProfileManager() {
                           <div className="text-xs text-gray-500 mt-0.5">{user.email}</div>
                           {user.homeBranch && (
                             <div className="text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded inline-block mt-2">
-                              🏠 Home: {user.homeBranch}
-                            </div>
-                          )}
-                          {!user.homeBranch && (
-                            <div className="text-xs text-gray-500 mt-2">— no home branch set —</div>
-                          )}
+                                🏠 Home: {user.homeBranch}
+                              </div>
+                            )}
+                            {!user.homeBranch && (
+                              <div className="text-xs text-gray-500 mt-2">— no home branch set —</div>
+                            )}
+                            {user.role && (
+                              <div className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded inline-block mt-1 ml-1">
+                                <Shield className="w-3 h-3 inline mr-1" />{user.role}
+                              </div>
+                            )}
                         </div>
                         <button onClick={() => startEditUser(user)} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded hover:bg-gray-50">
                           <Edit2 className="w-4 h-4" />

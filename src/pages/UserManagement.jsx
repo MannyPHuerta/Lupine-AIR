@@ -118,6 +118,12 @@ export default function UserManagement() {
             <SelectContent>
               <SelectItem value="user">User</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="manager">Manager</SelectItem>
+              <SelectItem value="counter">Counter</SelectItem>
+              <SelectItem value="driver">Driver</SelectItem>
+              <SelectItem value="mechanic">Mechanic</SelectItem>
+              <SelectItem value="accountant">Accountant</SelectItem>
+              <SelectItem value="planner">Planner</SelectItem>
             </SelectContent>
           </Select>
           <Button type="submit" disabled={inviting} className="bg-indigo-600 hover:bg-indigo-700">

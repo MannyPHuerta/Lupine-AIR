@@ -29,7 +29,7 @@ const DEFAULT_PREFIXES = {
 
 export default function BranchSettingsPage() {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState({});   // branch -> { id?, prefix, nextNumber, address, phone, email }
+  const [settings, setSettings] = useState({});   // branch -> { id?, prefix, nextNumber, address, phone, email, defaultAreaCode, certifications }
   const [saving, setSaving] = useState({});
   const [saved, setSaved] = useState({});
   const [loading, setLoading] = useState(true);
@@ -46,11 +46,13 @@ export default function BranchSettingsPage() {
           phone: r.phone || '',
           email: r.email || '',
           partsBuyerEmail: r.partsBuyerEmail || '',
+          defaultAreaCode: r.defaultAreaCode || '',
+          certifications: r.certifications || [],
         };
       });
       // Fill in any branches not yet configured
       BRANCHES.forEach(b => {
-        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '', partsBuyerEmail: '' };
+        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '', partsBuyerEmail: '', defaultAreaCode: '', certifications: [] };
       });
       setSettings(map);
       setLoading(false);
@@ -72,6 +74,8 @@ export default function BranchSettingsPage() {
       phone: s.phone,
       email: s.email,
       partsBuyerEmail: s.partsBuyerEmail,
+      defaultAreaCode: s.defaultAreaCode,
+      certifications: s.certifications || [],
     };
     if (s.id) {
       await base44.entities.BranchSettings.update(s.id, payload);
@@ -172,6 +176,52 @@ export default function BranchSettingsPage() {
                                placeholder="branch@example.com"
                              />
                            </div>
+                         </div>
+                       </div>
+                     </div>
+                     <div className="border-t pt-4">
+                       <div className="text-xs font-semibold text-gray-700 mb-3">Local Defaults</div>
+                       <div className="grid grid-cols-2 gap-4 mb-4">
+                         <div>
+                           <label className="block text-xs font-medium text-gray-600 mb-1">Default Area Code</label>
+                           <Input
+                             value={s.defaultAreaCode}
+                             onChange={e => handleChange(branch, 'defaultAreaCode', e.target.value.replace(/\D/g, '').slice(0, 3))}
+                             placeholder="e.g. 956"
+                             inputMode="numeric"
+                             maxLength={3}
+                           />
+                           <p className="text-xs text-gray-400 mt-1">Auto-fills area code when entering customer phone numbers.</p>
+                         </div>
+                       </div>
+                       <div>
+                         <label className="block text-xs font-medium text-gray-600 mb-2">Branch Certifications / Licenses</label>
+                         <div className="flex gap-2 mb-2">
+                           <Input
+                             placeholder="e.g. TX Rental Dealer License, DOT #123456"
+                             onKeyDown={e => {
+                               if (e.key === 'Enter' && e.target.value.trim()) {
+                                 handleChange(branch, 'certifications', [...(s.certifications || []), e.target.value.trim()]);
+                                 e.target.value = '';
+                               }
+                             }}
+                           />
+                           <Button variant="outline" size="sm" onClick={e => {
+                             const input = e.target.closest('.border-t').querySelector('input:not([readonly])');
+                             if (input?.value.trim()) {
+                               handleChange(branch, 'certifications', [...(s.certifications || []), input.value.trim()]);
+                               input.value = '';
+                             }
+                           }}>Add</Button>
+                         </div>
+                         <div className="flex flex-wrap gap-1.5">
+                           {(s.certifications || []).map((cert, ci) => (
+                             <span key={ci} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded-full border border-indigo-200">
+                               {cert}
+                               <button onClick={() => handleChange(branch, 'certifications', s.certifications.filter((_, i) => i !== ci))} className="text-indigo-400 hover:text-indigo-700 ml-0.5">×</button>
+                             </span>
+                           ))}
+                           {(s.certifications || []).length === 0 && <span className="text-xs text-gray-400">No certifications added yet</span>}
                          </div>
                        </div>
                      </div>

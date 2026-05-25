@@ -184,6 +184,12 @@ export default function CSVImportPanel({ onClose, onImportDone }) {
                         <SelectContent>
                           <SelectItem value="user">User</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          <SelectItem value="counter">Counter</SelectItem>
+                          <SelectItem value="driver">Driver</SelectItem>
+                          <SelectItem value="mechanic">Mechanic</SelectItem>
+                          <SelectItem value="accountant">Accountant</SelectItem>
+                          <SelectItem value="planner">Planner</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>

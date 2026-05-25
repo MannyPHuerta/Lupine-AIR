@@ -30,6 +30,17 @@
     "partsBuyerEmail": {
       "type": "string",
       "description": "Default email for parts purchase requests from this branch"
+    },
+    "defaultAreaCode": {
+      "type": "string",
+      "description": "Default area code for this branch (e.g. '956' for McAllen). Used to auto-fill area code when entering customer phone numbers."
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Branch-level certifications or licenses held (e.g. TX Rental Dealer License, DOT Number)"
     }
   },
   "required": [

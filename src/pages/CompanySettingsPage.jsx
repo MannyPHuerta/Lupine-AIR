@@ -35,25 +35,12 @@ export default function CompanySettingsPage() {
   const [alertPhoneInput, setAlertPhoneInput] = useState('');
   const [alertEmailInput, setAlertEmailInput] = useState('');
 
-  const formatPhoneDisplay = (value) => {
-    const digits = value.replace(/\D/g, '').slice(0, 11);
-    if (digits.startsWith('1')) {
-      const d = digits.slice(1);
-      if (d.length <= 3) return `+1 (${d}`;
-      if (d.length <= 6) return `+1 (${d.slice(0,3)}) ${d.slice(3)}`;
-      return `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
-    }
-    const d = digits;
-    if (d.length <= 3) return `+1 (${d}`;
-    if (d.length <= 6) return `+1 (${d.slice(0,3)}) ${d.slice(3)}`;
-    return `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
-  };
-
-  const phoneToE164 = (display) => {
-    const digits = display.replace(/\D/g, '');
+  const phoneToE164 = (raw) => {
+    const digits = raw.replace(/\D/g, '');
     if (digits.length === 10) return `+1${digits}`;
     if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
-    return display;
+    // Already E.164 or partial — store as-is
+    return raw.trim();
   };
 
   useEffect(() => {
@@ -400,8 +387,8 @@ export default function CompanySettingsPage() {
                 <div className="flex gap-2 mb-2">
                   <Input
                    value={alertPhoneInput}
-                   onChange={e => setAlertPhoneInput(formatPhoneDisplay(e.target.value))}
-                   placeholder="+1 (210) 555-1234"
+                   onChange={e => setAlertPhoneInput(e.target.value)}
+                   placeholder="+12105551234"
                    onKeyDown={e => {
                      if (e.key === 'Enter') {
                        e.preventDefault();
