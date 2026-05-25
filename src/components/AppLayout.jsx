@@ -44,9 +44,6 @@ const navGroups = [
       { label: 'Audit Logs', path: '/audit-logs', icon: Shield },
       { label: '— Asset Wolf —', path: null, icon: null, divider: true },
       { label: 'Submit Report', path: '/report-form', icon: Send },
-      { label: 'Pending Reports', path: '/pending', icon: ClipboardList },
-      { label: 'Report History', path: '/history', icon: FileText },
-      { label: 'Marketplace', path: '/marketplace', icon: Globe },
     ],
   },
   {
