@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import {
-  RefreshCw, Download, Loader2, BarChart2, FileText, Receipt, Brain
+  RefreshCw, Download, Loader2, BarChart2, FileText, Receipt, Brain, TrendingDown
 } from 'lucide-react';
+import { calculateDepreciation } from '@/lib/depreciation';
 import AppPageHeader from '@/components/AppPageHeader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import InvoiceDrawer from '@/components/accounting/InvoiceDrawer';
@@ -129,7 +130,131 @@ const TABS = [
   { id: 'expenses', label: 'Expenses', icon: <Receipt className="w-4 h-4" /> },
   { id: 'jobpl', label: 'Job P&L', icon: <FileText className="w-4 h-4" /> },
   { id: 'ai_analyst', label: 'AI Spend Analyst', icon: <Brain className="w-4 h-4" /> },
+  { id: 'depreciation', label: 'Depreciation', icon: <TrendingDown className="w-4 h-4" /> },
 ];
+
+function DepreciationInline({ equipment }) {
+  const [search, setSearch] = useState('');
+  const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterCategory, setFilterCategory] = useState('all');
+
+  const depreciable = equipment.filter(e => e.purchaseCost && e.usefulLifeYears);
+
+  const depreciated = useMemo(() => {
+    const asOf = new Date(asOfDate);
+    return depreciable
+      .map(eq => ({ ...eq, depreciation: calculateDepreciation(eq, asOf) }))
+      .filter(eq => {
+        const matchSearch = !search ||
+          eq.name.toLowerCase().includes(search.toLowerCase()) ||
+          eq.assetNumber?.toLowerCase().includes(search.toLowerCase());
+        const matchCategory = filterCategory === 'all' || eq.category === filterCategory;
+        return matchSearch && matchCategory;
+      })
+      .sort((a, b) => (b.depreciation?.totalDepreciation || 0) - (a.depreciation?.totalDepreciation || 0));
+  }, [depreciable, search, asOfDate, filterCategory]);
+
+  const categories = useMemo(() => [...new Set(depreciable.map(e => e.category).filter(Boolean))].sort(), [depreciable]);
+
+  const totals = useMemo(() => depreciated.reduce((sum, eq) => ({
+    costBasis: sum.costBasis + (eq.purchaseCost || 0),
+    totalDepreciation: sum.totalDepreciation + (eq.depreciation?.totalDepreciation || 0),
+    bookValue: sum.bookValue + (eq.depreciation?.bookValue || 0),
+  }), { costBasis: 0, totalDepreciation: 0, bookValue: 0 }), [depreciated]);
+
+  const handleExport = () => {
+    const csv = [
+      ['Asset', 'Category', 'Asset #', 'Cost', 'Method', 'Useful Life', 'Years Elapsed', 'Depreciation', 'Book Value', '%'],
+      ...depreciated.map(eq => [
+        eq.name, eq.category, eq.assetNumber || '-',
+        `$${eq.purchaseCost.toFixed(2)}`,
+        eq.depreciation?.depreciationMethod === 'declining_balance' ? 'DDB' : 'SL',
+        eq.usefulLifeYears, eq.depreciation?.yearsElapsed || 0,
+        `$${eq.depreciation?.totalDepreciation.toFixed(2)}`,
+        `$${eq.depreciation?.bookValue.toFixed(2)}`,
+        `${eq.depreciation?.depreciationPercentage}%`,
+      ]),
+    ].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `depreciation-${asOfDate}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-3 items-end">
+        <div className="flex-1 min-w-0">
+          <label className="text-xs font-medium text-gray-600 block mb-1">As Of Date</label>
+          <input type="date" value={asOfDate} onChange={e => setAsOfDate(e.target.value)} className="w-full h-9 border border-input rounded-md px-3 text-sm bg-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <label className="text-xs font-medium text-gray-600 block mb-1">Search</label>
+          <input placeholder="Name or asset #..." value={search} onChange={e => setSearch(e.target.value)} className="w-full h-9 border border-input rounded-md px-3 text-sm bg-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <label className="text-xs font-medium text-gray-600 block mb-1">Category</label>
+          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="w-full h-9 border border-input rounded-md px-3 text-sm bg-white">
+            <option value="all">All Categories</option>
+            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
+        </div>
+        <button onClick={handleExport} className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-lg" style={{ backgroundColor: '#F5A623' }}>
+          <Download className="w-4 h-4" /> Export CSV
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg border shadow-sm p-4">
+          <div className="text-xs text-gray-500 font-medium mb-1">Total Cost Basis</div>
+          <div className="text-2xl font-bold text-gray-900">${totals.costBasis.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+          <div className="text-xs text-gray-400 mt-1">{depreciated.length} assets</div>
+        </div>
+        <div className="bg-white rounded-lg border shadow-sm p-4">
+          <div className="text-xs text-gray-500 font-medium mb-1">Total Depreciation</div>
+          <div className="text-2xl font-bold text-red-600">${totals.totalDepreciation.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+          <div className="text-xs text-gray-400 mt-1">{totals.costBasis > 0 ? ((totals.totalDepreciation / totals.costBasis) * 100).toFixed(1) : 0}% of cost</div>
+        </div>
+        <div className="bg-white rounded-lg border shadow-sm p-4">
+          <div className="text-xs text-gray-500 font-medium mb-1">Total Book Value</div>
+          <div className="text-2xl font-bold text-green-600">${totals.bookValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+          <div className="text-xs text-gray-400 mt-1">as of {asOfDate}</div>
+        </div>
+      </div>
+
+      {depreciated.length === 0 ? (
+        <div className="text-center text-gray-400 py-16 text-sm bg-white rounded-lg border">No equipment with depreciation configured</div>
+      ) : (
+        <div className="bg-white rounded-lg border overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-gray-50">
+              <tr>
+                {['Asset', 'Category', 'Asset #', 'Cost', 'Method', 'Years', 'Depreciation', 'Book Value', '%'].map(h => (
+                  <th key={h} className={`px-4 py-2 font-semibold text-gray-700 ${['Cost','Years','Depreciation','Book Value','%'].includes(h) ? 'text-right' : 'text-left'}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {depreciated.map(eq => (
+                <tr key={eq.id} className="hover:bg-gray-50 transition">
+                  <td className="px-4 py-2 text-gray-900 font-medium">{eq.name}</td>
+                  <td className="px-4 py-2 text-gray-600 text-xs">{eq.category}</td>
+                  <td className="px-4 py-2 text-gray-500 text-xs">{eq.assetNumber || '-'}</td>
+                  <td className="px-4 py-2 text-right text-gray-900 font-medium">${eq.purchaseCost.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-xs text-gray-600">{eq.depreciation?.depreciationMethod === 'declining_balance' ? 'DDB' : 'SL'}</td>
+                  <td className="px-4 py-2 text-right text-gray-600">{eq.depreciation?.yearsElapsed.toFixed(1)} / {eq.usefulLifeYears}</td>
+                  <td className="px-4 py-2 text-right text-red-600 font-medium">${eq.depreciation?.totalDepreciation.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right text-green-600 font-medium">${eq.depreciation?.bookValue.toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right text-gray-600 text-xs">{eq.depreciation?.depreciationPercentage}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AccountingDashboard() {
   const navigate = useNavigate();
@@ -444,6 +569,11 @@ export default function AccountingDashboard() {
             dateTo={dateTo}
             branch={branch}
           />
+        )}
+
+        {/* ── DEPRECIATION TAB ── */}
+        {activeTab === 'depreciation' && (
+          <DepreciationInline equipment={filteredEquipment} />
         )}
 
       </div>
