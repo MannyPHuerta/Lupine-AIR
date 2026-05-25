@@ -95,24 +95,52 @@ const navGroups = [
     ],
   },
   {
-    label: 'Admin',
+    label: 'Admin · Pricing & Catalog',
     color: 'text-slate-400',
-    description: 'Settings & config',
+    description: 'Rates, specs & categories',
     items: [
       { label: 'Pricing Editor', path: '/pricing-editor', icon: DollarSign },
       { label: 'Equipment Specs', path: '/equipment-specs', icon: Settings },
       { label: 'Categories', path: '/categories', icon: Layers },
-      { label: 'Availability Config', path: '/availability-config', icon: Settings },
       { label: 'Dependencies Editor', path: '/dependencies-editor', icon: Layers },
+      { label: 'Discounts & Promos', path: '/discounts', icon: Star },
+    ],
+  },
+  {
+    label: 'Admin · Operations',
+    color: 'text-slate-400',
+    description: 'Availability, delivery & agreements',
+    items: [
+      { label: 'Availability Config', path: '/availability-config', icon: Settings },
       { label: 'Delivery Matrix', path: '/delivery-matrix', icon: MapPin },
       { label: 'Rental Agreement', path: '/rental-agreement', icon: FileText },
+    ],
+  },
+  {
+    label: 'Admin · Branch & Company',
+    color: 'text-slate-400',
+    description: 'Locations & branding',
+    items: [
       { label: 'Branch Settings', path: '/branch-settings', icon: Building2 },
       { label: 'Company Settings', path: '/company-settings', icon: Building2 },
+      { label: 'Branding', path: '/branding', icon: Star },
+    ],
+  },
+  {
+    label: 'Admin · People & Access',
+    color: 'text-slate-400',
+    description: 'Staff, users & roles',
+    items: [
       { label: 'Employee Profiles', path: '/employee-profiles', icon: UserCog },
       { label: 'User Management', path: '/user-management', icon: Users },
       { label: 'Roles', path: '/roles', icon: Shield },
-      { label: 'Discounts & Promos', path: '/discounts', icon: Star },
-      { label: 'Branding', path: '/branding', icon: Star },
+    ],
+  },
+  {
+    label: 'Admin · System',
+    color: 'text-slate-400',
+    description: 'Exports & system tools',
+    items: [
       { label: 'Inventory Export', path: '/inventory-export', icon: FileText },
       { label: 'Data Export / Backup', path: '/data-export', icon: Download },
       { label: 'Demo Mode Manager', path: '/demo-manager', icon: Star },
