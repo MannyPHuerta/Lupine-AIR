@@ -125,6 +125,15 @@
         "type": "string"
       },
       "description": "Email addresses to receive geofence breach alerts"
+    },
+    "demoModeEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, a visible DEMO watermark/banner is shown across the app. Toggle off during active development, on when showing prospects."
+    },
+    "demoBranch": {
+      "type": "string",
+      "description": "When demo mode is on, the app auto-locks to this branch so prospects only see demo data."
     }
   },
   "required": []

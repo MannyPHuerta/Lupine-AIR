@@ -119,6 +119,8 @@ export default function CompanySettingsPage() {
 
     payload.geofenceAlertPhones = settings.geofenceAlertPhones || [];
     payload.geofenceAlertEmails = settings.geofenceAlertEmails || [];
+    payload.demoModeEnabled = settings.demoModeEnabled === true;
+    payload.demoBranch = settings.demoBranch || '';
 
     if (settings.id) {
       await base44.entities.CompanySettings.update(settings.id, payload);
@@ -471,6 +473,53 @@ export default function CompanySettingsPage() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Demo Mode */}
+            <div className="bg-white rounded-xl border-2 border-amber-300 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🎭</span>
+                <div className="font-semibold text-gray-900">Demo Mode</div>
+                <span className={`ml-2 text-xs font-bold px-2 py-0.5 rounded-full ${settings.demoModeEnabled ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                  {settings.demoModeEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                When ON, a visible DEMO watermark appears across the app so prospects know they're in a sandbox.
+                Turn OFF during active development. Turn ON when showing the platform to a prospect.
+              </p>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Demo Mode Banner</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {settings.demoModeEnabled ? '⚠️ Active — demo watermark is visible to all users' : '✓ Off — normal operation'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleChange('demoModeEnabled', !settings.demoModeEnabled)}
+                  className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                    settings.demoModeEnabled ? 'bg-amber-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform mt-0.5 ${
+                      settings.demoModeEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+              {settings.demoModeEnabled && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Lock to Demo Branch (optional)</label>
+                  <Input
+                    value={settings.demoBranch || ''}
+                    onChange={e => handleChange('demoBranch', e.target.value)}
+                    placeholder="e.g. 01 McAllen"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">If set, all demo users are auto-locked to this branch.</p>
+                </div>
+              )}
             </div>
 
             {/* Hardware Diagnostic */}

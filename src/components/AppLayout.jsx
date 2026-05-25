@@ -3,6 +3,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useWorkingBranch } from '@/lib/WorkingBranchContext';
 import { useHeaderStyle } from '@/lib/useHeaderStyle';
 import WorkingBranchModal from '@/components/WorkingBranchModal';
+import DemoBanner from '@/components/DemoBanner';
 import { base44 } from '@/api/base44Client';
 import {
   LayoutDashboard, Calendar, Truck, RotateCcw, Users, BarChart3,
@@ -376,6 +377,7 @@ export default function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
+          <DemoBanner />
           <Outlet />
         </main>
       </div>
