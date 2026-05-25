@@ -123,6 +123,7 @@ const navGroups = [
       { label: 'Branding', path: '/branding', icon: Star },
       { label: 'Inventory Export', path: '/inventory-export', icon: FileText },
       { label: 'Data Export / Backup', path: '/data-export', icon: Download },
+      { label: 'Demo Mode Manager', path: '/demo-manager', icon: Star },
     ],
   },
 ];

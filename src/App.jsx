@@ -85,6 +85,7 @@ import AIRecovery from "./pages/AIRecovery";
 import GPSProviderSettings from "./pages/GPSProviderSettings";
 import UserManagement from "./pages/UserManagement";
 import DataExport from "./pages/DataExport";
+import DemoManager from "./pages/DemoManager";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -201,6 +202,7 @@ const AuthenticatedApp = () => {
         <Route path="/airecovery" element={<AIRecovery />} />
         <Route path="/gps-settings" element={<GPSProviderSettings />} />
         <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/demo-manager" element={<DemoManager />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
