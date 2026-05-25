@@ -84,6 +84,7 @@ import ClockIn from "./pages/ClockIn";
 import AIRecovery from "./pages/AIRecovery";
 import GPSProviderSettings from "./pages/GPSProviderSettings";
 import UserManagement from "./pages/UserManagement";
+import DataExport from "./pages/DataExport";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -185,6 +186,7 @@ const AuthenticatedApp = () => {
         <Route path="/employee-profiles" element={<EmployeeProfileManager />} />
         <Route path="/laundry" element={<LaundryDashboard />} />
         <Route path="/inventory-export" element={<InventoryExport />} />
+        <Route path="/data-export" element={<DataExport />} />
         <Route path="/equipment-specs" element={<EquipmentSpecsEditor />} />
         <Route path="/rental-agreement" element={<RentalAgreementManager />} />
         <Route path="/loyalty-manager" element={<LoyaltyManager />} />
