@@ -282,8 +282,7 @@ export default function AppLayout() {
           className="h-8 w-8 rounded-lg"
         />
         <div>
-          <div className="text-white font-bold text-sm leading-tight">AIR Platform</div>
-          <div className="text-indigo-400 text-xs">by Lupine</div>
+          <div className="text-white font-bold text-sm leading-tight">AIR by Lupine</div>
         </div>
       </div>
 
@@ -373,7 +372,7 @@ export default function AppLayout() {
             alt="AIR"
             className="h-6 w-6 rounded"
           />
-          <span className="font-bold text-sm">AIR Platform</span>
+          <span className="font-bold text-sm">AIR by Lupine</span>
         </div>
 
         {/* Page content */}
