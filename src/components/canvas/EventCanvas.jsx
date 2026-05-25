@@ -12,8 +12,8 @@ const CATEGORY_COLORS = {
   default: '#64748b',
 };
 
-const GRID_COLOR = 'rgba(255,255,255,0.06)';
-const GRID_MAJOR_COLOR = 'rgba(255,255,255,0.12)';
+const GRID_COLOR = 'rgba(0,0,0,0.08)';
+const GRID_MAJOR_COLOR = 'rgba(0,0,0,0.15)';
 
 export default function EventCanvas({
   items,
@@ -62,7 +62,7 @@ export default function EventCanvas({
     ctx.clearRect(0, 0, W, H);
 
     // Background
-    ctx.fillStyle = '#1e293b';
+    ctx.fillStyle = '#f9fafb';
     ctx.fillRect(0, 0, W, H);
 
     ctx.save();
@@ -81,10 +81,10 @@ export default function EventCanvas({
         ctx.rotate(rot);
         ctx.drawImage(bgImage.current, -vw / 2, -vl / 2, vw, vl);
         ctx.restore();
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
         ctx.fillRect(0, 0, vw, vl);
       } else {
-        ctx.fillStyle = 'rgba(34,197,94,0.06)';
+        ctx.fillStyle = 'rgba(34,197,94,0.08)';
         ctx.fillRect(0, 0, vw, vl);
       }
 
@@ -101,7 +101,7 @@ export default function EventCanvas({
           ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(vw, y); ctx.stroke();
         }
         // Dimension labels
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.font = '11px Inter, sans-serif';
         ctx.fillText(`${venueWidth} ft`, vw / 2 - 15, vl + 16);
         ctx.save();
@@ -112,7 +112,7 @@ export default function EventCanvas({
       }
 
       // Venue border
-      ctx.strokeStyle = 'rgba(34,197,94,0.4)';
+      ctx.strokeStyle = 'rgba(34,197,94,0.5)';
       ctx.lineWidth = 2;
       ctx.strokeRect(0, 0, vw, vl);
     } else if (showGrid) {
@@ -162,7 +162,7 @@ export default function EventCanvas({
       ctx.shadowBlur = 0;
 
       // Label
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#1f2937';
       ctx.font = `bold ${Math.max(9, Math.min(13, scale * 1.2))}px Inter, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -174,7 +174,7 @@ export default function EventCanvas({
       // Dimension hint
       if (isSelected && item.widthFt && item.lengthFt) {
         ctx.font = `10px Inter, sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillText(`${item.widthFt}×${item.lengthFt}ft`, iw / 2, il / 2 + 14);
       }
 
