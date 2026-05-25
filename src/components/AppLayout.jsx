@@ -92,7 +92,6 @@ const navGroups = [
     items: [
       { label: 'Event Planner', path: '/event-planner', icon: Calendar },
       { label: 'Planner Queue', path: '/planner-queue', icon: ClipboardList },
-      { label: 'RFQ Manager', path: '/rfq', icon: FileText },
     ],
   },
   {
