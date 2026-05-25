@@ -8,14 +8,16 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 const PROVIDER_META = {
-  samsara:         { label: 'Samsara',          logo: '🚛', authFields: ['apiKey'], docsUrl: 'https://developers.samsara.com' },
-  calamp:          { label: 'CalAmp / LoJack',   logo: '📡', authFields: ['apiKey', 'accountId'], docsUrl: 'https://developer.calamp.com' },
-  verizon_connect: { label: 'Verizon Connect',   logo: '🌐', authFields: ['apiKey', 'apiSecret', 'accountId'], docsUrl: 'https://developer.verizonconnect.com' },
-  geotab:          { label: 'Geotab',            logo: '🗺️', authFields: ['apiKey', 'apiSecret', 'accountId', 'baseUrl'], docsUrl: 'https://developers.geotab.com' },
-  spireon:         { label: 'Spireon',           logo: '🏗️', authFields: ['apiKey', 'accountId'], docsUrl: 'https://www.spireon.com' },
-  trackimo:        { label: 'Trackimo',          logo: '📍', authFields: ['apiKey'], docsUrl: 'https://trackimo.com' },
-  bouncie:         { label: 'Bouncie',           logo: '🔵', authFields: ['apiKey'], docsUrl: 'https://www.bouncie.com' },
-  custom:          { label: 'Custom / Other',    logo: '⚙️', authFields: ['apiKey', 'apiSecret', 'accountId', 'baseUrl'], docsUrl: null },
+  samsara:         { label: 'Samsara',                    logo: '🚛', authFields: ['apiKey'], docsUrl: 'https://developers.samsara.com' },
+  fleettraks:      { label: 'FleetTraks (On-Board/NASTC)', logo: '🛰️', authFields: ['apiKey', 'accountId', 'baseUrl'], docsUrl: 'https://www.nastek.com' },
+  fleettracks:     { label: 'FleetTracks (AI Telematics)', logo: '📡', authFields: ['apiKey', 'accountId', 'baseUrl'], docsUrl: null },
+  calamp:          { label: 'CalAmp / LoJack',             logo: '📡', authFields: ['apiKey', 'accountId'], docsUrl: 'https://developer.calamp.com' },
+  verizon_connect: { label: 'Verizon Connect',             logo: '🌐', authFields: ['apiKey', 'apiSecret', 'accountId'], docsUrl: 'https://developer.verizonconnect.com' },
+  geotab:          { label: 'Geotab',                      logo: '🗺️', authFields: ['apiKey', 'apiSecret', 'accountId', 'baseUrl'], docsUrl: 'https://developers.geotab.com' },
+  spireon:         { label: 'Spireon',                     logo: '🏗️', authFields: ['apiKey', 'accountId'], docsUrl: 'https://www.spireon.com' },
+  trackimo:        { label: 'Trackimo',                    logo: '📍', authFields: ['apiKey'], docsUrl: 'https://trackimo.com' },
+  bouncie:         { label: 'Bouncie',                     logo: '🔵', authFields: ['apiKey'], docsUrl: 'https://www.bouncie.com' },
+  custom:          { label: 'Custom / Other',              logo: '⚙️', authFields: ['apiKey', 'apiSecret', 'accountId', 'baseUrl'], docsUrl: null },
 };
 
 const FIELD_LABELS = {

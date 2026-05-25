@@ -10,6 +10,8 @@
       "type": "string",
       "enum": [
         "samsara",
+        "fleettraks",
+        "fleettracks",
         "calamp",
         "verizon_connect",
         "geotab",
