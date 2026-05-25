@@ -56,24 +56,24 @@ function TimePicker({ value, onChange }) {
       <select
         value={h}
         onChange={e => { setH(e.target.value); emit(e.target.value, m, ampm); }}
-        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500 flex-1"
+        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-purple-400 flex-1"
       >
         {Array.from({ length: 12 }, (_, i) => String(i + 1)).map(v => (
           <option key={v} value={v}>{v}</option>
         ))}
       </select>
-      <span className="text-white/40 font-bold">:</span>
+      <span className="text-gray-400 font-bold">:</span>
       <select
         value={m}
         onChange={e => { setM(e.target.value); emit(h, e.target.value, ampm); }}
-        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500 flex-1"
+        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-purple-400 flex-1"
       >
         {['00', '15', '30', '45'].map(v => <option key={v} value={v}>{v}</option>)}
       </select>
       <select
         value={ampm}
         onChange={e => { setAmpm(e.target.value); emit(h, m, e.target.value); }}
-        className="bg-slate-800 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500 flex-1"
+        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-purple-400 flex-1"
       >
         <option value="AM">AM</option>
         <option value="PM">PM</option>
@@ -90,38 +90,42 @@ function StepIndicator({ current, onGoTo }) {
           <button
             onClick={() => i < current && onGoTo(i)}
             className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all ${
-              i < current ? 'bg-cyan-500 text-black cursor-pointer hover:bg-cyan-400' :
-              i === current ? 'bg-cyan-500/20 border border-cyan-500 text-cyan-400' :
-              'bg-white/10 text-white/30 cursor-default'
+              i < current ? 'bg-purple-500 text-white cursor-pointer hover:bg-purple-400' :
+              i === current ? 'bg-purple-100 border-2 border-purple-500 text-purple-600' :
+              'bg-gray-100 text-gray-300 cursor-default'
             }`}
           >
             {i < current ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
           </button>
           <span
-            className={`text-xs font-medium ${i === current ? 'text-white' : i < current ? 'text-cyan-400 cursor-pointer' : 'text-white/30'}`}
+            className={`text-xs font-medium ${i === current ? 'text-gray-900' : i < current ? 'text-purple-500 cursor-pointer' : 'text-gray-300'}`}
             onClick={() => i < current && onGoTo(i)}
           >
             {step.label}
           </span>
-          {i < STEPS.length - 1 && <div className={`w-8 h-px ${i < current ? 'bg-cyan-500' : 'bg-white/10'}`} />}
+          {i < STEPS.length - 1 && <div className={`w-8 h-px ${i < current ? 'bg-purple-400' : 'bg-gray-200'}`} />}
         </div>
       ))}
     </div>
   );
 }
 
+const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition";
+const selectCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition";
+const labelCls = "text-xs font-semibold text-gray-500 block mb-1.5";
+
 function StepEvent({ data, onChange, onNext }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-black text-white mb-1">Tell us about your event</h2>
-        <p className="text-white/50 text-sm">We'll use this to build your custom layout.</p>
+        <h2 className="text-2xl font-black text-gray-900 mb-1">Tell us about your event 🎉</h2>
+        <p className="text-gray-400 text-sm">We'll use this to build your custom layout.</p>
       </div>
       <div className="space-y-4">
         <div>
-          <label className="text-xs text-white/50 block mb-1.5">Your name</label>
+          <label className={labelCls}>Your name</label>
           <input
-            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
+            className={inputCls}
             placeholder="Maria Rodriguez"
             value={data.customerName || ''}
             onChange={e => onChange({ customerName: e.target.value })}
@@ -129,11 +133,11 @@ function StepEvent({ data, onChange, onNext }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-white/50 block mb-1.5">Event type</label>
+            <label className={labelCls}>Event type</label>
             <select
               value={data.eventType || 'other'}
               onChange={e => onChange({ eventType: e.target.value })}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
+              className={selectCls}
             >
               {['birthday', 'quinceañera', 'wedding', 'corporate', 'municipal', 'festival', 'other'].map(t => (
                 <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
@@ -141,45 +145,45 @@ function StepEvent({ data, onChange, onNext }) {
             </select>
           </div>
           <div>
-            <label className="text-xs text-white/50 block mb-1.5">Number of guests</label>
+            <label className={labelCls}>Number of guests</label>
             <input
               type="number"
               placeholder="150"
               value={data.guestCount || ''}
               onChange={e => onChange({ guestCount: parseInt(e.target.value) || 0 })}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
+              className={inputCls}
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-white/50 block mb-1.5">Start date</label>
+            <label className={labelCls}>Start date</label>
             <input
               type="date"
               value={data.eventDate || ''}
               onChange={e => onChange({ eventDate: e.target.value })}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
+              className={inputCls}
             />
           </div>
           <div>
-            <label className="text-xs text-white/50 block mb-1.5">End date</label>
+            <label className={labelCls}>End date</label>
             <input
               type="date"
               value={data.eventEndDate || ''}
               min={data.eventDate || ''}
               onChange={e => onChange({ eventEndDate: e.target.value })}
-              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan-500"
+              className={inputCls}
             />
           </div>
         </div>
         <div>
-          <label className="text-xs text-white/50 block mb-1.5">Start time</label>
+          <label className={labelCls}>Start time</label>
           <TimePicker value={data.eventTime || ''} onChange={val => onChange({ eventTime: val })} />
         </div>
         <div>
-          <label className="text-xs text-white/50 block mb-1.5">Venue name or address (optional)</label>
+          <label className={labelCls}>Venue name or address (optional)</label>
           <input
-            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
+            className={inputCls}
             placeholder="Parque La Lomita, McAllen TX"
             value={data.venueName || ''}
             onChange={e => onChange({ venueName: e.target.value })}
@@ -189,7 +193,7 @@ function StepEvent({ data, onChange, onNext }) {
       <button
         onClick={onNext}
         disabled={!data.guestCount || !data.eventDate}
-        className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold rounded-xl py-3.5 transition"
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl py-3.5 transition shadow-lg shadow-purple-200"
       >
         Next: Your Space <ArrowRight className="w-4 h-4" />
       </button>
@@ -212,37 +216,36 @@ function StepVenue({ data, onChange, onNext, onBack }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-black text-white mb-1">Tell us about your space</h2>
-        <p className="text-white/50 text-sm">This helps us fit everything perfectly.</p>
+        <h2 className="text-2xl font-black text-gray-900 mb-1">Tell us about your space 🏟️</h2>
+        <p className="text-gray-400 text-sm">This helps us fit everything perfectly.</p>
       </div>
       <div className="space-y-4">
-        {/* Available Space FIRST */}
         <div>
-          <label className="text-xs text-white/50 block mb-1.5">Available space (approximate)</label>
+          <label className={labelCls}>Available space (approximate)</label>
           <div className="grid grid-cols-2 gap-3">
             <div className="relative">
               <input
                 type="number" placeholder="100" value={data.venueWidthFt || ''}
                 autoFocus
                 onChange={e => onChange({ venueWidthFt: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
+                className={inputCls}
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">ft wide</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">ft wide</span>
             </div>
             <div className="relative">
               <input
                 type="number" placeholder="150" value={data.venueLengthFt || ''}
                 onChange={e => onChange({ venueLengthFt: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-cyan-500"
+                className={inputCls}
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs">ft long</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">ft long</span>
             </div>
           </div>
-          <p className="text-white/30 text-xs mt-1">Don't know exactly? Give your best estimate — we'll work with it.</p>
+          <p className="text-gray-400 text-xs mt-1">Don't know exactly? Give your best estimate — we'll work with it.</p>
         </div>
 
         <div>
-          <label className="text-xs text-white/50 block mb-1.5">Ground surface</label>
+          <label className={labelCls}>Ground surface</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { v: 'grass', label: '🌿 Grass' },
@@ -257,8 +260,8 @@ function StepVenue({ data, onChange, onNext, onBack }) {
                 onClick={() => onChange({ venueSurface: s.v })}
                 className={`py-2.5 px-2 rounded-xl text-xs font-medium border transition ${
                   data.venueSurface === s.v
-                    ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                    : 'bg-slate-800 border-white/10 text-white/60 hover:border-white/30'
+                    ? 'bg-purple-100 border-purple-400 text-purple-700'
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-purple-300'
                 }`}
               >
                 {s.label}
@@ -268,7 +271,7 @@ function StepVenue({ data, onChange, onNext, onBack }) {
         </div>
 
         <div>
-          <label className="text-xs text-white/50 block mb-1.5">Setting</label>
+          <label className={labelCls}>Setting</label>
           <div className="grid grid-cols-2 gap-3">
             {[{ v: false, label: '☀️ Outdoor' }, { v: true, label: '🏠 Indoor' }].map(opt => (
               <button
@@ -276,8 +279,8 @@ function StepVenue({ data, onChange, onNext, onBack }) {
                 onClick={() => onChange({ isIndoor: opt.v })}
                 className={`py-3 rounded-xl text-sm font-medium border transition ${
                   data.isIndoor === opt.v
-                    ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                    : 'bg-slate-800 border-white/10 text-white/60 hover:border-white/30'
+                    ? 'bg-purple-100 border-purple-400 text-purple-700'
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-purple-300'
                 }`}
               >
                 {opt.label}
@@ -287,18 +290,18 @@ function StepVenue({ data, onChange, onNext, onBack }) {
         </div>
 
         <div>
-          <label className="text-xs text-white/50 block mb-1.5">Photo of the space (optional)</label>
-          <label className={`flex items-center gap-3 w-full border border-dashed border-white/20 rounded-xl p-4 cursor-pointer hover:border-cyan-500/50 transition ${uploading ? 'opacity-50' : ''}`}>
+          <label className={labelCls}>Photo of the space (optional)</label>
+          <label className={`flex items-center gap-3 w-full border border-dashed border-gray-300 rounded-xl p-4 cursor-pointer hover:border-purple-400 transition ${uploading ? 'opacity-50' : ''}`}>
             {data.venuePhotoUrl ? (
               <img src={data.venuePhotoUrl} alt="venue" className="w-16 h-12 object-cover rounded-lg" />
             ) : (
-              <div className="w-16 h-12 bg-slate-800 rounded-lg flex items-center justify-center">
-                <Upload className="w-5 h-5 text-white/30" />
+              <div className="w-16 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Upload className="w-5 h-5 text-gray-400" />
               </div>
             )}
             <div>
-              <div className="text-sm text-white/70">{uploading ? 'Uploading…' : data.venuePhotoUrl ? 'Photo uploaded ✓' : 'Upload a photo'}</div>
-              <div className="text-xs text-white/30">Helps us visualize the layout</div>
+              <div className="text-sm text-gray-600">{uploading ? 'Uploading…' : data.venuePhotoUrl ? 'Photo uploaded ✓' : 'Upload a photo'}</div>
+              <div className="text-xs text-gray-400">Helps us visualize the layout</div>
             </div>
             <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} disabled={uploading} />
           </label>
@@ -306,12 +309,12 @@ function StepVenue({ data, onChange, onNext, onBack }) {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition">
+        <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold transition">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={onNext}
-          className="flex-1 flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl py-3 transition"
+          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 text-white font-bold rounded-xl py-3 transition shadow-lg shadow-purple-200"
         >
           <Sparkles className="w-4 h-4" /> Get AI Recommendations <ArrowRight className="w-4 h-4" />
         </button>
@@ -340,10 +343,10 @@ function EquipmentSearch({ equipment, onAdd }) {
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 bg-slate-800 border border-white/20 rounded-xl px-3 py-2.5 focus-within:border-cyan-500/60 transition">
-        <Search className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
+      <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 focus-within:border-purple-400 transition">
+        <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
         <input
-          className="bg-transparent flex-1 text-xs text-white placeholder-white/30 outline-none"
+          className="bg-transparent flex-1 text-xs text-gray-900 placeholder-gray-400 outline-none"
           placeholder="Search catalog to add more equipment…"
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true); }}
@@ -352,19 +355,19 @@ function EquipmentSearch({ equipment, onAdd }) {
         />
       </div>
       {open && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
           {results.map(eq => (
             <button
               key={eq.id}
               onMouseDown={e => { e.preventDefault(); handleSelect(eq); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/10 transition text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-purple-50 transition text-left"
             >
               <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: CATEGORY_COLORS[eq.category] || CATEGORY_COLORS.default }} />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-white font-medium truncate">{eq.name}</div>
-                <div className="text-white/40 text-[10px]">{eq.category}{eq.dailyRate ? ` · $${eq.dailyRate}/day` : ''}</div>
+                <div className="text-xs text-gray-900 font-medium truncate">{eq.name}</div>
+                <div className="text-gray-400 text-[10px]">{eq.category}{eq.dailyRate ? ` · $${eq.dailyRate}/day` : ''}</div>
               </div>
-              <Plus className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+              <Plus className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
             </button>
           ))}
         </div>
@@ -545,64 +548,62 @@ INSTRUCTIONS:
     return (
       <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-black text-white mb-1">AI Equipment Suggestions 🎉</h2>
-          <p className="text-white/50 text-sm">{aiSummary || "Here's a suggested setup based on your event."}</p>
+          <h2 className="text-2xl font-black text-gray-900 mb-1">✨ AI Equipment Suggestions</h2>
+          <p className="text-gray-500 text-sm">{aiSummary || "Here's a suggested setup based on your event."}</p>
         </div>
 
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-amber-200 text-xs">
-          ⚠️ These are <strong>suggestions only</strong> — not a confirmed order. Adjust quantities or remove items as needed. A Rental World team member will review everything with you before any charges are made.
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-700 text-xs">
+          ⚠️ These are <strong>suggestions only</strong> — not a confirmed order. Adjust quantities or remove items as needed. Our team will review everything with you before any charges are made.
         </div>
 
         <div className="space-y-2 max-h-52 overflow-y-auto">
           {localItems.map((item) => (
-            <div key={item.id} className="flex items-center gap-3 bg-slate-800 rounded-xl px-3 py-2.5">
+            <div key={item.id} className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
               <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-white font-medium truncate">{item.equipmentName}</div>
-                {item.dailyRate > 0 && <div className="text-cyan-400 text-[10px]">${item.dailyRate}/day each</div>}
+                <div className="text-xs text-gray-900 font-medium truncate">{item.equipmentName}</div>
+                {item.dailyRate > 0 && <div className="text-purple-500 text-[10px]">${item.dailyRate}/day each</div>}
               </div>
-              {/* Quantity stepper */}
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+                <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center">
                   <Minus className="w-3 h-3" />
                 </button>
-                <span className="text-white text-xs w-6 text-center font-bold">{item.quantity || 1}</span>
-                <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+                <span className="text-gray-900 text-xs w-6 text-center font-bold">{item.quantity || 1}</span>
+                <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
               {item.dailyRate > 0 && (
-                <span className="text-cyan-400 text-xs font-bold flex-shrink-0 w-16 text-right">
+                <span className="text-purple-600 text-xs font-bold flex-shrink-0 w-16 text-right">
                   ${(item.dailyRate * (item.quantity || 1)).toFixed(0)}/day
                 </span>
               )}
-              <button onClick={() => removeItem(item.id)} className="p-1 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 flex-shrink-0">
+              <button onClick={() => removeItem(item.id)} className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-400 flex-shrink-0">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
         </div>
 
-        {/* Add more equipment from catalog */}
         <EquipmentSearch equipment={equipment} onAdd={addFromSearch} />
 
         {total > 0 && (
-          <div className="bg-slate-800 rounded-xl px-4 py-2 flex justify-between">
-            <span className="text-white/50 text-sm">Est. daily total</span>
-            <span className="text-cyan-400 font-bold">${total.toFixed(2)}</span>
+          <div className="bg-purple-50 border border-purple-100 rounded-xl px-4 py-2.5 flex justify-between">
+            <span className="text-gray-500 text-sm">Est. daily total</span>
+            <span className="text-purple-600 font-bold">${total.toFixed(2)}</span>
           </div>
         )}
 
         <div className="flex gap-3">
-          <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition">
+          <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold transition">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <button onClick={generate} disabled={loading} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition">
+          <button onClick={generate} disabled={loading} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold transition">
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />} Regenerate
           </button>
           <button
             onClick={onViewCanvas}
-            className="flex-1 flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl py-3 transition"
+            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 text-white font-bold rounded-xl py-3 transition shadow-lg shadow-purple-200"
           >
             <Eye className="w-4 h-4" /> View on Canvas <ArrowRight className="w-4 h-4" />
           </button>
@@ -615,12 +616,12 @@ INSTRUCTIONS:
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-white mb-1">Ready to generate your layout</h2>
-        <p className="text-white/50 text-sm">Our AI will recommend equipment based on your <strong className="text-white">{data.eventType}</strong> event for <strong className="text-white">{data.guestCount} guests</strong>.</p>
+        <h2 className="text-2xl font-black text-gray-900 mb-1">Ready to generate your layout 🪄</h2>
+        <p className="text-gray-500 text-sm">Our AI will recommend equipment based on your <strong className="text-gray-900">{data.eventType}</strong> event for <strong className="text-gray-900">{data.guestCount} guests</strong>.</p>
       </div>
 
-      <div className="bg-slate-800 rounded-2xl p-5 space-y-2.5">
-        <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Your Event Summary</div>
+      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 space-y-2.5">
+        <div className="text-xs text-gray-400 uppercase tracking-wider mb-3">Your Event Summary</div>
         {[
           ['Type', data.eventType],
           ['Guests', data.guestCount],
@@ -632,28 +633,28 @@ INSTRUCTIONS:
           ['Space', data.venueWidthFt && data.venueLengthFt ? `${data.venueWidthFt} × ${data.venueLengthFt} ft` : 'Not specified'],
         ].map(([label, val]) => val ? (
           <div key={label} className="flex justify-between text-sm">
-            <span className="text-white/50">{label}</span>
-            <span className="text-white font-medium capitalize">{String(val)}</span>
+            <span className="text-gray-400">{label}</span>
+            <span className="text-gray-900 font-medium capitalize">{String(val)}</span>
           </div>
         ) : null)}
       </div>
 
-      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-blue-200 text-xs">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-700 text-xs">
         💡 The AI will suggest equipment appropriate for your event type. You can adjust quantities or remove items before submitting — nothing is charged until you confirm with our team.
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm">{error}</div>
       )}
 
       <div className="flex gap-3">
-        <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition">
+        <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold transition">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={generate}
           disabled={loading}
-          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-black font-bold rounded-xl py-3.5 transition"
+          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-90 text-white font-bold rounded-xl py-3.5 transition shadow-lg shadow-purple-200"
         >
           {loading
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Building your layout…</>
@@ -669,40 +670,40 @@ function StepReview({ canvasItems, onSubmit, onBack, submitting }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-black text-white mb-1">Review your plan</h2>
-        <p className="text-white/50 text-sm">Everything look good? Submit it and our team will follow up.</p>
+        <h2 className="text-2xl font-black text-gray-900 mb-1">Review your plan 🎪</h2>
+        <p className="text-gray-400 text-sm">Everything look good? Submit it and our team will follow up.</p>
       </div>
 
       <div className="space-y-2 max-h-52 overflow-y-auto">
         {canvasItems.map((item, i) => (
-          <div key={i} className="flex items-center gap-3 bg-slate-800 rounded-xl px-4 py-3">
+          <div key={i} className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
             <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
-            <div className="flex-1 text-sm text-white truncate">{item.equipmentName}</div>
-            {item.quantity > 1 && <span className="text-xs text-white/50">×{item.quantity}</span>}
-            {item.dailyRate > 0 && <span className="text-cyan-400 text-xs font-bold flex-shrink-0">${(item.dailyRate * item.quantity).toFixed(0)}/day</span>}
+            <div className="flex-1 text-sm text-gray-900 truncate">{item.equipmentName}</div>
+            {item.quantity > 1 && <span className="text-xs text-gray-400">×{item.quantity}</span>}
+            {item.dailyRate > 0 && <span className="text-purple-600 text-xs font-bold flex-shrink-0">${(item.dailyRate * item.quantity).toFixed(0)}/day</span>}
           </div>
         ))}
       </div>
 
       {total > 0 && (
-        <div className="bg-slate-800 rounded-xl px-4 py-3 flex justify-between">
-          <span className="text-white/60 text-sm">Estimated daily total</span>
-          <span className="text-cyan-400 font-black text-lg">${total.toFixed(2)}</span>
+        <div className="bg-purple-50 border border-purple-100 rounded-xl px-4 py-3 flex justify-between">
+          <span className="text-gray-500 text-sm">Estimated daily total</span>
+          <span className="text-purple-600 font-black text-lg">${total.toFixed(2)}</span>
         </div>
       )}
 
-      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-sm text-blue-300">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
         💬 A Rental World team member will review your plan and contact you to confirm details and pricing. <strong>No charges are made until you approve.</strong>
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition">
+        <button onClick={onBack} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold transition">
           <ArrowLeft className="w-4 h-4" /> Back to Layout
         </button>
         <button
           onClick={onSubmit}
           disabled={submitting}
-          className="flex-1 flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-bold rounded-xl py-3.5 transition"
+          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white font-bold rounded-xl py-3.5 transition shadow-lg shadow-purple-200"
         >
           {submitting
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
@@ -750,17 +751,17 @@ export default function CustomerWizard({ equipment, onComplete, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8 relative">
-        <button onClick={onCancel} className="absolute top-4 right-4 text-white/30 hover:text-white text-lg leading-none">✕</button>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8 relative">
+        <button onClick={onCancel} className="absolute top-4 right-4 text-gray-300 hover:text-gray-600 text-lg leading-none">✕</button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-pink-400 to-indigo-500 flex items-center justify-center flex-shrink-0">
             <span className="text-white text-xs font-black">AE</span>
           </div>
           <div>
-            <div className="text-white font-black text-sm">AIREvents</div>
-            <div className="text-white/40 text-xs">Event Layout Wizard</div>
+            <div className="text-gray-900 font-black text-sm">AIREvents</div>
+            <div className="text-gray-400 text-xs">Event Layout Wizard</div>
           </div>
         </div>
 
