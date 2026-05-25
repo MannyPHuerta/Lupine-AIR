@@ -96,7 +96,7 @@ export default function AIRepair() {
   return (
     <div className="min-h-screen bg-gray-50">
       <AppPageHeader
-        title="AIRepair Intelligence"
+        title="Repair Intelligence"
         subtitle={`${filtered.length} work order${filtered.length !== 1 ? 's' : ''} shown`}
         icon={Wrench}
         action={
@@ -123,7 +123,6 @@ export default function AIRepair() {
               {tab.label}
             </button>
           ))}
-          <button onClick={() => navigate('/shop-floor')} className="px-3 py-1.5 text-xs font-medium bg-orange-500/80 hover:bg-orange-500 text-white rounded-lg transition">🔧 Shop Floor</button>
           <button onClick={() => navigate('/repair-manager-report')} className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 text-white rounded-lg transition">📊 Performance</button>
         </div>
       </AppPageHeader>
