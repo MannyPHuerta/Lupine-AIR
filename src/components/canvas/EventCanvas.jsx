@@ -46,10 +46,18 @@ export default function EventCanvas({
 
   // Load background image
   useEffect(() => {
-    if (!venuePhotoUrl) { bgImage.current = null; return; }
+    if (!venuePhotoUrl) { bgImage.current = null; console.log('No venue photo URL'); return; }
+    console.log('Loading venue photo:', venuePhotoUrl);
     const img = new Image();
     img.src = venuePhotoUrl;
-    img.onload = () => { bgImage.current = img; draw(); };
+    img.onload = () => { 
+      console.log('Venue photo loaded successfully, dimensions:', img.width, 'x', img.height);
+      bgImage.current = img; 
+      draw(); 
+    };
+    img.onerror = (err) => {
+      console.error('Failed to load venue photo:', err, venuePhotoUrl);
+    };
   }, [venuePhotoUrl]);
 
   const draw = useCallback(() => {
@@ -75,6 +83,7 @@ export default function EventCanvas({
 
       // Venue photo or fill
       if (bgImage.current) {
+        console.log('Drawing venue photo, venue dims:', vw, 'x', vl, 'rotation:', venueRotation);
         const rot = ((venueRotation || 0) * Math.PI) / 180;
         ctx.save();
         ctx.translate(vw / 2, vl / 2);
@@ -84,6 +93,7 @@ export default function EventCanvas({
         ctx.fillStyle = 'rgba(0,0,0,0.15)';
         ctx.fillRect(0, 0, vw, vl);
       } else {
+        console.log('No background image, using green fill');
         ctx.fillStyle = 'rgba(34,197,94,0.08)';
         ctx.fillRect(0, 0, vw, vl);
       }
