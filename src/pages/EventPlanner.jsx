@@ -78,9 +78,8 @@ export default function EventPlanner() {
       setCategories(cats);
       setUser(me);
 
-      // Auto-show wizard for customers on a new (empty) plan
-      const isCustomer = me?.role !== 'admin' && me?.role !== 'staff';
-      if (!planId && isCustomer) {
+      // Auto-show wizard for everyone on new/empty plans
+      if (!planId || (!plan?.canvasItems?.length && !forceWizard)) {
         setShowWizard(true);
       }
 
