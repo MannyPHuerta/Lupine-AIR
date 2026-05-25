@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Upload, Palette } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload, Palette, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { invalidateHeaderStyleCache } from '@/lib/useHeaderStyle';
 import AppPageHeader from '@/components/AppPageHeader';
+import { SEASONAL_THEMES, getActiveSeasonalTheme } from '@/lib/seasonalThemes';
 
 export default function BrandingSettings() {
   const navigate = useNavigate();
@@ -19,10 +20,14 @@ export default function BrandingSettings() {
       secondaryColor: '#6B7280',
       accentColor: '#F59E0B',
     },
+    seasonalAutoActivate: false,
+    seasonalThemeKey: null,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('theme');
+  const todaysSeasonal = getActiveSeasonalTheme();
 
   useEffect(() => {
     base44.entities.CompanySettings.list()
@@ -35,6 +40,8 @@ export default function BrandingSettings() {
             logoUrl: s.logoUrl || '',
             headerStyle: s.headerStyle || 'classic',
             brandingTheme: s.brandingTheme || form.brandingTheme,
+            seasonalAutoActivate: s.seasonalAutoActivate || false,
+            seasonalThemeKey: s.seasonalThemeKey || null,
           });
         }
       })
@@ -61,7 +68,7 @@ export default function BrandingSettings() {
       } else {
         await base44.entities.CompanySettings.create(form);
       }
-      invalidateHeaderStyleCache(form.headerStyle);
+      invalidateHeaderStyleCache();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -105,6 +112,104 @@ export default function BrandingSettings() {
           </div>
         )}
 
+        {/* Tab switcher */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveTab('theme')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition ${activeTab === 'theme' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <Palette className="w-4 h-4" /> Theme
+          </button>
+          <button
+            onClick={() => setActiveTab('seasonal')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition ${activeTab === 'seasonal' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <Calendar className="w-4 h-4" /> Seasonal
+            {todaysSeasonal && <span className="ml-1 text-base leading-none">{todaysSeasonal.emoji}</span>}
+          </button>
+        </div>
+
+        {activeTab === 'seasonal' && (
+          <div className="space-y-5">
+            {/* Auto-activate toggle */}
+            <div className="bg-white rounded-lg border shadow-sm p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <span>Auto-Activate Seasonal Themes</span>
+                    {todaysSeasonal && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                        {todaysSeasonal.emoji} {todaysSeasonal.label} active today
+                      </span>
+                    )}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    When enabled, the platform automatically switches to the matching seasonal theme during holiday windows — no manual effort needed.
+                    {!todaysSeasonal && <span className="block mt-1 text-gray-400">No seasonal theme is active today.</span>}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setForm(f => ({ ...f, seasonalAutoActivate: !f.seasonalAutoActivate }))}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer focus:outline-none ${form.seasonalAutoActivate ? 'bg-indigo-600' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${form.seasonalAutoActivate ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Manual theme picker */}
+            <div className="bg-white rounded-lg border shadow-sm p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-gray-900">Manual Seasonal Theme</h2>
+                <p className="text-xs text-gray-500 mt-1">Override with a specific holiday theme any time — useful for early decorating or testing. Auto-activate takes priority when enabled.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => setForm(f => ({ ...f, headerStyle: 'classic', seasonalThemeKey: null }))}
+                  className={`rounded-lg border-2 p-3 text-left transition ${!form.seasonalThemeKey && form.headerStyle !== 'seasonal' ? 'border-indigo-600 ring-2 ring-indigo-300' : 'border-gray-200 hover:border-indigo-300'}`}
+                >
+                  <div className="font-medium text-sm text-gray-700">✖ No seasonal theme</div>
+                  <div className="text-xs text-gray-400 mt-0.5">Use the standard theme above</div>
+                </button>
+                {SEASONAL_THEMES.map(theme => (
+                  <button
+                    key={theme.key}
+                    onClick={() => setForm(f => ({ ...f, headerStyle: 'seasonal', seasonalThemeKey: theme.key }))}
+                    className={`rounded-lg border-2 overflow-hidden text-left transition ${form.seasonalThemeKey === theme.key ? 'border-indigo-600 ring-2 ring-indigo-300' : 'border-gray-200 hover:border-indigo-300'}`}
+                  >
+                    <div className="h-8 w-full flex items-center px-3 gap-2" style={{ backgroundColor: theme.headerBg, borderBottom: `2px solid ${theme.accentColor}` }}>
+                      <span className="text-lg">{theme.emoji}</span>
+                      <span className="text-xs font-semibold text-white/80">{theme.label}</span>
+                    </div>
+                    <div className="px-3 py-2 flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: theme.accentColor }} />
+                      <span className="text-[10px] text-gray-500">{theme.description}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Holiday calendar reference */}
+            <div className="bg-white rounded-lg border shadow-sm p-6 space-y-3">
+              <h2 className="font-semibold text-gray-900">Holiday Windows</h2>
+              <div className="divide-y">
+                {SEASONAL_THEMES.map(theme => (
+                  <div key={theme.key} className="flex items-center gap-3 py-2">
+                    <span className="text-xl w-7 text-center">{theme.emoji}</span>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-800">{theme.label}</div>
+                      <div className="text-xs text-gray-400">{theme.dateRanges.map(r => `${r.startMD} → ${r.endMD}`).join(' · ')}</div>
+                    </div>
+                    <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: theme.accentColor }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'theme' && <>
         {/* Company Name */}
         <div className="bg-white rounded-lg border shadow-sm p-6 space-y-3">
           <h2 className="font-semibold text-gray-900">Company Name</h2>
@@ -314,6 +419,20 @@ export default function BrandingSettings() {
             Save Branding Settings
           </Button>
         </div>
+        </>}
+
+        {activeTab === 'seasonal' && (
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Seasonal Settings
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

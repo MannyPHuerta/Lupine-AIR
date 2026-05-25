@@ -87,10 +87,20 @@
         "classic",
         "glassmorphism",
         "neon",
-        "navy"
+        "navy",
+        "seasonal"
       ],
       "default": "classic",
       "description": "Visual style for page headers across the staff app"
+    },
+    "seasonalAutoActivate": {
+      "type": "boolean",
+      "default": false,
+      "description": "Automatically switch to the matching seasonal theme during holiday date windows"
+    },
+    "seasonalThemeKey": {
+      "type": "string",
+      "description": "Manually selected seasonal theme key (e.g. 'christmas', 'halloween'). Used when headerStyle is 'seasonal' and auto-activate is off."
     },
     "authMethod": {
       "type": "string",

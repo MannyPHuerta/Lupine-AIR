@@ -256,7 +256,7 @@ export default function AppLayout() {
   const [user, setUser] = useState(null);
   const [showBranchModal, setShowBranchModal] = useState(false);
   const allGroupRefs = useRef({});
-  const headerStyle = useHeaderStyle();
+  const { style: headerStyle, seasonalTheme } = useHeaderStyle();
 
   useEffect(() => {
     base44.auth.me().then(u => {
@@ -324,10 +324,11 @@ export default function AppLayout() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {showBranchModal && <WorkingBranchModal user={user} onClose={() => setShowBranchModal(false)} />}
       {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex flex-col w-56 flex-shrink-0 overflow-hidden ${['navy', 'glassmorphism', 'neon'].includes(headerStyle) ? '' : 'bg-slate-800'}`} style={
+      <aside className={`hidden md:flex flex-col w-56 flex-shrink-0 overflow-hidden ${['navy', 'glassmorphism', 'neon', 'seasonal'].includes(headerStyle) ? '' : 'bg-slate-800'}`} style={
         headerStyle === 'navy' ? { backgroundColor: '#0d1b3e' }
         : headerStyle === 'glassmorphism' ? { backgroundColor: '#1e293b' }
         : headerStyle === 'neon' ? { backgroundColor: '#09090b' }
+        : headerStyle === 'seasonal' && seasonalTheme ? { backgroundColor: seasonalTheme.sidebarBg }
         : {}
       }>
         <SidebarContent />
@@ -337,10 +338,11 @@ export default function AppLayout() {
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
-          <aside className={`absolute left-0 top-0 bottom-0 w-64 overflow-hidden flex flex-col ${['navy', 'glassmorphism', 'neon'].includes(headerStyle) ? '' : 'bg-slate-800'}`} style={
+          <aside className={`absolute left-0 top-0 bottom-0 w-64 overflow-hidden flex flex-col ${['navy', 'glassmorphism', 'neon', 'seasonal'].includes(headerStyle) ? '' : 'bg-slate-800'}`} style={
             headerStyle === 'navy' ? { backgroundColor: '#0d1b3e' }
             : headerStyle === 'glassmorphism' ? { backgroundColor: '#1e293b' }
             : headerStyle === 'neon' ? { backgroundColor: '#09090b' }
+            : headerStyle === 'seasonal' && seasonalTheme ? { backgroundColor: seasonalTheme.sidebarBg }
             : {}
           }>
             <SidebarContent />
@@ -351,10 +353,11 @@ export default function AppLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile top bar */}
-        <div className={`md:hidden flex items-center gap-3 px-4 py-3 text-white ${['navy', 'glassmorphism', 'neon'].includes(headerStyle) ? '' : 'bg-slate-800'}`} style={
+        <div className={`md:hidden flex items-center gap-3 px-4 py-3 text-white ${['navy', 'glassmorphism', 'neon', 'seasonal'].includes(headerStyle) ? '' : 'bg-slate-800'}`} style={
           headerStyle === 'navy' ? { backgroundColor: '#0d1b3e' }
           : headerStyle === 'glassmorphism' ? { backgroundColor: '#1e293b' }
           : headerStyle === 'neon' ? { backgroundColor: '#09090b' }
+          : headerStyle === 'seasonal' && seasonalTheme ? { backgroundColor: seasonalTheme.sidebarBg }
           : {}
         }>
           <button onClick={() => setSidebarOpen(true)}>

@@ -1,52 +1,58 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getActiveSeasonalTheme, SEASONAL_THEMES } from '@/lib/seasonalThemes';
 
 let _cached = null;
 const _listeners = new Set();
 
-export function invalidateHeaderStyleCache(newStyle) {
-  if (newStyle) {
-    _cached = newStyle;
-    _listeners.forEach(fn => fn(newStyle));
-  } else {
-    _cached = null;
-    _listeners.forEach(fn => fn());
+export function invalidateHeaderStyleCache() {
+  _cached = null;
+  _listeners.forEach(fn => fn());
+}
+
+function resolveStyle(settings) {
+  const base = settings?.headerStyle || 'classic';
+  const autoSeasonal = settings?.seasonalAutoActivate === true;
+  const manualSeasonalKey = settings?.seasonalThemeKey || null;
+
+  if (autoSeasonal) {
+    const active = getActiveSeasonalTheme();
+    if (active) return { style: 'seasonal', seasonalTheme: active };
   }
+  if (base === 'seasonal' && manualSeasonalKey) {
+    const found = SEASONAL_THEMES.find(t => t.key === manualSeasonalKey);
+    return { style: 'seasonal', seasonalTheme: found || null };
+  }
+  return { style: base, seasonalTheme: null };
 }
 
 /**
- * Returns the current headerStyle string: 'classic' | 'glassmorphism' | 'neon'
- * Caches the result in memory so it only hits the DB once per session.
+ * Returns { style: string, seasonalTheme: object|null }
+ * style = 'classic' | 'glassmorphism' | 'neon' | 'navy' | 'seasonal'
+ * seasonalTheme = the matching SEASONAL_THEMES entry (when style === 'seasonal'), else null
  */
 export function useHeaderStyle() {
-  const [style, setStyle] = useState(_cached || 'classic');
+  const [result, setResult] = useState(_cached || { style: 'classic', seasonalTheme: null });
 
   useEffect(() => {
-    // Always fetch on mount if no cache
     if (!_cached) {
       base44.entities.CompanySettings.list().then(list => {
-        const s = list[0]?.headerStyle || 'classic';
-        _cached = s;
-        setStyle(s);
+        const resolved = resolveStyle(list[0]);
+        _cached = resolved;
+        setResult(resolved);
       }).catch(() => {});
     }
 
-    // Always register listener so invalidation reaches every mounted component
-    const refresh = (newStyle) => {
-      if (newStyle) {
-        _cached = newStyle;
-        setStyle(newStyle);
-      } else {
-        base44.entities.CompanySettings.list().then(list => {
-          const s = list[0]?.headerStyle || 'classic';
-          _cached = s;
-          setStyle(s);
-        }).catch(() => {});
-      }
+    const refresh = () => {
+      base44.entities.CompanySettings.list().then(list => {
+        const resolved = resolveStyle(list[0]);
+        _cached = resolved;
+        setResult(resolved);
+      }).catch(() => {});
     };
     _listeners.add(refresh);
     return () => _listeners.delete(refresh);
   }, []);
 
-  return style;
+  return result;
 }

@@ -15,10 +15,41 @@ import { ArrowLeft } from 'lucide-react';
  *   sticky      — bool, default true
  */
 export default function AppPageHeader({ title, subtitle, icon: Icon, action, children, sticky = true, backTo }) {
-  const style = useHeaderStyle();
+  const { style, seasonalTheme } = useHeaderStyle();
   const navigate = useNavigate();
 
   const stickyClass = sticky ? 'sticky top-0 z-10' : '';
+
+  if (style === 'seasonal' && seasonalTheme) {
+    return (
+      <div className={`${stickyClass} relative overflow-hidden shadow-lg`} style={{ backgroundColor: seasonalTheme.headerBg }}>
+        <div className="relative px-6 py-4 max-w-7xl mx-auto">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              {backTo && (
+                <button onClick={() => navigate(backTo)} className="p-2 rounded-lg hover:opacity-80 text-white transition" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
+              <div className="text-2xl leading-none select-none">{seasonalTheme.emoji}</div>
+              {Icon && (
+                <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  <Icon className="w-5 h-5" style={{ color: seasonalTheme.accentColor }} />
+                </div>
+              )}
+              <div>
+                <h1 className="text-lg font-bold text-white leading-tight">{title}</h1>
+                {subtitle && <p className="text-xs mt-0.5 text-white/60">{subtitle}</p>}
+              </div>
+            </div>
+            {action && <div className="flex items-center gap-2 flex-wrap">{action}</div>}
+          </div>
+          {children && <div className="mt-4">{children}</div>}
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: seasonalTheme.accentColor }} />
+      </div>
+    );
+  }
 
   if (style === 'glassmorphism') {
     return (
