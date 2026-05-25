@@ -38,8 +38,9 @@ export function useHeaderStyle() {
       base44.entities.CompanySettings.list().then(list => {
         if (cancelled) return;
         const resolved = resolveStyle(list[0]);
+        console.log('[useHeaderStyle] settings:', JSON.stringify(list[0]?.headerStyle), list[0]?.seasonalAutoActivate, list[0]?.seasonalThemeKey, '→ resolved:', JSON.stringify(resolved));
         setResult(resolved);
-      }).catch(() => {});
+      }).catch(err => console.error('[useHeaderStyle] fetch error:', err));
     };
 
     // Always fetch on mount to ensure freshness
