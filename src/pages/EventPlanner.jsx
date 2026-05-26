@@ -53,7 +53,7 @@ export default function EventPlanner() {
   const [venueRotation, setVenueRotation] = useState(0);
   const forceWizard = new URLSearchParams(window.location.search).get('wizard') === '1';
   const urlUnlocked = new URLSearchParams(window.location.search).get('unlocked') === '1';
-  const [showWizard, setShowWizard] = useState(forceWizard);
+  const [showWizard, setShowWizard] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(urlUnlocked);
 
@@ -78,11 +78,6 @@ export default function EventPlanner() {
       setCategories(cats);
       setUser(me);
 
-      // Auto-show wizard for everyone on new/empty plans
-      if (!planId || (!plan?.canvasItems?.length && !forceWizard)) {
-        setShowWizard(true);
-      }
-
       if (planId && planId !== ':planId') {
         const existing = await base44.entities.EventPlan.filter({ id: planId });
         const p = existing[0];
@@ -90,7 +85,7 @@ export default function EventPlanner() {
           setPlan(p);
           setTitle(p.title || 'Event Plan');
           setEventDate(p.eventDate || '');
-          setEventTime(p.eventTime || p.eventTime || '');
+          setEventTime(p.eventTime || '');
           setEventType(p.eventType || 'other');
           setGuestCount(p.guestCount || 0);
           setVenueSurface(p.venueSurface || 'unknown');
@@ -98,7 +93,16 @@ export default function EventPlanner() {
           setVenuePhotoUrl(p.venuePhotoUrl || '');
           setCanvasItems(p.canvasItems || []);
           setAcknowledged(p.nudgesAcknowledged || []);
+          // Only show wizard if the saved plan has no canvas items
+          if (!forceWizard && (!p.canvasItems || p.canvasItems.length === 0)) {
+            setShowWizard(true);
+          } else if (!forceWizard) {
+            setShowWizard(false);
+          }
         }
+      } else {
+        // Brand new plan (no planId) — always show wizard
+        if (!forceWizard) setShowWizard(true);
       }
       setLoading(false);
     };
