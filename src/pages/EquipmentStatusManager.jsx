@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle, RefreshCw, ExternalLink, Download } from 'lucide-react';
+import { Search, CheckCircle, RefreshCw, ExternalLink, Download, Copy, X, Loader2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import UnitStatusBadge, { STATUS_CONFIG } from '@/components/equipment/UnitStatusBadge';
@@ -117,12 +117,91 @@ function EquipmentRow({ eq, onSave, onDetail }) {
   );
 }
 
+function BulkAddModal({ equipment, onClose, onDone }) {
+  const [sourceId, setSourceId] = useState('');
+  const [quantity, setQuantity] = useState(2);
+  const [creating, setCreating] = useState(false);
+
+  const sourceEq = equipment.find(e => e.id === sourceId);
+  const sorted = [...equipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const handleCreate = async () => {
+    if (!sourceEq || quantity < 1) return;
+    setCreating(true);
+    const { id, created_date, updated_date, created_by, ...template } = sourceEq;
+    const copies = Array.from({ length: quantity }, () => ({
+      ...template,
+      unitStatus: 'available',
+      statusNote: '',
+      statusUpdatedAt: new Date().toISOString(),
+    }));
+    await base44.entities.Equipment.bulkCreate(copies);
+    setCreating(false);
+    onDone(quantity);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">Bulk Add Units</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Pick an existing equipment item and how many additional copies to create. All copies will inherit the same specs and be set to <strong>Available</strong>.</p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Source Equipment</label>
+            <select
+              value={sourceId}
+              onChange={e => setSourceId(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              <option value="">— Select equipment —</option>
+              {sorted.map(eq => (
+                <option key={eq.id} value={eq.id}>{eq.name}{eq.category ? ` (${eq.category})` : ''}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Number of copies to create</label>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              value={quantity}
+              onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+          {sourceEq && (
+            <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-xs text-indigo-700">
+              Will create <strong>{quantity}</strong> copies of <strong>{sourceEq.name}</strong>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3 mt-6 justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-sm border rounded-lg text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button
+            onClick={handleCreate}
+            disabled={!sourceEq || creating}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-40 transition"
+            style={{ backgroundColor: '#F5A623' }}
+          >
+            {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : <><Copy className="w-4 h-4" /> Create {quantity} Units</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EquipmentStatusManager() {
   const navigate = useNavigate();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -158,12 +237,22 @@ export default function EquipmentStatusManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {showBulkAdd && (
+        <BulkAddModal
+          equipment={equipment}
+          onClose={() => setShowBulkAdd(false)}
+          onDone={(qty) => { setShowBulkAdd(false); load(); alert(`✅ Created ${qty} new units successfully!`); }}
+        />
+      )}
       <AppPageHeader
         title="Equipment Status"
         subtitle={`${equipment.length} units in catalog`}
         backTo="/lupine"
         action={
           <div className="flex items-center gap-2">
+            <button onClick={() => setShowBulkAdd(true)} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition text-white hover:opacity-90 bg-green-600 hover:bg-green-700">
+              <Copy className="w-3.5 h-3.5" /> Bulk Add Units
+            </button>
             <button onClick={() => navigate('/inventory-export')} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
               <Download className="w-3.5 h-3.5" /> Export CSV
             </button>
