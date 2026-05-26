@@ -120,17 +120,18 @@ function EquipmentRow({ eq, onSave, onDetail }) {
 
 function BulkAddModal({ equipment, onClose, onDone }) {
   const [sourceId, setSourceId] = useState('');
-  const [quantity, setQuantity] = useState(2);
+  const [quantity, setQuantity] = useState(10);
   const [creating, setCreating] = useState(false);
 
   const sourceEq = equipment.find(e => e.id === sourceId);
   const sorted = [...equipment].sort((a, b) => a.name.localeCompare(b.name));
 
   const handleCreate = async () => {
-    if (!sourceEq || quantity < 1) return;
+    if (!sourceEq || quantity < 2) return;
     setCreating(true);
     const { id, created_date, updated_date, created_by, ...template } = sourceEq;
-    const copies = Array.from({ length: quantity }, () => ({
+    const newCount = quantity - 1; // original counts as 1
+    const copies = Array.from({ length: newCount }, () => ({
       ...template,
       unitStatus: 'available',
       statusNote: '',
@@ -148,7 +149,7 @@ function BulkAddModal({ equipment, onClose, onDone }) {
           <h2 className="text-lg font-bold text-gray-900">Bulk Add Units</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
         </div>
-        <p className="text-sm text-gray-500 mb-4">Pick an existing equipment item and how many additional copies to create. All copies will inherit the same specs and be set to <strong>Available</strong>.</p>
+        <p className="text-sm text-gray-500 mb-4">Pick an existing item and enter your total desired quantity. The original counts as 1 — we'll create the rest. All new units inherit the same specs and are set to <strong>Available</strong>.</p>
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-gray-500 block mb-1">Source Equipment</label>
@@ -164,10 +165,10 @@ function BulkAddModal({ equipment, onClose, onDone }) {
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-1">Number of copies to create</label>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Total units you want on hand</label>
             <input
               type="number"
-              min={1}
+              min={2}
               max={500}
               value={quantity}
               onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
@@ -176,7 +177,7 @@ function BulkAddModal({ equipment, onClose, onDone }) {
           </div>
           {sourceEq && (
             <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-xs text-indigo-700">
-              Will create <strong>{quantity}</strong> copies of <strong>{sourceEq.name}</strong>
+              Will create <strong>{quantity - 1}</strong> new unit{quantity - 1 !== 1 ? 's' : ''} of <strong>{sourceEq.name}</strong> (original + {quantity - 1} = {quantity} total)
             </div>
           )}
         </div>
@@ -184,7 +185,7 @@ function BulkAddModal({ equipment, onClose, onDone }) {
           <button onClick={onClose} className="px-4 py-2 text-sm border rounded-lg text-gray-600 hover:bg-gray-50">Cancel</button>
           <button
             onClick={handleCreate}
-            disabled={!sourceEq || creating}
+            disabled={!sourceEq || creating || quantity < 2}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-40 transition"
             style={{ backgroundColor: '#F5A623' }}
           >
