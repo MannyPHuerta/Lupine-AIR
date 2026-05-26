@@ -205,6 +205,14 @@ export default function EventPlanner() {
     setSelectedId(copy.id);
   };
 
+  const handleBringToFront = (id) => {
+    setCanvasItems(prev => {
+      const item = prev.find(i => i.id === id);
+      if (!item) return prev;
+      return [...prev.filter(i => i.id !== id), item];
+    });
+  };
+
   const handleUpdateItem = (updated) => {
     setCanvasItems(prev => prev.map(item => item.id === updated.id ? updated : item));
   };
@@ -333,16 +341,16 @@ export default function EventPlanner() {
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="h-12 bg-white border-b border-gray-200 flex items-center gap-3 px-4 flex-shrink-0 shadow-sm">
-        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition">
+      <div className="h-12 bg-slate-700 border-b border-slate-600 flex items-center gap-3 px-4 flex-shrink-0 shadow-sm">
+        <button onClick={() => navigate(-1)} className="text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-pink-400 to-indigo-500 flex items-center justify-center flex-shrink-0">
+        <div className="h-7 w-7 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
           <span className="text-white text-xs font-bold">AE</span>
         </div>
-        <span className="text-gray-700 font-semibold text-sm truncate max-w-48">{title || 'New Event Plan'}</span>
+        <span className="text-white font-semibold text-sm truncate max-w-48">{title || 'New Event Plan'}</span>
         {plan?.status && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 capitalize">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white/80 capitalize">
             {plan.status.replace('_', ' ')}
           </span>
         )}
@@ -350,16 +358,16 @@ export default function EventPlanner() {
           {!isUnlocked && (
             <button
               onClick={() => setShowPaywall(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-600 text-xs font-medium transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-medium transition"
             >
               <Lock className="w-3.5 h-3.5" /> Unlock Plan · $20
             </button>
           )}
           <button
             onClick={() => setShowWizard(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 text-white text-xs font-semibold transition shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition border border-white/20"
           >
-            <Wand2 className="w-3.5 h-3.5" /> Customer Wizard
+            <Wand2 className="w-3.5 h-3.5" /> AI Wizard
           </button>
         </div>
       </div>
@@ -400,7 +408,25 @@ export default function EventPlanner() {
           equipment={equipment}
           onComplete={async (wizardData) => {
             const { canvasItems: wizItems, skipReview, ...planData } = wizardData;
-            setCanvasItems(wizItems || []);
+            // Expand each item by its quantity — one box per unit, arranged in a simple grid
+            const expanded = [];
+            (wizItems || []).forEach(item => {
+              const qty = item.quantity || 1;
+              const cols = Math.ceil(Math.sqrt(qty));
+              for (let i = 0; i < qty; i++) {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const gapPx = 4; // small gap between units
+                expanded.push({
+                  ...item,
+                  id: crypto.randomUUID(),
+                  quantity: 1,
+                  x: item.x + col * ((item.widthFt || 4) * scale + gapPx),
+                  y: item.y + row * ((item.lengthFt || 4) * scale + gapPx),
+                });
+              }
+            });
+            setCanvasItems(expanded);
             if (planData.title) setTitle(planData.title);
             if (planData.eventDate) setEventDate(planData.eventDate);
             if (planData.eventTime) setEventTime(planData.eventTime);
@@ -452,6 +478,7 @@ export default function EventPlanner() {
             onDrop={handleDrop}
             onRotate={handleRotate}
             onDelete={handleDelete}
+            onBringToFront={handleBringToFront}
           />
 
           {/* Selected item detail bar */}

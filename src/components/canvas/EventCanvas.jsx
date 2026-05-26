@@ -30,6 +30,7 @@ export default function EventCanvas({
   onDrop,
   onRotate,
   onDelete,
+  onBringToFront,
 }) {
   const canvasRef = useRef(null);
   const [dragging, setDragging] = useState(null); // { id, offsetX, offsetY }
@@ -46,18 +47,11 @@ export default function EventCanvas({
 
   // Load background image
   useEffect(() => {
-    if (!venuePhotoUrl) { bgImage.current = null; console.log('No venue photo URL'); return; }
-    console.log('Loading venue photo:', venuePhotoUrl);
+    if (!venuePhotoUrl) { bgImage.current = null; return; }
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = venuePhotoUrl;
-    img.onload = () => { 
-      console.log('Venue photo loaded successfully, dimensions:', img.width, 'x', img.height);
-      bgImage.current = img; 
-      draw(); 
-    };
-    img.onerror = (err) => {
-      console.error('Failed to load venue photo:', err, venuePhotoUrl);
-    };
+    img.onload = () => { bgImage.current = img; draw(); };
   }, [venuePhotoUrl]);
 
   const draw = useCallback(() => {
@@ -83,17 +77,16 @@ export default function EventCanvas({
 
       // Venue photo or fill
       if (bgImage.current) {
-        console.log('Drawing venue photo, venue dims:', vw, 'x', vl, 'rotation:', venueRotation);
         const rot = ((venueRotation || 0) * Math.PI) / 180;
         ctx.save();
         ctx.translate(vw / 2, vl / 2);
         ctx.rotate(rot);
         ctx.drawImage(bgImage.current, -vw / 2, -vl / 2, vw, vl);
         ctx.restore();
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        // Light tint only so items are visible over the photo
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
         ctx.fillRect(0, 0, vw, vl);
       } else {
-        console.log('No background image, using green fill');
         ctx.fillStyle = 'rgba(34,197,94,0.08)';
         ctx.fillRect(0, 0, vw, vl);
       }
@@ -241,6 +234,8 @@ export default function EventCanvas({
     if (hit) {
       onSelect(hit.id);
       setDragging({ id: hit.id, offsetX: pt.x - hit.x, offsetY: pt.y - hit.y });
+      // Bring to front by moving to end of array
+      onBringToFront?.(hit.id);
     } else {
       onSelect(null);
     }
