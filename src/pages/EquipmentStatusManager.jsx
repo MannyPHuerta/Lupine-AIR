@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle, RefreshCw, ExternalLink, Download, Copy, X, Loader2 } from 'lucide-react';
@@ -137,11 +138,11 @@ function BulkAddModal({ equipment, onClose, onDone }) {
     }));
     await base44.entities.Equipment.bulkCreate(copies);
     setCreating(false);
-    onDone(quantity);
+    onDone(quantity, sourceEq.name);
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900">Bulk Add Units</h2>
@@ -191,7 +192,8 @@ function BulkAddModal({ equipment, onClose, onDone }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -241,7 +243,7 @@ export default function EquipmentStatusManager() {
         <BulkAddModal
           equipment={equipment}
           onClose={() => setShowBulkAdd(false)}
-          onDone={(qty) => { setShowBulkAdd(false); load(); alert(`✅ Created ${qty} new units successfully!`); }}
+          onDone={(qty, name) => { setShowBulkAdd(false); load(); alert(`✅ Created ${qty} copies of "${name}" successfully!`); }}
         />
       )}
       <AppPageHeader
