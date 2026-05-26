@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Upload, Grid3X3, Trash2, RotateCw } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Upload, Grid3X3, Trash2, RotateCw, Link } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 export default function CanvasToolbar({ scale, onScaleChange, showGrid, onToggleGrid, onUploadPhoto, onClearCanvas, venueDimensions, onDimensionsChange, venueRotation, onVenueRotate }) {
@@ -7,6 +7,8 @@ export default function CanvasToolbar({ scale, onScaleChange, showGrid, onToggle
   const [editingDims, setEditingDims] = useState(false);
   const [w, setW] = useState(venueDimensions.width || '');
   const [l, setL] = useState(venueDimensions.length || '');
+  const [editingUrl, setEditingUrl] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -96,12 +98,33 @@ export default function CanvasToolbar({ scale, onScaleChange, showGrid, onToggle
       </div>
 
       {/* Photo upload */}
-      <div className="border-l border-white/10 pl-3 ml-1">
+      <div className="border-l border-white/10 pl-3 ml-1 flex items-center gap-1">
         <label className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition cursor-pointer flex items-center gap-1.5 text-xs">
           <Upload className="w-4 h-4" />
-          {uploading ? 'Uploading…' : 'Venue photo'}
+          {uploading ? 'Uploading…' : 'Upload'}
           <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
         </label>
+        {editingUrl ? (
+          <form onSubmit={e => { e.preventDefault(); if (urlInput.trim()) { onUploadPhoto(urlInput.trim()); setUrlInput(''); } setEditingUrl(false); }} className="flex items-center gap-1">
+            <input
+              className="w-48 bg-slate-800 border border-white/20 rounded px-2 py-1 text-xs text-white"
+              placeholder="Paste image URL…"
+              value={urlInput}
+              onChange={e => setUrlInput(e.target.value)}
+              autoFocus
+            />
+            <button type="submit" className="text-xs text-cyan-400 hover:text-cyan-300 px-1">Set</button>
+            <button type="button" onClick={() => setEditingUrl(false)} className="text-xs text-white/30 hover:text-white/60 px-1">✕</button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setEditingUrl(true)}
+            className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition flex items-center gap-1.5 text-xs"
+            title="Paste image URL"
+          >
+            <Link className="w-4 h-4" /> URL
+          </button>
+        )}
       </div>
 
       {/* Venue/canvas rotate */}
