@@ -20,48 +20,56 @@ export default function HardwareDiagnostic() {
   const [pressure, setPressure] = useState(0);
   const [ripples, setRipples] = useState([]);
 
-  // Detect which targets were hit by checking proximity
-  const checkTargets = useCallback((x, y, rect) => {
-    const px = ((x - rect.left) / rect.width) * 100;
-    const py = ((y - rect.top) / rect.height) * 100;
 
-    TARGETS.forEach(t => {
-      const dist = Math.hypot(px - t.tx, py - t.ty);
-      if (dist < 18) {
-        setHits(prev => new Set([...prev, t.id]));
-      }
-    });
-  }, []);
+  const [liveCoords, setLiveCoords] = useState(null);
+
+  const getRelativeCoords = (e) => {
+    const rect = padRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      px: ((e.clientX - rect.left) / rect.width) * 100,
+      py: ((e.clientY - rect.top) / rect.height) * 100,
+      rect,
+    };
+  };
 
   const handlePointerMove = useCallback((e) => {
     setPressure(e.pressure || 0);
     setPointerType(e.pointerType || 'unknown');
+    const coords = getRelativeCoords(e);
+    if (coords) setLiveCoords({ px: coords.px.toFixed(0), py: coords.py.toFixed(0) });
   }, []);
 
   const handlePointerDown = useCallback((e) => {
-    const rect = padRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const coords = getRelativeCoords(e);
+    if (!coords) return;
 
     const type = e.pointerType || 'mouse';
     setPointerType(type);
     setPressure(e.pressure || 0);
 
-    // Spawn ripple
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const { x, y, px, py } = coords;
+
+    // Spawn ripple at the actual relative position
     const id = Date.now();
     setRipples(prev => [...prev, { id, x, y }]);
     setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 700);
 
-    setLastEvent({ x: x.toFixed(0), y: y.toFixed(0), type, pressure: (e.pressure || 0).toFixed(2) });
+    setLastEvent({ x: x.toFixed(0), y: y.toFixed(0), px: px.toFixed(0), py: py.toFixed(0), type, pressure: (e.pressure || 0).toFixed(2) });
     setHistory(prev => [{
       time: new Date().toLocaleTimeString(),
       type,
+      x: px.toFixed(0), y: py.toFixed(0),
       pressure: (e.pressure || 0).toFixed(2),
     }, ...prev.slice(0, 9)]);
 
-    checkTargets(e.clientX, e.clientY, rect);
-  }, [checkTargets]);
+    TARGETS.forEach(t => {
+      const dist = Math.hypot(px - t.tx, py - t.ty);
+      if (dist < 18) setHits(prev => new Set([...prev, t.id]));
+    });
+  }, []);
 
   const reset = () => {
     setHits(new Set());
@@ -113,6 +121,12 @@ export default function HardwareDiagnostic() {
             <span className="text-xs text-gray-500 w-8">{(pressure * 100).toFixed(0)}%</span>
           </div>
         </div>
+        {liveCoords && (
+          <div className="flex items-center gap-1 text-xs font-mono text-gray-400">
+            <span>x:{liveCoords.px}%</span>
+            <span>y:{liveCoords.py}%</span>
+          </div>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {allHit ? (
             <><CheckCircle2 className="w-4 h-4 text-emerald-500" /><span className="text-emerald-600 font-semibold text-xs">All targets hit — tablet OK!</span></>
@@ -201,7 +215,7 @@ export default function HardwareDiagnostic() {
             <div key={i} className={`${i === 0 ? 'text-green-400' : 'text-gray-500'}`}>
               {ev.time} &nbsp;
               <span className={ev.type === 'pen' ? 'text-indigo-400' : 'text-yellow-400'}>{ev.type}</span>
-              &nbsp; pressure={ev.pressure}
+              &nbsp; x={ev.x}% y={ev.y}% pressure={ev.pressure}
             </div>
           ))}
         </div>
