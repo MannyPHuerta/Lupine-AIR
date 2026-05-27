@@ -12,6 +12,8 @@ export default function SignaturePad({ onSave, onClear }) {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
+  const [showTabletHelp, setShowTabletHelp] = useState(false);
+  const [penDetected, setPenDetected] = useState(false);
   const sigwebStatus = 'fallback'; // always use canvas mode
   const lastPos = useRef(null);
 
@@ -33,6 +35,7 @@ export default function SignaturePad({ onSave, onClear }) {
 
   const startDraw = useCallback((e) => {
     e.preventDefault();
+    if (e.pointerType === 'pen') setPenDetected(true);
     canvasRef.current.setPointerCapture(e.pointerId);
     setDrawing(true);
     setIsEmpty(false);
@@ -125,6 +128,31 @@ export default function SignaturePad({ onSave, onClear }) {
         </button>
       </div>
 
+      {/* Tablet setup hint — shown only after a pen is detected */}
+      {penDetected && (
+        <div className="mt-1">
+          <button
+            type="button"
+            onClick={() => setShowTabletHelp(h => !h)}
+            className="text-xs text-indigo-500 hover:text-indigo-700 underline"
+          >
+            ✏️ Pen tablet detected — having trouble? Setup guide
+          </button>
+          {showTabletHelp && (
+            <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-900 space-y-1.5">
+              <p className="font-semibold">One-time XP-Pen setup for multi-display:</p>
+              <ol className="list-decimal list-inside space-y-1 text-indigo-800">
+                <li>Install the XP-Pen driver from <a href="https://www.xp-pen.com/download.html" target="_blank" rel="noreferrer" className="underline font-medium">xp-pen.com/download</a></li>
+                <li>Open the XP-Pen driver app (system tray)</li>
+                <li>Go to the <strong>Work Area</strong> tab</li>
+                <li>Under <strong>Screen Area</strong>, select the monitor showing this form</li>
+                <li>Click <strong>Apply</strong> — done!</li>
+              </ol>
+              <p className="text-indigo-600 pt-1">After setup the pen will draw directly on this signature box.</p>
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );
