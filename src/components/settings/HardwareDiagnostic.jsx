@@ -22,6 +22,7 @@ export default function HardwareDiagnostic() {
 
 
   const [liveCoords, setLiveCoords] = useState(null);
+  const [dots, setDots] = useState([]);
 
   const getRelativeCoords = (e) => {
     const el = padRef.current;
@@ -59,10 +60,11 @@ export default function HardwareDiagnostic() {
 
     const { x, y, px, py } = coords;
 
-    // Spawn ripple at the actual relative position
+    // Spawn ripple + persistent dot at the actual relative position
     const id = Date.now();
     setRipples(prev => [...prev, { id, x, y }]);
     setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 700);
+    setDots(prev => [...prev.slice(-49), { id, x, y, px: px.toFixed(0), py: py.toFixed(0) }]);
 
     setLastEvent({ x: x.toFixed(0), y: y.toFixed(0), px: px.toFixed(0), py: py.toFixed(0), type, pressure: (e.pressure || 0).toFixed(2) });
     setHistory(prev => [{
@@ -85,6 +87,7 @@ export default function HardwareDiagnostic() {
     setPointerType(null);
     setPressure(0);
     setRipples([]);
+    setDots([]);
   };
 
   const allHit = hits.size === TARGETS.length;
@@ -186,6 +189,17 @@ export default function HardwareDiagnostic() {
             </div>
           );
         })}
+
+        {/* Persistent tap dots */}
+        {dots.map(d => (
+          <div
+            key={d.id}
+            className="absolute pointer-events-none"
+            style={{ left: d.x - 4, top: d.y - 4 }}
+          >
+            <div className="w-2 h-2 rounded-full bg-rose-500 opacity-80" />
+          </div>
+        ))}
 
         {/* Ripples */}
         {ripples.map(r => (
