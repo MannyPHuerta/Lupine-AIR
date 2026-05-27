@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, Loader2, Building2, Download } from 'lucide-react';
+import { Save, Upload, Loader2, Building2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import PaymentSettingsPanel from '@/components/settings/PaymentSettingsPanel';
-import HardwareDiagnostic from '@/components/settings/HardwareDiagnostic';
 import { rentalDayModeLabel } from '@/lib/rentalDayCalc';
 
 export default function CompanySettingsPage() {
@@ -509,11 +508,6 @@ export default function CompanySettingsPage() {
               )}
             </div>
 
-            {/* Hardware Diagnostic */}
-            <div className="bg-white rounded-xl border shadow-sm p-5">
-              <HardwareDiagnostic />
-            </div>
-
             {/* Pen Tablet Setup */}
             <div className="bg-white rounded-xl border shadow-sm p-5">
               <div className="flex items-center gap-2 mb-1">
@@ -521,58 +515,22 @@ export default function CompanySettingsPage() {
                 <div className="font-semibold text-gray-900">Pen Tablet Setup (XP-Pen)</div>
               </div>
               <p className="text-xs text-gray-500 mb-4">
-                Download a pre-configured XP-Pen settings file optimized for the signature pad on a multi-display setup.
-                Import it via the XP-Pen driver app: <strong>Settings → Import Config</strong>.
+                Use the XP-Pen driver's built-in screen mapping to define exactly which monitor and area the tablet maps to. No software configuration needed on this side.
               </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 space-y-1 mb-4">
-                <p className="font-semibold">What this config does:</p>
-                <ul className="list-disc list-inside space-y-0.5 text-blue-800">
-                  <li>Maps pen to Display 1 (your staff-facing monitor)</li>
-                  <li>Enables pressure sensitivity for natural signature feel</li>
-                  <li>Disables hover tilt to prevent accidental marks</li>
-                  <li>Disables pen side buttons to prevent accidental actions</li>
-                </ul>
-                <p className="text-blue-600 pt-1">After import, go to <strong>Work Area</strong> tab and confirm the correct monitor is selected for your setup.</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-900 space-y-2">
+                <p className="font-semibold text-sm">One-time setup in the XP-Pen driver:</p>
+                <ol className="list-decimal list-inside space-y-1.5 text-blue-800">
+                  <li>Open the <strong>XP-Pen driver</strong> app (system tray icon)</li>
+                  <li>Click the <strong>Work Area</strong> tab</li>
+                  <li>Under <strong>Screen Area</strong>, select the monitor where the signature box appears</li>
+                  <li>Optionally drag the <strong>tablet active area</strong> to match the portion of the monitor you want to use</li>
+                  <li>Click <strong>Apply</strong> — the pen will now map directly to that screen region</li>
+                </ol>
+                <p className="text-blue-600 pt-1">
+                  💡 If customers sign on a second monitor, make sure to select <strong>that monitor</strong> in Step 3.
+                  The tablet will then translate pen movement 1-to-1 with what's on screen.
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const config = {
-                    version: "3.4.6",
-                    deviceName: "XP-Pen",
-                    exportedBy: "Lupine Equipment Rentals",
-                    exportedAt: new Date().toISOString(),
-                    workArea: {
-                      screenMapping: "display_1",
-                      areaType: "full_screen",
-                      rotation: 0
-                    },
-                    pen: {
-                      pressureCurve: "medium",
-                      pressureSensitivity: 7,
-                      hoverHeight: 5,
-                      tiltEnabled: false,
-                      buttons: [
-                        { button: 1, action: "disabled" },
-                        { button: 2, action: "disabled" }
-                      ]
-                    },
-                    expressKeys: [],
-                    touch: { enabled: false }
-                  };
-                  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = 'lupine-xppen-config.json';
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
-              >
-                <Download className="w-4 h-4" />
-                Download XP-Pen Config
-              </button>
             </div>
 
             {/* Payment Processing */}
