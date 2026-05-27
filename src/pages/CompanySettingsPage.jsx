@@ -530,7 +530,7 @@ export default function CompanySettingsPage() {
                   <li>Maps pen to Display 1 (your staff-facing monitor)</li>
                   <li>Enables pressure sensitivity for natural signature feel</li>
                   <li>Disables hover tilt to prevent accidental marks</li>
-                  <li>Sets pen buttons to right-click + middle-click</li>
+                  <li>Disables pen side buttons to prevent accidental actions</li>
                 </ul>
                 <p className="text-blue-600 pt-1">After import, go to <strong>Work Area</strong> tab and confirm the correct monitor is selected for your setup.</p>
               </div>
@@ -553,8 +553,8 @@ export default function CompanySettingsPage() {
                       hoverHeight: 5,
                       tiltEnabled: false,
                       buttons: [
-                        { button: 1, action: "right_click" },
-                        { button: 2, action: "middle_click" }
+                        { button: 1, action: "disabled" },
+                        { button: 2, action: "disabled" }
                       ]
                     },
                     expressKeys: [],
