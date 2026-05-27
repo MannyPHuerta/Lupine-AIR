@@ -24,14 +24,21 @@ export default function HardwareDiagnostic() {
   const [liveCoords, setLiveCoords] = useState(null);
 
   const getRelativeCoords = (e) => {
-    const rect = padRef.current?.getBoundingClientRect();
-    if (!rect) return null;
+    const el = padRef.current;
+    if (!el) return null;
+    // Use pageX/pageY + element's page offset to correctly handle scrolled pages
+    const elRect = el.getBoundingClientRect();
+    const scrollX = window.scrollX || window.pageXOffset;
+    const scrollY = window.scrollY || window.pageYOffset;
+    const elPageLeft = elRect.left + scrollX;
+    const elPageTop = elRect.top + scrollY;
+    const x = e.pageX - elPageLeft;
+    const y = e.pageY - elPageTop;
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-      px: ((e.clientX - rect.left) / rect.width) * 100,
-      py: ((e.clientY - rect.top) / rect.height) * 100,
-      rect,
+      x,
+      y,
+      px: (x / el.offsetWidth) * 100,
+      py: (y / el.offsetHeight) * 100,
     };
   };
 
