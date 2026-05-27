@@ -83,6 +83,7 @@ export default function SignaturePad({ onSignatureCapture }) {
         onTouchStart={startDrawing}
         onTouchMove={draw}
         onTouchEnd={stopDrawing}
+        onFocus={() => canvasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}
       />
       <div className="flex gap-2">
         <Button

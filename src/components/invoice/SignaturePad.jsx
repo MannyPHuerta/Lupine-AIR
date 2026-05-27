@@ -221,8 +221,10 @@ export default function SignaturePad({ onSave, onClear }) {
       >
         <canvas
           ref={canvasRef}
-          className="w-full rounded-lg cursor-crosshair"
+          tabIndex={0}
+          className="w-full rounded-lg cursor-crosshair focus:outline-none focus:ring-2 focus:ring-indigo-400"
           style={{ height: 140, display: 'block' }}
+          onFocus={() => canvasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={stopDraw}

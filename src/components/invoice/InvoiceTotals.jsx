@@ -299,8 +299,10 @@ export default function InvoiceTotals({ lines, discount, onDiscountChange, taxRa
           <div className="flex items-center gap-2">
             <button
               type="button"
+              tabIndex={0}
               onClick={() => onAutoSendChange && onAutoSendChange(!autoSendCommunications)}
-              className={`relative inline-flex h-6 w-11 rounded-full transition ${
+              onKeyDown={e => (e.key === ' ' || e.key === 'Enter') && onAutoSendChange && onAutoSendChange(!autoSendCommunications)}
+              className={`relative inline-flex h-6 w-11 rounded-full transition focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1 ${
                 autoSendCommunications ? 'bg-indigo-600' : 'bg-gray-300'
               }`}
             >
