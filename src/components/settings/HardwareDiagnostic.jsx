@@ -2,12 +2,13 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, XCircle, Usb, Pen, Target, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+// tx/ty are percentage coords used for hit detection — must match the visual position
 const TARGETS = [
-  { id: 'tl', label: 'Top-Left',     style: { top: '10%',  left: '10%'  } },
-  { id: 'tr', label: 'Top-Right',    style: { top: '10%',  right: '10%' } },
-  { id: 'c',  label: 'Center',       style: { top: '50%',  left: '50%', transform: 'translate(-50%,-50%)' } },
-  { id: 'bl', label: 'Bottom-Left',  style: { bottom: '10%', left: '10%'  } },
-  { id: 'br', label: 'Bottom-Right', style: { bottom: '10%', right: '10%' } },
+  { id: 'tl', label: 'Top-Left',     tx: 12, ty: 12, style: { top: '8%',  left: '8%'  } },
+  { id: 'tr', label: 'Top-Right',    tx: 88, ty: 12, style: { top: '8%',  right: '8%' } },
+  { id: 'c',  label: 'Center',       tx: 50, ty: 50, style: { top: '50%', left: '50%', transform: 'translate(-50%,-50%)' } },
+  { id: 'bl', label: 'Bottom-Left',  tx: 12, ty: 88, style: { bottom: '8%', left: '8%'  } },
+  { id: 'br', label: 'Bottom-Right', tx: 88, ty: 88, style: { bottom: '8%', right: '8%' } },
 ];
 
 export default function HardwareDiagnostic() {
@@ -25,15 +26,8 @@ export default function HardwareDiagnostic() {
     const py = ((y - rect.top) / rect.height) * 100;
 
     TARGETS.forEach(t => {
-      let tx, ty;
-      // Rough center of each target in percentage coords
-      if (t.id === 'tl') { tx = 10; ty = 10; }
-      if (t.id === 'tr') { tx = 90; ty = 10; }
-      if (t.id === 'c')  { tx = 50; ty = 50; }
-      if (t.id === 'bl') { tx = 10; ty = 90; }
-      if (t.id === 'br') { tx = 90; ty = 90; }
-      const dist = Math.hypot(px - tx, py - ty);
-      if (dist < 12) {
+      const dist = Math.hypot(px - t.tx, py - t.ty);
+      if (dist < 18) {
         setHits(prev => new Set([...prev, t.id]));
       }
     });

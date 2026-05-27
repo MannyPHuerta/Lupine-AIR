@@ -39,12 +39,21 @@ export default function SignaturePad({ onSave, onClear }) {
     canvasRef.current.setPointerCapture(e.pointerId);
     setDrawing(true);
     setIsEmpty(false);
-    lastPos.current = getPos(e);
+    const pos = getPos(e);
+    lastPos.current = pos;
+    // Draw a dot so single taps/short presses register
+    const ctx = canvasRef.current.getContext('2d');
+    const pressure = e.pressure > 0 ? e.pressure : 0.5;
+    ctx.beginPath();
+    ctx.fillStyle = '#1e1b4b';
+    ctx.arc(pos.x, pos.y, Math.max(0.8, pressure * 1.5), 0, Math.PI * 2);
+    ctx.fill();
   }, []);
 
   const draw = useCallback((e) => {
     if (!drawing) return;
     e.preventDefault();
+    if (!lastPos.current) { lastPos.current = getPos(e); return; }
     const ctx = canvasRef.current.getContext('2d');
     const pos = getPos(e);
     const pressure = e.pressure > 0 ? e.pressure : 0.5;
