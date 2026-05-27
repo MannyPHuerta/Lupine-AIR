@@ -28,35 +28,39 @@ export default function SignaturePad({ onSave, onClear }) {
   // ── Mouse / touch fallback ───────────────────────────────────────────────
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const src = e.touches ? e.touches[0] : e;
-    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
   const startDraw = useCallback((e) => {
-    if (sigwebStatus === 'active') return;
     e.preventDefault();
+    canvasRef.current.setPointerCapture(e.pointerId);
     setDrawing(true);
     setIsEmpty(false);
     lastPos.current = getPos(e);
-  }, [sigwebStatus]);
+  }, []);
 
   const draw = useCallback((e) => {
-    if (sigwebStatus === 'active' || !drawing) return;
+    if (!drawing) return;
     e.preventDefault();
     const ctx = canvasRef.current.getContext('2d');
     const pos = getPos(e);
+    const pressure = e.pressure > 0 ? e.pressure : 0.5;
     ctx.beginPath();
     ctx.strokeStyle = '#1e1b4b';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, pressure * 3);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.moveTo(lastPos.current.x, lastPos.current.y);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     lastPos.current = pos;
-  }, [sigwebStatus, drawing]);
+  }, [drawing]);
 
-  const stopDraw = useCallback(() => { setDrawing(false); lastPos.current = null; }, []);
+  const stopDraw = useCallback((e) => {
+    e.preventDefault();
+    setDrawing(false);
+    lastPos.current = null;
+  }, []);
 
   // ── Clear ────────────────────────────────────────────────────────────────
   const handleClear = () => {
@@ -88,7 +92,7 @@ export default function SignaturePad({ onSave, onClear }) {
 
       <div
         className="border-2 border-dashed rounded-lg bg-gray-50 relative border-gray-300"
-        style={{ touchAction: 'none' }}
+        style={{ touchAction: 'none', userSelect: 'none' }}
       >
         <canvas
           ref={canvasRef}
@@ -96,13 +100,10 @@ export default function SignaturePad({ onSave, onClear }) {
           className="w-full rounded-lg cursor-crosshair focus:outline-none focus:ring-2 focus:ring-indigo-400"
           style={{ height: 140, display: 'block' }}
           onFocus={() => canvasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}
-          onMouseDown={startDraw}
-          onMouseMove={draw}
-          onMouseUp={stopDraw}
-          onMouseLeave={stopDraw}
-          onTouchStart={startDraw}
-          onTouchMove={draw}
-          onTouchEnd={stopDraw}
+          onPointerDown={startDraw}
+          onPointerMove={draw}
+          onPointerUp={stopDraw}
+          onPointerCancel={stopDraw}
         />
         {isEmpty && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-1">
