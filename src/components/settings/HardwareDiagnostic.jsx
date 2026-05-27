@@ -128,7 +128,7 @@ export default function HardwareDiagnostic() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         className="relative w-full rounded-xl border-2 border-dashed border-indigo-300 bg-gradient-to-br from-indigo-50 to-white overflow-hidden select-none touch-none cursor-crosshair"
-        style={{ height: 320 }}
+        style={{ aspectRatio: '4/3', height: 'auto' }}
       >
         {/* Grid lines */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20">
