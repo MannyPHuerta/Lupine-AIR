@@ -8,6 +8,7 @@ import { WorkingBranchProvider } from '@/lib/WorkingBranchContext';
 import { base44 } from '@/api/base44Client';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
+import Store from "./pages/Store";
 import AIRWebsite from "./pages/AIRWebsite";
 import AIRental from "./pages/AIRental";
 import AIREvents from "./pages/AIREvents";
@@ -219,6 +220,7 @@ function App() {
         <Router>
           <Routes>
             {/* Public routes - no auth required */}
+            <Route path="/store" element={<Store />} />
             <Route path="/air" element={<AIRWebsite />} />
             <Route path="/airental" element={<AIRental />} />
             <Route path="/airevents" element={<AIREvents />} />
