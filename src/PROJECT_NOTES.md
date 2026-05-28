@@ -310,4 +310,23 @@ Track all meaningful changes here for subscriber rollouts.
 - [ ] Webhook-based automated update notifications
 - [ ] Per-subscriber feature flags for gradual rollout testing
 
-*Last updated: 2026-05-24*
+---
+
+## Store Storefront (Self-Service Rental Portal — `/store`)
+
+### V1 Scope (current)
+- Embedded via iframe on subscriber's existing website
+- Neutral white + orange theme (no subscriber branding sync — intentional)
+- Equipment catalog browse, search, filter by category
+- Dual-track: jobsite self-checkout flow vs. event quote request
+- Magic-link auth gate: persistent session for returning renters
+- Profile completion step on first login (company name, phone) → syncs to Customer entity via `upsertCustomer`
+- Welcome bar for authenticated returning users
+
+### V2 Backlog
+- [ ] **Store branding sync** — Pull `CompanySettings.logoUrl`, primary/accent color into store header so the iframe feels white-labeled when accessed as a standalone URL. Add `storeBranding` object to `CompanySettings` (logo, primaryColor, accentColor). One settings toggle away — no redesign needed.
+- [ ] Online payment capture at checkout (Stripe or Square, driven by `PaymentSettings`)
+- [ ] Real-time availability check before reservation confirmation
+- [ ] Customer self-service portal: view past rentals, request extensions
+
+*Last updated: 2026-05-28*
