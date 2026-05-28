@@ -12,7 +12,7 @@ export default function StoreIntentModal({ equipment, onConfirmJobsite, onCancel
           </button>
         </div>
         <p className="px-5 text-sm text-gray-500 mb-4">
-          This helps us route you to the right checkout experience.
+          We serve construction, jobsites, and special events. Pick your type below.
         </p>
 
         {/* Options */}
@@ -38,13 +38,13 @@ export default function StoreIntentModal({ equipment, onConfirmJobsite, onCancel
             onClick={() => onConfirmJobsite(true)}
             className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-gray-100 hover:border-indigo-400 hover:bg-indigo-50 transition text-left active:scale-98 group"
           >
-            <div className="text-3xl mt-0.5">🎪</div>
+            <div className="text-3xl mt-0.5">🎉</div>
             <div>
               <div className="font-semibold text-gray-900 group-hover:text-indigo-700">
                 Event / Special Occasion
               </div>
               <div className="text-xs text-gray-500 mt-0.5">
-                Weddings, festivals, corporate events, trade shows — get a custom quote
+                Weddings, festivals, corporate events, trade shows, parties — tents, tables, chairs, inflatables & more
               </div>
             </div>
           </button>

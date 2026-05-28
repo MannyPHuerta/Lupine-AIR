@@ -10,7 +10,7 @@ export default function StoreHeader() {
           </div>
           <div>
             <div className="font-bold text-gray-900 text-sm leading-none">Rental World</div>
-            <div className="text-xs text-gray-400">Equipment Rentals</div>
+            <div className="text-xs text-gray-400">Construction & Event Rentals</div>
           </div>
         </div>
         <div className="flex items-center gap-3">
