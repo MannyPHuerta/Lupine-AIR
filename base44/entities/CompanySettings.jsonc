@@ -129,7 +129,7 @@
     "demoModeEnabled": {
       "type": "boolean",
       "default": false,
-      "description": "When true, a visible DEMO watermark/banner is shown across the app. Toggle off during active development, on when showing prospects."
+      "description": "When true, a visible DEMO watermark/banner is shown across the app."
     },
     "demoBranch": {
       "type": "string",
@@ -143,7 +143,18 @@
         "events_only"
       ],
       "default": "both",
-      "description": "Controls which rental tracks are available in the online store. 'both' = construction + event; 'construction_only' = no event track; 'events_only' = redirect all traffic to event quote flow."
+      "description": "Controls which rental tracks are available in the online store."
+    },
+    "storeIntentStyle": {
+      "type": "string",
+      "enum": [
+        "split_screen",
+        "card_tiles",
+        "warm_welcome",
+        "immersive"
+      ],
+      "default": "split_screen",
+      "description": "Visual style of the one-time intent chooser modal shown to first-time store visitors (only applies when storeMode is 'both')."
     }
   },
   "required": []

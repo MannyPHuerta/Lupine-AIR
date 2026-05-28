@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Search, Filter, ChevronRight, Star, Zap } from 'lucide-react';
 import StoreEquipmentCard from '@/components/store/StoreEquipmentCard';
 import StoreHeader from '@/components/store/StoreHeader';
-import StoreIntentModal from '@/components/store/StoreIntentModal';
+import StoreIntentChooser from '@/components/store/StoreIntentChooser';
 import StoreEquipmentDetail from '@/components/store/StoreEquipmentDetail';
 import StoreAuthBar from '@/components/store/StoreAuthBar';
 import StoreProfileSetup from '@/components/store/StoreProfileSetup';
@@ -39,12 +39,14 @@ export default function Store() {
   const [intentChecked, setIntentChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const [storeMode, setStoreMode] = useState('both'); // 'both' | 'construction_only' | 'events_only'
+  const [storeMode, setStoreMode] = useState('both');
+  const [storeIntentStyle, setStoreIntentStyle] = useState('split_screen');
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then(rows => {
       if (rows.length > 0) {
         setStoreMode(rows[0].storeMode || 'both');
+        setStoreIntentStyle(rows[0].storeIntentStyle || 'split_screen');
       }
     });
 
@@ -71,14 +73,17 @@ export default function Store() {
   const eventsEnabled = storeMode === 'both' || storeMode === 'events_only';
   const constructionEnabled = storeMode === 'both' || storeMode === 'construction_only';
 
-  const handleEquipmentClick = (item) => {
-    if (!intentChecked && storeMode === 'both') {
-      setSelectedEquipment(item);
+  // In 'both' mode, show the intent chooser on first visit (not tied to clicking an item)
+  // so we show it immediately on load
+  useEffect(() => {
+    if (storeMode === 'both' && !intentChecked) {
       setShowIntentModal(true);
-    } else {
-      setIntentChecked(true);
-      setSelectedEquipment(item);
     }
+  }, [storeMode]);
+
+  const handleEquipmentClick = (item) => {
+    setSelectedEquipment(item);
+    setIntentChecked(true);
   };
 
   const handleUserLoaded = (user) => {
@@ -93,15 +98,8 @@ export default function Store() {
     setIntentChecked(true);
     setShowIntentModal(false);
     if (isEvent) {
-      // Redirect to event planner / quote flow
       window.location.href = '/airfq';
     }
-    // else: stay on page, show equipment detail
-  };
-
-  const handleIntentCancel = () => {
-    setShowIntentModal(false);
-    setSelectedEquipment(null);
   };
 
   // Events-only mode: redirect straight to quote flow
@@ -155,10 +153,10 @@ export default function Store() {
 
       {/* Intent check modal — only shown in 'both' mode */}
       {showIntentModal && storeMode === 'both' && (
-        <StoreIntentModal
-          equipment={selectedEquipment}
-          onConfirmJobsite={handleIntentConfirm}
-          onCancel={handleIntentCancel}
+        <StoreIntentChooser
+          style={storeIntentStyle}
+          onConstruction={() => handleIntentConfirm(false)}
+          onEvents={() => handleIntentConfirm(true)}
         />
       )}
 

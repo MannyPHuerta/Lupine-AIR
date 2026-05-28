@@ -108,6 +108,7 @@ export default function CompanySettingsPage() {
     payload.demoModeEnabled = settings.demoModeEnabled === true;
     payload.demoBranch = settings.demoBranch || '';
     payload.storeMode = settings.storeMode || 'both';
+    payload.storeIntentStyle = settings.storeIntentStyle || 'split_screen';
 
     if (settings.id) {
       await base44.entities.CompanySettings.update(settings.id, payload);
@@ -563,6 +564,39 @@ export default function CompanySettingsPage() {
                 ))}
               </div>
             </div>
+
+            {/* Intent Chooser Style — only relevant when storeMode is 'both' */}
+            {(settings.storeMode || 'both') === 'both' && (
+              <div className="bg-white rounded-xl border shadow-sm p-5">
+                <div className="font-semibold text-gray-900 mb-1">🎨 Welcome Screen Style</div>
+                <p className="text-xs text-gray-500 mb-4">
+                  When a new visitor opens the store, they'll see this screen to choose between Construction or Events.
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { value: 'split_screen', label: 'Bold Split-Screen', desc: 'Two full-height cinematic panels side by side — dramatic photo backgrounds, large headlines' },
+                    { value: 'card_tiles', label: 'Card Tiles on Dark', desc: 'Dark background with two large rounded photo cards — sleek, modern, high-contrast' },
+                    { value: 'warm_welcome', label: 'Warm Welcome', desc: 'Clean white modal with emoji icons — light, friendly, and mobile-first' },
+                    { value: 'immersive', label: 'Immersive Full-Screen', desc: 'Frosted-glass panels over a blurred split photo — premium, resort-booking feel' },
+                  ].map(opt => (
+                    <label key={opt.value} className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg border border-gray-100 hover:border-indigo-300 hover:bg-indigo-50 transition">
+                      <input
+                        type="radio"
+                        name="storeIntentStyle"
+                        value={opt.value}
+                        checked={(settings.storeIntentStyle || 'split_screen') === opt.value}
+                        onChange={() => handleChange('storeIntentStyle', opt.value)}
+                        className="mt-0.5 accent-indigo-600"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">{opt.label}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Payment Processing */}
             <PaymentSettingsPanel />
