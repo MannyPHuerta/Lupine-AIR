@@ -21,11 +21,11 @@ function calcPrice(equipment, days) {
   return { rate: equipment.dailyRate, label: 'daily rate', total: equipment.dailyRate * days };
 }
 
-export default function StoreCheckoutDrawer({ equipment, onClose }) {
+export default function StoreCheckoutDrawer({ equipment, currentUser, onClose }) {
   const [startDate, setStartDate] = useState(addDays(today(), 1));
   const [endDate, setEndDate] = useState(addDays(today(), 2));
   const [delivery, setDelivery] = useState('pickup');
-  const [step, setStep] = useState('dates'); // dates | review | login
+  const [step, setStep] = useState('dates'); // dates | review | login | confirmed
   const [loggingIn, setLoggingIn] = useState(false);
   const [email, setEmail] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -78,7 +78,7 @@ export default function StoreCheckoutDrawer({ equipment, onClose }) {
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div>
             <div className="font-bold text-gray-900">{equipment.name}</div>
-            <div className="text-xs text-gray-400">{step === 'dates' ? 'Select your rental dates' : step === 'review' ? 'Review your order' : 'Sign in to continue'}</div>
+            <div className="text-xs text-gray-400">{step === 'dates' ? 'Select your rental dates' : step === 'review' ? 'Review your order' : step === 'confirmed' ? 'Request submitted' : 'Sign in to continue'}</div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <X className="w-5 h-5" />
@@ -196,12 +196,39 @@ export default function StoreCheckoutDrawer({ equipment, onClose }) {
                 Edit Dates
               </button>
               <button
-                onClick={() => setStep('login')}
+                onClick={() => {
+                  // If already logged in, skip login step
+                  if (currentUser) {
+                    setStep('confirmed');
+                  } else {
+                    setStep('login');
+                  }
+                }}
                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transition"
               >
                 Continue <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* STEP: Confirmed (logged-in users) */}
+        {step === 'confirmed' && (
+          <div className="p-5 space-y-4">
+            <div className="text-center py-4">
+              <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-3" />
+              <div className="font-bold text-gray-900 text-lg mb-1">Reservation Requested!</div>
+              <p className="text-sm text-gray-500">
+                Hi <span className="font-semibold">{currentUser?.full_name || currentUser?.email}</span>! Your request for <span className="font-semibold">{equipment.name}</span> ({days} day{days !== 1 ? 's' : ''}) has been received.
+              </p>
+              <p className="text-xs text-gray-400 mt-2">Our team will confirm availability and send payment details to <span className="font-semibold">{currentUser?.email}</span>.</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-2xl transition"
+            >
+              Done
+            </button>
           </div>
         )}
 

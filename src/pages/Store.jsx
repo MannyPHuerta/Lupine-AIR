@@ -5,6 +5,8 @@ import StoreEquipmentCard from '@/components/store/StoreEquipmentCard';
 import StoreHeader from '@/components/store/StoreHeader';
 import StoreIntentModal from '@/components/store/StoreIntentModal';
 import StoreEquipmentDetail from '@/components/store/StoreEquipmentDetail';
+import StoreAuthBar from '@/components/store/StoreAuthBar';
+import StoreProfileSetup from '@/components/store/StoreProfileSetup';
 
 const TRACK1_CATEGORIES = [
   'Air Compressor', 'Backhoe', 'Boom Lift', 'Bulldozer', 'Compactor',
@@ -35,6 +37,8 @@ export default function Store() {
   const [showIntentModal, setShowIntentModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [intentChecked, setIntentChecked] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   useEffect(() => {
     base44.entities.Equipment.filter({ status: 'available' }, 'name', 200)
@@ -63,6 +67,14 @@ export default function Store() {
     }
   };
 
+  const handleUserLoaded = (user) => {
+    setCurrentUser(user);
+    // Show profile setup if first-time user (no phone saved yet)
+    if (!user.phone && !user.profileComplete) {
+      setShowProfileSetup(true);
+    }
+  };
+
   const handleIntentConfirm = (isEvent) => {
     setIntentChecked(true);
     setShowIntentModal(false);
@@ -82,6 +94,7 @@ export default function Store() {
     return (
       <StoreEquipmentDetail
         equipment={selectedEquipment}
+        currentUser={currentUser}
         onBack={() => { setSelectedEquipment(null); setIntentChecked(false); }}
       />
     );
@@ -90,6 +103,18 @@ export default function Store() {
   return (
     <div className="min-h-screen bg-gray-50">
       <StoreHeader />
+      <StoreAuthBar onUserLoaded={handleUserLoaded} />
+
+      {/* Profile setup for first-time users */}
+      {showProfileSetup && currentUser && (
+        <StoreProfileSetup
+          user={currentUser}
+          onComplete={(updatedUser) => {
+            setCurrentUser(updatedUser);
+            setShowProfileSetup(false);
+          }}
+        />
+      )}
 
       {/* Intent check modal */}
       {showIntentModal && (
