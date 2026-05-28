@@ -39,11 +39,19 @@ export default function Store() {
   const [intentChecked, setIntentChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [eventsEnabled, setEventsEnabled] = useState(true); // default on until loaded
 
   useEffect(() => {
+    // Load company settings to check storeEventsEnabled
+    base44.entities.CompanySettings.list().then(rows => {
+      if (rows.length > 0) {
+        // Default to true if field not yet set
+        setEventsEnabled(rows[0].storeEventsEnabled !== false);
+      }
+    });
+
     base44.entities.Equipment.filter({ status: 'available' }, 'name', 200)
       .then(items => {
-        // Only show Track 1 categories in the public store
         const track1Items = items.filter(e =>
           TRACK1_CATEGORIES.includes(e.category) && e.dailyRate > 0
         );
@@ -59,10 +67,11 @@ export default function Store() {
   });
 
   const handleEquipmentClick = (item) => {
-    if (!intentChecked) {
+    if (!intentChecked && eventsEnabled) {
       setSelectedEquipment(item);
       setShowIntentModal(true);
     } else {
+      setIntentChecked(true);
       setSelectedEquipment(item);
     }
   };
@@ -102,7 +111,7 @@ export default function Store() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <StoreHeader />
+      <StoreHeader eventsEnabled={eventsEnabled} />
       <StoreAuthBar onUserLoaded={handleUserLoaded} />
 
       {/* Profile setup for first-time users */}
@@ -116,8 +125,8 @@ export default function Store() {
         />
       )}
 
-      {/* Intent check modal */}
-      {showIntentModal && (
+      {/* Intent check modal — only shown when events are enabled */}
+      {showIntentModal && eventsEnabled && (
         <StoreIntentModal
           equipment={selectedEquipment}
           onConfirmJobsite={handleIntentConfirm}
@@ -188,19 +197,21 @@ export default function Store() {
         )}
       </div>
 
-      {/* Event planning banner */}
-      <div className="mx-4 mb-8 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-white">
-        <div className="text-lg font-bold mb-1">🎪 Planning an Event?</div>
-        <p className="text-indigo-100 text-sm mb-3">
-          Tents, staging, dance floors, and more — get a custom quote from our event team.
-        </p>
-        <a
-          href="/airfq"
-          className="inline-flex items-center gap-2 bg-white text-indigo-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-indigo-50 transition"
-        >
-          Get an Event Quote <ChevronRight className="w-4 h-4" />
-        </a>
-      </div>
+      {/* Event planning banner — only shown when events are enabled */}
+      {eventsEnabled && (
+        <div className="mx-4 mb-8 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-white">
+          <div className="text-lg font-bold mb-1">🎉 Planning an Event?</div>
+          <p className="text-indigo-100 text-sm mb-3">
+            Tents, staging, dance floors, and more — get a custom quote from our event team.
+          </p>
+          <a
+            href="/airfq"
+            className="inline-flex items-center gap-2 bg-white text-indigo-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-indigo-50 transition"
+          >
+            Get an Event Quote <ChevronRight className="w-4 h-4" />
+          </a>
+        </div>
+      )}
     </div>
   );
 }

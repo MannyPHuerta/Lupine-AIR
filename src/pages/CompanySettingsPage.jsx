@@ -107,6 +107,7 @@ export default function CompanySettingsPage() {
     payload.geofenceAlertEmails = settings.geofenceAlertEmails || [];
     payload.demoModeEnabled = settings.demoModeEnabled === true;
     payload.demoBranch = settings.demoBranch || '';
+    payload.storeEventsEnabled = settings.storeEventsEnabled !== false;
 
     if (settings.id) {
       await base44.entities.CompanySettings.update(settings.id, payload);
@@ -530,6 +531,37 @@ export default function CompanySettingsPage() {
                   💡 If customers sign on a second monitor, make sure to select <strong>that monitor</strong> in Step 3.
                   The tablet will then translate pen movement 1-to-1 with what's on screen.
                 </p>
+              </div>
+            </div>
+
+            {/* Online Store Settings */}
+            <div className="bg-white rounded-xl border shadow-sm p-5">
+              <div className="font-semibold text-gray-900 mb-1">🛒 Online Store</div>
+              <p className="text-xs text-gray-500 mb-4">
+                Controls what rental tracks are available in the public-facing self-service store.
+              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Event Rental Track</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {settings.storeEventsEnabled !== false
+                      ? '✓ Enabled — customers see the event quote option and intent chooser'
+                      : '✗ Disabled — store shows construction/jobsite rentals only'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleChange('storeEventsEnabled', settings.storeEventsEnabled === false ? true : false)}
+                  className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
+                    settings.storeEventsEnabled !== false ? 'bg-indigo-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform mt-0.5 ${
+                      settings.storeEventsEnabled !== false ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
               </div>
             </div>
 

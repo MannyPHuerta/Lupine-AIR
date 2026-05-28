@@ -134,6 +134,11 @@
     "demoBranch": {
       "type": "string",
       "description": "When demo mode is on, the app auto-locks to this branch so prospects only see demo data."
+    },
+    "storeEventsEnabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true, the online store shows the event rental track (intent modal + event quote banner). Disable for construction-only rental shops."
     }
   },
   "required": []
