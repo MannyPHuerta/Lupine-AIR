@@ -171,6 +171,7 @@ function Immersive({ onConstruction, onEvents }) {
 // ─── Main Export ─────────────────────────────────────────────────────────────
 export default function StoreIntentChooser({ style = 'split_screen', onConstruction, onEvents }) {
   const props = { onConstruction, onEvents };
+  // onEvents now navigates to /store/events instead of /airfq
   if (style === 'card_tiles') return <CardTiles {...props} />;
   if (style === 'warm_welcome') return <WarmWelcome {...props} />;
   if (style === 'immersive') return <Immersive {...props} />;

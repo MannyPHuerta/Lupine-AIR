@@ -98,7 +98,7 @@ export default function Store() {
     setIntentChecked(true);
     setShowIntentModal(false);
     if (isEvent) {
-      window.location.href = '/airfq';
+      window.location.href = '/store/events';
     }
   };
 
