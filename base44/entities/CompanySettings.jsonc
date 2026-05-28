@@ -135,10 +135,15 @@
       "type": "string",
       "description": "When demo mode is on, the app auto-locks to this branch so prospects only see demo data."
     },
-    "storeEventsEnabled": {
-      "type": "boolean",
-      "default": true,
-      "description": "When true, the online store shows the event rental track (intent modal + event quote banner). Disable for construction-only rental shops."
+    "storeMode": {
+      "type": "string",
+      "enum": [
+        "both",
+        "construction_only",
+        "events_only"
+      ],
+      "default": "both",
+      "description": "Controls which rental tracks are available in the online store. 'both' = construction + event; 'construction_only' = no event track; 'events_only' = redirect all traffic to event quote flow."
     }
   },
   "required": []

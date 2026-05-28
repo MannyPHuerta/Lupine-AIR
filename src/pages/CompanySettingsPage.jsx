@@ -107,7 +107,7 @@ export default function CompanySettingsPage() {
     payload.geofenceAlertEmails = settings.geofenceAlertEmails || [];
     payload.demoModeEnabled = settings.demoModeEnabled === true;
     payload.demoBranch = settings.demoBranch || '';
-    payload.storeEventsEnabled = settings.storeEventsEnabled !== false;
+    payload.storeMode = settings.storeMode || 'both';
 
     if (settings.id) {
       await base44.entities.CompanySettings.update(settings.id, payload);
@@ -536,32 +536,31 @@ export default function CompanySettingsPage() {
 
             {/* Online Store Settings */}
             <div className="bg-white rounded-xl border shadow-sm p-5">
-              <div className="font-semibold text-gray-900 mb-1">🛒 Online Store</div>
+              <div className="font-semibold text-gray-900 mb-1">🛒 Online Store Mode</div>
               <p className="text-xs text-gray-500 mb-4">
-                Controls what rental tracks are available in the public-facing self-service store.
+                Controls which rental tracks appear in the public-facing self-service store.
               </p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-700">Event Rental Track</div>
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    {settings.storeEventsEnabled !== false
-                      ? '✓ Enabled — customers see the event quote option and intent chooser'
-                      : '✗ Disabled — store shows construction/jobsite rentals only'}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleChange('storeEventsEnabled', settings.storeEventsEnabled === false ? true : false)}
-                  className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${
-                    settings.storeEventsEnabled !== false ? 'bg-indigo-600' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform mt-0.5 ${
-                      settings.storeEventsEnabled !== false ? 'translate-x-5' : 'translate-x-0.5'
-                    }`}
-                  />
-                </button>
+              <div className="space-y-2">
+                {[
+                  { value: 'both', label: 'Construction & Events', desc: 'Customers choose their track at entry — jobsite equipment catalog or event quote flow' },
+                  { value: 'construction_only', label: 'Construction / Jobsite Only', desc: 'Hides event track entirely — no intent modal, no event banner' },
+                  { value: 'events_only', label: 'Events Only', desc: 'Skips the equipment catalog — redirects all visitors straight to the event quote flow' },
+                ].map(opt => (
+                  <label key={opt.value} className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg border border-gray-100 hover:border-indigo-300 hover:bg-indigo-50 transition">
+                    <input
+                      type="radio"
+                      name="storeMode"
+                      value={opt.value}
+                      checked={(settings.storeMode || 'both') === opt.value}
+                      onChange={() => handleChange('storeMode', opt.value)}
+                      className="mt-0.5 accent-indigo-600"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-800">{opt.label}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
+                    </div>
+                  </label>
+                ))}
               </div>
             </div>
 

@@ -39,26 +39,28 @@ export default function Store() {
   const [intentChecked, setIntentChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  const [eventsEnabled, setEventsEnabled] = useState(true); // default on until loaded
+  const [storeMode, setStoreMode] = useState('both'); // 'both' | 'construction_only' | 'events_only'
 
   useEffect(() => {
-    // Load company settings to check storeEventsEnabled
     base44.entities.CompanySettings.list().then(rows => {
       if (rows.length > 0) {
-        // Default to true if field not yet set
-        setEventsEnabled(rows[0].storeEventsEnabled !== false);
+        setStoreMode(rows[0].storeMode || 'both');
       }
     });
 
-    base44.entities.Equipment.filter({ status: 'available' }, 'name', 200)
-      .then(items => {
-        const track1Items = items.filter(e =>
-          TRACK1_CATEGORIES.includes(e.category) && e.dailyRate > 0
-        );
-        setEquipment(track1Items);
-        setLoading(false);
-      });
-  }, []);
+    if (storeMode !== 'events_only') {
+      base44.entities.Equipment.filter({ status: 'available' }, 'name', 200)
+        .then(items => {
+          const track1Items = items.filter(e =>
+            TRACK1_CATEGORIES.includes(e.category) && e.dailyRate > 0
+          );
+          setEquipment(track1Items);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [storeMode]);
 
   const filtered = equipment.filter(e => {
     const matchSearch = !search || e.name.toLowerCase().includes(search.toLowerCase());
@@ -66,8 +68,11 @@ export default function Store() {
     return matchSearch && matchCat;
   });
 
+  const eventsEnabled = storeMode === 'both' || storeMode === 'events_only';
+  const constructionEnabled = storeMode === 'both' || storeMode === 'construction_only';
+
   const handleEquipmentClick = (item) => {
-    if (!intentChecked && eventsEnabled) {
+    if (!intentChecked && storeMode === 'both') {
       setSelectedEquipment(item);
       setShowIntentModal(true);
     } else {
@@ -99,6 +104,29 @@ export default function Store() {
     setSelectedEquipment(null);
   };
 
+  // Events-only mode: redirect straight to quote flow
+  if (storeMode === 'events_only') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <StoreHeader storeMode={storeMode} />
+        <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
+          <div className="text-6xl mb-4">🎉</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Event Rentals</h1>
+          <p className="text-gray-500 text-sm mb-6 max-w-sm">
+            We specialize in tents, staging, tables, chairs, dance floors, inflatables, and more.
+            Tell us about your event and we'll build a custom quote.
+          </p>
+          <a
+            href="/airfq"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base px-8 py-4 rounded-2xl transition shadow-lg"
+          >
+            Get a Free Event Quote →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (selectedEquipment && intentChecked) {
     return (
       <StoreEquipmentDetail
@@ -111,7 +139,7 @@ export default function Store() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <StoreHeader eventsEnabled={eventsEnabled} />
+      <StoreHeader storeMode={storeMode} />
       <StoreAuthBar onUserLoaded={handleUserLoaded} />
 
       {/* Profile setup for first-time users */}
@@ -125,8 +153,8 @@ export default function Store() {
         />
       )}
 
-      {/* Intent check modal — only shown when events are enabled */}
-      {showIntentModal && eventsEnabled && (
+      {/* Intent check modal — only shown in 'both' mode */}
+      {showIntentModal && storeMode === 'both' && (
         <StoreIntentModal
           equipment={selectedEquipment}
           onConfirmJobsite={handleIntentConfirm}
@@ -197,8 +225,8 @@ export default function Store() {
         )}
       </div>
 
-      {/* Event planning banner — only shown when events are enabled */}
-      {eventsEnabled && (
+      {/* Event planning banner — only shown in 'both' mode */}
+      {storeMode === 'both' && (
         <div className="mx-4 mb-8 mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-white">
           <div className="text-lg font-bold mb-1">🎉 Planning an Event?</div>
           <p className="text-indigo-100 text-sm mb-3">
