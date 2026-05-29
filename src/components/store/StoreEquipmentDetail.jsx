@@ -16,7 +16,7 @@ const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1504307651254-35680f356
 
 export default function StoreEquipmentDetail({ equipment, currentUser, onBack }) {
   const [showCheckout, setShowCheckout] = useState(false);
-  const imgSrc = CATEGORY_IMAGES[equipment.category] || DEFAULT_IMAGE;
+  const imgSrc = equipment.imageUrl || CATEGORY_IMAGES[equipment.category] || DEFAULT_IMAGE;
 
   const specs = equipment.specs || {};
   const hasSpecs = Object.keys(specs).length > 0;

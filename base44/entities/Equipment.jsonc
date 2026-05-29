@@ -221,6 +221,14 @@
     "priceChangedBy": {
       "type": "string",
       "description": "Email of manager who last changed the price"
+    },
+    "imageUrl": {
+      "type": "string",
+      "description": "AI-sourced image URL from subscriber website, used in the online store"
+    },
+    "imageEnrichedAt": {
+      "type": "string",
+      "description": "ISO timestamp when imageUrl was last enriched by AI"
     }
   },
   "required": [

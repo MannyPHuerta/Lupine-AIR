@@ -10,6 +10,10 @@
       "type": "string",
       "description": "URL to company logo for branding (uploaded to storage)"
     },
+    "websiteUrl": {
+      "type": "string",
+      "description": "Subscriber's public website URL \u2014 used by AI image enrichment to source equipment photos for the online store (e.g. https://rentalworld.com)"
+    },
     "taxId": {
       "type": "string",
       "description": "Federal Tax ID / EIN"

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ExternalLink, Sparkles, CheckCircle2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,29 @@ export default function PricingEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
   const [edited, setEdited] = useState({});
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState(null);
+  const [websiteUrl, setWebsiteUrl] = useState('');
+
+  useEffect(() => {
+    base44.entities.CompanySettings.list().then(rows => {
+      if (rows[0]?.websiteUrl) setWebsiteUrl(rows[0].websiteUrl);
+    });
+  }, []);
+
+  const handleEnrichImages = async () => {
+    if (!websiteUrl) return alert('Please enter the subscriber website URL first.');
+    setEnriching(true);
+    setEnrichResult(null);
+    try {
+      const res = await base44.functions.invoke('enrichEquipmentImages', { websiteUrl });
+      setEnrichResult(res.data);
+    } catch (err) {
+      alert(`Enrichment failed: ${err.message}`);
+    } finally {
+      setEnriching(false);
+    }
+  };
 
   useEffect(() => {
     base44.entities.Equipment.list('-created_date', 1000).then(eq => {
@@ -77,6 +100,37 @@ export default function PricingEditor() {
       <AppPageHeader title="Pricing Editor" subtitle={`${equipment.length} items`} backTo="/availability" />
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* AI Image Enrichment Panel */}
+        <div className="bg-white rounded-xl border shadow-sm p-4 mb-5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <Sparkles className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5 sm:mt-0" />
+          <div className="flex-1">
+            <div className="font-semibold text-gray-800 text-sm">AI Store Image Enrichment</div>
+            <div className="text-xs text-gray-500 mt-0.5">Enter the subscriber's website URL and click Enrich — the AI will find equipment images from that site and save them to the catalog for the online store.</div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Input
+              placeholder="https://rentalworld.com"
+              value={websiteUrl}
+              onChange={e => setWebsiteUrl(e.target.value)}
+              className="text-sm w-full sm:w-56"
+            />
+            <Button
+              onClick={handleEnrichImages}
+              disabled={enriching || !websiteUrl}
+              className="bg-indigo-600 hover:bg-indigo-700 gap-1.5 flex-shrink-0"
+              size="sm"
+            >
+              {enriching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {enriching ? 'Enriching…' : 'Enrich Images'}
+            </Button>
+          </div>
+          {enrichResult && (
+            <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex-shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {enrichResult.imagesFound} of {enrichResult.uniqueNames} items matched
+            </div>
+          )}
+        </div>
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
