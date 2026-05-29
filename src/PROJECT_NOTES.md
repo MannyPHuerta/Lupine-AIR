@@ -329,4 +329,17 @@ Track all meaningful changes here for subscriber rollouts.
 - [ ] Real-time availability check before reservation confirmation
 - [ ] Customer self-service portal: view past rentals, request extensions
 
-*Last updated: 2026-05-28*
+---
+
+## New Subscriber Onboarding Checklist
+
+When deploying AIR for a new subscriber (e.g. XYZ Rental):
+
+1. **Create a new Base44 workspace** for that subscriber — do NOT reuse TheProjectAir workspace
+2. **Update `index.html`** — change `<title>` and `apple-mobile-web-app-title` from "Rental World" to the subscriber's company name
+3. **Rename the Base44 app** in workspace settings to match the subscriber's company name (controls the login screen title)
+4. **Publish** under the subscriber's subdomain (e.g. `xyzrental.base44.app`) or their custom domain
+
+Each subscriber = isolated workspace = isolated data. Never share workspaces between subscribers.
+
+*Last updated: 2026-05-29*
