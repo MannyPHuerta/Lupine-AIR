@@ -88,6 +88,7 @@ import GPSProviderSettings from "./pages/GPSProviderSettings";
 import UserManagement from "./pages/UserManagement";
 import DataExport from "./pages/DataExport";
 import DemoManager from "./pages/DemoManager";
+import SignIn from "./pages/SignIn";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -117,14 +118,14 @@ const AuthenticatedApp = () => {
       );
     }
     if (authError.type === 'auth_required') {
-      base44.auth.redirectToLogin();
+      window.location.href = '/signin';
       return null;
     }
   }
 
-  // If no token at all, redirect to login
+  // If no token at all, redirect to branded sign-in
   if (!isLoadingAuth && !isAuthenticated) {
-    base44.auth.redirectToLogin();
+    window.location.href = '/signin';
     return null;
   }
 
@@ -221,6 +222,7 @@ function App() {
         <Router>
           <Routes>
             {/* Public routes - no auth required */}
+            <Route path="/signin" element={<SignIn />} />
             <Route path="/store" element={<Store />} />
             <Route path="/store/events" element={<EventStore />} />
             <Route path="/air" element={<AIRWebsite />} />
