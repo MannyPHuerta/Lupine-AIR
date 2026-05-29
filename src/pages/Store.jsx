@@ -20,11 +20,11 @@ const TRACK1_CATEGORIES = [
 
 const CATEGORIES_WITH_ICONS = [
   { label: 'All Equipment', value: 'all', icon: '🔧' },
-  { label: 'Forklifts', value: 'Forklift', icon: '🏗️' },
-  { label: 'Lifts', value: 'Boom Lift', icon: '🦺' },
-  { label: 'Excavators', value: 'Excavator', icon: '⛏️' },
-  { label: 'Generators', value: 'Generator', icon: '⚡' },
   { label: 'Compressors', value: 'Air Compressor', icon: '💨' },
+  { label: 'Excavators', value: 'Excavator', icon: '⛏️' },
+  { label: 'Forklifts', value: 'Forklift', icon: '🏗️' },
+  { label: 'Generators', value: 'Generator', icon: '⚡' },
+  { label: 'Lifts', value: 'Boom Lift', icon: '🦺' },
   { label: 'Skid Steers', value: 'Skid Steer', icon: '🚜' },
   { label: 'Trailers', value: 'Trailer', icon: '🚛' },
 ];
