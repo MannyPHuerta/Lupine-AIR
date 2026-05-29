@@ -8,10 +8,7 @@ import Stripe from 'npm:stripe@16.0.0';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Public endpoint — no auth required for store customers
 
     const { paymentMethodId, equipment, startDate, endDate, days, totalAmount, delivery, customerName, customerEmail, customerPhone } = await req.json();
 

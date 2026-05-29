@@ -62,9 +62,13 @@ function Nav({ activeSection }) {
           ))}
         </div>
         <div className="hidden md:flex items-center gap-3">
-          <button onClick={() => navigate('/availability')}
+          <button onClick={() => document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' })}
+            className="text-sm px-4 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-white font-medium transition">
+            Request Access
+          </button>
+          <button onClick={() => document.querySelector('#pricing')?.scrollIntoView({ behavior: 'smooth' })}
             className="text-sm px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition">
-            Launch App →
+            See Pricing →
           </button>
         </div>
         <button onClick={() => setOpen(!open)} className="md:hidden text-white p-2">
@@ -78,8 +82,8 @@ function Nav({ activeSection }) {
               {l.label}
             </button>
           ))}
-          <button onClick={() => navigate('/availability')} className="block w-full text-center px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold text-sm">
-            Launch App →
+          <button onClick={() => document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' })} className="block w-full text-center px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold text-sm">
+            Request Early Access →
           </button>
         </div>
       )}
@@ -102,7 +106,7 @@ function Hero() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
           <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-4 py-1.5 mb-6">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-cyan-400 text-sm font-medium">Now in active development — Rental World Equipment</span>
+            <span className="text-cyan-400 text-sm font-medium">Now live — Rental World Equipment, McAllen TX</span>
           </div>
         </motion.div>
 
@@ -132,9 +136,9 @@ function Hero() {
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
           className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button onClick={() => navigate('/availability')}
+          <button onClick={() => document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' })}
             className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl text-lg transition flex items-center gap-2 justify-center">
-            Launch AIRental <ArrowRight className="w-5 h-5" />
+            Request Early Access <ArrowRight className="w-5 h-5" />
           </button>
           <button onClick={() => document.querySelector('#products')?.scrollIntoView({ behavior: 'smooth' })}
             className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl text-lg transition border border-white/20">
@@ -760,6 +764,94 @@ function PricingSection() {
   );
 }
 
+// ─── Waitlist ────────────────────────────────────────────────────────────────
+function WaitlistSection() {
+  const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [branches, setBranches] = useState('1');
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubmitting(true);
+    try {
+      await fetch('https://formspree.io/f/xnnqolwa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, company, branches }),
+      });
+    } catch (_) {}
+    setSubmitted(true);
+    setSubmitting(false);
+  };
+
+  return (
+    <section id="waitlist" className="py-24 bg-gradient-to-b from-slate-950 to-black border-t border-white/5">
+      <div className="max-w-2xl mx-auto px-4 text-center">
+        <AnimatedSection>
+          <FadeUp>
+            <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-4 py-1.5 text-sm font-medium text-cyan-400 mb-6">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              Early Access — Limited Spots
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4">Get early access to AIR</h2>
+            <p className="text-white/50 text-lg mb-10">
+              Be among the first rental companies on the platform. Early subscribers lock in founding pricing — guaranteed for 24 months.
+            </p>
+          </FadeUp>
+          {submitted ? (
+            <FadeUp>
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-10 text-center">
+                <div className="text-5xl mb-4">🎉</div>
+                <div className="text-white font-bold text-xl mb-2">You're on the list!</div>
+                <p className="text-white/50 text-sm">We'll reach out to schedule your personalized demo within 2 business days.</p>
+              </div>
+            </FadeUp>
+          ) : (
+            <FadeUp>
+              <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-2xl p-8 space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Work Email *</label>
+                  <input
+                    type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                    placeholder="you@rentalcompany.com"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Company Name</label>
+                  <input
+                    type="text" value={company} onChange={e => setCompany(e.target.value)}
+                    placeholder="Your Rental Company"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Number of Branches</label>
+                  <select value={branches} onChange={e => setBranches(e.target.value)}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    <option value="1" className="text-black">1 branch</option>
+                    <option value="2-3" className="text-black">2–3 branches</option>
+                    <option value="4-10" className="text-black">4–10 branches</option>
+                    <option value="10+" className="text-black">10+ branches</option>
+                  </select>
+                </div>
+                <button type="submit" disabled={submitting}
+                  className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-60 text-black font-bold py-4 rounded-xl text-base transition flex items-center justify-center gap-2">
+                  {submitting ? 'Submitting…' : 'Request Early Access →'}
+                </button>
+                <p className="text-center text-white/30 text-xs">No spam. No sales pressure. Just a demo when you're ready.</p>
+              </form>
+            </FadeUp>
+          )}
+        </AnimatedSection>
+      </div>
+    </section>
+  );
+}
+
 // ─── Footer ──────────────────────────────────────────────────────────────────
 function Footer() {
   const navigate = useNavigate();
@@ -809,9 +901,9 @@ function Footer() {
         </div>
         <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-white/30 text-sm">© 2026 Lupine Technologies. All rights reserved.</div>
-          <button onClick={() => navigate('/availability')}
+          <button onClick={() => document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' })}
             className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl text-sm transition">
-            Launch AIRental →
+            Request Early Access →
           </button>
         </div>
       </div>
@@ -969,6 +1061,7 @@ export default function AIRWebsite() {
       <PlatformSection />
       <QuoteSection />
       <PricingSection />
+      <WaitlistSection />
       <Footer />
     </div>
   );
