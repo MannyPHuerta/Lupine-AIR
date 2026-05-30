@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 import { useWorkingBranch } from '@/lib/WorkingBranchContext';
 import { useHeaderStyle } from '@/lib/useHeaderStyle';
 import WorkingBranchModal from '@/components/WorkingBranchModal';
 import DemoBanner from '@/components/DemoBanner';
 import { base44 } from '@/api/base44Client';
+import AIAssistant from '@/components/AIAssistant';
 import {
   LayoutDashboard, Calendar, Truck, RotateCcw, Users, BarChart3,
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -313,6 +315,7 @@ export default function AppLayout() {
   const { workingBranch, loading } = useWorkingBranch();
   const [user, setUser] = useState(null);
   const [showBranchModal, setShowBranchModal] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const allGroupRefs = useRef({});
   const headerStyleResult = useHeaderStyle();
   const headerStyle = headerStyleResult?.style ?? null;
@@ -413,22 +416,27 @@ export default function AppLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 text-white" style={{
+        <div className="md:hidden flex items-center justify-between px-4 py-3 text-white" style={{
           backgroundColor: headerStyle === 'navy' ? '#0d1b3e'
             : headerStyle === 'glassmorphism' ? '#1e293b'
             : headerStyle === 'neon' ? '#09090b'
             : headerStyle === 'seasonal' && seasonalTheme ? seasonalTheme.sidebarBg
             : '#1e293b'
         }}>
-          <button onClick={() => setSidebarOpen(true)}>
-            <Menu className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)}>
+              <Menu className="w-5 h-5" />
+            </button>
+            <img
+              src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg"
+              alt="AIR"
+              className="h-6 w-6 rounded"
+            />
+            <span className="font-bold text-sm">AIR</span>
+          </div>
+          <button onClick={() => setShowAIAssistant(true)} className="p-2 hover:bg-white/10 rounded-lg transition" title="AI Assistant">
+            <CircleHelp className="w-5 h-5" />
           </button>
-          <img
-            src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg"
-            alt="AIR"
-            className="h-6 w-6 rounded"
-          />
-          <span className="font-bold text-sm">AIR</span>
         </div>
 
         {/* Page content */}
@@ -436,7 +444,21 @@ export default function AppLayout() {
           <DemoBanner />
           <Outlet />
         </main>
+
+        {/* AI Assistant Button - Desktop */}
+        <button
+          onClick={() => setShowAIAssistant(true)}
+          className="hidden md:flex absolute bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg items-center justify-center transition z-40"
+          title="AI Assistant"
+        >
+          <CircleHelp className="w-7 h-7" />
+        </button>
       </div>
+
+      {/* AI Assistant Modal */}
+      {showAIAssistant && (
+        <AIAssistant onClose={() => setShowAIAssistant(false)} />
+      )}
     </div>
   );
 }
