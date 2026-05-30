@@ -126,16 +126,21 @@ export default function AvailabilityManager() {
         setCustomer(prev => ({ ...prev, branch: u.homeBranch }));
       }
     }).catch(() => {});
+    // Batch into two groups to avoid rate limiting
     Promise.all([
       base44.entities.Equipment.list('name', 2000),
       base44.entities.Rental.list('-created_date', 1000),
       base44.entities.CompanySettings.list(),
       base44.entities.BranchSettings.list(),
-      base44.entities.DeliveryMatrix.list(),
-      base44.entities.VolumeDiscountRule.filter({ active: true }),
-      base44.entities.PromoCode.list('-created_date', 200),
-      base44.entities.RentalAgreement.list(),
-    ]).then(([eq, rent, company, branches, matrices, volRules, promoCodes, agreements]) => {
+    ]).then(async ([eq, rent, company, branches]) => {
+      const [matrices, volRules, promoCodes, agreements] = await Promise.all([
+        base44.entities.DeliveryMatrix.list(),
+        base44.entities.VolumeDiscountRule.filter({ active: true }),
+        base44.entities.PromoCode.list('-created_date', 200),
+        base44.entities.RentalAgreement.list(),
+      ]);
+      return [eq, rent, company, branches, matrices, volRules, promoCodes, agreements];
+    }).then(([eq, rent, company, branches, matrices, volRules, promoCodes, agreements]) => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setRentals(rent);
       setCompanyInfo(company[0] || null);
