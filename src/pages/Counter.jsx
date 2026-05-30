@@ -449,7 +449,7 @@ export default function Counter() {
                     />
                   </div>
                   {customerSearch.trim().length > 0 && (
-                    <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                    <div className="border rounded-md divide-y max-h-48 overflow-y-auto bg-white">
                       {customers
                         .filter(c => {
                           const t = customerSearch.toLowerCase();
@@ -459,8 +459,9 @@ export default function Counter() {
                         .map(c => (
                           <button key={c.id} onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); }}
                             className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition">
-                            <div className="text-xs font-medium text-gray-900 truncate">{c.fullName}</div>
-                            <div className="text-xs text-gray-500 truncate">{c.phone}{c.loyaltyDiscountEnabled ? ' ⭐' : ''}</div>
+                            <div className="text-sm font-semibold text-gray-900 truncate">{c.fullName}</div>
+                            {c.companyName && <div className="text-xs text-gray-600 truncate">{c.companyName}</div>}
+                            <div className="text-xs text-gray-500">{c.phone}{c.loyaltyDiscountEnabled ? ' ⭐ Loyalty' : ''}</div>
                           </button>
                         ))
                       }
