@@ -54,8 +54,8 @@ export default function AIAssistant({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50">
-      <div className="bg-white w-full max-w-lg h-[600px] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end sm:bottom-6 sm:right-6">
+      <div className="bg-white w-[380px] h-[550px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
         {/* Header */}
         <div className="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export default function AIAssistant({ onClose }) {
               <div className="text-xs text-indigo-200">AI-powered onboarding & support</div>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-indigo-700 rounded-lg transition">
+          <button onClick={onClose} className="p-1.5 hover:bg-indigo-700 rounded-lg transition" title="Close assistant">
             <X className="w-5 h-5" />
           </button>
         </div>
