@@ -31,8 +31,9 @@ export const AuthProvider = ({ children }) => {
       if (error?.status === 403 && error?.data?.extra_data?.reason === 'user_not_registered') {
         setAuthError({ type: 'user_not_registered', message: 'User not registered for this app' });
       } else {
-        // Not authenticated - platform will handle login redirect
-        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+        // Not authenticated — redirect immediately
+        base44.auth.redirectToLogin(window.location.pathname);
+        return;
       }
     } finally {
       setIsLoadingAuth(false);

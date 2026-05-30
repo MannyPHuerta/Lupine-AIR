@@ -118,20 +118,11 @@ const AuthenticatedApp = () => {
         </div>
       );
     }
-    if (authError.type === 'auth_required') {
-      // Only redirect if there's truly no token in localStorage
-      if (!localStorage.getItem('base44_access_token')) {
-        base44.auth.redirectToLogin(window.location.pathname);
-      }
-      return null;
-    }
+    return null;
   }
 
-  // If not loading and not authenticated, redirect to login
+  // If not loading and not authenticated, redirect already happened in AuthContext
   if (!isLoadingAuth && !isAuthenticated) {
-    if (!localStorage.getItem('base44_access_token')) {
-      base44.auth.redirectToLogin(window.location.pathname);
-    }
     return null;
   }
 
