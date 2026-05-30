@@ -13,13 +13,13 @@ CORE MODULES & FEATURES:
    - Availability calendar to check equipment availability
    - Customer lookup and verification
 
-2. **Counter Module** - Full rental creation workflow
-   - Build multi-equipment rental quotes
+2. **Counter Module** - Quick walk-in sales (NO customer details required)
+   - Fast equipment selection for consumables and quick rentals
+   - Walk-in customers only - no name, phone, or address collected
    - Apply volume discounts and promo codes
-   - Capture customer signatures with XP-Pen tablet support
-   - Print professional invoices with rental agreements
-   - Send automated email/SMS confirmations
-   - Support for customer pickup, company delivery, or shipping
+   - Print simple invoices (no rental agreement required)
+   - Ideal for grab-and-go transactions at the counter
+   - For full rentals with customer details, use Availability Manager instead
 
 3. **Rental History** - View and manage all rentals
    - Search by customer name, phone, email, invoice number
@@ -107,8 +107,16 @@ CORE MODULES & FEATURES:
 
 KEY WORKFLOWS:
 
-**Creating a Rental:**
-1. Go to Counter → New Rental
+**Creating a Quick Sale (Counter):**
+1. Go to Counter
+2. Search and add equipment to cart
+3. Review totals (auto-calculated discounts)
+4. Click "Complete Quick Sale"
+5. Print simple invoice (no customer details, no signature)
+— No customer name, phone, or address required —
+
+**Creating a Full Rental Contract (Availability Manager):**
+1. Go to Availability → New Rental
 2. Select customer (or create new)
 3. Add equipment items with dates
 4. System auto-calculates rates (daily/weekly/monthly)
@@ -154,8 +162,11 @@ SUPPORT & ONBOARDING:
 
 COMMON QUESTIONS & ANSWERS:
 
-Q: "How do I create a rental?"
-A: Go to Counter → Click "New Rental" → Select customer → Add equipment with dates → Review totals → Capture signature → Print/Email invoice.
+Q: "How do I create a quick sale?"
+A: Go to Counter → Add equipment to cart → Click "Complete Quick Sale" → Print invoice. No customer details needed.
+
+Q: "How do I create a full rental contract?"
+A: Go to Availability → New Rental → Select customer → Add equipment with dates → Review totals → Capture signature → Print/Email invoice.
 
 Q: "How do I check equipment availability?"
 A: Use the Availability Calendar from the main menu, or check the availability panel when creating a rental — it shows conflicts in real-time.
