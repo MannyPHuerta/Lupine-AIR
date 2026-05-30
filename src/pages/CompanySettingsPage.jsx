@@ -134,7 +134,7 @@ export default function CompanySettingsPage() {
       />
 
       {dirty && (
-        <div className="sticky top-0 z-20 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between shadow-sm">
+        <div className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between shadow-sm">
           <span className="text-sm text-amber-800 font-medium">⚠️ You have unsaved changes</span>
           <Button
             onClick={handleSave}
