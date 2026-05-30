@@ -28,11 +28,24 @@ Deno.serve(async (req) => {
         notes: 'Online reservation (payment pending — Stripe not yet configured).',
         amountPaid: 0,
       });
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: customerEmail,
-        subject: `Reservation Request — ${equipment.name}`,
-        body: `Hi ${customerName},\n\nWe received your reservation request for ${equipment.name} (${startDate} → ${endDate}, ${days} day${days !== 1 ? 's' : ''}).\n\nOur team will contact you shortly to confirm and arrange payment.\n\nReservation #: ${rental.id}\n\nThanks!`,
+      // Send HTML confirmation + notify staff
+      await base44.asServiceRole.functions.invoke('sendRentalConfirmation', {
+        rentalIds: [rental.id],
+        customerEmail,
+        customerPhone: customerPhone || '',
+        invoiceNumber: rental.invoiceNumber || `RES-${rental.id.slice(-6).toUpperCase()}`,
+        autoSendCommunications: true,
       });
+      const companyList2 = await base44.asServiceRole.entities.CompanySettings.list();
+      const branchList2 = await base44.asServiceRole.entities.BranchSettings.list();
+      const staffEmail2 = branchList2[0]?.email || companyList2[0]?.geofenceAlertEmails?.[0];
+      if (staffEmail2) {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: staffEmail2,
+          subject: `🛒 New Online Reservation — ${equipment.name}`,
+          body: `A new reservation was submitted through the online store.\n\nCustomer: ${customerName}\nEmail: ${customerEmail}\nPhone: ${customerPhone || 'not provided'}\nEquipment: ${equipment.name}\nDates: ${startDate} → ${endDate} (${days} day${days !== 1 ? 's' : ''})\nDelivery: ${delivery === 'delivery' ? 'Delivery requested' : 'Customer pickup'}\nEstimated total: $${totalAmount.toFixed(2)}\n\nReservation ID: ${rental.id}\n\nLog in to review: https://lupine.rental/availability`,
+        });
+      }
       return Response.json({ success: true, rentalId: rental.id });
     }
 
@@ -99,12 +112,26 @@ Deno.serve(async (req) => {
       amountPaid: 0,
     });
 
-    // Send confirmation email
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: customerEmail,
-      subject: `Reservation Confirmed — ${equipment.name}`,
-      body: `Hi ${customerName},\n\nYour reservation for ${equipment.name} has been confirmed!\n\nDates: ${startDate} → ${endDate} (${days} day${days !== 1 ? 's' : ''})\nEstimated total: $${totalAmount.toFixed(2)}\nDelivery: ${delivery === 'delivery' ? 'We deliver to your site' : 'Customer pickup'}\n\nA $1.00 authorization hold was placed on your card to confirm it's valid. This hold will be released automatically and you will NOT be charged $1. Final payment will be arranged with our team.\n\nReservation #: ${rental.id}\n\nWe'll be in touch shortly to confirm pickup/delivery details.\n\nThanks for choosing us!`,
+    // Send HTML confirmation email + SMS via sendRentalConfirmation
+    await base44.asServiceRole.functions.invoke('sendRentalConfirmation', {
+      rentalIds: [rental.id],
+      customerEmail,
+      customerPhone: customerPhone || '',
+      invoiceNumber: rental.invoiceNumber || `RES-${rental.id.slice(-6).toUpperCase()}`,
+      autoSendCommunications: true,
     });
+
+    // Notify staff of new online reservation
+    const companyList = await base44.asServiceRole.entities.CompanySettings.list();
+    const branchList = await base44.asServiceRole.entities.BranchSettings.list();
+    const staffNotifyEmail = branchList[0]?.email || companyList[0]?.geofenceAlertEmails?.[0];
+    if (staffNotifyEmail) {
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: staffNotifyEmail,
+        subject: `🛒 New Online Reservation — ${equipment.name}`,
+        body: `A new reservation was submitted through the online store.\n\nCustomer: ${customerName}\nEmail: ${customerEmail}\nPhone: ${customerPhone || 'not provided'}\nEquipment: ${equipment.name}\nDates: ${startDate} → ${endDate} (${days} day${days !== 1 ? 's' : ''})\nDelivery: ${delivery === 'delivery' ? 'Delivery requested' : 'Customer pickup'}\nEstimated total: $${totalAmount.toFixed(2)}\n\nReservation ID: ${rental.id}\n\nLog in to review and confirm: https://lupine.rental/availability`,
+      });
+    }
 
     return Response.json({
       success: true,

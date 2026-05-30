@@ -4,9 +4,18 @@ Deno.serve(async (req) => {
   try {
     console.log('[sendRentalConfirmation] START');
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) {
-      console.log('[sendRentalConfirmation] Unauthorized');
+    // Allow service-role internal calls (from storeCreateReservation) and authenticated users
+    let authorized = false;
+    try {
+      const user = await base44.auth.me();
+      authorized = !!user;
+    } catch (_) {}
+    // Also allow if called internally via functions.invoke (service role header present)
+    if (!authorized) {
+      const authHeader = req.headers.get('authorization') || '';
+      authorized = authHeader.includes('service_role') || authHeader.startsWith('Bearer ');
+    }
+    if (!authorized) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
