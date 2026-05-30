@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
 import { useWorkingBranch } from '@/lib/WorkingBranchContext';
 import { useHeaderStyle } from '@/lib/useHeaderStyle';
 import WorkingBranchModal from '@/components/WorkingBranchModal';
