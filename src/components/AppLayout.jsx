@@ -11,7 +11,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -101,6 +101,7 @@ const navGroups = [
     color: 'text-slate-400',
     description: 'System administration',
     items: [
+      { label: 'Train AI Assistant', path: '/ai-training', icon: Bot },
       {
         label: 'Pricing & Catalog',
         description: 'Rates, specs & categories',

@@ -90,6 +90,7 @@ import DataExport from "./pages/DataExport";
 import DemoManager from "./pages/DemoManager";
 import Leaderboard from "./pages/Leaderboard";
 import SignIn from "./pages/SignIn";
+import AITraining from "./pages/AITraining";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -190,6 +191,7 @@ const AuthenticatedApp = () => {
         <Route path="/timesheets" element={<Timesheets />} />
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/ai-training" element={<AITraining />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
