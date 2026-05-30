@@ -12,6 +12,11 @@ export default function DemoBanner() {
     base44.entities.CompanySettings.list().then(list => {
       setEnabled(list[0]?.demoModeEnabled === true);
     }).catch(() => {});
+
+    const unsubscribe = base44.entities.CompanySettings.subscribe((event) => {
+      if (event.data) setEnabled(event.data.demoModeEnabled === true);
+    });
+    return unsubscribe;
   }, []);
 
   if (!enabled) return null;
