@@ -1,0 +1,65 @@
+{
+  "name": "PlatformFeature",
+  "type": "object",
+  "properties": {
+    "module": {
+      "type": "string",
+      "description": "Module name (e.g. 'Counter', 'AvailabilityManager', 'AIReports')"
+    },
+    "featureName": {
+      "type": "string",
+      "description": "Feature or workflow name (e.g. 'Quick Sale', 'Full Rental Contract')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of what this feature does"
+    },
+    "workflow": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Step-by-step workflow instructions"
+    },
+    "requiresCustomer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this feature requires customer details (name, phone, etc.)"
+    },
+    "requiresSignature": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this feature requires customer signature"
+    },
+    "requiresPayment": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this feature processes payments"
+    },
+    "commonQuestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "FAQ pairs for this feature"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this feature is currently active"
+    }
+  },
+  "required": [
+    "module",
+    "featureName",
+    "description"
+  ]
+}
