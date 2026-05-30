@@ -1,9 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { Resend } from 'npm:resend@4.0.0';
 
-/**
- * Render email gateway function - acts as a service-role fallback for sending emails through Render.
- * Can be called directly instead of relying on the /send-asset-report endpoint.
- */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -18,27 +15,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields: to, subject, htmlBody' }, { status: 400 });
     }
 
-    // Forward to Render backend (proven working)
-    const formData = new FormData();
-    formData.append('itemName', subject);
-    formData.append('itemType', 'Rental');
-    formData.append('action', 'Email');
-    formData.append('comments', htmlBody);
-    formData.append('sendTo', to);
-    formData.append('sentBy', fromName || 'Rental World LLC');
+    const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
-    const renderResponse = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
-      method: 'POST',
-      body: formData,
+    const { data, error } = await resend.emails.send({
+      from: `${fromName || 'Rental World LLC'} <noreply@theprojectair.com>`,
+      to: [to],
+      subject,
+      html: htmlBody,
     });
 
-    if (!renderResponse.ok) {
-      const errorText = await renderResponse.text();
-      console.error('[renderEmailGateway] Render error:', renderResponse.status, errorText);
-      return Response.json({ error: `Render returned ${renderResponse.status}` }, { status: 502 });
+    if (error) {
+      console.error('[renderEmailGateway] Resend error:', error);
+      return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ success: true, message: 'Email sent via Render' });
+    return Response.json({ success: true, message: 'Email sent via Resend', emailId: data?.id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

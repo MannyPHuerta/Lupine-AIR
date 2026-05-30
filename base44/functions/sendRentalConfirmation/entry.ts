@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { Resend } from 'npm:resend@4.0.0';
 
 Deno.serve(async (req) => {
   try {
@@ -209,28 +210,24 @@ Deno.serve(async (req) => {
     </body>
     </html>`;
 
-    // Send email via Render / Asset Wolf (proven working)
-    console.log('[sendRentalConfirmation] Sending email via Render to:', customerEmail);
+    // Send email via Resend
+    console.log('[sendRentalConfirmation] Sending email via Resend to:', customerEmail);
     try {
-      const formData = new FormData();
-      formData.append('itemName', `Rental Invoice ${invoiceNumber || 'Confirmation'}`);
-      formData.append('itemType', 'Rental');
-      formData.append('action', 'Email');
-      formData.append('comments', invoiceHtml);
-      formData.append('sendTo', customerEmail);
-      formData.append('sentBy', invoiceOrder.companyInfo.companyName || 'Rental World LLC');
+      const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+      const companyName = invoiceOrder.companyInfo.companyName || 'Rental World LLC';
 
-      const renderRes = await fetch('https://asset-wolf-backend.onrender.com/send-asset-report', {
-        method: 'POST',
-        body: formData,
+      const { error: resendError } = await resend.emails.send({
+        from: `${companyName} <noreply@theprojectair.com>`,
+        to: [customerEmail],
+        subject: `Rental Invoice ${invoiceNumber || 'Confirmation'} — ${companyName}`,
+        html: invoiceHtml,
       });
 
-      if (!renderRes.ok) {
-        const errText = await renderRes.text();
-        console.error('[sendRentalConfirmation] Render error:', renderRes.status, errText);
-        return Response.json({ error: `Render returned ${renderRes.status}`, emailSent: false }, { status: 502 });
+      if (resendError) {
+        console.error('[sendRentalConfirmation] Resend error:', resendError);
+        return Response.json({ error: resendError.message, emailSent: false }, { status: 500 });
       }
-      console.log('[sendRentalConfirmation] Email sent via Render successfully');
+      console.log('[sendRentalConfirmation] Email sent via Resend successfully');
     } catch (emailErr) {
       console.error('[sendRentalConfirmation] Email error:', emailErr.message);
       return Response.json({ error: `Email error: ${emailErr.message}`, emailSent: false }, { status: 500 });

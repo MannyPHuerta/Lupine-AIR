@@ -1,10 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { Resend } from 'npm:resend@4.0.0';
 
-/**
- * Send minimal-branding email (invoice/content only, no company header/logo).
- * Reusable for rental invoices, bridal designs, planning permits, etc.
- * Routes through Render backend.
- */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,58 +15,52 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields: to, subject, contentHtml' }, { status: 400 });
     }
 
-    // Strip wolf silhouette and other images from content
+    // Strip images from content
     const cleanContent = contentHtml.replace(/<img[^>]*>/g, '');
 
-    // Wrap content in minimal HTML with no branding—just the invoice table/details
     const minimalHtml = `<!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #2c3e50; line-height: 1.6; margin: 0; padding: 0; }
-    .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; }
-    .content { }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th { background: #ecf0f1; padding: 12px; text-align: left; font-weight: 600; font-size: 12px; color: #2c3e50; border-bottom: 2px solid #bdc3c7; }
-    td { padding: 12px; border-bottom: 1px solid #ecf0f1; }
-    .totals { background: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0; }
-    .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
-    .total-row.grand { border-top: 2px solid #2c3e50; padding-top: 12px; font-weight: bold; font-size: 16px; color: #2c3e50; margin-top: 12px; }
-    .footer { text-align: center; padding: 20px; font-size: 12px; color: #7f8c8d; border-top: 1px solid #ecf0f1; margin-top: 20px; }
-    </style>
-    </head>
-    <body>
-    <div class="container">
-    <div class="content">
-    ${cleanContent}
-    </div>
-    <div class="footer">
-    <p>This is an automated message. Please do not reply directly to this email.</p>
-    </div>
-    </div>
-    </body>
-    </html>`;
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #2c3e50; line-height: 1.6; margin: 0; padding: 0; }
+.container { max-width: 650px; margin: 0 auto; background: #fff; padding: 20px; }
+table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+th { background: #ecf0f1; padding: 12px; text-align: left; font-weight: 600; font-size: 12px; color: #2c3e50; border-bottom: 2px solid #bdc3c7; }
+td { padding: 12px; border-bottom: 1px solid #ecf0f1; }
+.totals { background: #f8f9fa; padding: 20px; border-radius: 6px; margin: 20px 0; }
+.total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+.total-row.grand { border-top: 2px solid #2c3e50; padding-top: 12px; font-weight: bold; font-size: 16px; color: #2c3e50; margin-top: 12px; }
+.footer { text-align: center; padding: 20px; font-size: 12px; color: #7f8c8d; border-top: 1px solid #ecf0f1; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="content">
+${cleanContent}
+</div>
+<div class="footer">
+<p>This is an automated message. Please do not reply directly to this email.</p>
+</div>
+</div>
+</body>
+</html>`;
 
-    // Send via RentalWorldLLC email service
-    const emailResponse = await fetch('https://rentalworldllc.onrender.com/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to,
-        subject,
-        html: minimalHtml,
-        fromName,
-      }),
+    const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+
+    const { data, error } = await resend.emails.send({
+      from: `${fromName} <noreply@theprojectair.com>`,
+      to: [to],
+      subject,
+      html: minimalHtml,
     });
 
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      return Response.json({ error: `Email service error: ${errorText}` }, { status: 502 });
+    if (error) {
+      console.error('[sendMinimalBrandingEmail] Resend error:', error);
+      return Response.json({ error: error.message }, { status: 500 });
     }
 
-    const result = await emailResponse.json();
-    return Response.json({ success: true, message: 'Email sent', data: result });
+    return Response.json({ success: true, message: 'Email sent', emailId: data?.id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

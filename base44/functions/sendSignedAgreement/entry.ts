@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       : `rental-agreement-signed.pdf`;
 
     const { data, error } = await resend.emails.send({
-      from: `${companyName} <onboarding@resend.dev>`,
+      from: `${companyName} <noreply@theprojectair.com>`,
       to: [customerEmail],
       subject,
       html: htmlBody,
