@@ -244,10 +244,16 @@ Deno.serve(async (req) => {
         if (accountSid && authToken && twilioPhone) {
           const smsBody = `Rental confirmed! Invoice ${invoiceNumber}. Equipment rentals for ${rental.customerName}. Total: $${fmt(grandTotal)}. Thank you!`;
 
+          // Deno-compatible Base64 encoding
+          const credentials = `${accountSid}:${authToken}`;
+          const encoder = new TextEncoder();
+          const binaryCredentials = encoder.encode(credentials);
+          const base64Credentials = btoa(String.fromCharCode(...binaryCredentials));
+
           const smsRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
             method: 'POST',
             headers: {
-              'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+              'Authorization': `Basic ${base64Credentials}`,
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({

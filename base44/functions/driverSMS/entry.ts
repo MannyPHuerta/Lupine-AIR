@@ -33,12 +33,18 @@ Deno.serve(async (req) => {
     formData.append('From', from);
     formData.append('Body', body);
 
+    // Deno-compatible Base64 encoding
+    const credentials = `${accountSid}:${authToken}`;
+    const encoder = new TextEncoder();
+    const binaryCredentials = encoder.encode(credentials);
+    const base64Credentials = btoa(String.fromCharCode(...binaryCredentials));
+
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
       {
         method: 'POST',
         headers: {
-          Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+          Authorization: `Basic ${base64Credentials}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: formData.toString(),
