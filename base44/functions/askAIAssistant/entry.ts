@@ -208,16 +208,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Question required' }, { status: 400 });
     }
 
-    // Build conversation context
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...conversationHistory.slice(-6), // Last 3 exchanges (6 messages)
-      { role: 'user', content: question }
-    ];
+    // Build conversation context with system prompt
+    const fullPrompt = `${SYSTEM_PROMPT}
 
-    // Call LLM via Core integration
+=== CONVERSATION HISTORY ===
+${conversationHistory.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n')}
+
+=== CURRENT QUESTION ===
+${question}`;
+
+    // Call LLM via Core integration with full context
     const response = await base44.integrations.Core.InvokeLLM({
-      prompt: question,
+      prompt: fullPrompt,
       model: 'automatic',
     });
 
