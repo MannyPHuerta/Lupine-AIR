@@ -30,6 +30,7 @@ export default function CompanySettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [certInput, setCertInput] = useState('');
   const [alertPhoneInput, setAlertPhoneInput] = useState('');
   const [alertEmailInput, setAlertEmailInput] = useState('');
@@ -53,6 +54,7 @@ export default function CompanySettingsPage() {
 
   const handleChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
+    setDirty(true);
   };
 
   const handleLogoUpload = async (e) => {
@@ -119,6 +121,7 @@ export default function CompanySettingsPage() {
 
     setSaving(false);
     setSaved(true);
+    setDirty(false);
     setTimeout(() => setSaved(false), 2000);
   };
 
@@ -129,6 +132,21 @@ export default function CompanySettingsPage() {
         subtitle="Configure company info and invoice branding"
         icon={Building2}
       />
+
+      {dirty && (
+        <div className="sticky top-0 z-20 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between shadow-sm">
+          <span className="text-sm text-amber-800 font-medium">⚠️ You have unsaved changes</span>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            size="sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            <Save className="w-3.5 h-3.5 mr-1.5" />
+            {saving ? 'Saving…' : 'Save Now'}
+          </Button>
+        </div>
+      )}
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {loading ? (
