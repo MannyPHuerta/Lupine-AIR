@@ -119,14 +119,14 @@ const AuthenticatedApp = () => {
       );
     }
     if (authError.type === 'auth_required') {
-      window.location.href = '/signin';
+      base44.auth.redirectToLogin(window.location.pathname);
       return null;
     }
   }
 
-  // If no token at all, redirect to branded sign-in
+  // If no token at all, let the platform handle login
   if (!isLoadingAuth && !isAuthenticated) {
-    window.location.href = '/signin';
+    base44.auth.redirectToLogin(window.location.pathname);
     return null;
   }
 
