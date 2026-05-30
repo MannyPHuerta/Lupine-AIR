@@ -298,20 +298,16 @@ export default function EditRentalPanel({ order, equipment, onClose, onSaved }) 
             </div>
           </div>
 
-          {/* Signature */}
-          <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Customer Signature</label>
-            <SignaturePad
-              onSave={setSignatureDataUrl}
-              onClear={() => setSignatureDataUrl(null)}
-            />
-            {signatureDataUrl && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-green-700 font-medium">
-                <span>✓ Signature captured</span>
-                <button onClick={() => setSignatureDataUrl(null)} className="text-gray-400 hover:text-red-500 underline">Remove</button>
+          {/* Signature — read-only display only (signatures captured at initial confirmation) */}
+          {order.signatureDataUrl && (
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Customer Signature (Captured at Confirmation)</label>
+              <div className="bg-white border rounded-lg p-3">
+                <img src={order.signatureDataUrl} alt="Customer signature" className="h-16 mx-auto" />
               </div>
-            )}
-          </div>
+              <p className="text-xs text-gray-400 mt-1">ⓘ Signatures cannot be changed after initial rental confirmation.</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
