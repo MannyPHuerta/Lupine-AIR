@@ -119,14 +119,19 @@ const AuthenticatedApp = () => {
       );
     }
     if (authError.type === 'auth_required') {
-      base44.auth.redirectToLogin(window.location.pathname);
+      // Only redirect if there's truly no token in localStorage
+      if (!localStorage.getItem('base44_access_token')) {
+        base44.auth.redirectToLogin(window.location.pathname);
+      }
       return null;
     }
   }
 
-  // If no token at all, let the platform handle login
+  // If not loading and not authenticated, redirect to login
   if (!isLoadingAuth && !isAuthenticated) {
-    base44.auth.redirectToLogin(window.location.pathname);
+    if (!localStorage.getItem('base44_access_token')) {
+      base44.auth.redirectToLogin(window.location.pathname);
+    }
     return null;
   }
 
