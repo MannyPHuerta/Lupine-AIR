@@ -52,7 +52,6 @@ Deno.serve(async (req) => {
         email: customerEmail,
         name: customerName,
         phone: customerPhone || undefined,
-        metadata: { userId: user.id },
       });
       stripeCustomerId = customer.id;
     }
@@ -76,7 +75,6 @@ Deno.serve(async (req) => {
         startDate,
         endDate,
         totalAmount: String(totalAmount),
-        userId: user.id,
       },
     });
 
