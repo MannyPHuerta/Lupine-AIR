@@ -10,7 +10,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -38,6 +38,7 @@ const navGroups = [
     description: 'Management & finance',
     items: [
       { label: 'Business Intelligence', path: '/aireports', icon: ChartNoAxesCombined },
+      { label: 'Leaderboards', path: '/leaderboard', icon: Trophy },
       { label: 'Accounting', path: '/accounting', icon: Receipt },
       { label: 'Loyalty Manager', path: '/loyalty-manager', icon: Star },
       { label: 'Inventory Health', path: '/inventory-health', icon: AlertTriangle },

@@ -88,6 +88,7 @@ import GPSProviderSettings from "./pages/GPSProviderSettings";
 import UserManagement from "./pages/UserManagement";
 import DataExport from "./pages/DataExport";
 import DemoManager from "./pages/DemoManager";
+import Leaderboard from "./pages/Leaderboard";
 import SignIn from "./pages/SignIn";
 
 const AuthenticatedApp = () => {
@@ -206,6 +207,7 @@ const AuthenticatedApp = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/timesheets" element={<Timesheets />} />
         <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
