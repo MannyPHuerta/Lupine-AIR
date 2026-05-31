@@ -309,7 +309,9 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
             <button
               onClick={() => {
                 onClose();
-                navigate(`/rental-history?search=${encodeURIComponent(rental.invoiceNumber || rental.customerName)}`);
+                navigate(rental.invoiceNumber
+                  ? `/rental-history?invoice=${encodeURIComponent(rental.invoiceNumber)}`
+                  : `/rental-history?search=${encodeURIComponent(rental.customerName)}`);
               }}
               className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg transition"
             >
