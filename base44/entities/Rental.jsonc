@@ -155,6 +155,21 @@
       "type": "number",
       "description": "Rental cost before tax/fees (USD)"
     },
+    "extraShifts": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of extra shifts/days added to the rental"
+    },
+    "extraShiftRate": {
+      "type": "number",
+      "default": 0,
+      "description": "Rate per extra shift (USD/day)"
+    },
+    "extraShiftTotal": {
+      "type": "number",
+      "default": 0,
+      "description": "Total charges for extra shifts (extraShifts \u00d7 extraShiftRate)"
+    },
     "hourMeterStart": {
       "type": "number",
       "description": "Hour meter reading at checkout (for equipment with hour meter)"

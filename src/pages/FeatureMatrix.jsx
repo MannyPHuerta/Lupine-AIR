@@ -71,7 +71,7 @@ const airCapabilities = {
   "GPS delivery routing": { supported: true, note: "Route optimization, GPS tracking integration" },
   "Employee time clock": { supported: true, note: "Timesheets with QR code clock-in" },
   "Online account management": { supported: true, note: "Customer portal and online store" },
-  "Extra shift billing": { supported: false, note: "Not yet implemented" },
+  "Extra shift billing": { supported: true, note: "Add extra rental days/shifts to active rentals with automatic billing" },
   "Telematics": { supported: true, note: "GPS provider integrations (Samsara, etc.)" },
   "Rating E-commerce": { supported: true, note: "Online store with intent-based shopping" },
   "Safety inspection tracking": { supported: true, note: "Inspection queue and condition tracking" },

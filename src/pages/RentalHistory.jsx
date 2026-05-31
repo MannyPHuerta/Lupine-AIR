@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download, ClipboardList, Camera, AlertCircle, Check } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download, ClipboardList, Camera, AlertCircle, Check, Clock } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import EditRentalPanel from '@/components/rentals/EditRentalPanel';
 import SignaturePad from '@/components/invoice/SignaturePad';
 import PhotoCapture from '@/components/delivery/PhotoCapture';
+import ExtraShiftBillingModal from '@/components/rentals/ExtraShiftBillingModal';
 
 
 const STATUS_COLORS = {
@@ -93,6 +94,7 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
   const [returnPhotos, setReturnPhotos] = useState([]);
   const [conditionNotes, setConditionNotes] = useState({});
   const [needsRouting, setNeedsRouting] = useState({});
+  const [showExtraShift, setShowExtraShift] = useState(false);
 
   const lines = order.lines;
   const taxRateDecimal = (order.taxRate || 8.25) / 100;
@@ -399,6 +401,20 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
             </div>
           )}
 
+          {/* Extra Shift Billing Modal */}
+          {showExtraShift && (
+            <ExtraShiftBillingModal
+              rental={rentals.find(r => r.id === order.rentalIds[0])}
+              equipment={equipment.find(e => e.id === order.lines[0]?.equipmentId)}
+              onClose={() => setShowExtraShift(false)}
+              onSuccess={() => {
+                setShowExtraShift(false);
+                onConfirmed();
+                alert('Extra shift billing added successfully!');
+              }}
+            />
+          )}
+
           {/* Return Check-In Modal */}
           {showReturnCheckIn && (
             <div className="border rounded-lg p-4 bg-gray-50 space-y-4">
@@ -552,16 +568,26 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
               </div>
             ) : (
               <>
-                {/* Check-In Return Button - shown when status is "out" */}
+                {/* Extra Shift Billing Button - shown when status is "out" */}
                 {order.status === 'out' && (
-                  <Button
-                    size="sm"
-                    onClick={handleReturnCheckIn}
-                    disabled={advancingStatus}
-                    className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <ArrowLeft className="w-4 h-4" /> Check-In Return
-                  </Button>
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => setShowExtraShift(true)}
+                      disabled={advancingStatus}
+                      className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      <Clock className="w-4 h-4" /> Add Extra Shift
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleReturnCheckIn}
+                      disabled={advancingStatus}
+                      className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <ArrowLeft className="w-4 h-4" /> Check-In Return
+                    </Button>
+                  </>
                 )}
                 {nextStatus && nextStatus !== 'returned' && (
                   <Button size="sm" onClick={handleAdvanceStatus} disabled={advancingStatus} variant="outline" className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50">
