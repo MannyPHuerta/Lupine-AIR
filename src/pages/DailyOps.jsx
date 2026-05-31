@@ -163,9 +163,9 @@ export default function DailyOps() {
     setLoading(true);
     const [me, r, eq, dels] = await Promise.all([
       base44.auth.me(),
-      base44.entities.Rental.list('-startDate', 1000),
-      base44.entities.Equipment.list('name', 2000),
-      base44.entities.Delivery.list('-created_date', 500),
+      base44.entities.Rental.list('-startDate', 500),
+      base44.entities.Equipment.list('name', 500),
+      base44.entities.Delivery.list('-created_date', 200),
     ]);
     setUser(me);
     setRentals(r);
