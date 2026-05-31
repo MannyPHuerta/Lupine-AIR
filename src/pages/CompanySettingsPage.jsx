@@ -6,6 +6,7 @@ import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import PaymentSettingsPanel from '@/components/settings/PaymentSettingsPanel';
 import { rentalDayModeLabel } from '@/lib/rentalDayCalc';
 
@@ -25,6 +26,11 @@ export default function CompanySettingsPage() {
     invoiceNumberPrefix: 'MCL',
     smsRemindersEnabled: true,
     rentalDayMode: 'clock_hour',
+    lateFeesEnabled: false,
+    lateFeePerDay: 0,
+    lateFeePenaltyRate: 0,
+    lateFeeGracePeriod: 0,
+    lateFeeMaxCap: 0,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,6 +109,11 @@ export default function CompanySettingsPage() {
       invoiceNumberPrefix: settings.invoiceNumberPrefix || 'MCL',
       smsRemindersEnabled: settings.smsRemindersEnabled !== false,
       rentalDayMode: settings.rentalDayMode || 'clock_hour',
+      lateFeesEnabled: settings.lateFeesEnabled === true,
+      lateFeePerDay: parseFloat(settings.lateFeePerDay) || 0,
+      lateFeePenaltyRate: parseFloat(settings.lateFeePenaltyRate) || 0,
+      lateFeeGracePeriod: parseInt(settings.lateFeeGracePeriod) || 0,
+      lateFeeMaxCap: parseFloat(settings.lateFeeMaxCap) || 0,
     };
 
     payload.geofenceAlertPhones = settings.geofenceAlertPhones || [];
@@ -327,6 +338,82 @@ export default function CompanySettingsPage() {
               >
                 🏢 Configure per-branch prefix & starting number →
               </button>
+            </div>
+
+            {/* Late Fees */}
+            <div className="bg-white rounded-xl border shadow-sm p-5">
+              <div className="font-semibold text-gray-900 mb-1">💰 Late Fee Calculation</div>
+              <p className="text-xs text-gray-500 mb-4">
+                Automated late fees accrue daily for overdue rentals. A daily automation runs at 6am to update all overdue rentals.
+              </p>
+              
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Enable Late Fees (Master Switch)</div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {settings.lateFeesEnabled ? '✓ Active — late fees will be calculated daily' : '✗ Disabled — no late fees will be charged'}
+                  </div>
+                </div>
+                <Switch
+                  checked={settings.lateFeesEnabled}
+                  onCheckedChange={(checked) => handleChange('lateFeesEnabled', checked)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Flat Late Fee Per Day (USD)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={settings.lateFeePerDay}
+                    onChange={e => handleChange('lateFeePerDay', parseFloat(e.target.value) || 0)}
+                    placeholder="10.00"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Fixed amount charged per day late</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Penalty Rate (% of daily rate)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={settings.lateFeePenaltyRate * 100}
+                    onChange={e => handleChange('lateFeePenaltyRate', (parseFloat(e.target.value) || 0) / 100)}
+                    placeholder="10"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Percentage of equipment daily rate</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Grace Period (Days)</label>
+                  <Input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={settings.lateFeeGracePeriod}
+                    onChange={e => handleChange('lateFeeGracePeriod', parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Days before fees start accruing (0 = immediate)</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Maximum Late Fee Cap (USD)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={settings.lateFeeMaxCap}
+                    onChange={e => handleChange('lateFeeMaxCap', parseFloat(e.target.value) || 0)}
+                    placeholder="0 = no cap"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">0 = unlimited, set max to cap total fees</p>
+                </div>
+              </div>
             </div>
 
             {/* SMS Reminders */}

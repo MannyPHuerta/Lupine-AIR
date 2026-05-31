@@ -70,6 +70,31 @@
       "default": "clock_hour",
       "description": "Billing cycle rule."
     },
+    "lateFeesEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Master switch for late fee calculation across all rentals"
+    },
+    "lateFeePerDay": {
+      "type": "number",
+      "default": 0,
+      "description": "Late fee amount per day (USD) - flat fee charged for each day overdue"
+    },
+    "lateFeePenaltyRate": {
+      "type": "number",
+      "default": 0,
+      "description": "Late fee penalty rate (as decimal, e.g. 0.10 for 10%) - percentage of daily rate charged per day overdue"
+    },
+    "lateFeeGracePeriod": {
+      "type": "integer",
+      "default": 0,
+      "description": "Grace period in days before late fees start accruing (e.g. 1 = fees start on 2nd day late)"
+    },
+    "lateFeeMaxCap": {
+      "type": "number",
+      "default": 0,
+      "description": "Maximum late fee that can be charged per rental (0 = no cap)"
+    },
     "brandingTheme": {
       "type": "object",
       "description": "Theme customization for internal staff app",

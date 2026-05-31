@@ -122,6 +122,31 @@
       "type": "number",
       "description": "Your markup/profit on this subrent (USD)"
     },
+    "lateFeesEnabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Per-rental override for late fees (true = apply late fees, false = waive for this rental)"
+    },
+    "isLate": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when rental is past endDate and status is 'out'"
+    },
+    "daysLate": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of days overdue (calculated daily)"
+    },
+    "lateFeePerDay": {
+      "type": "number",
+      "default": 0,
+      "description": "Late fee rate per day for this rental (USD)"
+    },
+    "lateFeeTotal": {
+      "type": "number",
+      "default": 0,
+      "description": "Total accumulated late fees (USD)"
+    },
     "totalDays": {
       "type": "integer",
       "description": "Number of rental days"
