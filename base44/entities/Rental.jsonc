@@ -108,6 +108,27 @@
       "type": "number",
       "description": "Rental cost before tax/fees (USD)"
     },
+    "hourMeterStart": {
+      "type": "number",
+      "description": "Hour meter reading at checkout (for equipment with hour meter)"
+    },
+    "hourMeterEnd": {
+      "type": "number",
+      "description": "Hour meter reading at check-in/return (for equipment with hour meter)"
+    },
+    "hoursUsed": {
+      "type": "number",
+      "description": "Total hours used during this rental (hourMeterEnd - hourMeterStart)"
+    },
+    "hourlyRate": {
+      "type": "number",
+      "description": "Hourly billing rate for this rental (USD/hour)"
+    },
+    "hourMeterCharges": {
+      "type": "number",
+      "default": 0,
+      "description": "Total charges from hour meter usage (hoursUsed \u00d7 hourlyRate)"
+    },
     "taxRate": {
       "type": "number",
       "description": "Sales tax rate (as decimal, e.g. 0.0825 for 8.25%)"

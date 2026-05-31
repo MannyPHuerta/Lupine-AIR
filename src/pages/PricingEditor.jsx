@@ -141,7 +141,9 @@ export default function PricingEditor() {
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Daily</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Weekly</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Monthly</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Hourly</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Deposit</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Hour Meter</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Consumable</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Specs</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Action</th>
@@ -171,9 +173,21 @@ export default function PricingEditor() {
                       ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
+                      <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'hourlyRate') ?? ''} onChange={(e) => handleFieldChange(eq.id, 'hourlyRate', e.target.value)} className="w-24 text-right" placeholder="$/hr" />
+                    </td>
+                    <td className="px-4 py-3">
                       {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
                         <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'depositRequired')} onChange={(e) => handleFieldChange(eq.id, 'depositRequired', e.target.value)} className="w-24 text-right" />
                       ) : <span className="text-xs text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={edited[eq.id]?.hasHourMeter ?? eq.hasHourMeter ?? false}
+                        onChange={e => handleBoolChange(eq.id, 'hasHourMeter', e.target.checked)}
+                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                        title="Enable hour meter tracking for this equipment"
+                      />
                     </td>
                     <td className="px-4 py-3 text-center">
                       <input

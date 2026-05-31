@@ -15,7 +15,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Trash2, AlertTriangle, CheckCircle, WrenchIcon, Loader2, Sparkles, ArrowRightLeft } from 'lucide-react';
+import { Trash2, AlertTriangle, CheckCircle, WrenchIcon, Loader2, Sparkles, ArrowRightLeft, Activity } from 'lucide-react';
 import UnitStatusBadge from '@/components/equipment/UnitStatusBadge';
 import { useAIEquipmentSearch } from '@/hooks/useAIEquipmentSearch';
 
@@ -184,7 +184,17 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
     const d = calcDays(start, end, sTime, eTime);
     const rate = calcRate(eq, d);
     const baseAmount = Math.round(rate * d * (updatedLine.quantity || 1) * 100) / 100;
-    return { ...updatedLine, rate, baseAmount };
+    
+    // Calculate hour meter charges if equipment has hour meter
+    let hourMeterCharges = 0;
+    if (eq?.hasHourMeter && updatedLine.hourMeterStart !== undefined && updatedLine.hourMeterEnd !== undefined) {
+      const hoursUsed = updatedLine.hourMeterEnd - updatedLine.hourMeterStart;
+      if (hoursUsed > 0 && eq.hourlyRate) {
+        hourMeterCharges = Math.round(hoursUsed * eq.hourlyRate * 100) / 100;
+      }
+    }
+    
+    return { ...updatedLine, rate, baseAmount, hourMeterCharges };
   };
 
   const commitSelect = (eq) => {
@@ -233,6 +243,16 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
     onUpdate(recalc({ ...line, [field]: value }, eq));
   };
 
+  const handleHourMeterChange = (field, value) => {
+    const eq = equipment.find(e => e.id === line.equipmentId);
+    const updated = { ...line, [field]: parseFloat(value) || 0 };
+    // Auto-calculate hours used when both start and end are set
+    if (field === 'hourMeterEnd' && updated.hourMeterStart !== undefined) {
+      updated.hoursUsed = Math.max(0, updated.hourMeterEnd - updated.hourMeterStart);
+    }
+    onUpdate(recalc(updated, eq));
+  };
+
   // Unit status check — is this item physically rentable right now?
   const eqRecord = equipment.find(e => e.id === line.equipmentId);
   const unitStatus = eqRecord?.unitStatus || 'available';
@@ -250,7 +270,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
 
   const available = line.equipmentId && startDate && endDate && conflicts.length === 0;
   const taxAmount = line.taxable ? Math.round(line.baseAmount * 0.0825 * 100) / 100 : 0;
-  const lineTotal = line.baseAmount + taxAmount + (line.deposit || 0);
+  const lineTotal = line.baseAmount + taxAmount + (line.deposit || 0) + (line.hourMeterCharges || 0);
 
   return (
     <div className="border rounded-lg p-4 bg-white space-y-3">
@@ -372,6 +392,54 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
         />
       </div>
 
+      {/* Hour meter tracking for equipment with hour meter */}
+      {line.equipmentId && eqRecord?.hasHourMeter && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-blue-800">
+            <Activity className="w-3.5 h-3.5" />
+            Hour Meter Tracking
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-blue-700 font-medium">Start Reading</label>
+              <input
+                type="number"
+                step="0.1"
+                value={line.hourMeterStart ?? ''}
+                onChange={e => handleHourMeterChange('hourMeterStart', e.target.value)}
+                placeholder="0.0"
+                className="h-7 rounded border border-input bg-white px-2 text-xs w-24"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-blue-700 font-medium">End Reading</label>
+              <input
+                type="number"
+                step="0.1"
+                value={line.hourMeterEnd ?? ''}
+                onChange={e => handleHourMeterChange('hourMeterEnd', e.target.value)}
+                placeholder="0.0"
+                className="h-7 rounded border border-input bg-white px-2 text-xs w-24"
+              />
+            </div>
+            {line.hoursUsed !== undefined && line.hoursUsed > 0 && (
+              <>
+                <div className="flex items-center gap-1.5 text-blue-800">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span className="font-medium">Hours Used: <strong>{line.hoursUsed.toFixed(1)} hrs</strong></span>
+                </div>
+                {line.hourMeterCharges > 0 && (
+                  <div className="text-blue-800">
+                    <span>Hourly Charges: <strong>${line.hourMeterCharges.toFixed(2)}</strong></span>
+                    {eqRecord.hourlyRate && <span className="text-blue-600 ml-1">(@ ${eqRecord.hourlyRate}/hr)</span>}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Availability & pricing row */}
       {line.equipmentId && (
         <div className="flex items-center justify-between text-xs gap-4 flex-wrap">
@@ -410,6 +478,7 @@ export default function EquipmentLineItem({ line, equipment, rentals, onUpdate, 
               <span>Rental: <strong>${line.baseAmount.toFixed(2)}</strong></span>
               {line.taxable && <span>Tax: <strong>${taxAmount.toFixed(2)}</strong></span>}
               {line.deposit > 0 && <span>Deposit: <strong>${line.deposit.toFixed(2)}</strong></span>}
+              {line.hourMeterCharges > 0 && <span className="text-blue-700">Hours: <strong>${line.hourMeterCharges.toFixed(2)}</strong></span>}
               <span className="text-gray-900 font-bold">Line: ${lineTotal.toFixed(2)}</span>
             </div>
           )}

@@ -35,6 +35,20 @@
       "type": "number",
       "description": "Monthly rental rate (30+ days discount)"
     },
+    "hourlyRate": {
+      "type": "number",
+      "description": "Hourly billing rate for equipment with hour meter (USD/hour)"
+    },
+    "hasHourMeter": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this equipment has an hour meter for usage-based billing"
+    },
+    "currentHourMeterReading": {
+      "type": "number",
+      "default": 0,
+      "description": "Current hour meter reading on this equipment (total lifetime hours)"
+    },
     "depositRequired": {
       "type": "number",
       "description": "Security deposit (USD)"

@@ -370,6 +370,13 @@ export default function AvailabilityManager() {
       const taxAmount = line.taxable !== false ? Math.round(line.baseAmount * taxRateDecimal * 100) / 100 : 0;
       const totalDays = calcBillableDays(line.startDate, line.endDate, pickupTime, rentalDayMode);
 
+      // Hour meter tracking
+      const hourMeterStart = line.hourMeterStart ?? null;
+      const hourMeterEnd = line.hourMeterEnd ?? null;
+      const hoursUsed = line.hoursUsed ?? (hourMeterStart !== null && hourMeterEnd !== null ? hourMeterEnd - hourMeterStart : null);
+      const hourlyRate = line.hourlyRate ?? 0;
+      const hourMeterCharges = line.hourMeterCharges ?? 0;
+
       // Calculate delivery/return fees — only charge once per order, not per line
       const matrixFee = calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip);
       const dFee = createdIds.length === 0 && deliveryMethod === 'company_delivery' ? (aiDeliveryFee ?? matrixFee) : 0;
@@ -404,6 +411,11 @@ export default function AvailabilityManager() {
         branch: customer.branch,
         totalDays,
         baseAmount: line.baseAmount,
+        hourMeterStart,
+        hourMeterEnd,
+        hoursUsed,
+        hourlyRate,
+        hourMeterCharges,
         taxRate: taxRateDecimal,
         taxAmount,
         deposit: (line.deposit || 0) * line.quantity,
