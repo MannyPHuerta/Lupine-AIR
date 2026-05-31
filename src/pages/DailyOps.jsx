@@ -35,7 +35,9 @@ function RentalRow({ rental, badge, badgeColor, navigate }) {
   return (
     <div
       className="flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 border-b last:border-0 transition cursor-pointer"
-      onClick={() => navigate(`/rental-history?search=${encodeURIComponent(rental.invoiceNumber || rental.customerName)}`)}
+      onClick={() => navigate(rental.invoiceNumber
+        ? `/rental-history?invoice=${encodeURIComponent(rental.invoiceNumber)}`
+        : `/rental-history?search=${encodeURIComponent(rental.customerName)}`)}
     >
       <div className="flex-1 min-w-0">
         <div className="font-semibold text-gray-900 text-sm truncate">{rental.customerName}</div>

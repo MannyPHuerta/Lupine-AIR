@@ -645,13 +645,14 @@ export default function RentalHistory() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const initialSearch = urlParams.get('search') || '';
+  const initialInvoice = urlParams.get('invoice') || '';
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialSearch);
-  const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [invoiceSearch, setInvoiceSearch] = useState(initialInvoice);
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -661,9 +662,9 @@ export default function RentalHistory() {
     base44.entities.Rental.list('-created_date', 2000).then(setRentals);
   };
 
-  // Clear URL search param after applying it (so Back navigation shows full history)
+  // Clear URL params after applying them (so Back navigation shows full history)
   useEffect(() => {
-    if (initialSearch) {
+    if (initialSearch || initialInvoice) {
       window.history.replaceState({}, '', '/rental-history');
     }
   }, []);
