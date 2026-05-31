@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles, User, Star } from 'lucide-react';
+import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles, User, Star, Repeat } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import RentalAlertModal from '@/components/equipment/RentalAlertModal';
 import PromoNudge from '@/components/counter/PromoNudge';
 import VolumeNudge from '@/components/counter/VolumeNudge';
 import CustomerVerificationStatus from '@/components/counter/CustomerVerificationStatus';
+import RecurringRentalModal from '@/components/counter/RecurringRentalModal';
 
 /**
  * SMART VERIFICATION CACHING
@@ -50,6 +51,7 @@ export default function Counter() {
   const [volumeRules, setVolumeRules] = useState([]);
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [saleType, setSaleType] = useState('personal'); // 'personal' | 'business'
+  const [showRecurringModal, setShowRecurringModal] = useState(false);
   const { aiSuggestions, isSearching: aiSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(equipment);
   const aiTimerRef = useRef(null);
 
@@ -181,6 +183,14 @@ export default function Counter() {
           equipment={pendingAlertItem}
           onConfirm={() => { commitAddToCart(pendingAlertItem); setPendingAlertItem(null); }}
           onCancel={() => setPendingAlertItem(null)}
+        />
+      )}
+      {showRecurringModal && selectedCustomer && (
+        <RecurringRentalModal
+          customer={selectedCustomer}
+          lineItems={cart}
+          isOpen={showRecurringModal}
+          onClose={() => setShowRecurringModal(false)}
         />
       )}
       {practiceMode && <PracticeModeWatermark />}
@@ -354,6 +364,15 @@ export default function Counter() {
                       <div className="text-sm font-bold text-indigo-600">${quickTotal.toFixed(2)}/day</div>
                     )}
                   </div>
+                  {cart.length > 0 && selectedCustomer && (
+                    <button
+                      onClick={() => setShowRecurringModal(true)}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold transition border border-indigo-200"
+                    >
+                      <Repeat className="w-3.5 h-3.5" />
+                      Set Up Recurring Rental
+                    </button>
+                  )}
                   {cart.map(item => (
                     <div key={item.lineId} className="bg-white rounded-lg border p-3 flex items-center justify-between gap-2">
                       <div>

@@ -1,0 +1,175 @@
+{
+  "name": "RecurringRental",
+  "type": "object",
+  "properties": {
+    "customerId": {
+      "type": "string",
+      "description": "Reference to Customer record"
+    },
+    "customerName": {
+      "type": "string",
+      "description": "Customer name (denormalized)"
+    },
+    "customerEmail": {
+      "type": "string",
+      "description": "Customer email for notifications"
+    },
+    "customerPhone": {
+      "type": "string",
+      "description": "Customer phone for SMS notifications"
+    },
+    "customerAddress": {
+      "type": "string",
+      "description": "Customer billing address"
+    },
+    "customerCity": {
+      "type": "string",
+      "description": "Customer billing city"
+    },
+    "customerState": {
+      "type": "string",
+      "description": "Customer billing state"
+    },
+    "customerZip": {
+      "type": "string",
+      "description": "Customer billing zip"
+    },
+    "lineItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "equipmentId": {
+            "type": "string"
+          },
+          "equipmentName": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "default": 1
+          },
+          "dailyRate": {
+            "type": "number"
+          },
+          "weeklyRate": {
+            "type": "number"
+          },
+          "monthlyRate": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "equipmentId",
+          "equipmentName",
+          "quantity"
+        ]
+      },
+      "description": "Equipment line items for this recurring rental"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "biweekly",
+        "monthly",
+        "quarterly",
+        "yearly"
+      ],
+      "description": "How often this rental recurs"
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When the recurring rental starts"
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When the recurring rental ends (optional)"
+    },
+    "rentalDays": {
+      "type": "integer",
+      "description": "Number of days per rental occurrence (e.g., 7 for weekly rental)"
+    },
+    "nextOccurrenceDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Next date to generate a rental"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "completed"
+      ],
+      "default": "active",
+      "description": "Whether this recurring rental is active"
+    },
+    "autoConfirm": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, auto-generate rentals without staff review. If false, notify staff to review before confirming."
+    },
+    "deliveryMethod": {
+      "type": "string",
+      "enum": [
+        "customer_pickup",
+        "company_delivery",
+        "shipped"
+      ],
+      "default": "customer_pickup",
+      "description": "How equipment is delivered"
+    },
+    "returnMethod": {
+      "type": "string",
+      "enum": [
+        "company_pickup",
+        "customer_return",
+        "customer_ships"
+      ],
+      "default": "customer_return",
+      "description": "How equipment is returned"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch managing this recurring rental"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Special instructions or notes"
+    },
+    "totalOccurrences": {
+      "type": "integer",
+      "description": "Total number of occurrences to generate (null = indefinite)"
+    },
+    "generatedCount": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of rentals generated so far"
+    },
+    "lastGeneratedDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when last rental was generated"
+    },
+    "lastGeneratedRentalId": {
+      "type": "string",
+      "description": "ID of the most recently generated rental"
+    },
+    "createdBy": {
+      "type": "string",
+      "description": "Email of staff who created this recurring rental"
+    }
+  },
+  "required": [
+    "customerId",
+    "customerName",
+    "lineItems",
+    "frequency",
+    "startDate",
+    "rentalDays",
+    "branch"
+  ]
+}

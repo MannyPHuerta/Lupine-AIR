@@ -53,7 +53,7 @@ const airCapabilities = {
   "Analytics": { supported: true, note: "AIReports with BI dashboards and leaderboards" },
   "Accounting": { supported: true, note: "Accounting dashboard with P&L, expense tracking" },
   "Digital signatures": { supported: true, note: "Signature pads for agreements and deliveries" },
-  "Recurring rentals": { supported: false, note: "Not yet implemented" },
+  "Recurring rentals": { supported: true, note: "V1 launched - weekly/monthly/quarterly schedules, auto-confirm option" },
   "Multi-location support": { supported: true, note: "Branch settings, cross-branch transfers" },
   "Recommended items": { supported: true, note: "AI-powered equipment suggestions and bundles" },
   "Maintenance management": { supported: true, note: "Work orders, maintenance logs, AI repair intel" },
