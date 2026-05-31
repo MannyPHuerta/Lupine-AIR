@@ -77,7 +77,7 @@ function groupIntoOrders(rentals) {
   return Object.values(map).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
 
-function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed, onEdit }) {
+function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onConfirmed, onEdit }) {
   const [expanded, setExpanded] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [emailMode, setEmailMode] = useState(false);
@@ -195,6 +195,61 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
     ));
     setAdvancingStatus(false);
     onConfirmed();
+  };
+
+  const handleReturnCheckIn = async () => {
+    if (!confirm('Process equipment return check-in?')) return;
+    
+    setAdvancingStatus(true);
+    try {
+      // Update all rentals to "returned" status
+      for (const rentalId of order.rentalIds) {
+        const rental = rentals.find(r => r.id === rentalId);
+        if (!rental) continue;
+
+        // Get hour meter end reading from user
+        let hourMeterEnd = null;
+        const equipment = rental.equipmentId ? equipment.find(e => e.id === rental.equipmentId) : null;
+        if (equipment?.hasHourMeter) {
+          const prompt = `Enter hour meter reading for ${equipment.name} (current: ${equipment.currentHourMeterReading || 0}):`;
+          hourMeterEnd = prompt(prompt);
+          if (hourMeterEnd) {
+            // Update equipment's current hour meter reading
+            await base44.entities.Equipment.update(rental.equipmentId, {
+              currentHourMeterReading: parseFloat(hourMeterEnd)
+            });
+          }
+        }
+
+        // Calculate hours used and charges
+        const hourMeterStart = rental.hourMeterStart || 0;
+        const hoursUsed = hourMeterEnd ? (parseFloat(hourMeterEnd) - hourMeterStart) : 0;
+        const hourlyRate = rental.hourlyRate || equipment?.hourlyRate || 0;
+        const hourMeterCharges = hoursUsed > 0 ? (hoursUsed * hourlyRate) : 0;
+
+        // Update rental with return data
+        await base44.entities.Rental.update(rentalId, {
+          status: 'returned',
+          hourMeterEnd: hourMeterEnd ? parseFloat(hourMeterEnd) : null,
+          hoursUsed: hoursUsed > 0 ? hoursUsed : null,
+          hourMeterCharges: hourMeterCharges > 0 ? hourMeterCharges : 0,
+        });
+
+        // Mark equipment as available
+        if (rental.equipmentId && rental.equipmentId !== 'quote-item') {
+          await base44.entities.Equipment.update(rental.equipmentId, {
+            unitStatus: 'available'
+          });
+        }
+      }
+
+      alert('✓ Equipment returned successfully!');
+      onConfirmed();
+    } catch (err) {
+      alert(`Error processing return: ${err.message}`);
+    } finally {
+      setAdvancingStatus(false);
+    }
   };
 
   const handleEmailInvoice = async () => {
@@ -367,7 +422,18 @@ function OrderCard({ order, equipment, companyInfo, branchSettings, onConfirmed,
               </div>
             ) : (
               <>
-                {nextStatus && (
+                {/* Check-In Return Button - shown when status is "out" */}
+                {order.status === 'out' && (
+                  <Button
+                    size="sm"
+                    onClick={handleReturnCheckIn}
+                    disabled={advancingStatus}
+                    className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Check-In Return
+                  </Button>
+                )}
+                {nextStatus && nextStatus !== 'returned' && (
                   <Button size="sm" onClick={handleAdvanceStatus} disabled={advancingStatus} variant="outline" className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50">
                     <ArrowRight className="w-4 h-4" /> {advancingStatus ? '...' : `→ ${nextStatus}`}
                   </Button>
@@ -534,7 +600,7 @@ export default function RentalHistory() {
         ) : (
           <div className="space-y-3">
             {filtered.map(order => (
-              <OrderCard key={order.id} order={order} equipment={equipment} companyInfo={companyInfo} branchSettings={branchSettings} onConfirmed={reload} onEdit={setEditingOrder} />
+              <OrderCard key={order.id} order={order} equipment={equipment} rentals={rentals} companyInfo={companyInfo} branchSettings={branchSettings} onConfirmed={reload} onEdit={setEditingOrder} />
             ))}
           </div>
         )}
