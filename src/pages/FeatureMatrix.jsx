@@ -62,6 +62,7 @@ const airCapabilities = {
   "Subrent tracking (re-rent)": { supported: false, note: "Not yet implemented" },
   "Late fee calculation": { supported: false, note: "Not yet implemented" },
   "Hour meter billing": { supported: true, note: "Usage-based billing: (end - start) × hourly rate" },
+  "Subrent tracking (re-rent)": { supported: true, note: "Mark line items as subrent, track vendor, cost, and markup" },
   "Parts inventory management": { supported: true, note: "Parts procurement and tracking" },
   "Scheduling": { supported: true, note: "Delivery scheduling, maintenance scheduling" },
   "Inspection management": { supported: true, note: "Inspection queue and safety checks" },

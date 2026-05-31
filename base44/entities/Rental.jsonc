@@ -100,6 +100,28 @@
       "type": "string",
       "description": "Optional display name for this job (e.g. 'McAllen Street Fair 2026')"
     },
+    "isSubrent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when this equipment is subrented from another dealer (re-rent)"
+    },
+    "subrentVendor": {
+      "type": "string",
+      "description": "Name of the dealer/company you're subrenting from (e.g. 'United Rentals')"
+    },
+    "subrentCost": {
+      "type": "number",
+      "description": "Your cost to subrent this equipment (USD)"
+    },
+    "subrentReturnDate": {
+      "type": "string",
+      "format": "date",
+      "description": "When you need to return the equipment to the subrent vendor"
+    },
+    "subrentMarkup": {
+      "type": "number",
+      "description": "Your markup/profit on this subrent (USD)"
+    },
     "totalDays": {
       "type": "integer",
       "description": "Number of rental days"
