@@ -247,6 +247,19 @@
     "rfidTag": {
       "type": "string",
       "description": "RFID tag ID for keyboard-emulation scanners (V1). Scanned tag auto-populates equipment search."
+    },
+    "rentToOwnEligible": {
+      "type": "boolean",
+      "default": false,
+      "description": "Management toggle \u2014 this item is eligible for Rent-to-Own promotion"
+    },
+    "rentToOwnPrice": {
+      "type": "number",
+      "description": "Rent-to-Own purchase price for this unit (USD)"
+    },
+    "rentToOwnTermMonths": {
+      "type": "integer",
+      "description": "Number of months for the Rent-to-Own term (e.g. 12, 24, 36)"
     }
   },
   "required": [

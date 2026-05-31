@@ -129,7 +129,14 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
 
   const enriched = lines.map(l => {
     const eq = equipment.find(e => e.id === l.equipmentId);
-    return { ...l, equipmentName: eq?.name || l.equipmentName || l.equipmentId, specs: eq?.specs || {} };
+    return {
+      ...l,
+      equipmentName: eq?.name || l.equipmentName || l.equipmentId,
+      specs: eq?.specs || {},
+      rentToOwnEligible: eq?.rentToOwnEligible || false,
+      rentToOwnPrice: eq?.rentToOwnPrice || null,
+      rentToOwnTermMonths: eq?.rentToOwnTermMonths || null,
+    };
   });
 
   const handlePrint = async () => {

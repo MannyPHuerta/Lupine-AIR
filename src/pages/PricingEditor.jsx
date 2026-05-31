@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, ExternalLink, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ExternalLink, Sparkles, CheckCircle2, ShoppingBag } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,13 @@ export default function PricingEditor() {
     setEdited(prev => ({
       ...prev,
       [id]: { ...prev[id], [field]: parseFloat(value) || 0 }
+    }));
+  };
+
+  const handleIntChange = (id, field, value) => {
+    setEdited(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: parseInt(value) || 0 }
     }));
   };
 
@@ -145,6 +152,9 @@ export default function PricingEditor() {
                   <th className="px-4 py-3 text-right font-semibold text-gray-700">Deposit</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Hour Meter</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Consumable</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-700 text-purple-700">RTO Eligible</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Price</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Months</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Specs</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Action</th>
                 </tr>
@@ -197,6 +207,25 @@ export default function PricingEditor() {
                         className="w-4 h-4 accent-indigo-600 cursor-pointer"
                         title="Counter sale — no contract required"
                       />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible ?? false}
+                        onChange={e => handleBoolChange(eq.id, 'rentToOwnEligible', e.target.checked)}
+                        className="w-4 h-4 accent-purple-600 cursor-pointer"
+                        title="Enable Rent-to-Own promotion for this item"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      {(edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible) ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'rentToOwnPrice') ?? ''} onChange={(e) => handleFieldChange(eq.id, 'rentToOwnPrice', e.target.value)} className="w-24 text-right" placeholder="$" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible) ? (
+                        <Input type="number" step="1" min="1" value={getDisplayValue(eq, 'rentToOwnTermMonths') ?? ''} onChange={(e) => handleIntChange(eq.id, 'rentToOwnTermMonths', e.target.value)} className="w-20 text-right" placeholder="mo" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button

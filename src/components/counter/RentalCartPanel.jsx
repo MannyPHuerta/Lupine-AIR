@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Trash2, DollarSign, Loader2, Check } from 'lucide-react';
+import { Trash2, DollarSign, Loader2, Check, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { openInvoiceWindow, writeInvoiceToWindow } from '@/lib/buildInvoiceHTML';
@@ -150,17 +150,23 @@ export default function RentalCartPanel({
         companyInfo: companySettings
           ? { companyName: companySettings.companyName || '', logoUrl: companySettings.logoUrl || '', invoiceFooter: companySettings.invoiceFooter || '' }
           : {},
-        lines: cart.map(item => ({
-          equipmentId: item.id,
-          equipmentName: item.name,
-          quantity: 1,
-          rate: item.dailyRate || 0,
-          baseAmount: item.dailyRate || 0,
-          taxable: item.taxable !== false,
-          deposit: 0,
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date().toISOString().split('T')[0],
-        })),
+        lines: cart.map(item => {
+          const eq = equipment.find(e => e.id === item.id);
+          return {
+            equipmentId: item.id,
+            equipmentName: item.name,
+            quantity: 1,
+            rate: item.dailyRate || 0,
+            baseAmount: item.dailyRate || 0,
+            taxable: item.taxable !== false,
+            deposit: 0,
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0],
+            rentToOwnEligible: eq?.rentToOwnEligible || false,
+            rentToOwnPrice: eq?.rentToOwnPrice || null,
+            rentToOwnTermMonths: eq?.rentToOwnTermMonths || null,
+          };
+        }),
       };
 
       const win = openInvoiceWindow();
@@ -195,17 +201,32 @@ export default function RentalCartPanel({
 
         {/* Cart items */}
         <div className="space-y-2">
-          {cart.map(item => (
-            <div key={item.lineId} className="bg-white rounded border p-3 flex items-center justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900 text-sm">{item.name}</div>
-                <div className="text-xs text-gray-500 mt-0.5">${(item.dailyRate || 0).toFixed(2)}</div>
+          {cart.map(item => {
+            const eq = equipment.find(e => e.id === item.id);
+            const rtoEligible = eq?.rentToOwnEligible && eq?.rentToOwnPrice && eq?.rentToOwnTermMonths;
+            const monthlyPayment = rtoEligible ? (eq.rentToOwnPrice / eq.rentToOwnTermMonths).toFixed(2) : null;
+            return (
+              <div key={item.lineId}>
+                <div className="bg-white rounded border p-3 flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 text-sm">{item.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">${(item.dailyRate || 0).toFixed(2)}</div>
+                  </div>
+                  <button onClick={() => onRemoveItem(item.lineId)} className="text-gray-400 hover:text-red-600 p-1 flex-shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {rtoEligible && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-b-lg px-3 py-2 -mt-0.5 flex items-start gap-2">
+                    <ShoppingBag className="w-3.5 h-3.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-xs text-purple-800 leading-snug">
+                      <span className="font-semibold">Rent-to-Own available!</span> Own this {item.name} for just <span className="font-bold">${monthlyPayment}/mo</span> for {eq.rentToOwnTermMonths} months (${eq.rentToOwnPrice.toFixed(2)} total). Ask about our Rent-to-Own program!
+                    </div>
+                  </div>
+                )}
               </div>
-              <button onClick={() => onRemoveItem(item.lineId)} className="text-gray-400 hover:text-red-600 p-1 flex-shrink-0">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Totals */}

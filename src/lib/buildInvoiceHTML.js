@@ -76,11 +76,16 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
           .join('<span style="color:#ccc;margin:0 4px">·</span>')
       : '';
 
+    const rtoMonthly = (l.rentToOwnEligible && l.rentToOwnPrice && l.rentToOwnTermMonths)
+      ? (l.rentToOwnPrice / l.rentToOwnTermMonths).toFixed(2)
+      : null;
+
     return `
       <tr>
         <td style="padding:6px 8px 6px 0;border-bottom:1px solid #f0f0f0;">
           <div style="font-weight:500">${l.equipmentName || ''}</div>
           ${specsStr ? `<div style="font-size:10px;color:#888;margin-top:3px;line-height:1.6">${specsStr}</div>` : ''}
+          ${rtoMonthly ? `<div style="margin-top:4px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:4px;padding:3px 6px;font-size:10px;color:#6d28d9;display:inline-block">🏷️ <strong>Rent-to-Own:</strong> $${rtoMonthly}/mo × ${l.rentToOwnTermMonths} months = $${l.rentToOwnPrice.toFixed(2)}</div>` : ''}
         </td>
         <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:center;color:#666">${l.quantity || 1}</td>
         <td style="padding:6px;border-bottom:1px solid #f0f0f0;text-align:center;font-size:11px;color:#666">${l.startDate || ''} – ${l.endDate || ''}</td>
@@ -261,6 +266,40 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
       ${order.id ? `<div style="margin-top:2px">Invoice: ${order.id}</div>` : ''}
       <div style="color:#6366f1;margin-top:4px;font-size:10px;word-break:break-all">${order.clockInUrl}</div>
     </div>
+  </div>` : ''}
+
+  ${lines.some(l => l.rentToOwnEligible && l.rentToOwnPrice && l.rentToOwnTermMonths) ? `
+  <div style="border:2px solid #7c3aed;border-radius:10px;padding:16px 20px;margin-bottom:20px;background:linear-gradient(135deg,#faf5ff,#f3e8ff)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:20px">🏷️</span>
+      <div>
+        <div style="font-size:14px;font-weight:800;color:#5b21b6;letter-spacing:.01em">Own It! Rent-to-Own Program</div>
+        <div style="font-size:11px;color:#7c3aed;margin-top:1px">Turn your rental into ownership — no large upfront cost</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#4c1d95;line-height:1.7;margin-bottom:10px">
+      One or more items on this rental are eligible for our <strong>Rent-to-Own program</strong>. A portion of your rental payments can be credited toward the purchase price. When you've completed your payments, the equipment is <strong>yours to keep</strong>.
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead>
+        <tr style="background:#ede9fe">
+          <th style="text-align:left;padding:5px 8px;color:#5b21b6;font-weight:700;border-radius:4px 0 0 4px">Equipment</th>
+          <th style="text-align:right;padding:5px 8px;color:#5b21b6;font-weight:700">Purchase Price</th>
+          <th style="text-align:right;padding:5px 8px;color:#5b21b6;font-weight:700">Term</th>
+          <th style="text-align:right;padding:5px 8px;color:#5b21b6;font-weight:700;border-radius:0 4px 4px 0">Est. Monthly</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${lines.filter(l => l.rentToOwnEligible && l.rentToOwnPrice && l.rentToOwnTermMonths).map(l => `
+        <tr>
+          <td style="padding:5px 8px;border-bottom:1px solid #ddd6fe;font-weight:600;color:#1e1b4b">${l.equipmentName}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #ddd6fe;text-align:right;color:#333">$${l.rentToOwnPrice.toFixed(2)}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #ddd6fe;text-align:right;color:#333">${l.rentToOwnTermMonths} months</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #ddd6fe;text-align:right;font-weight:700;color:#5b21b6">$${(l.rentToOwnPrice / l.rentToOwnTermMonths).toFixed(2)}/mo</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:10px;color:#7c3aed;font-style:italic">Ask our staff about enrollment details, credit percentages, and how your payments apply toward ownership. Terms and conditions apply.</div>
   </div>` : ''}
 
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;font-size:11px;color:#aaa;text-align:center">
