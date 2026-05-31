@@ -75,7 +75,7 @@ const airCapabilities = {
   "Telematics": { supported: true, note: "GPS provider integrations (Samsara, etc.)" },
   "Rating E-commerce": { supported: true, note: "Online store with intent-based shopping" },
   "Safety inspection tracking": { supported: true, note: "Inspection queue and condition tracking" },
-  "RFID": { supported: false, note: "Not yet implemented" },
+  "RFID": { supported: true, note: "V1: Keyboard-emulation USB scanners (all browsers). WebUSB/Bluetooth coming soon" },
   "QR Codes": { supported: true, note: "QR code clock-in for timesheets" },
   "Job costing": { supported: true, note: "Major job P&L tracking" },
   "Event space CAD renderings": { supported: true, note: "Event planner with canvas/SVG rendering" },

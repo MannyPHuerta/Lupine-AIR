@@ -92,6 +92,7 @@ import Leaderboard from "./pages/Leaderboard";
 import SignIn from "./pages/SignIn";
 import AITraining from "./pages/AITraining";
 import FeatureMatrix from "./pages/FeatureMatrix";
+import RFIDSettings from "./pages/RFIDSettings";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -194,6 +195,7 @@ const AuthenticatedApp = () => {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/ai-training" element={<AITraining />} />
         <Route path="/feature-matrix" element={<FeatureMatrix />} />
+        <Route path="/rfid-settings" element={<RFIDSettings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

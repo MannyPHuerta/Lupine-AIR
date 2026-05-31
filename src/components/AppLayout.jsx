@@ -11,7 +11,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot, Wifi
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -102,6 +102,7 @@ const navGroups = [
     description: 'System administration',
     items: [
       { label: 'Feature Matrix', path: '/feature-matrix', icon: TrendingUp },
+      { label: 'RFID Settings', path: '/rfid-settings', icon: Wifi, adminOnly: true },
       { label: 'Train AI Assistant', path: '/ai-training', icon: Bot },
       {
         label: 'Pricing & Catalog',

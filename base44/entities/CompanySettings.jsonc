@@ -184,6 +184,27 @@
       ],
       "default": "split_screen",
       "description": "Visual style of the one-time intent chooser modal shown to first-time store visitors (only applies when storeMode is 'both')."
+    },
+    "rfidOptions": {
+      "type": "object",
+      "description": "RFID scanner integration settings",
+      "properties": {
+        "option1KeyboardEmulation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable keyboard-emulation RFID scanners (V1 - works in all browsers)"
+        },
+        "option2WebUSB": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable WebUSB direct integration (Coming Soon - Chrome/Edge only)"
+        },
+        "option3Bluetooth": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable WebBluetooth wireless scanners (Coming Soon - limited browser support)"
+        }
+      }
     }
   },
   "required": []

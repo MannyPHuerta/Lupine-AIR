@@ -243,6 +243,10 @@
     "imageEnrichedAt": {
       "type": "string",
       "description": "ISO timestamp when imageUrl was last enriched by AI"
+    },
+    "rfidTag": {
+      "type": "string",
+      "description": "RFID tag ID for keyboard-emulation scanners (V1). Scanned tag auto-populates equipment search."
     }
   },
   "required": [
