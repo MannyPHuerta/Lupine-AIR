@@ -101,6 +101,7 @@ const navGroups = [
     color: 'text-slate-400',
     description: 'System administration',
     items: [
+      { label: 'Feature Matrix', path: '/feature-matrix', icon: TrendingUp },
       { label: 'Train AI Assistant', path: '/ai-training', icon: Bot },
       {
         label: 'Pricing & Catalog',
