@@ -644,12 +644,13 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
 export default function RentalHistory() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
+  const initialSearch = urlParams.get('search') || '';
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(urlParams.get('search') || '');
+  const [search, setSearch] = useState(initialSearch);
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
@@ -659,6 +660,13 @@ export default function RentalHistory() {
   const reload = () => {
     base44.entities.Rental.list('-created_date', 2000).then(setRentals);
   };
+
+  // Clear URL search param after applying it (so Back navigation shows full history)
+  useEffect(() => {
+    if (initialSearch) {
+      window.history.replaceState({}, '', '/rental-history');
+    }
+  }, []);
 
   useEffect(() => {
     Promise.all([
