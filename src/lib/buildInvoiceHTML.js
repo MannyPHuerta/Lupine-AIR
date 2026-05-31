@@ -41,6 +41,74 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
     ? new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  // Build RTO addendum — auto-generated when isRentToOwn is true
+  const rtoLine = order.lines?.find(l => l.isRentToOwn);
+  const rtoAddendumHtml = order.isRentToOwn ? (() => {
+    const purchasePrice = order.purchasePrice || 0;
+    const termMonths = order.rentToOwnTermMonths || 0;
+    const creditPercent = order.rentToOwnCreditPercent || 0;
+    const monthlyPayment = termMonths > 0 ? (purchasePrice / termMonths).toFixed(2) : '0.00';
+    const expiryDate = order.purchaseOptionExpiry ? new Date(order.purchaseOptionExpiry).toLocaleDateString('en-US') : '—';
+    const equipmentName = order.lines?.map(l => l.equipmentName).filter(Boolean).join(', ') || '—';
+    const today = new Date().toLocaleDateString('en-US');
+    return `
+  <div id="rto-addendum" style="page-break-before:always;margin-top:32px;border-top:3px solid #5b21b6;padding-top:24px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:20px">🏷️</span>
+      <h2 style="font-size:16px;font-weight:800;color:#5b21b6;margin:0">RENT-TO-OWN ADDENDUM</h2>
+    </div>
+    <div style="font-size:11px;color:#6d28d9;margin-bottom:16px;font-style:italic">
+      Addendum to Equipment Rental Agreement — attached to Invoice ${order.id || ''}
+    </div>
+
+    <div style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:8px;padding:16px;margin-bottom:16px;font-size:12px;line-height:1.9">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-bottom:12px">
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Customer</span><br/><strong>${order.customer?.name || '—'}</strong></div>
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Date</span><br/><strong>${today}</strong></div>
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Equipment</span><br/><strong>${equipmentName}</strong></div>
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Invoice</span><br/><strong>${order.id || '—'}</strong></div>
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Purchase Price</span><br/><strong style="color:#5b21b6;font-size:14px">$${purchasePrice.toFixed(2)}</strong></div>
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Monthly Payment</span><br/><strong style="color:#5b21b6;font-size:14px">$${monthlyPayment}/mo × ${termMonths} months</strong></div>
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Rental Credit Applied</span><br/><strong>${creditPercent}% of each rental payment</strong></div>
+        <div><span style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.05em">Purchase Option Expires</span><br/><strong>${expiryDate}</strong></div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;line-height:1.9;color:#333;background:#f9fafb;border:1px solid #e5e7eb;padding:16px;border-radius:6px;font-family:Georgia,serif;margin-bottom:16px">
+      <strong>1. RENT-TO-OWN AGREEMENT.</strong> This Addendum supplements the Equipment Rental Agreement entered into between the Lessor and Lessee identified on the rental invoice. Lessee agrees to make monthly payments as specified above. A portion of each payment, as specified by the credit percentage above, shall be credited toward the Purchase Price of the equipment.<br/><br/>
+
+      <strong>2. PAYMENT SCHEDULE.</strong> Lessee shall make ${termMonths} monthly payments of $${monthlyPayment} beginning one month from the rental start date. Payments are due on the same day each month. All payments must be received by Lessor on or before their due date.<br/><br/>
+
+      <strong>3. TITLE AND OWNERSHIP.</strong> Title to the equipment shall remain with Lessor until all payments have been received in full and Lessor has issued written confirmation of transfer of title. Lessee acquires no ownership interest until final payment is made and accepted.<br/><br/>
+
+      <strong>4. PURCHASE OPTION EXPIRY.</strong> Lessee's right to purchase the equipment under this Addendum expires on ${expiryDate}. If Lessee has not completed all required payments by this date, Lessee forfeits all credited amounts and the equipment shall remain the property of Lessor.<br/><br/>
+
+      <strong>5. DEFAULT.</strong> If Lessee fails to make two (2) or more consecutive payments when due, or otherwise breaches this Addendum or the underlying Rental Agreement, Lessor may immediately cancel this Rent-to-Own contract. Upon cancellation, all payments made to date are forfeited, and Lessor may retake possession of the equipment. Lessee grants Lessor the right to enter Lessee's premises for this purpose without further notice.<br/><br/>
+
+      <strong>6. CONDITION OF EQUIPMENT.</strong> Lessee is responsible for maintaining the equipment in good working order throughout the rental and rent-to-own term. Any damage beyond normal wear and tear shall be the responsibility of the Lessee and may be charged against the credited amount.<br/><br/>
+
+      <strong>7. ENTIRE AGREEMENT.</strong> This Addendum, together with the Equipment Rental Agreement and rental invoice, constitutes the entire agreement between the parties with respect to the rent-to-own arrangement. No modification shall be valid unless in writing and signed by both parties.
+    </div>
+
+    <div style="display:flex;justify-content:space-between;gap:40px;margin-top:24px;flex-wrap:wrap">
+      <div>
+        <div style="border-bottom:1px solid #111;width:240px;height:56px"></div>
+        <div style="margin-top:4px;font-weight:600;color:#111;font-size:12px">Lessee Signature</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Date: ___________________</div>
+      </div>
+      <div>
+        <div style="border-bottom:1px solid #111;width:240px;height:56px"></div>
+        <div style="margin-top:4px;font-weight:600;color:#111;font-size:12px">Authorized Representative (Lessor)</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Date: ___________________</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;font-size:10px;color:#aaa;font-style:italic;text-align:center">
+      This is a default RTO Addendum generated by the AIR platform. Replace with your attorney-reviewed bespoke language when available.
+    </div>
+  </div>`;
+  })() : '';
+
   // Build rental agreement section if present
   const agreementHtml = order.agreement ? `
   <div id="agreement-section" style="page-break-before:always;margin-top:32px;border-top:2px solid #1e1b4b;padding-top:20px">
@@ -256,6 +324,8 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
   </div>
 
   ${agreementHtml}
+
+  ${rtoAddendumHtml}
 
   ${order.clockInUrl ? `
   <div style="border-top:1px solid #e5e7eb;padding-top:16px;margin-top:16px;display:flex;align-items:center;gap:16px;background:#eef2ff;border-radius:8px;padding:12px 16px;">

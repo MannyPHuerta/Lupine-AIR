@@ -246,6 +246,12 @@ export default function AvailabilityManager() {
     paymentMethod: paymentMethod || '',
     deliveryMethod: deliveryMethod || 'customer_pickup',
     returnMethod: returnMethod || 'customer_return',
+    // RTO fields — passed through to invoice for addendum generation
+    isRentToOwn: !!rtoData,
+    purchasePrice: rtoData?.purchasePrice || 0,
+    rentToOwnTermMonths: rtoData?.termMonths || 0,
+    rentToOwnCreditPercent: rtoData?.creditPercent || 0,
+    purchaseOptionExpiry: rtoData?.expiryDate || null,
     worksiteAddress: deliveryMethod === 'company_delivery' ? worksiteAddress : '',
     worksiteCity: deliveryMethod === 'company_delivery' ? worksiteCity : '',
     worksiteState: deliveryMethod === 'company_delivery' ? worksiteState : '',
