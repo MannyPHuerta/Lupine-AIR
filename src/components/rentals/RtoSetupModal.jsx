@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
  * wants to set up an RTO contract BEFORE saving the rental.
  *
  * Props:
- *   equipment    — the Equipment record (has rentToOwnPrice, rentToOwnTermMonths)
+ *   equipment    — the Equipment record (has rentToOwnPrice, rentToOwnTermMonths, monthlyRate)
  *   onConfirm(rtoData) — called with { purchasePrice, termMonths, creditPercent, expiryDate }
  *   onCancel()
  */
@@ -22,7 +22,16 @@ export default function RtoSetupModal({ equipment, onConfirm, onCancel }) {
     return d.toISOString().split('T')[0];
   });
 
-  const monthlyPayment = purchasePrice ? (parseFloat(purchasePrice) / termMonths).toFixed(2) : '—';
+  // Monthly rental rate (what the customer is already paying each month)
+  const monthlyRentalRate = equipment?.monthlyRate || 0;
+  // Credit earned per monthly rental payment
+  const creditPerMonth = monthlyRentalRate > 0 && creditPercent > 0
+    ? (monthlyRentalRate * (creditPercent / 100))
+    : null;
+  // How many months of rentals to reach the purchase price
+  const monthsToOwn = creditPerMonth && purchasePrice
+    ? Math.ceil(parseFloat(purchasePrice) / creditPerMonth)
+    : null;
 
   const handleConfirm = () => {
     if (!purchasePrice || !termMonths || !expiryDate) {
@@ -118,28 +127,39 @@ export default function RtoSetupModal({ equipment, onConfirm, onCancel }) {
 
           {/* Summary */}
           {purchasePrice && (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-1.5 text-sm">
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Monthly Payment</span>
-                <span className="font-bold text-purple-800">${monthlyPayment}/mo</span>
+                <span className="text-gray-600">Purchase Price (to own)</span>
+                <span className="font-bold text-purple-800">${parseFloat(purchasePrice).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Term</span>
-                <span className="font-semibold">{termMonths} months</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Purchase Price</span>
-                <span className="font-semibold">${parseFloat(purchasePrice).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Rental Credit</span>
-                <span className="font-semibold">{creditPercent}% of each payment</span>
-              </div>
+              {monthlyRentalRate > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Monthly Rental Rate</span>
+                  <span className="font-semibold">${monthlyRentalRate.toFixed(2)}/mo</span>
+                </div>
+              )}
+              {creditPerMonth !== null && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Credit Earned / Month</span>
+                  <span className="font-semibold text-green-700">+${creditPerMonth.toFixed(2)}</span>
+                </div>
+              )}
+              {monthsToOwn !== null && (
+                <div className="flex justify-between border-t border-purple-200 pt-2 mt-1">
+                  <span className="text-gray-700 font-medium">Est. Months to Own</span>
+                  <span className="font-bold text-purple-900">{monthsToOwn} months</span>
+                </div>
+              )}
+              {monthlyRentalRate === 0 && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  Set a monthly rate on this equipment to see the payoff estimate.
+                </div>
+              )}
             </div>
           )}
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
-            ⚠️ Reminder: A custom RTO addendum must be attached to the rental agreement before the customer signs.
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-800">
+            ℹ️ An RTO addendum will be automatically printed with the invoice for the customer to sign.
           </div>
         </div>
 
