@@ -195,7 +195,7 @@ export default function AvailabilityCalendar() {
             rentals={filteredRentals}
             deliveries={filteredDeliveries}
             onRentalClick={(rental) => {
-              setView('gantt');
+              navigate(`/rental-history?search=${encodeURIComponent(rental.invoiceNumber || rental.customerName)}`);
             }}
           />
         )}
@@ -206,7 +206,7 @@ export default function AvailabilityCalendar() {
             rentals={filteredRentals}
             deliveries={filteredDeliveries}
             onRentalClick={(rental) => {
-              setView('gantt');
+              navigate(`/rental-history?search=${encodeURIComponent(rental.invoiceNumber || rental.customerName)}`);
             }}
           />
         )}

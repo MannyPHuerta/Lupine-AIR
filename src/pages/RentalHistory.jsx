@@ -643,12 +643,13 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
 
 export default function RentalHistory() {
   const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [branchSettings, setBranchSettings] = useState({});
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(urlParams.get('search') || '');
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');

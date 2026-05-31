@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, X, Loader2, UserPlus, Truck, CheckCircle, Users, Sparkles, CalendarClock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X, Loader2, UserPlus, Truck, CheckCircle, Users, Sparkles, CalendarClock, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
@@ -198,6 +199,7 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
   const [showAssign, setShowAssign] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const navigate = useNavigate();
   if (!rental) return null;
   const color = STATUS_COLORS[rental.status] || STATUS_COLORS.quote;
 
@@ -291,7 +293,7 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
             <span className={`inline-block px-2 py-0.5 rounded-full text-white font-medium text-xs ${color.bg}`}>
               {color.label}
             </span>
-            {isManager && transitions.map(t => (
+            {isManager && transitions.filter(t => t.value !== 'returned').map(t => (
               <button
                 key={t.value}
                 onClick={() => handleStatusChange(t.value)}
@@ -302,6 +304,19 @@ function RentalTooltip({ rental, deliveries, users, currentUser, isManager, onCl
               </button>
             ))}
           </div>
+          {/* For returns & check-ins, send staff to Rental History for full workflow */}
+          {['out', 'returned'].includes(rental.status) && (
+            <button
+              onClick={() => {
+                onClose();
+                navigate(`/rental-history?search=${encodeURIComponent(rental.invoiceNumber || rental.customerName)}`);
+              }}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg transition"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open in Rental History (Check-In / Return)
+            </button>
+          )}
         </div>
 
         {isManager && needsDelivery && (
