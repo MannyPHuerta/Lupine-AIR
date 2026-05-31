@@ -6,7 +6,7 @@ import ScheduleEditInline from '@/components/delivery/ScheduleEditInline';
 import {
   Truck, RotateCcw, AlertTriangle, RefreshCw, Phone, Plus,
   Clock, CheckCircle, Loader2, Calendar, ArrowRightLeft, ChevronLeft, ChevronRight,
-  Tag, CalendarClock, MessageSquare
+  Tag, CalendarClock, MessageSquare, ShoppingBag
 } from 'lucide-react';
 import TextCrewModal from '@/components/calendar/TextCrewModal';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -151,6 +151,7 @@ export default function DailyOps() {
   const [rentals, setRentals] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
+  const [rtoPayments, setRtoPayments] = useState([]);
   const [allEquipment, setAllEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState('All Branches');
@@ -161,17 +162,19 @@ export default function DailyOps() {
 
   const load = async () => {
     setLoading(true);
-    const [me, r, eq, dels] = await Promise.all([
+    const [me, r, eq, dels, rtoPays] = await Promise.all([
       base44.auth.me(),
       base44.entities.Rental.list('-startDate', 500),
       base44.entities.Equipment.list('name', 500),
       base44.entities.Delivery.list('-created_date', 200),
+      base44.entities.RtoPayment.filter({ status: 'pending' }, 'dueDate', 100).catch(() => []),
     ]);
     setUser(me);
     setRentals(r);
     setEquipment(eq);
     setAllEquipment(eq);
     setDeliveries(dels);
+    setRtoPayments(rtoPays);
     const stored = localStorage.getItem('workingBranch');
     setWorkingBranch(stored);
     setLoading(false);
@@ -529,6 +532,35 @@ export default function DailyOps() {
               />
             ))}
         </div>
+
+        {/* RTO Payments Due */}
+        {rtoPayments.length > 0 && (
+          <div className="bg-white border-2 border-purple-300 rounded-xl shadow-sm overflow-hidden">
+            <SectionHeader
+              icon={<ShoppingBag className="w-4 h-4" />}
+              label="Rent-to-Own Payments Due"
+              count={rtoPayments.filter(p => p.dueDate <= today).length}
+              color="bg-purple-600 text-white"
+            />
+            {rtoPayments.filter(p => p.dueDate <= today).slice(0, 5).map(p => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b last:border-0 hover:bg-purple-50 cursor-pointer" onClick={() => navigate('/rto-dashboard')}>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 text-sm">{p.customerName}</div>
+                  <div className="text-xs text-gray-500">{p.equipmentName} · Payment {p.paymentNumber} of {p.totalPayments}</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text-purple-700">${(p.amountDue || 0).toFixed(2)}</div>
+                  <div className="text-xs text-gray-400">Due {p.dueDate}</div>
+                </div>
+              </div>
+            ))}
+            <div className="px-4 py-2 border-t bg-purple-50 text-center">
+              <button onClick={() => navigate('/rto-dashboard')} className="text-xs text-purple-700 font-semibold hover:underline">
+                View all RTO payments →
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 

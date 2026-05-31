@@ -1,0 +1,86 @@
+{
+  "name": "RtoPayment",
+  "type": "object",
+  "properties": {
+    "rentalId": {
+      "type": "string",
+      "description": "Reference to the Rental record (isRentToOwn=true)"
+    },
+    "customerName": {
+      "type": "string",
+      "description": "Denormalized customer name"
+    },
+    "customerEmail": {
+      "type": "string",
+      "description": "Customer email for reminders"
+    },
+    "equipmentName": {
+      "type": "string",
+      "description": "Denormalized equipment name"
+    },
+    "paymentNumber": {
+      "type": "integer",
+      "description": "Which payment in the schedule (1, 2, 3...)"
+    },
+    "totalPayments": {
+      "type": "integer",
+      "description": "Total number of payments in the contract"
+    },
+    "dueDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date this payment is due"
+    },
+    "amountDue": {
+      "type": "number",
+      "description": "Amount due for this payment (USD)"
+    },
+    "amountPaid": {
+      "type": "number",
+      "default": 0,
+      "description": "Amount actually paid"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "late",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Payment status"
+    },
+    "paidAt": {
+      "type": "string",
+      "description": "ISO timestamp when payment was marked received"
+    },
+    "paidBy": {
+      "type": "string",
+      "description": "Email of staff who marked payment received"
+    },
+    "reminderSentAt": {
+      "type": "string",
+      "description": "ISO timestamp of last reminder email sent"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch managing this contract"
+    },
+    "purchasePrice": {
+      "type": "number",
+      "description": "Total purchase price of the RTO contract"
+    },
+    "creditPercent": {
+      "type": "number",
+      "description": "Percent of rental payments credited toward purchase"
+    }
+  },
+  "required": [
+    "rentalId",
+    "customerName",
+    "dueDate",
+    "amountDue",
+    "paymentNumber"
+  ]
+}

@@ -11,7 +11,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot, Wifi
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot, Wifi, ShoppingBag
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -29,6 +29,7 @@ const navGroups = [
       { label: 'Dispatch Board', path: '/dispatch', icon: Truck },
       { label: 'Customers', path: '/customers', icon: Users },
       { label: 'Rental History', path: '/rental-history', icon: ClipboardList },
+      { label: 'Rent-to-Own', path: '/rto-dashboard', icon: ShoppingBag },
       { label: 'Driver View', path: '/driver', icon: Truck },
       { label: 'Timesheets', path: '/timesheets', icon: Clock },
     ],
