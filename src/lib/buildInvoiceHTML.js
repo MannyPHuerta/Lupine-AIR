@@ -90,16 +90,14 @@ export function buildInvoiceHTML(order, amountPaid = 0, signatureDataUrl = null,
       <strong>7. ENTIRE AGREEMENT.</strong> This Addendum, together with the Equipment Rental Agreement and rental invoice, constitutes the entire agreement between the parties with respect to the rent-to-own arrangement. No modification shall be valid unless in writing and signed by both parties.
     </div>
 
-    <div style="display:flex;justify-content:space-between;gap:40px;margin-top:24px;flex-wrap:wrap">
+    <div style="margin-top:24px">
       <div>
-        <div style="border-bottom:1px solid #111;width:240px;height:56px"></div>
+        ${signatureDataUrl
+          ? `<img src="${signatureDataUrl}" style="width:240px;height:56px;border-bottom:1px solid #111;object-fit:contain;object-position:left bottom;display:block" />`
+          : `<div style="border-bottom:1px solid #111;width:240px;height:56px"></div>`
+        }
         <div style="margin-top:4px;font-weight:600;color:#111;font-size:12px">Lessee Signature</div>
-        <div style="font-size:10px;color:#666;margin-top:2px">Date: ___________________</div>
-      </div>
-      <div>
-        <div style="border-bottom:1px solid #111;width:240px;height:56px"></div>
-        <div style="margin-top:4px;font-weight:600;color:#111;font-size:12px">Authorized Representative (Lessor)</div>
-        <div style="font-size:10px;color:#666;margin-top:2px">Date: ___________________</div>
+        <div style="font-size:10px;color:#666;margin-top:2px">Date: ${new Date().toLocaleDateString('en-US')}</div>
       </div>
     </div>
 
