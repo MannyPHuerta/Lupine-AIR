@@ -97,7 +97,10 @@ export default function Counter() {
   const handleAddToCart = (item) => {
     if (!item.consumable) {
       // Non-consumables require a full rental contract — redirect to /availability
-      if (confirm(`"${item.name}" requires a rental contract.\n\nOpen the Full Form now?`)) {
+      const rtoNote = item.rentToOwnEligible && item.rentToOwnPrice && item.rentToOwnTermMonths
+        ? `\n\n💜 RTO Available: Own it for $${(item.rentToOwnPrice / item.rentToOwnTermMonths).toFixed(2)}/mo over ${item.rentToOwnTermMonths} months ($${item.rentToOwnPrice.toFixed(2)} total). Mention this to the customer!`
+        : '';
+      if (confirm(`"${item.name}" requires a rental contract.\n\nOpen the Full Form now?${rtoNote}`)) {
         navigate('/availability');
       }
       return;
@@ -299,12 +302,17 @@ export default function Counter() {
                       : 'border-transparent hover:bg-indigo-50 hover:border-indigo-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-gray-900 group-hover:text-indigo-700 text-sm">{e.name}</span>
                     {e.consumable
                       ? <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">Counter Sale</span>
                       : <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">Full Form ↗</span>
                     }
+                    {e.rentToOwnEligible && e.rentToOwnPrice && e.rentToOwnTermMonths && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-semibold">
+                        RTO ${(e.rentToOwnPrice / e.rentToOwnTermMonths).toFixed(0)}/mo
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     ${e.dailyRate}/day
