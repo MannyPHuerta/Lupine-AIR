@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench, FlaskConical, ShoppingBag } from 'lucide-react';
+import RtoSetupModal from '@/components/rentals/RtoSetupModal';
 import AppPageHeader from '@/components/AppPageHeader';
 import DeliveryRecommendation from '@/components/counter/DeliveryRecommendation';
 import PracticeModeWatermark from '@/components/PracticeModeWatermark';
@@ -72,6 +73,8 @@ export default function AvailabilityManager() {
   const [aiDeliveryRec, setAiDeliveryRec] = useState(null); // { addedFee: number } when AI fee was applied
   const [aiDeliveryFee, setAiDeliveryFee] = useState(null); // overrides matrix delivery fee when set
   const [pendingAlertEquipment, setPendingAlertEquipment] = useState(null); // { eq, onConfirm }
+  const [rtoSetup, setRtoSetup] = useState(null); // { eq } when modal open
+  const [rtoData, setRtoData] = useState(null); // confirmed RTO terms { purchasePrice, termMonths, creditPercent, expiryDate }
 
   const [pickupTime, setPickupTime] = useState('08:00'); // HH:MM — used for clock_hour billing mode
   const [returnTime, setReturnTime] = useState('17:00'); // HH:MM — used for clock_hour billing mode
@@ -326,6 +329,7 @@ export default function AvailabilityManager() {
       setManualInvoiceNumber('');
       setAiDeliveryFee(null);
       setAiDeliveryRec(null);
+      setRtoData(null);
       setTimeout(() => setSaved(false), 3000);
       return ['practice-id'];
     }
@@ -440,6 +444,15 @@ export default function AvailabilityManager() {
         sourceBranch: line.sourceBranch || null,
         transferOutCompleted: false,
         transferBackCompleted: false,
+        // RTO fields (only on first line if RTO is set up)
+        ...(rtoData && createdIds.length === 0 ? {
+          isRentToOwn: true,
+          purchasePrice: rtoData.purchasePrice,
+          rentToOwnCreditPercent: rtoData.creditPercent,
+          balanceRemaining: rtoData.purchasePrice,
+          amountCredited: 0,
+          purchaseOptionExpiry: rtoData.expiryDate,
+        } : {}),
       });
       
       // Audit: Rental created
@@ -463,6 +476,31 @@ export default function AvailabilityManager() {
       });
       
       createdIds.push(rental.id);
+
+      // If RTO, generate payment schedule (only for first line)
+      if (rtoData && createdIds.length === 1) {
+        const monthlyAmount = Math.round((rtoData.purchasePrice / rtoData.termMonths) * 100) / 100;
+        const scheduleStart = new Date(line.startDate + 'T12:00:00');
+        for (let i = 0; i < rtoData.termMonths; i++) {
+          const dueDate = new Date(scheduleStart);
+          dueDate.setMonth(dueDate.getMonth() + i + 1);
+          await base44.entities.RtoPayment.create({
+            rentalId: rental.id,
+            customerName: customer.name,
+            customerEmail: customer.email,
+            equipmentName: line.equipmentName,
+            paymentNumber: i + 1,
+            totalPayments: rtoData.termMonths,
+            dueDate: dueDate.toISOString().split('T')[0],
+            amountDue: monthlyAmount,
+            amountPaid: 0,
+            status: 'pending',
+            branch: customer.branch,
+            purchasePrice: rtoData.purchasePrice,
+            creditPercent: rtoData.creditPercent,
+          });
+        }
+      }
       }
       // Create cross-branch transfer Delivery records (one per cross-branch line) rooted at the SOURCE branch
       const crossBranchLines = validLines.filter(l => l.isCrossBranch && l.sourceBranch);
@@ -510,6 +548,7 @@ export default function AvailabilityManager() {
       setManualInvoiceNumber('');
       setAiDeliveryFee(null);
       setAiDeliveryRec(null);
+      setRtoData(null);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -691,6 +730,13 @@ export default function AvailabilityManager() {
           onCancel={() => setPendingAlertEquipment(null)}
         />
       )}
+      {rtoSetup && (
+        <RtoSetupModal
+          equipment={rtoSetup.eq}
+          onConfirm={(data) => { setRtoData(data); setRtoSetup(null); }}
+          onCancel={() => setRtoSetup(null)}
+        />
+      )}
       {practiceMode && <PracticeModeWatermark />}
       {practiceMode && (
         <div className="bg-red-600 text-white text-center text-xs font-bold py-1.5 tracking-widest z-40 relative print:block">
@@ -802,29 +848,54 @@ export default function AvailabilityManager() {
         </div>
 
         {/* RTO Nudge — shown when any selected equipment is RTO eligible */}
-        {lines.some(l => {
-          const eq = equipment.find(e => e.id === l.equipmentId);
-          return eq?.rentToOwnEligible && eq?.rentToOwnPrice && eq?.rentToOwnTermMonths;
-        }) && (
-          <div className="bg-purple-50 border border-purple-300 rounded-xl px-4 py-3 flex items-start gap-3">
-            <ShoppingBag className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <div className="font-semibold text-purple-900 text-sm">💜 Rent-to-Own Available!</div>
-              {lines.filter(l => {
-                const eq = equipment.find(e => e.id === l.equipmentId);
-                return eq?.rentToOwnEligible && eq?.rentToOwnPrice && eq?.rentToOwnTermMonths;
-              }).map(l => {
-                const eq = equipment.find(e => e.id === l.equipmentId);
-                const monthly = (eq.rentToOwnPrice / eq.rentToOwnTermMonths).toFixed(2);
-                return (
-                  <div key={l.id} className="text-xs text-purple-800 mt-1">
-                    <strong>{eq.name}</strong>: Own it for <strong>${monthly}/mo</strong> over {eq.rentToOwnTermMonths} months (${eq.rentToOwnPrice.toFixed(2)} total). Ask the customer if they'd like to convert to a Rent-to-Own contract!
-                  </div>
-                );
-              })}
+        {(() => {
+          const rtoLines = lines.filter(l => {
+            const eq = equipment.find(e => e.id === l.equipmentId);
+            return eq?.rentToOwnEligible && eq?.rentToOwnPrice && eq?.rentToOwnTermMonths;
+          });
+          if (rtoLines.length === 0) return null;
+          const firstRtoEq = equipment.find(e => e.id === rtoLines[0].equipmentId);
+
+          return (
+            <div className={`border rounded-xl px-4 py-3 flex items-start gap-3 ${rtoData ? 'bg-green-50 border-green-400' : 'bg-purple-50 border-purple-300'}`}>
+              <ShoppingBag className={`w-5 h-5 flex-shrink-0 mt-0.5 ${rtoData ? 'text-green-600' : 'text-purple-600'}`} />
+              <div className="flex-1">
+                {rtoData ? (
+                  <>
+                    <div className="font-semibold text-green-900 text-sm">✅ RTO Contract Configured</div>
+                    <div className="text-xs text-green-800 mt-1">
+                      Purchase price: <strong>${rtoData.purchasePrice.toFixed(2)}</strong> · 
+                      ${(rtoData.purchasePrice / rtoData.termMonths).toFixed(2)}/mo × {rtoData.termMonths} months · 
+                      {rtoData.creditPercent}% rental credit · Expires {rtoData.expiryDate}
+                    </div>
+                    <button onClick={() => setRtoData(null)} className="text-xs text-green-700 underline mt-1">Remove RTO</button>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-semibold text-purple-900 text-sm">💜 Rent-to-Own Available!</div>
+                    {rtoLines.map(l => {
+                      const eq = equipment.find(e => e.id === l.equipmentId);
+                      const monthly = (eq.rentToOwnPrice / eq.rentToOwnTermMonths).toFixed(2);
+                      return (
+                        <div key={l.id} className="text-xs text-purple-800 mt-1">
+                          <strong>{eq.name}</strong>: Own it for <strong>${monthly}/mo</strong> over {eq.rentToOwnTermMonths} months (${eq.rentToOwnPrice.toFixed(2)} total).
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+              {!rtoData && (
+                <button
+                  onClick={() => setRtoSetup({ eq: firstRtoEq })}
+                  className="flex-shrink-0 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                >
+                  Set Up RTO →
+                </button>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Add Equipment */}
         <button
