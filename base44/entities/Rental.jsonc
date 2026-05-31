@@ -283,6 +283,34 @@
         }
       },
       "description": "Audit trail of status changes"
+    },
+    "isRentToOwn": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this rental is a rent-to-own contract"
+    },
+    "purchasePrice": {
+      "type": "number",
+      "description": "Final purchase price for rent-to-own (USD)"
+    },
+    "rentToOwnCreditPercent": {
+      "type": "number",
+      "default": 0,
+      "description": "Percentage of each rental payment that goes toward purchase (e.g. 50 for 50%)"
+    },
+    "amountCredited": {
+      "type": "number",
+      "default": 0,
+      "description": "Total amount credited toward purchase so far (USD)"
+    },
+    "balanceRemaining": {
+      "type": "number",
+      "description": "Remaining balance to complete purchase (purchasePrice - amountCredited)"
+    },
+    "purchaseOptionExpiry": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when rent-to-own purchase option expires"
     }
   },
   "required": [

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download, ClipboardList, Camera, AlertCircle, Check, Clock } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download, ClipboardList, Camera, AlertCircle, Check, Clock, ShoppingBag } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import EditRentalPanel from '@/components/rentals/EditRentalPanel';
 import SignaturePad from '@/components/invoice/SignaturePad';
 import PhotoCapture from '@/components/delivery/PhotoCapture';
 import ExtraShiftBillingModal from '@/components/rentals/ExtraShiftBillingModal';
+import RentToOwnPanel from '@/components/rentals/RentToOwnPanel';
 
 
 const STATUS_COLORS = {
@@ -95,6 +96,7 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
   const [conditionNotes, setConditionNotes] = useState({});
   const [needsRouting, setNeedsRouting] = useState({});
   const [showExtraShift, setShowExtraShift] = useState(false);
+  const [showRentToOwn, setShowRentToOwn] = useState(false);
 
   const lines = order.lines;
   const taxRateDecimal = (order.taxRate || 8.25) / 100;
@@ -415,6 +417,17 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
             />
           )}
 
+          {/* Rent-to-Own Panel */}
+          {showRentToOwn && (
+            <RentToOwnPanel
+              rental={rentals.find(r => r.id === order.rentalIds[0])}
+              onClose={() => {
+                setShowRentToOwn(false);
+                onConfirmed();
+              }}
+            />
+          )}
+
           {/* Return Check-In Modal */}
           {showReturnCheckIn && (
             <div className="border rounded-lg p-4 bg-gray-50 space-y-4">
@@ -578,6 +591,14 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
                       className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
                     >
                       <Clock className="w-4 h-4" /> Add Extra Shift
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setShowRentToOwn(true)}
+                      disabled={advancingStatus}
+                      className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      <ShoppingBag className="w-4 h-4" /> Rent-to-Own
                     </Button>
                     <Button
                       size="sm"

@@ -79,7 +79,7 @@ const airCapabilities = {
   "QR Codes": { supported: true, note: "QR code clock-in for timesheets" },
   "Job costing": { supported: true, note: "Major job P&L tracking" },
   "Event space CAD renderings": { supported: true, note: "Event planner with canvas/SVG rendering" },
-  "Rent to own": { supported: false, note: "Not yet implemented" },
+  "Rent to own": { supported: true, note: "Customers can apply rental payments toward purchase, automatic credit tracking" },
 };
 
 export default function FeatureMatrix() {
