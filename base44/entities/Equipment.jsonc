@@ -255,11 +255,16 @@
     },
     "rentToOwnPrice": {
       "type": "number",
-      "description": "Rent-to-Own purchase price for this unit (USD)"
+      "description": "Management-set RTO purchase price for this unit (USD)"
+    },
+    "rentToOwnCreditPercent": {
+      "type": "number",
+      "default": 50,
+      "description": "Management-set percentage of each monthly rental payment credited toward the purchase price (e.g. 50 for 50%)"
     },
     "rentToOwnTermMonths": {
       "type": "integer",
-      "description": "Number of months for the Rent-to-Own term (e.g. 12, 24, 36)"
+      "description": "Management-set maximum number of months allowed for the RTO term"
     }
   },
   "required": [
