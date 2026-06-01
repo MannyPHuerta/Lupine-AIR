@@ -154,7 +154,8 @@ export default function PricingEditor() {
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Consumable</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700 text-purple-700">RTO Eligible</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Price</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Months</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Max Months</th>
+                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Credit %</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Specs</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-700">Action</th>
                 </tr>
@@ -225,6 +226,11 @@ export default function PricingEditor() {
                     <td className="px-4 py-3">
                       {(edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible) ? (
                         <Input type="number" step="1" min="1" value={getDisplayValue(eq, 'rentToOwnTermMonths') ?? ''} onChange={(e) => handleIntChange(eq.id, 'rentToOwnTermMonths', e.target.value)} className="w-20 text-right" placeholder="mo" />
+                      ) : <span className="text-xs text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible) ? (
+                        <Input type="number" step="1" min="0" max="100" value={getDisplayValue(eq, 'rentToOwnCreditPercent') ?? 50} onChange={(e) => handleFieldChange(eq.id, 'rentToOwnCreditPercent', e.target.value)} className="w-20 text-right" placeholder="%" />
                       ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
