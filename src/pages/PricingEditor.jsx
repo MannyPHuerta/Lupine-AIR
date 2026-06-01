@@ -143,125 +143,93 @@ export default function PricingEditor() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Equipment</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Daily</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Weekly</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Monthly</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Hourly</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700">Deposit</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Hour Meter</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Consumable</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700 text-purple-700">RTO Eligible</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Price</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Max Months</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-700 text-purple-700">RTO Credit %</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Specs</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-700">Action</th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 text-xs">Equipment</th>
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 text-xs">Category</th>
+                  <th className="px-3 py-2 text-right font-semibold text-gray-700 text-xs">Daily</th>
+                  <th className="px-3 py-2 text-right font-semibold text-gray-700 text-xs">Weekly</th>
+                  <th className="px-3 py-2 text-right font-semibold text-gray-700 text-xs">Monthly</th>
+                  <th className="px-3 py-2 text-right font-semibold text-gray-700 text-xs">Hourly</th>
+                  <th className="px-3 py-2 text-right font-semibold text-gray-700 text-xs">Deposit</th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700 text-xs">Hr<br/>Meter</th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700 text-xs">Con-<br/>sumable</th>
+                  <th className="px-3 py-2 text-center font-semibold text-purple-700 text-xs">RTO Settings</th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700 text-xs">Specs</th>
+                  <th className="px-3 py-2 text-center font-semibold text-gray-700 text-xs">Save</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {equipment.map(eq => (
+                {equipment.map(eq => {
+                  const isConsumable = edited[eq.id]?.consumable ?? eq.consumable;
+                  const isRto = edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible;
+                  return (
                   <tr key={eq.id} className={hasChanges(eq.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{eq.name}</div>
-                      <div className="text-xs text-gray-500">{eq.location}</div>
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-gray-900 text-sm">{eq.name}</div>
+                      <div className="text-xs text-gray-400">{eq.location}</div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{eq.category}</td>
-                    <td className="px-4 py-3">
-                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
-                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'dailyRate')} onChange={(e) => handleFieldChange(eq.id, 'dailyRate', e.target.value)} className="w-24 text-right" />
+                    <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">{eq.category}</td>
+                    <td className="px-3 py-2">
+                      {!isConsumable ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'dailyRate')} onChange={(e) => handleFieldChange(eq.id, 'dailyRate', e.target.value)} className="w-20 text-right h-8 text-sm" />
                       ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
-                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'weeklyRate')} onChange={(e) => handleFieldChange(eq.id, 'weeklyRate', e.target.value)} className="w-24 text-right" />
+                    <td className="px-3 py-2">
+                      {!isConsumable ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'weeklyRate')} onChange={(e) => handleFieldChange(eq.id, 'weeklyRate', e.target.value)} className="w-20 text-right h-8 text-sm" />
                       ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
-                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'monthlyRate')} onChange={(e) => handleFieldChange(eq.id, 'monthlyRate', e.target.value)} className="w-24 text-right" />
+                    <td className="px-3 py-2">
+                      {!isConsumable ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'monthlyRate')} onChange={(e) => handleFieldChange(eq.id, 'monthlyRate', e.target.value)} className="w-20 text-right h-8 text-sm" />
                       ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'hourlyRate') ?? ''} onChange={(e) => handleFieldChange(eq.id, 'hourlyRate', e.target.value)} className="w-24 text-right" placeholder="$/hr" />
+                    <td className="px-3 py-2">
+                      <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'hourlyRate') ?? ''} onChange={(e) => handleFieldChange(eq.id, 'hourlyRate', e.target.value)} className="w-20 text-right h-8 text-sm" placeholder="—" />
                     </td>
-                    <td className="px-4 py-3">
-                      {!(edited[eq.id]?.consumable ?? eq.consumable) ? (
-                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'depositRequired')} onChange={(e) => handleFieldChange(eq.id, 'depositRequired', e.target.value)} className="w-24 text-right" />
+                    <td className="px-3 py-2">
+                      {!isConsumable ? (
+                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'depositRequired')} onChange={(e) => handleFieldChange(eq.id, 'depositRequired', e.target.value)} className="w-20 text-right h-8 text-sm" />
                       ) : <span className="text-xs text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={edited[eq.id]?.hasHourMeter ?? eq.hasHourMeter ?? false}
-                        onChange={e => handleBoolChange(eq.id, 'hasHourMeter', e.target.checked)}
-                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
-                        title="Enable hour meter tracking for this equipment"
-                      />
+                    <td className="px-3 py-2 text-center">
+                      <input type="checkbox" checked={edited[eq.id]?.hasHourMeter ?? eq.hasHourMeter ?? false} onChange={e => handleBoolChange(eq.id, 'hasHourMeter', e.target.checked)} className="w-4 h-4 accent-indigo-600 cursor-pointer" title="Enable hour meter tracking" />
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={edited[eq.id]?.consumable ?? eq.consumable ?? false}
-                        onChange={e => handleBoolChange(eq.id, 'consumable', e.target.checked)}
-                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
-                        title="Counter sale — no contract required"
-                      />
+                    <td className="px-3 py-2 text-center">
+                      <input type="checkbox" checked={isConsumable ?? false} onChange={e => handleBoolChange(eq.id, 'consumable', e.target.checked)} className="w-4 h-4 accent-indigo-600 cursor-pointer" title="Counter sale — no contract required" />
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible ?? false}
-                        onChange={e => handleBoolChange(eq.id, 'rentToOwnEligible', e.target.checked)}
-                        className="w-4 h-4 accent-purple-600 cursor-pointer"
-                        title="Enable Rent-to-Own promotion for this item"
-                      />
+                    {/* RTO — all 4 fields in one compact cell */}
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <label className="flex items-center gap-1 text-xs text-purple-700 font-medium cursor-pointer whitespace-nowrap">
+                          <input type="checkbox" checked={isRto ?? false} onChange={e => handleBoolChange(eq.id, 'rentToOwnEligible', e.target.checked)} className="w-3.5 h-3.5 accent-purple-600 cursor-pointer" />
+                          RTO
+                        </label>
+                        {isRto && (
+                          <div className="flex items-center gap-1">
+                            <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'rentToOwnPrice') ?? ''} onChange={(e) => handleFieldChange(eq.id, 'rentToOwnPrice', e.target.value)} className="w-20 text-right h-7 text-xs" placeholder="Price $" title="RTO purchase price" />
+                            <Input type="number" step="1" min="1" value={getDisplayValue(eq, 'rentToOwnTermMonths') ?? ''} onChange={(e) => handleIntChange(eq.id, 'rentToOwnTermMonths', e.target.value)} className="w-14 text-right h-7 text-xs" placeholder="mo" title="Max term months" />
+                            <Input type="number" step="1" min="0" max="100" value={getDisplayValue(eq, 'rentToOwnCreditPercent') ?? 50} onChange={(e) => handleFieldChange(eq.id, 'rentToOwnCreditPercent', e.target.value)} className="w-14 text-right h-7 text-xs" placeholder="%" title="Credit %" />
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-4 py-3">
-                      {(edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible) ? (
-                        <Input type="number" step="0.01" min="0" value={getDisplayValue(eq, 'rentToOwnPrice') ?? ''} onChange={(e) => handleFieldChange(eq.id, 'rentToOwnPrice', e.target.value)} className="w-24 text-right" placeholder="$" />
-                      ) : <span className="text-xs text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {(edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible) ? (
-                        <Input type="number" step="1" min="1" value={getDisplayValue(eq, 'rentToOwnTermMonths') ?? ''} onChange={(e) => handleIntChange(eq.id, 'rentToOwnTermMonths', e.target.value)} className="w-20 text-right" placeholder="mo" />
-                      ) : <span className="text-xs text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {(edited[eq.id]?.rentToOwnEligible ?? eq.rentToOwnEligible) ? (
-                        <Input type="number" step="1" min="0" max="100" value={getDisplayValue(eq, 'rentToOwnCreditPercent') ?? 50} onChange={(e) => handleFieldChange(eq.id, 'rentToOwnCreditPercent', e.target.value)} className="w-20 text-right" placeholder="%" />
-                      ) : <span className="text-xs text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => navigate(`/equipment-specs?id=${eq.id}`)}
-                        className="text-indigo-500 hover:text-indigo-700 p-1"
-                        title="Edit specs"
-                      >
+                    <td className="px-3 py-2 text-center">
+                      <button onClick={() => navigate(`/equipment-specs?id=${eq.id}`)} className="text-indigo-500 hover:text-indigo-700 p-1" title="Edit specs">
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-3 py-2 text-center">
                       {hasChanges(eq.id) ? (
-                        <Button
-                          size="sm"
-                          onClick={() => saveEquipment(eq.id)}
-                          disabled={saving[eq.id]}
-                          className="bg-green-600 hover:bg-green-700 gap-1"
-                        >
-                          {saving[eq.id] ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Save className="w-3 h-3" />
-                          )}
+                        <Button size="sm" onClick={() => saveEquipment(eq.id)} disabled={saving[eq.id]} className="bg-green-600 hover:bg-green-700 h-7 px-2">
+                          {saving[eq.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                         </Button>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
