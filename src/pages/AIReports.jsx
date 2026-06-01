@@ -490,6 +490,31 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
     setAiLoading(false);
   };
 
+  // Monthly credit accrual trend
+  const monthlyAccrualMap = {};
+  rentals.forEach(r => {
+    if (!r.isRentToOwn || !r.startDate) return;
+    const month = r.startDate.slice(0, 7); // YYYY-MM
+    if (!monthlyAccrualMap[month]) monthlyAccrualMap[month] = { month, credited: 0, rentalRevenue: 0, count: 0 };
+    monthlyAccrualMap[month].credited += r.amountCredited || 0;
+    const creditPct = r.rentToOwnCreditPercent || 0;
+    const totalPayment = creditPct > 0 ? (r.amountCredited || 0) / (creditPct / 100) : (r.amountPaid || 0);
+    monthlyAccrualMap[month].rentalRevenue += totalPayment;
+    monthlyAccrualMap[month].count += 1;
+  });
+
+  const monthlyAccrualData = Object.entries(monthlyAccrualMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-12)
+    .map(([, v]) => ({
+      ...v,
+      month: v.month.replace('-', ' ').replace(/(\d{4}) (\d{2})/, (_, y, m) => {
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return `${months[parseInt(m)-1]} ${y.slice(2)}`;
+      }),
+      netRevenue: v.rentalRevenue - v.credited
+    }));
+
   const totalPurchaseValue = rtoRentals.reduce((s, r) => s + (r.purchasePrice || 0), 0);
   const totalCredited = rtoRentals.reduce((s, r) => s + (r.amountCredited || 0), 0);
   const totalRemaining = rtoRentals.reduce((s, r) => s + (r.balanceRemaining || r.purchasePrice || 0), 0);
@@ -532,6 +557,59 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
           <Download className="w-4 h-4" /> Export for Accounting
         </button>
       </div>
+
+      {/* Monthly Credit Accrual Trend Chart */}
+      {monthlyAccrualData.length > 0 && (
+        <div className="bg-slate-900 border border-purple-500/30 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-white font-semibold text-sm">Monthly Credit Accrual Trends</div>
+              <div className="text-white/40 text-xs mt-0.5">Track deferred liability growth vs. recognized rental revenue</div>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-amber-400" />
+                <span className="text-white/60">Deferred Liability</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-green-400" />
+                <span className="text-white/60">Net Revenue</span>
+              </div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={monthlyAccrualData} margin={{ left: 10, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="month" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} angle={-30} textAnchor="end" height={55} />
+              <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <Tooltip content={<DarkTooltip />} formatter={v => [`$${v.toFixed(2)}`, '']} />
+              <Legend wrapperStyle={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }} />
+              <Bar dataKey="credited" name="Deferred Liability" fill="#fb923c" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="netRevenue" name="Net Revenue" fill="#34d399" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          {monthlyAccrualData.length > 0 && (
+            <div className="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+              <div className="text-xs text-purple-300">
+                <span className="font-semibold">💡 Liability Insight:</span>
+                {(() => {
+                  const recent = monthlyAccrualData.slice(-3);
+                  const avgAccrual = recent.reduce((s, m) => s + m.credited, 0) / recent.length;
+                  const totalRecentRevenue = recent.reduce((s, m) => s + m.rentalRevenue, 0);
+                  const liabilityRatio = totalRecentRevenue > 0 ? (avgAccrual * 3) / totalRecentRevenue : 0;
+                  if (liabilityRatio > 0.6) {
+                    return ` Deferred liabilities are growing rapidly (${((liabilityRatio) * 100).toFixed(0)}% of recent revenue). Consider reviewing RTO terms to ensure healthy cash flow.`;
+                  } else if (liabilityRatio > 0.4) {
+                    return ` Liability growth is moderate. Current accrual rate is sustainable but monitor for acceleration.`;
+                  } else {
+                    return ` Liability growth is well-controlled. RTO portfolio shows healthy revenue recognition balance.`;
+                  }
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {aiAnalysis && (
         <div className="bg-gradient-to-br from-slate-900 via-purple-950/20 to-slate-900 border border-purple-500/30 rounded-xl p-6">
