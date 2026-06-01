@@ -461,6 +461,74 @@ function RtoTab({ rentals }) {
         </div>
       )}
 
+      {/* Accounting Breakdown */}
+      <div className="bg-slate-900 border border-purple-500/30 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="text-white font-semibold text-sm">Accounting View — Revenue vs. Deferred Liability</div>
+        </div>
+        <div className="text-white/40 text-xs mb-4">Each RTO payment is fully recognized as rental revenue. The credit portion granted to the customer creates a contingent liability that clears when the purchase option is exercised or expires.</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Customer / Equipment</th>
+                <th className="text-right py-2 px-3 text-white/50 font-medium">Total Rental Revenue</th>
+                <th className="text-right py-2 px-3 text-white/50 font-medium">Deferred Liability<br/><span className="font-normal text-white/30">(credits granted)</span></th>
+                <th className="text-right py-2 px-3 text-white/50 font-medium">Net Revenue<br/><span className="font-normal text-white/30">(non-credit portion)</span></th>
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rtoRentals.map((r, i) => {
+                const credited = r.amountCredited || 0;
+                const price = r.purchasePrice || 0;
+                const creditPct = r.rentToOwnCreditPercent || 0;
+                // Total payments made = credited / creditPct (if creditPct > 0)
+                const totalPayments = creditPct > 0 ? credited / (creditPct / 100) : (r.amountPaid || 0);
+                const netRevenue = totalPayments - credited;
+                const isExpired = r.purchaseOptionExpiry && new Date(r.purchaseOptionExpiry) < now;
+                const status = isExpired ? 'Liability Reversed → Income' : credited >= price ? 'Option Fully Earned' : 'Active — Liability Open';
+                const statusColor = isExpired ? 'text-green-400' : credited >= price ? 'text-cyan-400' : 'text-amber-400';
+                return (
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/5">
+                    <td className="py-2 px-3">
+                      <div className="text-white font-medium">{r.customerName}</div>
+                      <div className="text-white/40">{r.equipmentName}</div>
+                    </td>
+                    <td className="py-2 px-3 text-right text-white/80">${totalPayments.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-right text-amber-400">${credited.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-right text-green-400">${netRevenue.toFixed(2)}</td>
+                    <td className={`py-2 px-3 ${statusColor}`}>{status}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-white/20 bg-white/5">
+                <td className="py-2 px-3 text-white font-semibold">Totals</td>
+                <td className="py-2 px-3 text-right text-white font-semibold">
+                  ${rtoRentals.reduce((s, r) => {
+                    const cp = r.rentToOwnCreditPercent || 0;
+                    const credited = r.amountCredited || 0;
+                    return s + (cp > 0 ? credited / (cp / 100) : (r.amountPaid || 0));
+                  }, 0).toFixed(2)}
+                </td>
+                <td className="py-2 px-3 text-right text-amber-400 font-semibold">${totalCredited.toFixed(2)}</td>
+                <td className="py-2 px-3 text-right text-green-400 font-semibold">
+                  ${rtoRentals.reduce((s, r) => {
+                    const cp = r.rentToOwnCreditPercent || 0;
+                    const credited = r.amountCredited || 0;
+                    const total = cp > 0 ? credited / (cp / 100) : (r.amountPaid || 0);
+                    return s + (total - credited);
+                  }, 0).toFixed(2)}
+                </td>
+                <td className="py-2 px-3 text-white/40 text-xs">{rtoRentals.length} contracts</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
       {/* All active agreements table */}
       <div className="bg-slate-900 border border-white/10 rounded-xl p-5">
         <div className="text-white font-semibold mb-4 text-sm">All Active Agreements</div>
