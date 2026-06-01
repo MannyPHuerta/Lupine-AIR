@@ -381,6 +381,36 @@ function RtoTab({ rentals }) {
 
   const expired = rtoRentals.filter(r => r.purchaseOptionExpiry && new Date(r.purchaseOptionExpiry) < now);
 
+  const handleExportRto = () => {
+    const date = new Date().toISOString().split('T')[0];
+    const headers = ['Customer', 'Equipment', 'Branch', 'Start Date', 'Purchase Price', 'Credit %', 'Total Credited', 'Balance Remaining', 'Progress %', 'Option Expiry', 'Days Left', 'Status'];
+    const rows = rtoRentals.map(r => {
+      const credited = r.amountCredited || 0;
+      const price = r.purchasePrice || 0;
+      const pct = r.rentToOwnCreditPercent || 0;
+      const remaining = r.balanceRemaining ?? (price - credited);
+      const progress = price > 0 ? Math.round((credited / price) * 100) : 0;
+      const expiry = r.purchaseOptionExpiry ? new Date(r.purchaseOptionExpiry) : null;
+      const daysLeft = expiry ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : null;
+      const status = daysLeft !== null && daysLeft < 0 ? 'Expired' : credited >= price ? 'Fully Earned' : 'Active';
+      return [
+        r.customerName,
+        r.equipmentName || '',
+        r.branch || '',
+        r.startDate || '',
+        price.toFixed(2),
+        `${pct}%`,
+        credited.toFixed(2),
+        remaining.toFixed(2),
+        `${progress}%`,
+        r.purchaseOptionExpiry || '',
+        daysLeft !== null ? daysLeft.toString() : '',
+        status
+      ];
+    });
+    downloadCSV(`rto-accounting-${date}.csv`, headers, rows);
+  };
+
   const totalPurchaseValue = rtoRentals.reduce((s, r) => s + (r.purchasePrice || 0), 0);
   const totalCredited = rtoRentals.reduce((s, r) => s + (r.amountCredited || 0), 0);
   const totalRemaining = rtoRentals.reduce((s, r) => s + (r.balanceRemaining || r.purchasePrice || 0), 0);
@@ -408,6 +438,12 @@ function RtoTab({ rentals }) {
         <StatCard label="Total Purchase Value" value={`$${(totalPurchaseValue / 1000).toFixed(1)}k`} sub="combined contract values" color="text-cyan-400" />
         <StatCard label="Total Credited" value={`$${(totalCredited / 1000).toFixed(1)}k`} sub="accumulated toward purchase" color="text-green-400" />
         <StatCard label="Avg Progress" value={`${avgProgress}%`} sub="toward ownership" color="text-amber-400" />
+      </div>
+
+      <div className="flex justify-end">
+        <button onClick={handleExportRto} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+          <Download className="w-4 h-4" /> Export for Accounting
+        </button>
       </div>
 
       {/* Expiring soon alert */}
