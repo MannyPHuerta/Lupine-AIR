@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShieldAlert, ShoppingBag } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import FraudIntelTab from '@/components/reports/FraudIntelTab';
 import PremiumGate from '@/components/premium/PremiumGate';
@@ -15,6 +15,7 @@ const TABS = [
   { id: 'demand', label: 'Demand Trends', icon: <TrendingUp className="w-4 h-4" /> },
   { id: 'aging', label: 'Asset Aging', icon: <Package className="w-4 h-4" /> },
   { id: 'health', label: 'Fleet Health', icon: <AlertTriangle className="w-4 h-4" /> },
+  { id: 'rto', label: 'Rent-to-Own', icon: <ShoppingBag className="w-4 h-4" /> },
   { id: 'fraud', label: '🕵️ Fraud Intel', icon: <ShieldAlert className="w-4 h-4" /> },
 ];
 
@@ -366,6 +367,156 @@ function HealthTab({ equipment, rentals }) {
   );
 }
 
+// ─── Rent-to-Own Tab ─────────────────────────────────────────────────────────
+function RtoTab({ rentals }) {
+  const now = new Date();
+
+  const rtoRentals = rentals.filter(r => r.isRentToOwn && r.status !== 'cancelled' && r.status !== 'completed');
+
+  const expiringSoon = rtoRentals.filter(r => {
+    if (!r.purchaseOptionExpiry) return false;
+    const days = (new Date(r.purchaseOptionExpiry) - now) / (1000 * 60 * 60 * 24);
+    return days <= 90 && days >= 0;
+  }).sort((a, b) => new Date(a.purchaseOptionExpiry) - new Date(b.purchaseOptionExpiry));
+
+  const expired = rtoRentals.filter(r => r.purchaseOptionExpiry && new Date(r.purchaseOptionExpiry) < now);
+
+  const totalPurchaseValue = rtoRentals.reduce((s, r) => s + (r.purchasePrice || 0), 0);
+  const totalCredited = rtoRentals.reduce((s, r) => s + (r.amountCredited || 0), 0);
+  const totalRemaining = rtoRentals.reduce((s, r) => s + (r.balanceRemaining || r.purchasePrice || 0), 0);
+  const avgProgress = rtoRentals.length > 0
+    ? Math.round(rtoRentals.reduce((s, r) => {
+        const pct = r.purchasePrice > 0 ? ((r.amountCredited || 0) / r.purchasePrice) * 100 : 0;
+        return s + pct;
+      }, 0) / rtoRentals.length)
+    : 0;
+
+  if (rtoRentals.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-white/30 gap-3">
+        <ShoppingBag className="w-10 h-10" />
+        <div className="text-sm">No active rent-to-own agreements</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Active RTO Agreements" value={rtoRentals.length} sub="contracts in progress" color="text-purple-400" />
+        <StatCard label="Total Purchase Value" value={`$${(totalPurchaseValue / 1000).toFixed(1)}k`} sub="combined contract values" color="text-cyan-400" />
+        <StatCard label="Total Credited" value={`$${(totalCredited / 1000).toFixed(1)}k`} sub="accumulated toward purchase" color="text-green-400" />
+        <StatCard label="Avg Progress" value={`${avgProgress}%`} sub="toward ownership" color="text-amber-400" />
+      </div>
+
+      {/* Expiring soon alert */}
+      {expiringSoon.length > 0 && (
+        <div className="bg-slate-900 border border-amber-500/40 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-amber-400 font-semibold text-sm">{expiringSoon.length} option{expiringSoon.length > 1 ? 's' : ''} expiring within 90 days</span>
+          </div>
+          <div className="space-y-2">
+            {expiringSoon.map((r, i) => {
+              const days = Math.ceil((new Date(r.purchaseOptionExpiry) - now) / (1000 * 60 * 60 * 24));
+              return (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                  <div>
+                    <div className="text-white text-sm font-medium">{r.customerName}</div>
+                    <div className="text-white/40 text-xs">{r.equipmentName} · {r.branch}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-bold ${days <= 30 ? 'text-red-400' : 'text-amber-400'}`}>{days}d left</div>
+                    <div className="text-white/30 text-xs">{r.purchaseOptionExpiry}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Expired options */}
+      {expired.length > 0 && (
+        <div className="bg-slate-900 border border-red-500/30 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <span className="text-red-400 font-semibold text-sm">{expired.length} option{expired.length > 1 ? 's' : ''} expired — follow up needed</span>
+          </div>
+          <div className="space-y-2">
+            {expired.map((r, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div>
+                  <div className="text-white text-sm font-medium">{r.customerName}</div>
+                  <div className="text-white/40 text-xs">{r.equipmentName} · {r.branch}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-red-400 text-sm font-bold">Expired</div>
+                  <div className="text-white/30 text-xs">{r.purchaseOptionExpiry}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All active agreements table */}
+      <div className="bg-slate-900 border border-white/10 rounded-xl p-5">
+        <div className="text-white font-semibold mb-4 text-sm">All Active Agreements</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Customer</th>
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Equipment</th>
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Branch</th>
+                <th className="text-right py-2 px-3 text-white/50 font-medium">Purchase Price</th>
+                <th className="text-right py-2 px-3 text-white/50 font-medium">Credited</th>
+                <th className="text-right py-2 px-3 text-white/50 font-medium">Remaining</th>
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Progress</th>
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Option Expiry</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rtoRentals.map((r, i) => {
+                const credited = r.amountCredited || 0;
+                const price = r.purchasePrice || 0;
+                const pct = price > 0 ? Math.min(100, Math.round((credited / price) * 100)) : 0;
+                const expiry = r.purchaseOptionExpiry ? new Date(r.purchaseOptionExpiry) : null;
+                const daysLeft = expiry ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : null;
+                const expiryColor = daysLeft === null ? 'text-white/30' : daysLeft < 0 ? 'text-red-400' : daysLeft <= 30 ? 'text-red-400' : daysLeft <= 90 ? 'text-amber-400' : 'text-white/60';
+                return (
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/5">
+                    <td className="py-2 px-3 text-white font-medium">{r.customerName}</td>
+                    <td className="py-2 px-3 text-white/60">{r.equipmentName}</td>
+                    <td className="py-2 px-3 text-white/50">{r.branch}</td>
+                    <td className="py-2 px-3 text-right text-white/80">${price.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-right text-green-400">${credited.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-right text-cyan-400">${(r.balanceRemaining ?? (price - credited)).toFixed(2)}</td>
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-white/10 rounded-full h-1.5 w-20">
+                          <div className="h-1.5 rounded-full bg-purple-400" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-white/50">{pct}%</span>
+                      </div>
+                    </td>
+                    <td className={`py-2 px-3 ${expiryColor}`}>
+                      {r.purchaseOptionExpiry || '—'}
+                      {daysLeft !== null && daysLeft >= 0 && <span className="ml-1 text-white/30">({daysLeft}d)</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── CSV Export Helpers ───────────────────────────────────────────────────────
 function downloadCSV(filename, headers, rows) {
   const csv = [headers, ...rows].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -397,6 +548,8 @@ export default function AIReports() {
     setEquipment(eq);
     setLoading(false);
   };
+
+  const rtoRentals = rentals.filter(r => r.isRentToOwn && r.status !== 'cancelled' && r.status !== 'completed');
 
   useEffect(() => { load(); }, []);
 
@@ -450,6 +603,14 @@ export default function AIReports() {
         e.name, e.category || '', e.unitStatus || e.status || '', e.condition || '', e.location || '', e.statusNote || ''
       ]);
       downloadCSV(`fleet-health-${branchLabel}-${date}.csv`, ['Equipment', 'Category', 'Status', 'Condition', 'Location', 'Note'], rows);
+    } else if (activeTab === 'rto') {
+      const rows = rtoRentals.map(r => {
+        const credited = r.amountCredited || 0;
+        const price = r.purchasePrice || 0;
+        const pct = price > 0 ? Math.round((credited / price) * 100) : 0;
+        return [r.customerName, r.equipmentName || '', r.branch || '', price.toFixed(2), credited.toFixed(2), (r.balanceRemaining ?? (price - credited)).toFixed(2), `${pct}%`, r.purchaseOptionExpiry || ''];
+      });
+      downloadCSV(`rto-agreements-${branchLabel}-${date}.csv`, ['Customer', 'Equipment', 'Branch', 'Purchase Price', 'Credited', 'Remaining', 'Progress', 'Option Expiry'], rows);
     }
   };
 
@@ -524,6 +685,7 @@ export default function AIReports() {
             {activeTab === 'demand' && <DemandTab rentals={filteredRentals} />}
             {activeTab === 'aging' && <AgingTab equipment={filteredEquipment} />}
             {activeTab === 'health' && <HealthTab equipment={filteredEquipment} rentals={filteredRentals} />}
+            {activeTab === 'rto' && <RtoTab rentals={filteredRentals} />}
             {activeTab === 'fraud' && (
               <PremiumGate requiredTier="pro" featureName="Fraud Intelligence" returnPath="/aireports">
                 <FraudIntelTab rentals={filteredRentals} />
