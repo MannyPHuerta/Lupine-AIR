@@ -372,12 +372,20 @@ function RtoTab({ rentals, equipment }) {
   const now = new Date();
   const [rtoBranch, setRtoBranch] = useState('all');
   const [rtoSort, setRtoSort] = useState('start_desc');
+  const [rtoMonth, setRtoMonth] = useState('all');
 
   const allRtoActive = rentals.filter(r => r.isRentToOwn && r.status !== 'cancelled' && r.status !== 'completed');
 
-  // Branch filter
+  // Available months from start dates
+  const rtoMonths = ['all', ...Array.from(new Set(allRtoActive.map(r => r.startDate?.slice(0, 7)).filter(Boolean))).sort().reverse()];
+
+  // Branch + month filter
   const rtoBranches = ['all', ...Array.from(new Set(allRtoActive.map(r => r.branch).filter(Boolean))).sort()];
-  const rtoRentals = rtoBranch === 'all' ? allRtoActive : allRtoActive.filter(r => r.branch === rtoBranch);
+  const rtoRentals = allRtoActive.filter(r => {
+    if (rtoBranch !== 'all' && r.branch !== rtoBranch) return false;
+    if (rtoMonth !== 'all' && (r.startDate?.slice(0, 7) !== rtoMonth)) return false;
+    return true;
+  });
 
   // Sort
   const sortedRtoRentals = [...rtoRentals].sort((a, b) => {
@@ -574,6 +582,20 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
           </select>
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-white/40 text-xs">Month:</span>
+          <select value={rtoMonth} onChange={e => setRtoMonth(e.target.value)}
+            className="bg-white/10 border border-white/20 text-white text-xs rounded-lg px-3 py-1.5">
+            {rtoMonths.map(m => (
+              <option key={m} value={m} className="text-black">
+                {m === 'all' ? 'All Months' : (() => {
+                  const [y, mo] = m.split('-');
+                  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]} ${y}`;
+                })()}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
           <span className="text-white/40 text-xs">Sort:</span>
           <select value={rtoSort} onChange={e => setRtoSort(e.target.value)}
             className="bg-white/10 border border-white/20 text-white text-xs rounded-lg px-3 py-1.5">
@@ -584,7 +606,7 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
             <option value="branch" className="text-black">Branch A–Z</option>
           </select>
         </div>
-        {rtoBranch !== 'all' && (
+        {(rtoBranch !== 'all' || rtoMonth !== 'all') && (
           <span className="text-xs text-purple-400 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full">
             {rtoRentals.length} of {allRtoActive.length} contracts
           </span>
@@ -1016,7 +1038,7 @@ export default function AIReports() {
             {activeTab === 'demand' && <DemandTab rentals={filteredRentals} />}
             {activeTab === 'aging' && <AgingTab equipment={filteredEquipment} />}
             {activeTab === 'health' && <HealthTab equipment={filteredEquipment} rentals={filteredRentals} />}
-            {activeTab === 'rto' && <RtoTab rentals={filteredRentals} equipment={filteredEquipment} />}
+            {activeTab === 'rto' && <RtoTab rentals={rentals} equipment={equipment} />}
             {activeTab === 'fraud' && (
               <PremiumGate requiredTier="pro" featureName="Fraud Intelligence" returnPath="/aireports">
                 <FraudIntelTab rentals={filteredRentals} />
