@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShieldAlert, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShieldAlert, ShoppingBag, Sparkles } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import FraudIntelTab from '@/components/reports/FraudIntelTab';
 import PremiumGate from '@/components/premium/PremiumGate';
@@ -368,7 +368,7 @@ function HealthTab({ equipment, rentals }) {
 }
 
 // ─── Rent-to-Own Tab ─────────────────────────────────────────────────────────
-function RtoTab({ rentals }) {
+function RtoTab({ rentals, equipment }) {
   const now = new Date();
 
   const rtoRentals = rentals.filter(r => r.isRentToOwn && r.status !== 'cancelled' && r.status !== 'completed');
@@ -411,6 +411,85 @@ function RtoTab({ rentals }) {
     downloadCSV(`rto-accounting-${date}.csv`, headers, rows);
   };
 
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const generateRtoAnalysis = async () => {
+    setAiLoading(true);
+    try {
+      const completed = rentals.filter(r => r.isRentToOwn && (r.status === 'completed' || r.balanceRemaining <= 0));
+      const cancelled = rentals.filter(r => r.isRentToOwn && r.status === 'cancelled');
+      const allRto = rentals.filter(r => r.isRentToOwn);
+
+      const conversionRate = allRto.length > 0 ? Math.round((completed.length / allRto.length) * 100) : 0;
+      const expiryRate = allRto.length > 0 ? Math.round((expired.length / allRto.length) * 100) : 0;
+
+      const categoryBreakdown = {};
+      allRto.forEach(r => {
+        const eq = equipment.find(e => e.id === r.equipmentId);
+        const cat = eq?.category || 'Unknown';
+        if (!categoryBreakdown[cat]) categoryBreakdown[cat] = { total: 0, completed: 0, revenue: 0 };
+        categoryBreakdown[cat].total++;
+        if (completed.find(c => c.id === r.id)) categoryBreakdown[cat].completed++;
+        categoryBreakdown[cat].revenue += r.baseAmount || 0;
+      });
+
+      const branchBreakdown = {};
+      allRto.forEach(r => {
+        const b = r.branch || 'Unknown';
+        if (!branchBreakdown[b]) branchBreakdown[b] = { total: 0, completed: 0, expired: 0, revenue: 0 };
+        branchBreakdown[b].total++;
+        if (completed.find(c => c.id === r.id)) branchBreakdown[b].completed++;
+        if (expired.find(e => e.id === r.id)) branchBreakdown[b].expired++;
+        branchBreakdown[b].revenue += r.baseAmount || 0;
+      });
+
+      const prompt = `Analyze this rent-to-own portfolio and provide actionable insights:
+
+PORTFOLIO SUMMARY:
+- Active Contracts: ${rtoRentals.length}
+- Completed (Owned): ${completed.length}
+- Expired: ${expired.length}
+- Cancelled: ${cancelled.length}
+- Conversion Rate: ${conversionRate}%
+- Expiry Rate: ${expiryRate}%
+- Total Purchase Value: $${totalPurchaseValue.toFixed(2)}
+- Total Credited: $${totalCredited.toFixed(2)}
+- Average Progress: ${avgProgress}%
+
+CATEGORY PERFORMANCE:
+${Object.entries(categoryBreakdown).map(([cat, data]) => `- ${cat}: ${data.total} contracts, ${data.completed} completed (${data.total > 0 ? Math.round(data.completed/data.total*100) : 0}%), $${data.revenue.toFixed(2)} revenue`).join('\n')}
+
+BRANCH PERFORMANCE:
+${Object.entries(branchBreakdown).map(([b, data]) => `- ${b}: ${data.total} contracts, ${data.completed} completed, ${data.expired} expired, $${data.revenue.toFixed(2)} revenue`).join('\n')}
+
+EXPIRING SOON: ${expiringSoon.length} contracts within 90 days
+EXPIRED: ${expired.length} contracts need follow-up
+
+Provide a concise analysis covering:
+1. Conversion funnel health and trends
+2. Revenue recognition patterns (recognized vs deferred)
+3. Customer risk indicators
+4. Equipment category performance insights
+5. Branch/staff performance variations
+6. Portfolio health warnings (concentration risk, expiry clustering)
+7. Specific actionable recommendations
+
+Format with clear headings and bullet points. Be direct and data-driven.`;
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        add_context_from_internet: false,
+      });
+
+      setAiAnalysis(typeof response === 'string' ? response : response.data || response);
+    } catch (err) {
+      console.error('AI analysis failed:', err);
+      setAiAnalysis('Failed to generate analysis. Please try again.');
+    }
+    setAiLoading(false);
+  };
+
   const totalPurchaseValue = rtoRentals.reduce((s, r) => s + (r.purchasePrice || 0), 0);
   const totalCredited = rtoRentals.reduce((s, r) => s + (r.amountCredited || 0), 0);
   const totalRemaining = rtoRentals.reduce((s, r) => s + (r.balanceRemaining || r.purchasePrice || 0), 0);
@@ -440,11 +519,32 @@ function RtoTab({ rentals }) {
         <StatCard label="Avg Progress" value={`${avgProgress}%`} sub="toward ownership" color="text-amber-400" />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <button
+          onClick={generateRtoAnalysis}
+          disabled={aiLoading || rtoRentals.length === 0}
+          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {aiLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          {aiLoading ? 'Analyzing...' : 'AI Portfolio Analysis'}
+        </button>
         <button onClick={handleExportRto} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
           <Download className="w-4 h-4" /> Export for Accounting
         </button>
       </div>
+
+      {aiAnalysis && (
+        <div className="bg-gradient-to-br from-slate-900 via-purple-950/20 to-slate-900 border border-purple-500/30 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-5 h-5 text-purple-400" />
+            <div className="text-purple-300 font-semibold text-sm">AI Portfolio Analysis</div>
+          </div>
+          <div className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap font-mono">
+            {aiAnalysis}
+          </div>
+          <button onClick={() => setAiAnalysis(null)} className="mt-4 text-xs text-purple-400 hover:text-purple-300">Dismiss</button>
+        </div>
+      )}
 
       {/* Expiring soon alert */}
       {expiringSoon.length > 0 && (
@@ -789,7 +889,7 @@ export default function AIReports() {
             {activeTab === 'demand' && <DemandTab rentals={filteredRentals} />}
             {activeTab === 'aging' && <AgingTab equipment={filteredEquipment} />}
             {activeTab === 'health' && <HealthTab equipment={filteredEquipment} rentals={filteredRentals} />}
-            {activeTab === 'rto' && <RtoTab rentals={filteredRentals} />}
+            {activeTab === 'rto' && <RtoTab rentals={filteredRentals} equipment={filteredEquipment} />}
             {activeTab === 'fraud' && (
               <PremiumGate requiredTier="pro" featureName="Fraud Intelligence" returnPath="/aireports">
                 <FraudIntelTab rentals={filteredRentals} />
