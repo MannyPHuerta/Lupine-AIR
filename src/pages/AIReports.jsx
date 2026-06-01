@@ -370,8 +370,28 @@ function HealthTab({ equipment, rentals }) {
 // ─── Rent-to-Own Tab ─────────────────────────────────────────────────────────
 function RtoTab({ rentals, equipment }) {
   const now = new Date();
+  const [rtoBranch, setRtoBranch] = useState('all');
+  const [rtoSort, setRtoSort] = useState('start_desc');
 
-  const rtoRentals = rentals.filter(r => r.isRentToOwn && r.status !== 'cancelled' && r.status !== 'completed');
+  const allRtoActive = rentals.filter(r => r.isRentToOwn && r.status !== 'cancelled' && r.status !== 'completed');
+
+  // Branch filter
+  const rtoBranches = ['all', ...Array.from(new Set(allRtoActive.map(r => r.branch).filter(Boolean))).sort()];
+  const rtoRentals = rtoBranch === 'all' ? allRtoActive : allRtoActive.filter(r => r.branch === rtoBranch);
+
+  // Sort
+  const sortedRtoRentals = [...rtoRentals].sort((a, b) => {
+    if (rtoSort === 'start_desc') return (b.startDate || '').localeCompare(a.startDate || '');
+    if (rtoSort === 'start_asc') return (a.startDate || '').localeCompare(b.startDate || '');
+    if (rtoSort === 'expiry_asc') return (a.purchaseOptionExpiry || '9999').localeCompare(b.purchaseOptionExpiry || '9999');
+    if (rtoSort === 'progress_desc') {
+      const pctA = a.purchasePrice > 0 ? (a.amountCredited || 0) / a.purchasePrice : 0;
+      const pctB = b.purchasePrice > 0 ? (b.amountCredited || 0) / b.purchasePrice : 0;
+      return pctB - pctA;
+    }
+    if (rtoSort === 'branch') return (a.branch || '').localeCompare(b.branch || '');
+    return 0;
+  });
 
   const expiringSoon = rtoRentals.filter(r => {
     if (!r.purchaseOptionExpiry) return false;
@@ -379,7 +399,7 @@ function RtoTab({ rentals, equipment }) {
     return days <= 90 && days >= 0;
   }).sort((a, b) => new Date(a.purchaseOptionExpiry) - new Date(b.purchaseOptionExpiry));
 
-  const expired = rtoRentals.filter(r => r.purchaseOptionExpiry && new Date(r.purchaseOptionExpiry) < now);
+  const expired = allRtoActive.filter(r => r.purchaseOptionExpiry && new Date(r.purchaseOptionExpiry) < now);
 
   const handleExportRto = () => {
     const date = new Date().toISOString().split('T')[0];
@@ -544,6 +564,33 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
         <StatCard label="Avg Progress" value={`${avgProgress}%`} sub="toward ownership" color="text-amber-400" />
       </div>
 
+      {/* Filter / Sort bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-white/40 text-xs">Branch:</span>
+          <select value={rtoBranch} onChange={e => setRtoBranch(e.target.value)}
+            className="bg-white/10 border border-white/20 text-white text-xs rounded-lg px-3 py-1.5">
+            {rtoBranches.map(b => <option key={b} value={b} className="text-black">{b === 'all' ? 'All Branches' : b}</option>)}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-white/40 text-xs">Sort:</span>
+          <select value={rtoSort} onChange={e => setRtoSort(e.target.value)}
+            className="bg-white/10 border border-white/20 text-white text-xs rounded-lg px-3 py-1.5">
+            <option value="start_desc" className="text-black">Newest First</option>
+            <option value="start_asc" className="text-black">Oldest First</option>
+            <option value="expiry_asc" className="text-black">Expiry Soonest</option>
+            <option value="progress_desc" className="text-black">Most Progress</option>
+            <option value="branch" className="text-black">Branch A–Z</option>
+          </select>
+        </div>
+        {rtoBranch !== 'all' && (
+          <span className="text-xs text-purple-400 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full">
+            {rtoRentals.length} of {allRtoActive.length} contracts
+          </span>
+        )}
+      </div>
+
       <div className="flex justify-between items-center">
         <button
           onClick={generateRtoAnalysis}
@@ -693,7 +740,7 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
               </tr>
             </thead>
             <tbody>
-              {rtoRentals.map((r, i) => {
+              {sortedRtoRentals.map((r, i) => {
                 const credited = r.amountCredited || 0;
                 const price = r.purchasePrice || 0;
                 const creditPct = r.rentToOwnCreditPercent || 0;
@@ -753,6 +800,7 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
                 <th className="text-left py-2 px-3 text-white/50 font-medium">Customer</th>
                 <th className="text-left py-2 px-3 text-white/50 font-medium">Equipment</th>
                 <th className="text-left py-2 px-3 text-white/50 font-medium">Branch</th>
+                <th className="text-left py-2 px-3 text-white/50 font-medium">Start Date</th>
                 <th className="text-right py-2 px-3 text-white/50 font-medium">Purchase Price</th>
                 <th className="text-right py-2 px-3 text-white/50 font-medium">Credited</th>
                 <th className="text-right py-2 px-3 text-white/50 font-medium">Remaining</th>
@@ -761,7 +809,7 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
               </tr>
             </thead>
             <tbody>
-              {rtoRentals.map((r, i) => {
+              {sortedRtoRentals.map((r, i) => {
                 const credited = r.amountCredited || 0;
                 const price = r.purchasePrice || 0;
                 const pct = price > 0 ? Math.min(100, Math.round((credited / price) * 100)) : 0;
@@ -773,6 +821,7 @@ Format with clear headings and bullet points. Be direct and data-driven.`;
                     <td className="py-2 px-3 text-white font-medium">{r.customerName}</td>
                     <td className="py-2 px-3 text-white/60">{r.equipmentName}</td>
                     <td className="py-2 px-3 text-white/50">{r.branch}</td>
+                    <td className="py-2 px-3 text-white/40">{r.startDate || '—'}</td>
                     <td className="py-2 px-3 text-right text-white/80">${price.toFixed(2)}</td>
                     <td className="py-2 px-3 text-right text-green-400">${credited.toFixed(2)}</td>
                     <td className="py-2 px-3 text-right text-cyan-400">${(r.balanceRemaining ?? (price - credited)).toFixed(2)}</td>

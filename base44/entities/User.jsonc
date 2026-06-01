@@ -32,5 +32,10 @@
       "type": "string",
       "description": "Email of admin who deactivated this account"
     }
-  }
+  },
+  "required": [
+    "branch",
+    "deactivatedAt",
+    "deactivatedBy"
+  ]
 }
