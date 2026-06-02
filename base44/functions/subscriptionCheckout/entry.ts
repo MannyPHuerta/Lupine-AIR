@@ -2,20 +2,23 @@ import Stripe from 'npm:stripe@14';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
-const APP_DOMAIN = 'https://lupine-one.base44.app';
+const APP_DOMAIN = 'https://theprojectair.com';
 
 const PLANS = {
+  core: {
+    name: 'AIR Core',
+    description: 'Essential rental operations with AI included. 1 branch, unlimited users.',
+    amount: 29900, // $299/mo
+  },
   pro: {
     name: 'AIR Pro',
-    description: 'Fraud Intelligence tab, Benford\'s Law analysis, weekly fraud digest emails.',
-    amount: 4900, // $49/mo
-    features: ['Fraud Intel tab (Benford\'s Law, threshold clustering)', 'Weekly Fraud Digest email to all admins', 'Employee void & discount rate monitoring'],
+    description: 'Multi-location operations with shop management, GPS tracking, and advanced analytics. Up to 3 branches.',
+    amount: 79900, // $799/mo
   },
-  security_plus: {
-    name: 'AIR Security+',
-    description: 'Everything in Pro plus GPS tracking integration, geofence alerts, theft intelligence, and boundary vigilance.',
-    amount: 9900, // $99/mo
-    features: ['Everything in Pro', 'GPS provider integrations (Samsara, Geotab, etc.)', 'Real-time geofence breach SMS & email alerts', 'Night movement & speed anomaly detection', 'Theft Intelligence & Boundary Vigilance panels', 'ThreatWatch with DL verification'],
+  custom: {
+    name: 'AIR Custom',
+    description: 'Regional operations with government bidding, advanced load planning, and dedicated support. Up to 10 branches.',
+    amount: 149900, // $1,499/mo
   },
 };
 
