@@ -621,6 +621,22 @@ function QuoteSection() {
 
 // ─── Pricing ─────────────────────────────────────────────────────────────────
 function PricingSection() {
+  const [loadingTier, setLoadingTier] = useState(null);
+
+  const handleCheckout = async (tier) => {
+    setLoadingTier(tier);
+    const { base44 } = await import('@/api/base44Client');
+    const isAuthed = await base44.auth.isAuthenticated();
+    if (!isAuthed) {
+      base44.auth.redirectToLogin(window.location.pathname + '#pricing');
+      setLoadingTier(null);
+      return;
+    }
+    const res = await base44.functions.invoke('subscriptionCheckout', { tier, returnPath: '/air' });
+    window.location.href = res.data.url;
+    setLoadingTier(null);
+  };
+
   const tiers = [
     {
       name: 'Core',
@@ -751,8 +767,17 @@ function PricingSection() {
                       ))}
                     </ul>
                   </div>
-                  <button className={`mt-auto w-full py-3 rounded-xl font-bold text-sm transition ${tier.highlight ? 'bg-cyan-500 hover:bg-cyan-400 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
-                    {tier.cta}
+                  <button
+                    onClick={() => {
+                      if (tier.name === 'Core' || tier.name === 'Pro') {
+                        handleCheckout(tier.name.toLowerCase());
+                      } else {
+                        document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    disabled={loadingTier === tier.name.toLowerCase()}
+                    className={`mt-auto w-full py-3 rounded-xl font-bold text-sm transition disabled:opacity-60 ${tier.highlight ? 'bg-cyan-500 hover:bg-cyan-400 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
+                    {loadingTier === tier.name.toLowerCase() ? 'Redirecting…' : tier.cta}
                   </button>
                 </div>
               </FadeUp>
