@@ -94,6 +94,7 @@ import AITraining from "./pages/AITraining";
 import FeatureMatrix from "./pages/FeatureMatrix";
 import RFIDSettings from "./pages/RFIDSettings";
 import RtoDashboard from "./pages/RtoDashboard";
+import DemoDataSeeder from "./pages/DemoDataSeeder";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -198,6 +199,7 @@ const AuthenticatedApp = () => {
         <Route path="/feature-matrix" element={<FeatureMatrix />} />
         <Route path="/rfid-settings" element={<RFIDSettings />} />
         <Route path="/rto-dashboard" element={<RtoDashboard />} />
+        <Route path="/demo-seeder" element={<DemoDataSeeder />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
