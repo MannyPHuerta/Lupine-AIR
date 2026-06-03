@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Save, Loader2, Search, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { Save, Loader2, Search, CheckCircle, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,36 @@ const CATEGORIES_WITH_SPECS = [
   'Paving Equipment', 'Dump Truck', 'Grader', 'Loader', 'Inflatable', 'Dance Floor',
   'Staging', 'Table', 'Chair', 'Fleet Vehicle', 'Tool',
 ];
+
+function EnrichButton({ equipmentId, onEnriched }) {
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState(null);
+
+  const handleEnrich = async (e) => {
+    e.stopPropagation();
+    setLoading(true);
+    setStatus(null);
+    const res = await base44.functions.invoke('enrichFromManufacturer', { equipmentId });
+    const item = res?.data?.results?.[0];
+    if (item?.specs) onEnriched(item.specs);
+    setStatus(item?.enriched?.length > 0 ? `✓ Filled: ${item.enriched.join(', ')}` : 'No new data found');
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={handleEnrich}
+        disabled={loading}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 hover:bg-violet-200 text-violet-800 rounded-lg transition disabled:opacity-50"
+      >
+        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+        {loading ? 'Searching…' : 'Enrich from Web'}
+      </button>
+      {status && <span className="text-xs text-gray-500">{status}</span>}
+    </div>
+  );
+}
 
 function SpecRow({ eq, onSave }) {
   const [expanded, setExpanded] = useState(false);
@@ -74,7 +104,8 @@ function SpecRow({ eq, onSave }) {
               </div>
             ))}
           </div>
-          <div className="flex justify-end pt-1">
+          <div className="flex justify-between items-center pt-1">
+            <EnrichButton equipmentId={eq.id} onEnriched={(enrichedSpecs) => setSpecs(prev => ({ ...prev, ...enrichedSpecs }))} />
             <Button
               onClick={handleSave}
               disabled={saving}
