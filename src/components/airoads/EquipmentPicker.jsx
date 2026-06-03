@@ -67,12 +67,12 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
 
       {!showManual ? (
         <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400 pointer-events-none z-10" />
           <Input
             placeholder="Search catalog..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-10"
-            icon={<Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />}
           />
           {(filtered.length > 0 || isSearching || aiSuggestions.length > 0) && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
