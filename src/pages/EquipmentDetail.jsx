@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getSpecsTemplate } from '@/lib/equipmentSpecs';
@@ -187,7 +187,18 @@ export default function EquipmentDetail() {
 
         {/* Specs */}
         <section className="bg-white rounded-xl border shadow-sm p-5">
-          <h2 className="font-semibold text-gray-800 mb-1">Technical Specifications</h2>
+          <div className="flex items-start justify-between mb-1">
+            <h2 className="font-semibold text-gray-800">Technical Specifications</h2>
+            <EnrichFromWebButton equipmentId={id} onEnriched={(updated) => {
+              setSpecs(s => ({ ...s, ...(updated.specs || {}) }));
+              setForm(f => ({
+                ...f,
+                ...(updated.modelNumber && !f.modelNumber ? { modelNumber: updated.modelNumber } : {}),
+                ...(updated.usefulLifeYears && !f.usefulLifeYears ? { usefulLifeYears: updated.usefulLifeYears } : {}),
+              }));
+              if (updated.imageUrl) setEq(e => ({ ...e, imageUrl: updated.imageUrl }));
+            }} />
+          </div>
           <p className="text-xs text-gray-400 mb-4">These print on rental invoices — customer acknowledges specs at time of rental.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {specTemplate.map(field => (
@@ -268,6 +279,44 @@ function Field({ label, children, className = '' }) {
     <div className={className}>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function EnrichFromWebButton({ equipmentId, onEnriched }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleEnrich = async () => {
+    setLoading(true);
+    setResult(null);
+    const res = await base44.functions.invoke('enrichFromManufacturer', { equipmentId });
+    const item = res?.data?.results?.[0];
+    if (item) {
+      setResult(item);
+      if (item.enriched?.length > 0) onEnriched(item);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={handleEnrich}
+        disabled={loading}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-violet-100 hover:bg-violet-200 text-violet-800 rounded-lg transition disabled:opacity-50"
+      >
+        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+        {loading ? 'Searching web…' : 'Enrich from Web'}
+      </button>
+      {result && (
+        <div className="text-xs text-right">
+          {result.enriched?.length > 0
+            ? <span className="text-green-700">✓ Filled: {result.enriched.join(', ')}{result.sourceUrl ? <> · <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">source</a></> : ''}</span>
+            : <span className="text-gray-400">No new data found</span>
+          }
+        </div>
+      )}
     </div>
   );
 }
