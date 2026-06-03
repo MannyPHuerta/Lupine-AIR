@@ -1295,6 +1295,64 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.cpro_contacts
 
 
 -- ============================================================
+-- AUTH & PROFILES
+-- ============================================================
+
+-- Profiles table extending auth.users
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id                    UUID REFERENCES auth.users(id) PRIMARY KEY,
+  full_name             TEXT,
+  email                 TEXT,
+  role                  TEXT DEFAULT 'user',
+  branch                TEXT,
+  stripe_customer_id    TEXT,
+  subscription_tier     TEXT DEFAULT 'core',
+  subscription_status   TEXT,
+  stripe_subscription_id TEXT,
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.profiles;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- Auto-create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, email, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'user')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- RLS Policies for profiles
+CREATE POLICY "Users can read own profile"
+  ON public.profiles FOR SELECT
+  USING (auth.uid() = id);
+
+CREATE POLICY "Admins can read all profiles"
+  ON public.profiles FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+      AND role = 'admin'
+    )
+  );
+
+-- ============================================================
 -- RLS POLICIES (Admin full access, users read own)
 -- ============================================================
 -- Apply this pattern to each table.
