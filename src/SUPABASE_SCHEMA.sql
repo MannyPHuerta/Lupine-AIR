@@ -23,7 +23,7 @@ $$ LANGUAGE plpgsql;
 -- AUTH / USERS
 -- ============================================================
 
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id                    UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   full_name             TEXT,
   email                 TEXT,
@@ -50,6 +50,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -59,7 +60,7 @@ CREATE TRIGGER on_auth_user_created
 -- COMPANY / BRANCH SETTINGS
 -- ============================================================
 
-CREATE TABLE public.company_settings (
+CREATE TABLE IF NOT EXISTS public.company_settings (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_name              TEXT,
   logo_url                  TEXT,
@@ -101,7 +102,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.company_settings
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.branch_settings (
+CREATE TABLE IF NOT EXISTS public.branch_settings (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch                TEXT NOT NULL,
   invoice_prefix        TEXT,
@@ -121,7 +122,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.branch_settings
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.availability_config (
+CREATE TABLE IF NOT EXISTS public.availability_config (
   id                              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch                          TEXT NOT NULL,
   allow_overbooking_by_default    BOOLEAN DEFAULT false,
@@ -139,7 +140,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.availability_config
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.rental_agreements (
+CREATE TABLE IF NOT EXISTS public.rental_agreements (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch              TEXT NOT NULL,
   agreement_type      TEXT DEFAULT 'ARA_standard',
@@ -164,7 +165,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rental_agreements
 -- EQUIPMENT CATALOG
 -- ============================================================
 
-CREATE TABLE public.equipment_categories (
+CREATE TABLE IF NOT EXISTS public.equipment_categories (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name                      TEXT NOT NULL,
   parent                    TEXT,
@@ -181,7 +182,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.equipment_categories
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.inventory_items (
+CREATE TABLE IF NOT EXISTS public.inventory_items (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   record_index          INTEGER,
   byte_offset           INTEGER,
@@ -207,7 +208,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.inventory_items
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.equipment (
+CREATE TABLE IF NOT EXISTS public.equipment (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   inventory_item_id         UUID REFERENCES public.inventory_items(id),
   name                      TEXT NOT NULL,
@@ -271,7 +272,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.equipment
 -- CUSTOMERS
 -- ============================================================
 
-CREATE TABLE public.customers (
+CREATE TABLE IF NOT EXISTS public.customers (
   id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name                   TEXT NOT NULL,
   company_name                TEXT,
@@ -324,7 +325,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.customers
 -- RENTALS
 -- ============================================================
 
-CREATE TABLE public.rentals (
+CREATE TABLE IF NOT EXISTS public.rentals (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   equipment_id              UUID REFERENCES public.equipment(id),
   equipment_name            TEXT,
@@ -401,7 +402,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rentals
 -- DELIVERIES & RECOVERY
 -- ============================================================
 
-CREATE TABLE public.deliveries (
+CREATE TABLE IF NOT EXISTS public.deliveries (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   rental_id                 UUID REFERENCES public.rentals(id),
   customer_id               UUID REFERENCES public.customers(id),
@@ -451,7 +452,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.deliveries
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.recoveries (
+CREATE TABLE IF NOT EXISTS public.recoveries (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   rental_id             UUID REFERENCES public.rentals(id),
   delivery_id           UUID REFERENCES public.deliveries(id),
@@ -486,7 +487,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.recoveries
 -- WORK ORDERS & MAINTENANCE
 -- ============================================================
 
-CREATE TABLE public.work_orders (
+CREATE TABLE IF NOT EXISTS public.work_orders (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recovery_id             UUID REFERENCES public.recoveries(id),
   rental_id               UUID REFERENCES public.rentals(id),
@@ -522,7 +523,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.work_orders
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.maintenance_logs (
+CREATE TABLE IF NOT EXISTS public.maintenance_logs (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   equipment_id      UUID REFERENCES public.equipment(id),
   equipment_name    TEXT,
@@ -552,7 +553,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.maintenance_logs
 -- PARTS
 -- ============================================================
 
-CREATE TABLE public.part_requirements (
+CREATE TABLE IF NOT EXISTS public.part_requirements (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   work_order_id UUID REFERENCES public.work_orders(id),
   part_name     TEXT NOT NULL,
@@ -572,7 +573,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.part_requirements
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.parts_procurement (
+CREATE TABLE IF NOT EXISTS public.parts_procurement (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   work_order_id         UUID REFERENCES public.work_orders(id),
   part_requirement_id   UUID REFERENCES public.part_requirements(id),
@@ -601,7 +602,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.parts_procurement
 -- RECURRING RENTALS & RTO
 -- ============================================================
 
-CREATE TABLE public.recurring_rentals (
+CREATE TABLE IF NOT EXISTS public.recurring_rentals (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id             UUID REFERENCES public.customers(id),
   customer_name           TEXT NOT NULL,
@@ -637,7 +638,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.recurring_rentals
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.rto_payments (
+CREATE TABLE IF NOT EXISTS public.rto_payments (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   rental_id         UUID REFERENCES public.rentals(id),
   customer_name     TEXT NOT NULL,
@@ -668,7 +669,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rto_payments
 -- EXPENSES
 -- ============================================================
 
-CREATE TABLE public.expenses (
+CREATE TABLE IF NOT EXISTS public.expenses (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   date                    DATE NOT NULL,
   category                TEXT NOT NULL,
@@ -699,7 +700,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.expenses
 -- TIMESHEETS & DRIVER LOCATIONS
 -- ============================================================
 
-CREATE TABLE public.timesheets (
+CREATE TABLE IF NOT EXISTS public.timesheets (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   staff_name      TEXT NOT NULL,
   staff_email     TEXT,
@@ -730,7 +731,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.timesheets
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.driver_locations (
+CREATE TABLE IF NOT EXISTS public.driver_locations (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   driver_email    TEXT NOT NULL,
   driver_name     TEXT,
@@ -753,7 +754,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.driver_locations
 -- GPS / TRACKING
 -- ============================================================
 
-CREATE TABLE public.gps_providers (
+CREATE TABLE IF NOT EXISTS public.gps_providers (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name                  TEXT NOT NULL,
   provider_type         TEXT NOT NULL,
@@ -779,7 +780,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.gps_providers
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.equipment_gps_links (
+CREATE TABLE IF NOT EXISTS public.equipment_gps_links (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   equipment_id            UUID REFERENCES public.equipment(id),
   equipment_name          TEXT,
@@ -814,7 +815,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.equipment_gps_links
 -- SHOP / MECHANICS
 -- ============================================================
 
-CREATE TABLE public.mechanic_profiles (
+CREATE TABLE IF NOT EXISTS public.mechanic_profiles (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email                 TEXT NOT NULL,
   full_name             TEXT NOT NULL,
@@ -836,7 +837,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.mechanic_profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.predictive_alerts (
+CREATE TABLE IF NOT EXISTS public.predictive_alerts (
   id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   equipment_id                UUID REFERENCES public.equipment(id),
   equipment_name              TEXT,
@@ -867,7 +868,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.predictive_alerts
 -- EVENT PLANNING
 -- ============================================================
 
-CREATE TABLE public.event_plans (
+CREATE TABLE IF NOT EXISTS public.event_plans (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title                 TEXT NOT NULL,
   event_date            DATE NOT NULL,
@@ -908,7 +909,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.event_plans
 -- RFQ
 -- ============================================================
 
-CREATE TABLE public.rfq_records (
+CREATE TABLE IF NOT EXISTS public.rfq_records (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   rfq_number              TEXT,
   title                   TEXT,
@@ -958,7 +959,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rfq_records
 -- DISCOUNTS & PROMOS
 -- ============================================================
 
-CREATE TABLE public.volume_discount_rules (
+CREATE TABLE IF NOT EXISTS public.volume_discount_rules (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name              TEXT NOT NULL,
   category          TEXT,
@@ -977,7 +978,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.volume_discount_rules
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.promo_codes (
+CREATE TABLE IF NOT EXISTS public.promo_codes (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code            TEXT NOT NULL UNIQUE,
   description     TEXT,
@@ -998,7 +999,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.promo_codes
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.discount_logs (
+CREATE TABLE IF NOT EXISTS public.discount_logs (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   rental_id       UUID REFERENCES public.rentals(id),
   invoice_number  TEXT,
@@ -1018,7 +1019,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.discount_logs
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.delivery_matrix (
+CREATE TABLE IF NOT EXISTS public.delivery_matrix (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch                TEXT NOT NULL,
   labor_rate_per_man_hour NUMERIC(10,2),
@@ -1041,7 +1042,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.delivery_matrix
 -- AUDIT / REPORTS / MISC
 -- ============================================================
 
-CREATE TABLE public.audit_logs (
+CREATE TABLE IF NOT EXISTS public.audit_logs (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   action        TEXT NOT NULL,
   entity_name   TEXT NOT NULL,
@@ -1063,7 +1064,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.audit_logs
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.reports (
+CREATE TABLE IF NOT EXISTS public.reports (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   item_name     TEXT NOT NULL,
   item_type     TEXT NOT NULL,
@@ -1096,7 +1097,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.reports
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.roles (
+CREATE TABLE IF NOT EXISTS public.roles (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT NOT NULL,
   description TEXT,
@@ -1113,7 +1114,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.roles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.platform_features (
+CREATE TABLE IF NOT EXISTS public.platform_features (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   module              TEXT,
   feature_name        TEXT,
@@ -1133,7 +1134,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.platform_features
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.payment_settings (
+CREATE TABLE IF NOT EXISTS public.payment_settings (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   active_processor          TEXT DEFAULT 'none',
   stripe_api_key            TEXT,
@@ -1163,7 +1164,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.payment_settings
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.staff_phones (
+CREATE TABLE IF NOT EXISTS public.staff_phones (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT NOT NULL,
   phone         TEXT NOT NULL,
@@ -1176,7 +1177,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.staff_phones
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.custom_emails (
+CREATE TABLE IF NOT EXISTS public.custom_emails (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT NOT NULL,
   type          TEXT NOT NULL,
@@ -1189,7 +1190,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.custom_emails
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.user_roster (
+CREATE TABLE IF NOT EXISTS public.user_roster (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name     TEXT,
   email         TEXT NOT NULL,
@@ -1207,7 +1208,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.user_roster
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.pull_requests (
+CREATE TABLE IF NOT EXISTS public.pull_requests (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   pr_number       INTEGER NOT NULL,
   title           TEXT NOT NULL,
@@ -1225,7 +1226,7 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.pull_requests
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 
-CREATE TABLE public.cpro_contacts (
+CREATE TABLE IF NOT EXISTS public.cpro_contacts (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name             TEXT,
   phone                 TEXT,
