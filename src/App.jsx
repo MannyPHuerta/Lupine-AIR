@@ -95,7 +95,6 @@ import FeatureMatrix from "./pages/FeatureMatrix";
 import RFIDSettings from "./pages/RFIDSettings";
 import RtoDashboard from "./pages/RtoDashboard";
 import DemoDataSeeder from "./pages/DemoDataSeeder";
-import SupabaseTest from "./pages/SupabaseTest";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -201,7 +200,6 @@ const AuthenticatedApp = () => {
         <Route path="/rfid-settings" element={<RFIDSettings />} />
         <Route path="/rto-dashboard" element={<RtoDashboard />} />
         <Route path="/demo-seeder" element={<DemoDataSeeder />} />
-        <Route path="/supabase-test" element={<SupabaseTest />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
