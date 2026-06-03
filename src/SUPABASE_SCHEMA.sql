@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at            TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.profiles;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -54,6 +55,8 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Drop existing triggers for tables (to handle re-runs)
 
 
 -- ============================================================
@@ -98,6 +101,7 @@ CREATE TABLE IF NOT EXISTS public.company_settings (
   created_by_id             UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.company_settings ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.company_settings;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.company_settings
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -118,6 +122,7 @@ CREATE TABLE IF NOT EXISTS public.branch_settings (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.branch_settings ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.branch_settings;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.branch_settings
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -136,6 +141,7 @@ CREATE TABLE IF NOT EXISTS public.availability_config (
   created_by_id                   UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.availability_config ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.availability_config;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.availability_config
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -157,6 +163,7 @@ CREATE TABLE IF NOT EXISTS public.rental_agreements (
   created_by_id       UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.rental_agreements ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.rental_agreements;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rental_agreements
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -178,6 +185,7 @@ CREATE TABLE IF NOT EXISTS public.equipment_categories (
   created_by_id             UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.equipment_categories ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.equipment_categories;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.equipment_categories
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -204,6 +212,7 @@ CREATE TABLE IF NOT EXISTS public.inventory_items (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.inventory_items ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.inventory_items;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.inventory_items
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -264,6 +273,7 @@ CREATE TABLE IF NOT EXISTS public.equipment (
   created_by_id             UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.equipment ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.equipment;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.equipment
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -317,6 +327,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
   created_by_id               UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.customers;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.customers
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -394,6 +405,7 @@ CREATE TABLE IF NOT EXISTS public.rentals (
   created_by_id             UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.rentals ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.rentals;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rentals
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -448,6 +460,7 @@ CREATE TABLE IF NOT EXISTS public.deliveries (
   created_by_id             UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.deliveries ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.deliveries;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.deliveries
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -479,6 +492,7 @@ CREATE TABLE IF NOT EXISTS public.recoveries (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.recoveries ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.recoveries;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.recoveries
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -519,6 +533,7 @@ CREATE TABLE IF NOT EXISTS public.work_orders (
   created_by_id           UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.work_orders ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.work_orders;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.work_orders
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -545,6 +560,7 @@ CREATE TABLE IF NOT EXISTS public.maintenance_logs (
   created_by_id     UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.maintenance_logs ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.maintenance_logs;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.maintenance_logs
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -569,6 +585,7 @@ CREATE TABLE IF NOT EXISTS public.part_requirements (
   created_by_id UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.part_requirements ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.part_requirements;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.part_requirements
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -594,6 +611,7 @@ CREATE TABLE IF NOT EXISTS public.parts_procurement (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.parts_procurement ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.parts_procurement;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.parts_procurement
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -634,6 +652,7 @@ CREATE TABLE IF NOT EXISTS public.recurring_rentals (
   created_by_id           UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.recurring_rentals ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.recurring_rentals;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.recurring_rentals
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -661,6 +680,7 @@ CREATE TABLE IF NOT EXISTS public.rto_payments (
   created_by_id     UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.rto_payments ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.rto_payments;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rto_payments
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -692,6 +712,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   created_by_id           UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.expenses;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.expenses
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -727,6 +748,7 @@ CREATE TABLE IF NOT EXISTS public.timesheets (
   created_by_id   UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.timesheets ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.timesheets;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.timesheets
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -746,6 +768,7 @@ CREATE TABLE IF NOT EXISTS public.driver_locations (
   created_by_id   UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.driver_locations ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.driver_locations;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.driver_locations
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -776,6 +799,7 @@ CREATE TABLE IF NOT EXISTS public.gps_providers (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.gps_providers ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.gps_providers;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.gps_providers
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -807,6 +831,7 @@ CREATE TABLE IF NOT EXISTS public.equipment_gps_links (
   created_by_id           UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.equipment_gps_links ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.equipment_gps_links;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.equipment_gps_links
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -833,6 +858,7 @@ CREATE TABLE IF NOT EXISTS public.mechanic_profiles (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.mechanic_profiles ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.mechanic_profiles;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.mechanic_profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -860,6 +886,7 @@ CREATE TABLE IF NOT EXISTS public.predictive_alerts (
   created_by_id               UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.predictive_alerts ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.predictive_alerts;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.predictive_alerts
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -901,6 +928,7 @@ CREATE TABLE IF NOT EXISTS public.event_plans (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.event_plans ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.event_plans;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.event_plans
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -951,6 +979,7 @@ CREATE TABLE IF NOT EXISTS public.rfq_records (
   created_by_id           UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.rfq_records ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.rfq_records;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.rfq_records
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -974,6 +1003,7 @@ CREATE TABLE IF NOT EXISTS public.volume_discount_rules (
   created_by_id     UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.volume_discount_rules ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.volume_discount_rules;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.volume_discount_rules
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -995,6 +1025,7 @@ CREATE TABLE IF NOT EXISTS public.promo_codes (
   created_by_id   UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.promo_codes ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.promo_codes;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.promo_codes
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1015,6 +1046,7 @@ CREATE TABLE IF NOT EXISTS public.discount_logs (
   created_by_id   UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.discount_logs ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.discount_logs;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.discount_logs
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1034,6 +1066,7 @@ CREATE TABLE IF NOT EXISTS public.delivery_matrix (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.delivery_matrix ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.delivery_matrix;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.delivery_matrix
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1060,6 +1093,7 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   created_by_id UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.audit_logs;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.audit_logs
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1093,6 +1127,7 @@ CREATE TABLE IF NOT EXISTS public.reports (
   created_by_id UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.reports;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.reports
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1110,6 +1145,7 @@ CREATE TABLE IF NOT EXISTS public.roles (
   created_by_id UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.roles;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.roles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1130,6 +1166,7 @@ CREATE TABLE IF NOT EXISTS public.platform_features (
   created_by_id       UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.platform_features ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.platform_features;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.platform_features
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1160,6 +1197,7 @@ CREATE TABLE IF NOT EXISTS public.payment_settings (
   created_by_id             UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.payment_settings ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.payment_settings;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.payment_settings
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1173,6 +1211,7 @@ CREATE TABLE IF NOT EXISTS public.staff_phones (
   created_by_id UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.staff_phones ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.staff_phones;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.staff_phones
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1186,6 +1225,7 @@ CREATE TABLE IF NOT EXISTS public.custom_emails (
   created_by_id UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.custom_emails ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.custom_emails;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.custom_emails
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1204,6 +1244,7 @@ CREATE TABLE IF NOT EXISTS public.user_roster (
   created_by_id UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.user_roster ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.user_roster;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.user_roster
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1222,6 +1263,7 @@ CREATE TABLE IF NOT EXISTS public.pull_requests (
   created_by_id   UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.pull_requests ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.pull_requests;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.pull_requests
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
@@ -1247,6 +1289,7 @@ CREATE TABLE IF NOT EXISTS public.cpro_contacts (
   created_by_id         UUID REFERENCES auth.users(id)
 );
 ALTER TABLE public.cpro_contacts ENABLE ROW LEVEL SECURITY;
+DROP TRIGGER IF EXISTS set_updated_at ON public.cpro_contacts;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.cpro_contacts
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
