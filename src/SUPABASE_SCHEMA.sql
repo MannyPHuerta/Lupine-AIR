@@ -1370,19 +1370,35 @@ CREATE POLICY "Admins can read all profiles"
 -- USEFUL INDEXES
 -- ============================================================
 
+DROP INDEX IF EXISTS idx_rentals_customer_id;
 CREATE INDEX idx_rentals_customer_id       ON public.rentals(customer_id);
+DROP INDEX IF EXISTS idx_rentals_equipment_id;
 CREATE INDEX idx_rentals_equipment_id      ON public.rentals(equipment_id);
+DROP INDEX IF EXISTS idx_rentals_status;
 CREATE INDEX idx_rentals_status            ON public.rentals(status);
+DROP INDEX IF EXISTS idx_rentals_branch;
 CREATE INDEX idx_rentals_branch            ON public.rentals(branch);
+DROP INDEX IF EXISTS idx_rentals_start_date;
 CREATE INDEX idx_rentals_start_date        ON public.rentals(start_date);
+DROP INDEX IF EXISTS idx_deliveries_rental_id;
 CREATE INDEX idx_deliveries_rental_id      ON public.deliveries(rental_id);
+DROP INDEX IF EXISTS idx_deliveries_scheduled_date;
 CREATE INDEX idx_deliveries_scheduled_date ON public.deliveries(scheduled_date);
+DROP INDEX IF EXISTS idx_work_orders_equipment_id;
 CREATE INDEX idx_work_orders_equipment_id  ON public.work_orders(equipment_id);
+DROP INDEX IF EXISTS idx_equipment_unit_status;
 CREATE INDEX idx_equipment_unit_status     ON public.equipment(unit_status);
+DROP INDEX IF EXISTS idx_equipment_category;
 CREATE INDEX idx_equipment_category        ON public.equipment(category);
+DROP INDEX IF EXISTS idx_audit_logs_performed_by;
 CREATE INDEX idx_audit_logs_performed_by   ON public.audit_logs(performed_by);
+DROP INDEX IF EXISTS idx_audit_logs_entity;
 CREATE INDEX idx_audit_logs_entity         ON public.audit_logs(entity_name, entity_id);
+DROP INDEX IF EXISTS idx_expenses_branch;
 CREATE INDEX idx_expenses_branch           ON public.expenses(branch);
+DROP INDEX IF EXISTS idx_expenses_date;
 CREATE INDEX idx_expenses_date             ON public.expenses(date);
+DROP INDEX IF EXISTS idx_timesheets_branch;
 CREATE INDEX idx_timesheets_branch         ON public.timesheets(branch);
+DROP INDEX IF EXISTS idx_timesheets_work_date;
 CREATE INDEX idx_timesheets_work_date      ON public.timesheets(work_date);
