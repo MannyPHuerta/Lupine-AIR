@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
@@ -625,7 +626,6 @@ function PricingSection() {
 
   const handleCheckout = async (tier) => {
     setLoadingTier(tier);
-    const { base44 } = await import('@/api/base44Client');
     const isAuthed = await base44.auth.isAuthenticated();
     if (!isAuthed) {
       base44.auth.redirectToLogin(window.location.pathname + '#pricing');
