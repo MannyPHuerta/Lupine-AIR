@@ -27,7 +27,7 @@ function EnrichButton({ equipmentId, onEnriched }) {
     setStatus(null);
     const res = await base44.functions.invoke('enrichFromManufacturer', { equipmentId });
     const item = res?.data?.results?.[0];
-    if (item?.specs) onEnriched(item.specs);
+    if (item?.specs || item?.imageUrl) onEnriched(item.specs || {}, item.imageUrl || null);
     setStatus(item?.enriched?.length > 0 ? `✓ Filled: ${item.enriched.join(', ')}` : 'No new data found');
     setLoading(false);
   };
@@ -52,6 +52,7 @@ function SpecRow({ eq, onSave }) {
   const [specs, setSpecs] = useState(eq.specs || {});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [imageUrl, setImageUrl] = useState(eq.imageUrl || null);
 
   const template = getSpecsTemplate(eq.category);
   const filledCount = template.filter(t => specs[t.key] && String(specs[t.key]).trim()).length;
@@ -91,6 +92,12 @@ function SpecRow({ eq, onSave }) {
 
       {expanded && (
         <div className="border-t px-4 pb-4 pt-3 space-y-3">
+          {imageUrl && (
+            <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
+              <img src={imageUrl} alt={eq.name} className="w-20 h-14 object-contain rounded bg-white border" onError={() => setImageUrl(null)} />
+              <div className="text-xs text-gray-500">Image found — saved to equipment record &amp; used in the online store.</div>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {template.map(field => (
               <div key={field.key}>
@@ -105,7 +112,10 @@ function SpecRow({ eq, onSave }) {
             ))}
           </div>
           <div className="flex justify-between items-center pt-1">
-            <EnrichButton equipmentId={eq.id} onEnriched={(enrichedSpecs) => setSpecs(prev => ({ ...prev, ...enrichedSpecs }))} />
+            <EnrichButton equipmentId={eq.id} onEnriched={(enrichedSpecs, foundImageUrl) => {
+              setSpecs(prev => ({ ...prev, ...enrichedSpecs }));
+              if (foundImageUrl) setImageUrl(foundImageUrl);
+            }} />
             <Button
               onClick={handleSave}
               disabled={saving}
