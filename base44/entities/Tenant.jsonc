@@ -1,0 +1,107 @@
+{
+  "name": "Tenant",
+  "type": "object",
+  "properties": {
+    "companyName": {
+      "type": "string",
+      "description": "Subscriber's company name"
+    },
+    "adminEmail": {
+      "type": "string",
+      "description": "Primary admin email address"
+    },
+    "adminUserId": {
+      "type": "string",
+      "description": "Base44 user ID of the primary admin"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "active",
+        "suspended",
+        "cancelled"
+      ],
+      "default": "trial",
+      "description": "Subscription lifecycle status"
+    },
+    "trialStartDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the trial started"
+    },
+    "trialEndsAt": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the trial expires (14 days after signup)"
+    },
+    "onboardingCompleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the onboarding wizard has been completed"
+    },
+    "onboardingStep": {
+      "type": "integer",
+      "default": 0,
+      "description": "Last completed onboarding step (0-4)"
+    },
+    "stripeCustomerId": {
+      "type": "string",
+      "description": "Stripe customer ID (set when they upgrade)"
+    },
+    "stripeSubscriptionId": {
+      "type": "string",
+      "description": "Stripe subscription ID (set when they upgrade)"
+    },
+    "planTier": {
+      "type": "string",
+      "enum": [
+        "starter",
+        "professional",
+        "enterprise"
+      ],
+      "default": "starter",
+      "description": "Subscribed plan tier"
+    },
+    "trialReminderDay12Sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether day-12 trial reminder was sent"
+    },
+    "trialReminderDay14Sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether day-14 trial expiry warning was sent"
+    },
+    "suspendedAt": {
+      "type": "string",
+      "description": "ISO timestamp when account was suspended"
+    },
+    "dataDeleteScheduledAt": {
+      "type": "string",
+      "description": "ISO timestamp when data will be purged (suspended + 16 days)"
+    },
+    "subdomain": {
+      "type": "string",
+      "description": "Subscriber subdomain slug (e.g. 'acme' for acme.lupineair.com)"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Primary contact phone"
+    },
+    "industry": {
+      "type": "string",
+      "enum": [
+        "construction",
+        "events",
+        "both"
+      ],
+      "default": "both",
+      "description": "Primary rental focus"
+    }
+  },
+  "required": [
+    "companyName",
+    "adminEmail"
+  ]
+}

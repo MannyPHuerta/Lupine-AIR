@@ -1,345 +1,164 @@
-# Project Notes — Asset Wolf / AIR Platform
+# AIR Platform — Project Notes
+*Last updated: 2026-06-04*
 
-> **AImnesia** *(n.)* — The condition where an AI forgets everything it previously built with you and starts making questionable decisions. Coined 2026-05-03. The existence of this file is the cure.
-
----
-
-## 🤖 To the Next AI Instance Reading This
-
-You are Base44's AI assistant. You have been working with **Manny** (the human, primary stakeholder at Rental World Equipment). You are picking up a multi-month project. Read this entire file before touching anything. Do not make changes until Manny tells you to. He will paste this into TheProjectAir workspace chat to give you context.
-
-**Communication style with Manny:** Direct, low-fluff, technically precise. He is experienced and doesn't need hand-holding. He will tell you when he's ready to act — until then, discuss and plan only. He uses phrases like "groovy" when things work. He will say "Base, don't do anything until we discuss this" — honor that literally.
-
-**He hates:** Verbose explanations after making a change, emojis in code responses, and when you break existing functionality while fixing something else.
+## 🎯 Goal: Live on theprojectair.com by June 15, 2026
 
 ---
 
-## Two Workspaces — Understand the Separation
+## Architecture
 
-### Workspace 1: Asset Wolf (this file's home)
-- **URL:** `track-wolf-now.base44.app`
-- **Purpose:** Production app for Rental World Equipment staff
-- **Status:** Live, in use daily — DO NOT BREAK
-
-### Workspace 2: TheProjectAir (NEW — where you're likely reading this)
-- **Purpose:** The AIR platform being extracted and rebuilt cleanly, separate from Rental World's live app
-- **Status:** Fresh workspace — AIR code needs to be rebuilt here, not copy-pasted blindly
-- **Goal:** A clean, subscriber-ready rental management SaaS, not entangled with Asset Wolf
-
-### The Core Problem Being Solved
-Asset Wolf and AIR were built together in the same app. The live URL (`track-wolf-now.base44.app`) should serve **Asset Wolf** (field reporting tool for Rental World). AIR (the rental platform) is being separated into its own workspace so it can be sold to other subscribers without taking Rental World's proprietary data and customizations with it.
-
-**The root route fix:** In Asset Wolf's `App.jsx`, `path="/"` must point to `<ReportForm />` (not `<DailyOps />`). This restores the correct landing page at the live URL. **Confirm with Manny before changing.**
+| Layer | Dev (Base44) | Prod (Vercel) |
+|-------|-------------|---------------|
+| Frontend | Base44 preview | theprojectair.com (Vercel) |
+| Database | Supabase `lupineair-dev` | Supabase `lupineair-prod` |
+| Auth | Supabase Auth (dev project) | Supabase Auth (prod project) |
+| Stripe | Test mode keys | Live mode keys |
+| Twilio | Same account (safe) | Same account |
+| Resend | Same account (safe) | Same account |
 
 ---
 
-## Company: Rental World Equipment
-
-- Multi-branch, South Texas: McAllen, Weslaco, Harlingen, Brownsville, Corpus Christi
-- **Branches:** 01 McAllen, 02 Weslaco, 03 Harlingen, 05 Brownsville, 06 Corpus, 98 Shop, 99 Warehouse
-- **Staff emails (rentalworld.com domain):** manny, awolf, brucewolf, bwolf, dcarranza, dfulcher, ealfaro, ggomez, jcurran, jgomez, jjacobson, joep, lisamiller, margog, rmelchor, rwolf
-
----
-
-## Product 1: Asset Wolf (PRODUCTION — DO NOT BREAK)
-
-### What it does
-Internal tool for staff to report equipment assets for disposal, sale, repair, or quoting. Reports are emailed to management with photos.
-
-### Key Routes
-| Route | Page | Purpose |
-|---|---|---|
-| `/` | `ReportForm` | **HOME — main report submission form** |
-| `/history` | `ReportHistory` | View submitted reports |
-| `/pending` | `PendingReports` | Pending/unsent reports |
-| `/about` | `About` | App info (Rental World specific) |
-| `/analytics` | `Analytics` | Report analytics dashboard |
-| `/marketplace` | `Marketplace` | Internal equipment marketplace |
-| `/report/:id` | `ReportView` | Public shareable report view (no auth) |
-| `/staff-phones` | `StaffPhoneManager` | Staff SMS phone management |
-
-### Key Features
-- Offline support via `useOfflineQueue` hook — queues submissions when offline, syncs when reconnected
-- Photo uploads via `Core.UploadFile` integration
-- Email notifications via **Resend** (`RESEND_API_KEY`)
-- SMS via **Twilio** (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`)
-- Report view tracking (submitter gets email when recipient opens report)
-- Weekly digest automation (Monday mornings)
-- Instant Sell report alerts to management
-
-### Backend Functions (Asset Wolf)
-- `sendNotifications` — sends report emails
-- `notifyNewSellReport` — alerts management on Sell submissions
-- `notifyReportViewed` — notifies submitter when report is opened
-- `trackReportView` — records report view events
-- `weeklyDigest` — Monday morning summary email
-- `sendAssetReport` — send individual asset report
-- `sendMagicLink` / `verifyMagicLink` — custom auth flow
-- `adminDeleteReport` — admin-only report deletion
-- `ensureStaffPhone` — ensures staff has a phone record
-- `driverSMS` — SMS for driver operations
+## ✅ DONE
+- [x] Supabase account created
+- [x] Vercel account created, linked to GitHub repo (`Lupine-AIR`)
+- [x] `SUPABASE_SCHEMA.sql` — complete schema for all 41 entities
+- [x] `vite.config.js` — fixed `__dirname` ES module issue
+- [x] `vercel.json` — SPA routing rewrites configured
+- [x] `package.json` — all dependencies listed
+- [x] `api/supabaseClient.js` — Supabase client wrapper exists
 
 ---
 
-## Product 2: AIR Platform (IN DEVELOPMENT → Moving to TheProjectAir workspace)
+## 🔲 JUNE 15 CHECKLIST (in order)
 
-### What it is
-A full rental management SaaS platform. Three branded modules:
-- **AIRental** — Equipment rental management (invoicing, contracts, dispatch)
-- **AIREvents** — Event planning & coordination with visual canvas layout tool
-- **AIRfq** — RFQ & bid management for government/municipal contracts
+### STEP 1 — Supabase: Create Two Projects (you do this)
+- [ ] Create project: `lupineair-dev` (for Base44 development)
+- [ ] Create project: `lupineair-prod` (for Vercel production)
+- [ ] Run `SUPABASE_SCHEMA.sql` in BOTH projects' SQL editors
+- [ ] Note down for each project:
+  - Project URL (`https://xxxx.supabase.co`)
+  - Anon public key
+  - Service role key (keep secret — backend only)
 
-### Architecture Philosophy
-- Subscriber-agnostic: no hardcoded Rental World values
-- Branch-driven: all settings flow from `BranchSettings` + `CompanySettings`
-- Multi-branch aware throughout
+### STEP 2 — Vercel: Set Environment Variables (you do this)
+Go to Vercel → Project → Settings → Environment Variables.
+Set the following, **scoped to Production** only (not Preview):
 
-### Key Routes (AIR)
-| Route | Page | Purpose |
-|---|---|---|
-| `/` | `DailyOps` | **AIR home — ops dashboard** |
-| `/counter` | `Counter` | Counter POS (new rental invoice) |
-| `/manager` | `ManagerDashboard` | Branch manager KPIs |
-| `/driver` | `DriverDashboard` | Driver task list |
-| `/dispatch` | `DispatchBoard` | Live delivery/recovery map |
-| `/delivery/:id` | `DeliveryDetail` | Driver delivery workflow |
-| `/assign-deliveries` | `DeliveryAssignment` | Assign deliveries to drivers |
-| `/recovery/:id` | `RecoveryDetail` | Driver recovery workflow |
-| `/rental-history` | `RentalHistory` | All rental orders |
-| `/availability` | `AvailabilityManager` | Availability / rental creation |
-| `/availability-calendar` | `AvailabilityCalendar` | Visual calendar |
-| `/customers` | `Customers` | Customer CRM |
-| `/event-planner` | `EventPlanner` | Event canvas planner |
-| `/event-planner/:planId` | `EventPlanner` | Specific event plan |
-| `/planner-queue` | `PlannerQueue` | Staff event plan review queue |
-| `/accounting` | `AccountingDashboard` | P&L, expenses, QuickBooks export |
-| `/rfq` | `RFQManager` | RFQ list |
-| `/rfq/:id` | `RFQDetail` | RFQ detail + AI response builder |
-| `/rfq/templates` | `RFQTemplates` | Saved response templates |
-| `/airoads` | `AIRoads` | Load planning, truck packing, shipping labels |
-| `/airecovery` | `AIRecovery` | Theft/geofence recovery intelligence |
-| `/gps-settings` | `GPSProviderSettings` | GPS tracker provider config |
-| `/shop-floor` | `ShopFloor` | Mechanic repair dashboard |
-| `/airepair` | `AIRepair` | AI repair intelligence |
-| `/laundry` | `LaundryDashboard` | Linen/laundry tracking |
-| `/dispatch` | `DispatchBoard` | Live map dispatch |
-| `/timesheets` | `Timesheets` | Staff timesheets + payroll |
-| `/branding` | `BrandingSettings` | Logo, colors, header styles |
-| `/company-settings` | `CompanySettingsPage` | Core company config |
-| `/branch-settings` | `BranchSettingsPage` | Per-branch config |
-| `/pricing-editor` | `PricingEditor` | Equipment rate management |
-| `/equipment-status` | `EquipmentStatusManager` | Fleet status board |
-| `/equipment/:id` | `EquipmentDetail` | Individual unit detail |
-| `/lupine` | `LupinePlan` | Master dev roadmap |
+```
+VITE_SUPABASE_URL         = https://[PROD-PROJECT-ID].supabase.co
+VITE_SUPABASE_ANON_KEY    = [PROD ANON KEY]
+VITE_STRIPE_PUBLISHABLE_KEY = pk_live_...
+```
 
-### Key Entities (AIR)
-- `Equipment` — Rental catalog units with rates, specs, status, depreciation
-- `Rental` — Rental contracts/orders (full lifecycle: quote → out → returned)
-- `Customer` — Customer CRM with risk flags, loyalty, tax exempt
-- `Delivery` — Delivery jobs with driver assignment, photos, GPS, signature
-- `Recovery` — Equipment pickup/return jobs
-- `WorkOrder` — Shop repair jobs
-- `PartRequirement` / `PartsProcurement` — Parts tracking
-- `MechanicProfile` — Shop staff profiles + skill ratings
-- `MaintenanceLog` — Maintenance history
-- `BranchSettings` — Per-branch invoice prefix, next invoice #, contact info
-- `CompanySettings` — Logo, name, branding theme, header style, invoice settings, SMS toggle, geofence alert phones
-- `DeliveryMatrix` — Per-branch delivery fee zones
-- `VolumeDiscountRule` — Qty-based auto-discounts
-- `PromoCode` — Promo codes
-- `DiscountLog` — Discount audit trail
-- `AuditLog` — System-wide audit trail
-- `Role` — Custom RBAC roles
-- `AvailabilityConfig` — Per-branch overbooking config
-- `EquipmentCategory` — Category + attribute definitions
-- `PaymentSettings` — Payment processor config
-- `EventPlan` — Event canvas plans (customer or staff created)
-- `RFQRecord` — RFQ/bid records with AI-extracted requirements
-- `Timesheet` — Staff time entries
-- `GPSProvider` — GPS provider credentials/config
-- `EquipmentGPSLink` — Equipment ↔ GPS device mapping
-- `RentalAgreement` — Per-branch agreement text with signature flow
+Set these as **secret** (not exposed in build logs):
+```
+STRIPE_SECRET_KEY         = sk_live_...
+STRIPE_WEBHOOK_SECRET     = whsec_live_...
+SUPABASE_SERVICE_ROLE_KEY = [PROD SERVICE ROLE KEY]
+RESEND_API_KEY            = [same as Base44]
+TWILIO_ACCOUNT_SID        = [same as Base44]
+TWILIO_AUTH_TOKEN         = [same as Base44]
+TWILIO_PHONE_NUMBER       = [same as Base44]
+```
 
-### Backend Functions (AIR — key ones)
-- `sendRentalConfirmation` — Email invoice + SMS after confirmed rental
-- `upsertCustomer` — Syncs customer record on rental save
-- `returnReminders` — Automated return reminders
-- `suggestBundles` — AI bundle recommendations at counter
-- `generateInvoiceImage` — Invoice image generation
-- `renderEmailGateway` — Email rendering
-- `demandPatterns` — Demand analytics backend
-- `inventoryHealth` — Inventory health report
-- `rfqStep1Analyze` / `rfqStep2Compliance` / `rfqStep3LineItems` / `rfqStep4Response` — AI RFQ pipeline
-- `checkGeofenceBreaches` — GPS geofence breach detection
-- `gpsQuery` — GPS provider polling
-- `optimizeLoadDistribution` / `autoPackEquipment` / `generateLoadPDF` — AIRoads load planning
-- `smartScheduleWorkOrders` / `assignWorkOrder` / `recommendMechanicAssignment` — Shop AI
-- `loyaltyOutreach` — Customer re-engagement analysis
-- `enrichAgreementWithSignatures` — Rental agreement PDF with embedded signatures
-- `subscriptionCheckout` / `subscriptionWebhook` — Stripe subscription billing
-- `createPlanCheckout` / `planCheckout` — Event plan checkout
-- Various payment handlers: `stripePaymentHandler`, `squarePaymentHandler`, `paypalPaymentHandler`, `authorizeNetPaymentHandler`, `amazonPayPaymentHandler`, `wisePaymentHandler`, `quickbooksPaymentHandler`
+### STEP 3 — GitHub: Push to trigger Vercel deploy (you do this)
+- [ ] `git add -A && git commit -m "Vercel production config" && git push origin main`
+- [ ] Check Vercel build logs — should succeed
+- [ ] Visit the Vercel preview URL and confirm app loads
+- [ ] Test a route refresh (e.g. go to `/counter` and hit F5 — should NOT 404)
 
-### Payment Processors Supported
-Stripe, Square, PayPal, Authorize.Net, Amazon Pay, Wise, QuickBooks
+### STEP 4 — DNS: Point theprojectair.com to Vercel (you do this)
+- [ ] In Vercel: Project → Settings → Domains → Add `theprojectair.com`
+- [ ] Vercel will show you a CNAME or A record to add
+- [ ] Add that record in your domain registrar (GoDaddy/Namecheap/Cloudflare/etc.)
+- [ ] Also add `www.theprojectair.com` → redirect to apex
+- [ ] Also add `app.theprojectair.com` → same Vercel project (for future)
+- [ ] Wait for DNS propagation (usually <30 min with Cloudflare, up to 24h otherwise)
+
+### STEP 5 — SDK Swap: Replace Base44 calls with Supabase (I do this in Base44)
+- [ ] Swap `base44.auth.*` → `supabase.auth.*`
+- [ ] Swap `base44.entities.*` → `supabase.from('table').*`
+- [ ] Swap `base44.integrations.Core.InvokeLLM` → direct OpenAI/Anthropic API call
+- [ ] Swap `base44.integrations.Core.SendEmail` → Resend API direct
+- [ ] Swap `base44.integrations.Core.UploadFile` → Supabase Storage
+- [ ] Update `AuthContext.jsx` to use Supabase session
+- [ ] Test login, data read, data write
+
+### STEP 6 — Backend Functions: Migrate to Supabase Edge Functions (I do this)
+Priority order:
+- [ ] `sendRentalConfirmation` (Resend)
+- [ ] `stripePaymentHandler` + `subscriptionWebhook`
+- [ ] `returnReminders` (use pg_cron)
+- [ ] `calculateLateFees`
+- [ ] `driverSMS` (Twilio)
+- [ ] `trialReminders`
+- [ ] AI functions (OpenAI direct)
+
+### STEP 7 — Smoke Test on theprojectair.com (you + me)
+- [ ] Sign up as a new user
+- [ ] Create a rental
+- [ ] Check Supabase dashboard — confirm record written to `lupineair-prod`
+- [ ] Send a test confirmation email
+- [ ] Process a test Stripe payment (use Stripe test card first, then go live)
+
+### STEP 8 — Go Live
+- [ ] Flip Stripe from test → live keys in Vercel
+- [ ] Announce 🎉
 
 ---
 
-## Architecture Notes
+## Environment Variable Reference
 
-### Auth
-- All routes under `/*` require authentication (handled by `AuthProvider` + `AuthenticatedApp` in `App.jsx`)
-- Public routes: `/air`, `/airental`, `/airevents`, `/airfq`, `/report/:id`, `/clockin`
-- Custom magic link auth via `sendMagicLink` / `verifyMagicLink` functions
+### Base44 (dev) — set in Base44 dashboard → Settings → Secrets
+| Key | Value |
+|-----|-------|
+| `VITE_SUPABASE_URL` | `https://[DEV-PROJECT-ID].supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Dev anon key |
+| `STRIPE_SECRET_KEY` | `sk_test_...` |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_test_...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Dev service role key |
+| `RESEND_API_KEY` | (already set) |
+| `TWILIO_ACCOUNT_SID` | (already set) |
+| `TWILIO_AUTH_TOKEN` | (already set) |
+| `TWILIO_PHONE_NUMBER` | (already set) |
 
-### AppLayout & Sidebar
-- All authenticated routes are wrapped in `<AppLayout />` which provides the sidebar navigation
-- The sidebar is defined in `components/AppLayout` — add new routes there when adding pages
-
-### Header System
-- `components/AppPageHeader` — the standard page header used across all AIR pages
-- Supports 4 styles: `classic` (indigo), `glassmorphism`, `neon`, `navy`
-- Style is stored in `CompanySettings.headerStyle` and read via `lib/useHeaderStyle.js`
-- `lib/useHeaderStyle.js` uses a module-level cache + listener pattern so all mounted headers update instantly when branding changes — no page refresh needed
-- `invalidateHeaderStyleCache(newStyle)` is called from BrandingSettings on save
-
-### Design System
-- Tailwind CSS with CSS variable tokens in `index.css`
-- Fonts: Inter (labels/`font-label`), Source Sans 3 (body/`font-body`)
-- shadcn/ui component library (all components installed)
-- No dark mode currently active (tokens defined but not applied)
-
-### Key Libraries
-- `@tanstack/react-query` for data fetching
-- `framer-motion` for animations
-- `react-leaflet` for dispatch maps
-- `jspdf` for invoice PDF generation
-- `jsbarcode` for equipment barcodes
-- `@hello-pangea/dnd` for drag-and-drop
-- `react-quill` for rich text editing (CSS already imported)
-
-### Invoice System
-- `lib/buildInvoiceHTML.js` — builds and opens print window with invoice HTML
-- `lib/deliveryFee.js` — calculates delivery fees from DeliveryMatrix
-- `lib/availabilityEngine.js` — checks equipment availability conflicts
-- `lib/rentalDayCalc.js` — clock_hour vs calendar_day billing mode logic
-- Invoice numbers: per-branch prefix + sequential number stored in `BranchSettings.nextInvoiceNumber`
-
-### Working Branch Context
-- `lib/WorkingBranchContext.jsx` — provides `workingBranch` / `setWorkingBranch` globally
-- Most pages filter data by working branch
-- Staff can switch branches via `<WorkingBranchModal />`
-
-### Subscription / Permissions
-- `components/premium/PremiumGate` — wraps features behind subscription tiers: `core`, `pro`, `security_plus`
-- `lib/permissions.js` — role-based permission checks
+### Vercel (prod) — set in Vercel dashboard → Settings → Environment Variables
+| Key | Value |
+|-----|-------|
+| `VITE_SUPABASE_URL` | `https://[PROD-PROJECT-ID].supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Prod anon key |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` |
+| `STRIPE_SECRET_KEY` | `sk_live_...` |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_live_...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Prod service role key |
+| `RESEND_API_KEY` | same |
+| `TWILIO_ACCOUNT_SID` | same |
+| `TWILIO_AUTH_TOKEN` | same |
+| `TWILIO_PHONE_NUMBER` | same |
 
 ---
 
-## Hardware Notes
+## DNS Records for theprojectair.com
+Add these at your registrar:
 
-### Signature Pad
-- Uses **Topaz SigWeb** — Windows service at `tablet.sigwebtablet.com:47290`
-- Only works with Topaz SigWeb-compatible pads (NOT generic Wacom/Scriptel/etc.)
-- **Recommended hardware:** Topaz LBK462-HSB (~$80-120 USD)
-- Fallback: mouse/touch if no pad detected
-- Per-workstation setup: install SigWeb, trust self-signed cert in browser
-- Diagnostic: `https://tablet.sigwebtablet.com:47290/SigWeb/TabletState` → `1`=ready, `0`=no pad, error=not installed
-- **Policy:** Topaz SigWeb is a non-negotiable requirement. Multi-brand support only if a specific subscriber demands it (paid custom integration).
+| Type | Name | Value |
+|------|------|-------|
+| `A` | `@` | Vercel IP (shown in Vercel dashboard) |
+| `CNAME` | `www` | `cname.vercel-dns.com` |
+| `CNAME` | `app` | `cname.vercel-dns.com` |
 
 ---
 
-## Product Roadmap Decisions
+## Timeline to June 15
 
-### Asset Wolf → "Field Reports" (Future Rebrand)
-- **Decision (2026-05-16):** Asset Wolf is a Rental World brand. Future subscribers get the same feature set as **"Field Reports"**
-- Pending changes (do NOT implement until first non-Rental-World subscriber):
-  1. Rename "Asset Wolf" → "Field Reports" in all UI
-  2. Remove `/about` page from sidebar nav (Rental World-specific)
-  3. Make report form categories, disposition options, branch list, and notification recipients configurable via `BranchSettings`/`CompanySettings` — remove hardcoded `rentalworld.com` assumptions
-- Rental World exception: `track-wolf-now.base44.app` keeps "Asset Wolf" branding permanently
-
-### One App Per Subscriber Architecture
-- **Field Reports only** → deploy standalone Asset Wolf/Field Reports app
-- **AIR only** → deploy full AIR platform
-- **Both** → deploy combined (current Asset Wolf structure)
-- No forced coupling
-
----
-
-## Secrets In Use
-- `RESEND_API_KEY` — Email sending
-- `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_PHONE_NUMBER` — SMS
-- `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` / `STRIPE_WEBHOOK_SECRET` — Stripe payments
-- `GITHUB_PAT` — GitHub PR tracking (`trackGitHubPRs` function)
-- `google_oauth_client_secret` — Google OAuth
-
----
-
-## Glossary
-
-**AImnesia** *(n.)* — The condition where an AI forgets everything it previously built with you and starts making questionable decisions. Coined 2026-05-03. The existence of this file is the cure.
-
-**AIR** — The rental management platform brand (AIRental + AIREvents + AIRfq).
-
-**Lupine** — Internal codename for the full AIR platform vision/roadmap.
-
-**DailyOps** — The AIR home dashboard page (ops command center).
-
-**CPro** — The legacy rental software (CenterPoint Pro) that Rental World is migrating away from. Legacy data is imported via the `InventoryItem` entity and catalog review workflow.
-
----
-
----
-
-## Releases & Changelog
-
-Track all meaningful changes here for subscriber rollouts.
-
-### v0.1.0 — Golden Master Initial (2026-05-24)
-- Seeded default "00 Main Branch" for zero-config first-run experience
-- Auto-selects single branch in modal, skips picker entirely
-- All AIR core features functional: Counter, DailyOps, Manager dashboard, Dispatch, Recovery, EventPlanner, RFQ pipeline, AIRoads, Shop/Repair, Laundry
-- Branding system stable: 4 header styles (classic, glassmorphism, neon, navy) + color customization
-- All payment processors integrated: Stripe, Square, PayPal, Authorize.Net, Amazon Pay, Wise, QuickBooks
-- GPS geofence + theft recovery intelligence operational
-- Subscription tiers + premium gates functional
-
-### Future Releases
-- [ ] Push update mechanism for multi-subscriber deployment
-- [ ] Webhook-based automated update notifications
-- [ ] Per-subscriber feature flags for gradual rollout testing
-
----
-
-## Store Storefront (Self-Service Rental Portal — `/store`)
-
-### V1 Scope (current)
-- Embedded via iframe on subscriber's existing website
-- Neutral white + orange theme (no subscriber branding sync — intentional)
-- Equipment catalog browse, search, filter by category
-- Dual-track: jobsite self-checkout flow vs. event quote request
-- Magic-link auth gate: persistent session for returning renters
-- Profile completion step on first login (company name, phone) → syncs to Customer entity via `upsertCustomer`
-- Welcome bar for authenticated returning users
-
-### V2 Backlog
-- [ ] **Store branding sync** — Pull `CompanySettings.logoUrl`, primary/accent color into store header so the iframe feels white-labeled when accessed as a standalone URL. Add `storeBranding` object to `CompanySettings` (logo, primaryColor, accentColor). One settings toggle away — no redesign needed.
-- [ ] Online payment capture at checkout (Stripe or Square, driven by `PaymentSettings`)
-- [ ] Real-time availability check before reservation confirmation
-- [ ] Customer self-service portal: view past rentals, request extensions
-
----
-
-## New Subscriber Onboarding Checklist
-
-When deploying AIR for a new subscriber (e.g. XYZ Rental):
-
-1. **Create a new Base44 workspace** for that subscriber — do NOT reuse TheProjectAir workspace
-2. **Update `index.html`** — change `<title>` and `apple-mobile-web-app-title` from "Rental World" to the subscriber's company name
-3. **Rename the Base44 app** in workspace settings to match the subscriber's company name (controls the login screen title)
-4. **Publish** under the subscriber's subdomain (e.g. `xyzrental.base44.app`) or their custom domain
-
-Each subscriber = isolated workspace = isolated data. Never share workspaces between subscribers.
-
-*Last updated: 2026-05-29*
+| Date | Task | Owner |
+|------|------|-------|
+| Jun 4–5 | Create 2 Supabase projects, run schema SQL | You |
+| Jun 4–5 | Push to GitHub, confirm Vercel build passes | You |
+| Jun 5–6 | Set Vercel env vars | You |
+| Jun 5–8 | SDK swap (Base44 → Supabase) | Me (in Base44) |
+| Jun 7–9 | Edge functions migration (priority 6) | Me (in Base44) |
+| Jun 9–10 | DNS cutover to theprojectair.com | You |
+| Jun 10–13 | Smoke testing on prod URL | Both |
+| Jun 14 | Flip Stripe to live keys | You |
+| **Jun 15** | 🚀 **Launch** | Both |
