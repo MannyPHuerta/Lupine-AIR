@@ -21,7 +21,7 @@ const ITEM_TYPES = [
   "Other", "Pallet Jack", "Paving Equipment", "Plate Compactor",
   "Pressure Washer", "Sandblaster", "Scissor Lift", "Skid Steer", "Staging",
   "Stump Grinder", "Table", "Telehandler", "Tent", "Tile Stripper", "Trailer",
-  "Trench Roller", "Trencher", "Water Pump", "Welder", "Zero Turn Mower"
+  "Trench Roller", "Trencher", "Truck/Van", "Water Pump", "Welder", "Zero Turn Mower"
 ];
 const STAFF_EMAILS = [
   "manny@rentalworld.com", "awolf@rentalworld.com", "brucewolf@rentalworld.com",
