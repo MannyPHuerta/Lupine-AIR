@@ -46,6 +46,7 @@
         "Trailer",
         "Trench Roller",
         "Trencher",
+        "Truck/Van",
         "Water Pump",
         "Welder",
         "Zero Turn Mower"
@@ -95,6 +96,18 @@
       "type": "string",
       "description": "Asset description and condition"
     },
+    "meetingNote": {
+      "type": "string",
+      "description": "Note added during fleet review meeting"
+    },
+    "reviewedAt": {
+      "type": "string",
+      "description": "ISO timestamp when marked reviewed in fleet meeting"
+    },
+    "reviewedBy": {
+      "type": "string",
+      "description": "Email of staff who marked reviewed"
+    },
     "sendToEmails": {
       "type": "array",
       "items": {
@@ -130,7 +143,7 @@
     "isDeleted": {
       "type": "boolean",
       "default": false,
-      "description": "Soft-delete flag \u2014 hidden from history unless admin restores"
+      "description": "Soft-delete flag"
     },
     "sentAt": {
       "type": "string",
@@ -138,7 +151,7 @@
     },
     "lastSentAt": {
       "type": "string",
-      "description": "ISO timestamp of most recent send (resend)"
+      "description": "ISO timestamp of most recent send"
     },
     "lastEditedAt": {
       "type": "string",
