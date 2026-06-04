@@ -36,7 +36,11 @@ export default function ProfitLossStatement({ rentals, expenses, equipment, peri
     const completed = rentals.filter(r => ['completed', 'returned', 'out', 'contract'].includes(r.status));
     const rentalRevenue = completed.reduce((s, r) => s + (r.baseAmount || 0), 0);
     const deliveryRevenue = completed.reduce((s, r) => s + (r.deliveryFee || 0) + (r.returnFee || 0), 0);
-    const grossRevenue = rentalRevenue + deliveryRevenue;
+    const lateFeeRevenue = completed.reduce((s, r) => s + (r.lateFeeTotal || 0), 0);
+    const extraShiftRevenue = completed.reduce((s, r) => s + (r.extraShiftTotal || 0), 0);
+    const hourMeterRevenue = completed.reduce((s, r) => s + (r.hourMeterCharges || 0), 0);
+    const subrentMarkupRevenue = completed.reduce((s, r) => s + (r.subrentMarkup || 0), 0);
+    const grossRevenue = rentalRevenue + deliveryRevenue + lateFeeRevenue + extraShiftRevenue + hourMeterRevenue + subrentMarkupRevenue;
 
     // ── Operating Expenses ────────────────────────────────────────────────────
     // Only non-capitalized expenses count as operating expenses
@@ -75,7 +79,7 @@ export default function ProfitLossStatement({ rentals, expenses, equipment, peri
     const netIncome = operatingIncome - totalDepreciation;
 
     return {
-      rentalRevenue, deliveryRevenue, grossRevenue,
+      rentalRevenue, deliveryRevenue, lateFeeRevenue, extraShiftRevenue, hourMeterRevenue, subrentMarkupRevenue, grossRevenue,
       expByCategory, totalOpExpenses,
       operatingIncome,
       totalDepreciation, depreciableCount: depreciableEquipment.length,
@@ -102,6 +106,10 @@ export default function ProfitLossStatement({ rentals, expenses, equipment, peri
       <SectionHeader label="Revenue" />
       <PLRow label="Rental Revenue" value={pl.rentalRevenue} indent />
       <PLRow label="Delivery Revenue" value={pl.deliveryRevenue} indent />
+      {pl.lateFeeRevenue > 0 && <PLRow label="Late Fee Revenue" value={pl.lateFeeRevenue} indent />}
+      {pl.extraShiftRevenue > 0 && <PLRow label="Extra Shift Revenue" value={pl.extraShiftRevenue} indent />}
+      {pl.hourMeterRevenue > 0 && <PLRow label="Hour Meter Charges" value={pl.hourMeterRevenue} indent />}
+      {pl.subrentMarkupRevenue > 0 && <PLRow label="Subrent Markup" value={pl.subrentMarkupRevenue} indent />}
       <PLRow label="Gross Revenue" value={pl.grossRevenue} bold borderTop highlight />
 
       {/* ── OPERATING EXPENSES ── */}

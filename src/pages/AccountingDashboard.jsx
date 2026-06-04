@@ -19,6 +19,10 @@ const CAPITALIZATION_THRESHOLD = 2500;
 const QB_ACCOUNTS = {
   rentalIncome: 'Rental Income',
   deliveryIncome: 'Delivery Income',
+  lateFeeIncome: 'Late Fee Income',
+  extraShiftIncome: 'Extra Shift Income',
+  hourMeterIncome: 'Hour Meter Income',
+  subrentMarkupIncome: 'Subrent Markup Income',
   salesTaxPayable: 'Sales Tax Payable',
   customerDeposits: 'Customer Deposits',
   accountsReceivable: 'Accounts Receivable',
@@ -48,13 +52,18 @@ function generateIIF(rentals) {
     const base = r.baseAmount || 0;
     const tax = r.taxAmount || 0;
     const delivery = (r.deliveryFee || 0) + (r.returnFee || 0);
-    const total = base + tax + delivery;
+    const extras = (r.lateFeeTotal || 0) + (r.extraShiftTotal || 0) + (r.hourMeterCharges || 0) + (r.subrentMarkup || 0);
+    const total = base + tax + delivery + extras;
     const paid = r.amountPaid || 0;
     const deposit = r.deposit || 0;
     if (total <= 0) return;
     lines.push(`TRNS\tINVOICE\t${date}\t${QB_ACCOUNTS.accountsReceivable}\t${r.customerName}\t${total.toFixed(2)}\t${r.invoiceNumber}\t`);
     if (base > 0) lines.push(`SPL\tINVOICE\t${date}\t${QB_ACCOUNTS.rentalIncome}\t${r.customerName}\t-${base.toFixed(2)}\tRental`);
     if (delivery > 0) lines.push(`SPL\tINVOICE\t${date}\t${QB_ACCOUNTS.deliveryIncome}\t${r.customerName}\t-${delivery.toFixed(2)}\tDelivery`);
+    if (r.lateFeeTotal > 0) lines.push(`SPL\tINVOICE\t${date}\t${QB_ACCOUNTS.lateFeeIncome}\t${r.customerName}\t-${r.lateFeeTotal.toFixed(2)}\tLate Fees`);
+    if (r.extraShiftTotal > 0) lines.push(`SPL\tINVOICE\t${date}\t${QB_ACCOUNTS.extraShiftIncome}\t${r.customerName}\t-${r.extraShiftTotal.toFixed(2)}\tExtra Shifts`);
+    if (r.hourMeterCharges > 0) lines.push(`SPL\tINVOICE\t${date}\t${QB_ACCOUNTS.hourMeterIncome}\t${r.customerName}\t-${r.hourMeterCharges.toFixed(2)}\tHour Meter`);
+    if (r.subrentMarkup > 0) lines.push(`SPL\tINVOICE\t${date}\t${QB_ACCOUNTS.subrentMarkupIncome}\t${r.customerName}\t-${r.subrentMarkup.toFixed(2)}\tSubrent Markup`);
     if (tax > 0) lines.push(`SPL\tINVOICE\t${date}\t${QB_ACCOUNTS.salesTaxPayable}\t${r.customerName}\t-${tax.toFixed(2)}\tSales Tax`);
     lines.push('ENDTRNS');
     if (deposit > 0) {
@@ -519,7 +528,7 @@ export default function AccountingDashboard() {
                   <div key={k}><span className="font-medium">{k}:</span> "{v}"</div>
                 ))}
               </div>
-              <div className="mt-2 text-xs text-amber-600">These must match the exact account names in your QB Desktop file.</div>
+              <div className="mt-2 text-xs text-amber-600">These must match the exact account names in your QB Desktop file. Add any missing accounts in QB before importing.</div>
             </div>
           </>
         )}
