@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Pencil, CheckCircle, ChevronLeft, ChevronRight, Send, Printer, Loader2 } from 'lucide-react';
+import { Pencil, CheckCircle, ChevronLeft, ChevronRight, Send, Printer, Loader2, X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
 import FleetCardEditPanel from '@/components/fleet/FleetCardEditPanel';
@@ -8,6 +8,16 @@ import FleetDispatchModal from '@/components/fleet/FleetDispatchModal';
 
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 const ACTIONS = ['All Actions', 'Sell', 'Repair', 'Discard/Part out', 'Need Quote for Customer'];
+const ITEM_TYPES = [
+  'All Types', 'Air Compressor', 'Backhoe', 'Boom Lift', 'Bulldozer', 'Chair',
+  'Chipper/Shredder', 'Compactor', 'Concrete Grinder', 'Concrete Mixer',
+  'Concrete Saw', 'Dance Floor', 'Dump Truck', 'Excavator', 'Floor Sander',
+  'Forklift', 'Generator', 'Grader', 'Inflatable', 'Light Tower', 'Loader',
+  'Other', 'Pallet Jack', 'Paving Equipment', 'Plate Compactor',
+  'Pressure Washer', 'Sandblaster', 'Scissor Lift', 'Skid Steer', 'Staging',
+  'Stump Grinder', 'Table', 'Telehandler', 'Tent', 'Tile Stripper', 'Trailer',
+  'Trench Roller', 'Trencher', 'Truck/Van', 'Water Pump', 'Welder', 'Zero Turn Mower'
+];
 
 const ACTION_COLORS = {
   'Sell': 'bg-green-100 text-green-700',
@@ -16,8 +26,56 @@ const ACTION_COLORS = {
   'Need Quote for Customer': 'bg-amber-100 text-amber-700',
 };
 
+function Lightbox({ photos, startIdx, onClose }) {
+  const [idx, setIdx] = useState(startIdx);
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') setIdx(i => (i - 1 + photos.length) % photos.length);
+      if (e.key === 'ArrowRight') setIdx(i => (i + 1) % photos.length);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [photos, onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={onClose}>
+      <button className="absolute top-4 right-4 text-white hover:text-gray-300" onClick={onClose}>
+        <X className="w-8 h-8" />
+      </button>
+      <img
+        src={photos[idx]}
+        alt="full view"
+        className="max-h-[90vh] max-w-[90vw] object-contain"
+        onClick={e => e.stopPropagation()}
+      />
+      {photos.length > 1 && (
+        <>
+          <button
+            onClick={e => { e.stopPropagation(); setIdx(i => (i - 1 + photos.length) % photos.length); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 text-white rounded-full p-2 hover:bg-white/40"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); setIdx(i => (i + 1) % photos.length); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 text-white rounded-full p-2 hover:bg-white/40"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+            {idx + 1} / {photos.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PhotoCarousel({ photos }) {
   const [idx, setIdx] = useState(0);
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+
   if (!photos?.length) {
     return (
       <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-t-xl text-gray-400 text-sm">
@@ -26,30 +84,35 @@ function PhotoCarousel({ photos }) {
     );
   }
   return (
-    <div className="relative w-full h-48 bg-black rounded-t-xl overflow-hidden">
-      <img src={photos[idx]} alt="vehicle" className="w-full h-full object-cover" />
-      {photos.length > 1 && (
-        <>
-          <button
-            onClick={e => { e.stopPropagation(); setIdx(i => (i - 1 + photos.length) % photos.length); }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-1 hover:bg-black/60"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); setIdx(i => (i + 1) % photos.length); }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-1 hover:bg-black/60"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-            {photos.map((_, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === idx ? 'bg-white' : 'bg-white/40'}`} />
-            ))}
-          </div>
-        </>
+    <>
+      <div className="relative w-full h-48 bg-black rounded-t-xl overflow-hidden cursor-zoom-in" onClick={() => setLightboxIdx(idx)}>
+        <img src={photos[idx]} alt="asset" className="w-full h-full object-cover" />
+        {photos.length > 1 && (
+          <>
+            <button
+              onClick={e => { e.stopPropagation(); setIdx(i => (i - 1 + photos.length) % photos.length); }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-1 hover:bg-black/60"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); setIdx(i => (i + 1) % photos.length); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-1 hover:bg-black/60"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+              {photos.map((_, i) => (
+                <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === idx ? 'bg-white' : 'bg-white/40'}`} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      {lightboxIdx !== null && (
+        <Lightbox photos={photos} startIdx={lightboxIdx} onClose={() => setLightboxIdx(null)} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -63,7 +126,7 @@ function VehicleCard({ report, onUpdate, onDispatch, user }) {
     const update = isReviewed
       ? { reviewedAt: null, reviewedBy: null }
       : { reviewedAt: new Date().toISOString(), reviewedBy: user?.email || '' };
-    const updated = await base44.entities.Report.update(report.id, update);
+    await base44.entities.Report.update(report.id, update);
     onUpdate({ ...report, ...update });
     setTogglingReview(false);
   };
@@ -94,6 +157,7 @@ function VehicleCard({ report, onUpdate, onDispatch, user }) {
           )}
         </div>
 
+        {report.itemType && <div className="text-xs text-indigo-600 font-medium">{report.itemType}</div>}
         {report.model && <div className="text-xs text-gray-500">{report.model}</div>}
 
         <div className="text-xs text-gray-400 space-y-0.5">
@@ -129,10 +193,7 @@ function VehicleCard({ report, onUpdate, onDispatch, user }) {
             onClick={handleReviewToggle}
             disabled={togglingReview}
           >
-            {togglingReview
-              ? <Loader2 className="w-3 h-3 animate-spin" />
-              : <CheckCircle className="w-3 h-3" />
-            }
+            {togglingReview ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
             {isReviewed ? 'Unmark' : 'Mark Reviewed'}
           </Button>
           <Button
@@ -157,18 +218,27 @@ export default function FleetReview() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [search, setSearch] = useState('');
   const [branch, setBranch] = useState('All Branches');
   const [action, setAction] = useState('All Actions');
+  const [itemType, setItemType] = useState('All Types');
+  const [unreviewedOnly, setUnreviewedOnly] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [dispatchReports, setDispatchReports] = useState(null);
+
+  const loadReports = () => {
+    return base44.entities.Report.list('-created_date', 500).then(rpts =>
+      setReports(rpts.filter(r => !r.isDeleted))
+    );
+  };
 
   useEffect(() => {
     Promise.all([
       base44.entities.Report.list('-created_date', 500),
       base44.auth.me(),
     ]).then(([rpts, me]) => {
-      setReports(rpts.filter(r => r.itemType === 'Truck/Van' && !r.isDeleted));
+      setReports(rpts.filter(r => !r.isDeleted));
       setUser(me);
       setLoading(false);
     });
@@ -177,13 +247,21 @@ export default function FleetReview() {
   const filtered = useMemo(() => reports.filter(r => {
     const branchMatch = branch === 'All Branches' || r.branch === branch;
     const actionMatch = action === 'All Actions' || r.action === action;
+    const typeMatch = itemType === 'All Types' || r.itemType === itemType;
     const date = r.created_date?.split('T')[0] || '';
     const dateMatch = (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo);
-    return branchMatch && actionMatch && dateMatch;
-  }), [reports, branch, action, dateFrom, dateTo]);
+    const reviewedMatch = !unreviewedOnly || !r.reviewedAt;
+    const q = search.toLowerCase();
+    const searchMatch = !search || (r.itemName || '').toLowerCase().includes(q) ||
+      (r.assetNumber || '').toLowerCase().includes(q) ||
+      (r.serialNumber || '').toLowerCase().includes(q) ||
+      (r.model || '').toLowerCase().includes(q);
+    return branchMatch && actionMatch && typeMatch && dateMatch && reviewedMatch && searchMatch;
+  }), [reports, branch, action, itemType, dateFrom, dateTo, unreviewedOnly, search]);
 
   const reviewedCount = filtered.filter(r => r.reviewedAt).length;
   const reviewedReports = filtered.filter(r => r.reviewedAt);
+  const progressPct = filtered.length > 0 ? Math.round((reviewedCount / filtered.length) * 100) : 0;
 
   const handleUpdate = (updated) => {
     setReports(prev => prev.map(r => r.id === updated.id ? updated : r));
@@ -200,7 +278,7 @@ export default function FleetReview() {
 
       <AppPageHeader
         title="Fleet Review"
-        subtitle={`${filtered.length} vehicle${filtered.length !== 1 ? 's' : ''} · ${reviewedCount} reviewed`}
+        subtitle={`${filtered.length} item${filtered.length !== 1 ? 's' : ''} · ${reviewedCount} reviewed`}
         backTo="/pending"
         action={
           <div className="flex items-center gap-2 flex-wrap no-print">
@@ -209,6 +287,9 @@ export default function FleetReview() {
             </select>
             <select value={action} onChange={e => setAction(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
               {ACTIONS.map(a => <option key={a} value={a} className="text-black">{a}</option>)}
+            </select>
+            <select value={itemType} onChange={e => setItemType(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
+              {ITEM_TYPES.map(t => <option key={t} value={t} className="text-black">{t}</option>)}
             </select>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs" />
             <span className="text-white/60 text-xs">→</span>
@@ -229,15 +310,54 @@ export default function FleetReview() {
         }
       />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-4 no-print space-y-3">
+        {/* Search + Unreviewed toggle */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search name, asset #, serial, model..."
+              className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            />
+          </div>
+          <button
+            onClick={() => setUnreviewedOnly(v => !v)}
+            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              unreviewedOnly ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Unreviewed Only
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        {filtered.length > 0 && (
+          <div className="bg-white rounded-lg border px-4 py-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-gray-600">Review Progress</span>
+              <span className="text-xs font-bold text-gray-800">{reviewedCount} / {filtered.length} ({progressPct}%)</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2.5">
+              <div
+                className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 pb-6">
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center text-gray-400 py-20 text-sm">
-            No truck/van records match your filters.<br />
-            <span className="text-xs">Create reports using itemType "Truck/Van" to see them here.</span>
+            No records match your filters.<br />
+            <span className="text-xs">Submit reports via the Report Form to see items here.</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -260,10 +380,7 @@ export default function FleetReview() {
           onClose={() => setDispatchReports(null)}
           onSent={() => {
             setDispatchReports(null);
-            // Refresh sent status
-            base44.entities.Report.list('-created_date', 500).then(rpts => {
-              setReports(rpts.filter(r => r.itemType === 'Truck/Van' && !r.isDeleted));
-            });
+            loadReports();
           }}
         />
       )}
