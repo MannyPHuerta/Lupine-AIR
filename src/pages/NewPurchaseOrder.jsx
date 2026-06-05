@@ -26,6 +26,7 @@ export default function NewPurchaseOrder() {
   const [lineItems, setLineItems] = useState([{ supplyItemId: '', itemName: '', category: '', unit: 'each', qtyRequested: 1, unitPrice: '', lineTotal: '' }]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     Promise.all([
       base44.entities.Vendor.list('name', 200),
       base44.entities.SupplyItem.list('name', 500),
@@ -34,6 +35,28 @@ export default function NewPurchaseOrder() {
       setVendors(vens.filter(v => v.isActive !== false));
       setSupplyItems(items.filter(i => i.isActive !== false));
       setUser(me);
+
+      // Pre-fill from quick reorder query params
+      const itemId = params.get('itemId');
+      if (itemId) {
+        const qty = parseFloat(params.get('qty')) || 1;
+        const price = parseFloat(params.get('price')) || '';
+        const lineTotal = qty && price ? (qty * price).toFixed(2) : '';
+        setLineItems([{
+          supplyItemId: itemId,
+          itemName: params.get('itemName') || '',
+          category: params.get('category') || '',
+          unit: params.get('unit') || 'each',
+          qtyRequested: qty,
+          unitPrice: price,
+          lineTotal,
+        }]);
+        const vendorId = params.get('vendorId');
+        if (vendorId) {
+          const v = vens.find(v => v.id === vendorId);
+          if (v) setForm(f => ({ ...f, vendorId: v.id, vendorName: v.name, vendorEmail: v.email || '' }));
+        }
+      }
     });
   }, []);
 

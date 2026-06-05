@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Pencil, AlertTriangle, Check, Package } from 'lucide-react';
+import { Plus, Pencil, AlertTriangle, Check, Package, ShoppingCart, History, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
+import { useNavigate } from 'react-router-dom';
+import PriceHistoryModal from '@/components/procurement/PriceHistoryModal';
 
 const CATEGORIES = ['Office Supplies', 'Safety & PPE', 'Cleaning', 'Uniforms', 'Fuel', 'Breakroom', 'Technology', 'Printing', 'Maintenance', 'Other'];
 const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
@@ -96,6 +98,7 @@ function ItemForm({ item, vendors, onSave, onCancel }) {
 }
 
 export default function SupplyCatalog() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +107,8 @@ export default function SupplyCatalog() {
   const [filterCat, setFilterCat] = useState('All');
   const [filterBranch, setFilterBranch] = useState('All Branches');
   const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [priceHistoryItem, setPriceHistoryItem] = useState(null);
+  const [creatingDrafts, setCreatingDrafts] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -111,6 +116,64 @@ export default function SupplyCatalog() {
       base44.entities.Vendor.list('name', 200),
     ]).then(([its, vens]) => { setItems(its.filter(i => i.isActive !== false)); setVendors(vens); setLoading(false); });
   }, []);
+
+  const handleQuickReorder = (item) => {
+    const params = new URLSearchParams({
+      itemId: item.id,
+      itemName: item.name,
+      vendorId: item.preferredVendorId || '',
+      qty: item.reorderQuantity || 1,
+      unit: item.unit || 'each',
+      price: item.lastUnitPrice || '',
+      category: item.category || '',
+    });
+    navigate(`/purchase-order-new?${params.toString()}`);
+  };
+
+  const handleAutoCreateDraftPOs = async () => {
+    const lowStock = items.filter(i => i.minStockLevel > 0 && i.currentStock <= i.minStockLevel && i.preferredVendorId);
+    if (lowStock.length === 0) return;
+    setCreatingDrafts(true);
+
+    // Group by preferred vendor
+    const byVendor = {};
+    lowStock.forEach(item => {
+      const v = vendors.find(v => v.id === item.preferredVendorId);
+      if (!v) return;
+      if (!byVendor[item.preferredVendorId]) byVendor[item.preferredVendorId] = { vendor: v, items: [] };
+      byVendor[item.preferredVendorId].items.push(item);
+    });
+
+    const allPos = await base44.entities.PurchaseOrder.list('-created_date', 1);
+    let nextNum = 1000 + allPos.length;
+
+    for (const { vendor, items: vItems } of Object.values(byVendor)) {
+      const lineItems = vItems.map(item => ({
+        supplyItemId: item.id,
+        itemName: item.name,
+        category: item.category,
+        unit: item.unit,
+        qtyRequested: item.reorderQuantity || 1,
+        unitPrice: item.lastUnitPrice || null,
+        lineTotal: item.lastUnitPrice ? (item.reorderQuantity || 1) * item.lastUnitPrice : null,
+        qtyReceived: 0,
+      }));
+      const total = lineItems.reduce((s, l) => s + (l.lineTotal || 0), 0);
+      await base44.entities.PurchaseOrder.create({
+        poNumber: `PO-${nextNum++}`,
+        branch: items[0]?.branch || '01 McAllen',
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        vendorEmail: vendor.email || '',
+        lineItems,
+        totalAmount: total,
+        status: 'draft',
+        notes: 'Auto-generated from low stock alert',
+      });
+    }
+    setCreatingDrafts(false);
+    navigate('/purchase-orders');
+  };
 
   const filtered = useMemo(() => items.filter(i => {
     const catMatch = filterCat === 'All' || i.category === filterCat;
@@ -133,9 +196,17 @@ export default function SupplyCatalog() {
         title="Supply Catalog"
         subtitle={`${items.length} items · ${lowStockCount > 0 ? `⚠️ ${lowStockCount} low stock` : 'All stocked'}`}
         action={
-          <Button size="sm" onClick={() => setAdding(true)} className="gap-1.5">
-            <Plus className="w-4 h-4" /> Add Item
-          </Button>
+          <div className="flex gap-2">
+            {lowStockCount > 0 && (
+              <Button size="sm" variant="outline" onClick={handleAutoCreateDraftPOs} disabled={creatingDrafts} className="gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-50">
+                {creatingDrafts ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Auto-Draft POs ({lowStockCount})
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setAdding(true)} className="gap-1.5">
+              <Plus className="w-4 h-4" /> Add Item
+            </Button>
+          </div>
         }
       />
       <div className="max-w-6xl mx-auto px-4 py-4 space-y-4">
@@ -207,9 +278,17 @@ export default function SupplyCatalog() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(item.id)}>
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Price History" onClick={() => setPriceHistoryItem(item)}>
+                            <History className="w-3.5 h-3.5 text-indigo-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Quick Reorder" onClick={() => handleQuickReorder(item)}>
+                            <ShoppingCart className="w-3.5 h-3.5 text-green-600" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(item.id)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -219,6 +298,8 @@ export default function SupplyCatalog() {
           </div>
         )}
       </div>
+
+      {priceHistoryItem && <PriceHistoryModal item={priceHistoryItem} onClose={() => setPriceHistoryItem(null)} />}
     </div>
   );
 }

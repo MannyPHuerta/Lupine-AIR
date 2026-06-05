@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Send, CheckCircle, Package, AlertTriangle, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Plus, Send, CheckCircle, Package, AlertTriangle, ChevronDown, ChevronUp, Loader2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Link } from 'react-router-dom';
+import POPrintView from '@/components/procurement/POPrintView';
+import ReceiveModal from '@/components/procurement/ReceiveModal';
 
 const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
 
@@ -28,7 +30,8 @@ const STATUS_LABELS = {
 function POCard({ po, user, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [acting, setActing] = useState(false);
-  const [receiptNotes, setReceiptNotes] = useState('');
+  const [showPrint, setShowPrint] = useState(false);
+  const [showReceive, setShowReceive] = useState(false);
 
   const act = async (updates) => {
     setActing(true);
@@ -45,29 +48,7 @@ function POCard({ po, user, onUpdate }) {
     setActing(false);
   };
 
-  const handleReceive = async () => {
-    setActing(true);
-    // Update stock levels for each line item
-    for (const line of (po.lineItems || [])) {
-      if (line.supplyItemId) {
-        const item = await base44.entities.SupplyItem.get(line.supplyItemId).catch(() => null);
-        if (item) {
-          await base44.entities.SupplyItem.update(line.supplyItemId, {
-            currentStock: (item.currentStock || 0) + (line.qtyReceived || line.qtyRequested),
-            lastUnitPrice: line.unitPrice || item.lastUnitPrice,
-          });
-        }
-      }
-    }
-    const updated = await base44.entities.PurchaseOrder.update(po.id, {
-      status: 'received',
-      receivedAt: new Date().toISOString(),
-      receivedBy: user?.email || '',
-      receiptNotes,
-    });
-    onUpdate(updated);
-    setActing(false);
-  };
+
 
   return (
     <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
@@ -113,10 +94,13 @@ function POCard({ po, user, onUpdate }) {
             )
           )}
           {(po.status === 'submitted' || po.status === 'ordered' || po.status === 'partially_received') && (
-            <Button size="sm" className="text-xs gap-1 bg-green-600 hover:bg-green-700" onClick={handleReceive} disabled={acting}>
-              <Package className="w-3 h-3" /> Mark Received
+            <Button size="sm" className="text-xs gap-1 bg-green-600 hover:bg-green-700" onClick={() => setShowReceive(true)} disabled={acting}>
+              <Package className="w-3 h-3" /> Receive Order
             </Button>
           )}
+          <Button size="sm" variant="outline" className="text-xs gap-1 ml-auto" onClick={() => setShowPrint(true)}>
+            <Printer className="w-3 h-3" /> Print
+          </Button>
         </div>
       </div>
 
@@ -127,7 +111,8 @@ function POCard({ po, user, onUpdate }) {
               <thead>
                 <tr className="text-gray-500">
                   <th className="text-left py-1">Item</th>
-                  <th className="text-center py-1">Qty</th>
+                  <th className="text-center py-1">Ordered</th>
+                  <th className="text-center py-1">Received</th>
                   <th className="text-right py-1">Unit Price</th>
                   <th className="text-right py-1">Total</th>
                 </tr>
@@ -137,8 +122,13 @@ function POCard({ po, user, onUpdate }) {
                   <tr key={i}>
                     <td className="py-1.5">{line.itemName}</td>
                     <td className="text-center py-1.5">{line.qtyRequested} {line.unit}</td>
-                    <td className="text-right py-1.5">{line.unitPrice ? `$${line.unitPrice.toFixed(2)}` : '—'}</td>
-                    <td className="text-right py-1.5">{line.lineTotal ? `$${line.lineTotal.toFixed(2)}` : '—'}</td>
+                    <td className="text-center py-1.5">
+                      {line.qtyReceived != null && line.qtyReceived !== line.qtyRequested
+                        ? <span className="text-amber-600 font-medium">{line.qtyReceived}</span>
+                        : <span className="text-gray-500">{line.qtyReceived ?? '—'}</span>}
+                    </td>
+                    <td className="text-right py-1.5">{line.unitPrice ? `$${Number(line.unitPrice).toFixed(2)}` : '—'}</td>
+                    <td className="text-right py-1.5">{line.lineTotal ? `$${Number(line.lineTotal).toFixed(2)}` : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -146,20 +136,11 @@ function POCard({ po, user, onUpdate }) {
           )}
           {po.notes && <p className="text-xs text-gray-600"><strong>Notes:</strong> {po.notes}</p>}
           {po.receiptNotes && <p className="text-xs text-gray-600"><strong>Receipt notes:</strong> {po.receiptNotes}</p>}
-          {(po.status === 'submitted' || po.status === 'ordered') && (
-            <div>
-              <label className="text-xs font-medium text-gray-600">Receipt Notes (optional)</label>
-              <textarea
-                value={receiptNotes}
-                onChange={e => setReceiptNotes(e.target.value)}
-                rows={2}
-                placeholder="Discrepancies, damage, short shipment..."
-                className="mt-1 w-full border rounded-lg px-3 py-2 text-xs resize-none"
-              />
-            </div>
-          )}
         </div>
       )}
+
+      {showPrint && <POPrintView po={po} onClose={() => setShowPrint(false)} />}
+      {showReceive && <ReceiveModal po={po} user={user} onClose={() => setShowReceive(false)} onReceived={onUpdate} />}
     </div>
   );
 }
