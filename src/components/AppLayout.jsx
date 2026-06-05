@@ -90,7 +90,7 @@ const navGroups = [
     ],
   },
   {
-    label: 'Procurement',
+    label: 'AIRequisition',
     color: 'text-teal-400',
     description: 'Supplies & purchasing',
     items: [
