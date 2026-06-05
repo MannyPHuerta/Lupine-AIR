@@ -1,0 +1,67 @@
+{
+  "name": "Vendor",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Vendor company name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Office Supplies",
+        "Safety & PPE",
+        "Cleaning",
+        "Uniforms",
+        "Fuel",
+        "Breakroom",
+        "Technology",
+        "Printing",
+        "Maintenance",
+        "Other"
+      ],
+      "description": "Primary supply category"
+    },
+    "contactName": {
+      "type": "string",
+      "description": "Primary contact person"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Order/contact email"
+    },
+    "website": {
+      "type": "string",
+      "description": "Vendor website URL"
+    },
+    "accountNumber": {
+      "type": "string",
+      "description": "Our account number with this vendor"
+    },
+    "paymentTerms": {
+      "type": "string",
+      "description": "Payment terms (e.g. Net 30)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this vendor is active"
+    },
+    "addedBy": {
+      "type": "string",
+      "description": "Email of staff who added this vendor"
+    }
+  },
+  "required": [
+    "name",
+    "category"
+  ]
+}

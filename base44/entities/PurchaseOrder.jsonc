@@ -1,0 +1,134 @@
+{
+  "name": "PurchaseOrder",
+  "type": "object",
+  "properties": {
+    "poNumber": {
+      "type": "string",
+      "description": "Auto-assigned PO number (e.g. PO-1042)"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch placing the order"
+    },
+    "vendorId": {
+      "type": "string",
+      "description": "Reference to Vendor"
+    },
+    "vendorName": {
+      "type": "string",
+      "description": "Denormalized vendor name"
+    },
+    "vendorEmail": {
+      "type": "string",
+      "description": "Vendor email at time of order"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_approval",
+        "approved",
+        "submitted",
+        "ordered",
+        "partially_received",
+        "received",
+        "closed",
+        "cancelled"
+      ],
+      "default": "draft",
+      "description": "PO lifecycle status"
+    },
+    "lineItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "supplyItemId": {
+            "type": "string"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "qtyRequested": {
+            "type": "number"
+          },
+          "qtyReceived": {
+            "type": "number",
+            "default": 0
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "lineTotal": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "itemName",
+          "qtyRequested"
+        ]
+      },
+      "description": "Line items on this PO"
+    },
+    "totalAmount": {
+      "type": "number",
+      "description": "Total estimated cost (USD)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Special instructions or notes for this order"
+    },
+    "requestedBy": {
+      "type": "string",
+      "description": "Email of staff who created the PO"
+    },
+    "approvedBy": {
+      "type": "string",
+      "description": "Email of manager who approved"
+    },
+    "approvedAt": {
+      "type": "string",
+      "description": "ISO timestamp of approval"
+    },
+    "submittedAt": {
+      "type": "string",
+      "description": "ISO timestamp when sent to vendor"
+    },
+    "expectedDeliveryDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Expected delivery date"
+    },
+    "receivedAt": {
+      "type": "string",
+      "description": "ISO timestamp when marked received"
+    },
+    "receivedBy": {
+      "type": "string",
+      "description": "Email of staff who confirmed receipt"
+    },
+    "receiptNotes": {
+      "type": "string",
+      "description": "Notes on delivery (discrepancies, damage, etc.)"
+    },
+    "isUrgent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flagged as urgent/rush order"
+    }
+  },
+  "required": [
+    "branch",
+    "vendorId",
+    "vendorName"
+  ]
+}

@@ -90,6 +90,17 @@ const navGroups = [
     ],
   },
   {
+    label: 'Procurement',
+    color: 'text-teal-400',
+    description: 'Supplies & purchasing',
+    items: [
+      { label: 'Purchase Orders', path: '/purchase-orders', icon: ClipboardList },
+      { label: 'Supply Catalog', path: '/supply-catalog', icon: Package },
+      { label: 'Vendor Directory', path: '/vendors', icon: Building2 },
+      { label: 'Spend Analytics', path: '/spend-analytics', icon: TrendingUp },
+    ],
+  },
+  {
     label: 'AIREvents',
     color: 'text-pink-400',
     description: 'Events & marketing',

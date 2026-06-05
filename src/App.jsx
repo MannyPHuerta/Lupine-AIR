@@ -96,6 +96,11 @@ import RFIDSettings from "./pages/RFIDSettings";
 import RtoDashboard from "./pages/RtoDashboard";
 import DemoDataSeeder from "./pages/DemoDataSeeder";
 import FleetReview from "./pages/FleetReview";
+import VendorManager from "./pages/VendorManager";
+import SupplyCatalog from "./pages/SupplyCatalog";
+import PurchaseOrders from "./pages/PurchaseOrders";
+import NewPurchaseOrder from "./pages/NewPurchaseOrder";
+import SpendAnalytics from "./pages/SpendAnalytics";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -202,6 +207,11 @@ const AuthenticatedApp = () => {
         <Route path="/rto-dashboard" element={<RtoDashboard />} />
         <Route path="/demo-seeder" element={<DemoDataSeeder />} />
         <Route path="/fleet-review" element={<FleetReview />} />
+        <Route path="/vendors" element={<VendorManager />} />
+        <Route path="/supply-catalog" element={<SupplyCatalog />} />
+        <Route path="/purchase-orders" element={<PurchaseOrders />} />
+        <Route path="/purchase-order-new" element={<NewPurchaseOrder />} />
+        <Route path="/spend-analytics" element={<SpendAnalytics />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

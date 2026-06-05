@@ -1,0 +1,79 @@
+{
+  "name": "SupplyItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Item name (e.g. Copy Paper, Nitrile Gloves)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Office Supplies",
+        "Safety & PPE",
+        "Cleaning",
+        "Uniforms",
+        "Fuel",
+        "Breakroom",
+        "Technology",
+        "Printing",
+        "Maintenance",
+        "Other"
+      ],
+      "description": "Supply category"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unit of measure (e.g. box, case, each, gallon)"
+    },
+    "preferredVendorId": {
+      "type": "string",
+      "description": "Reference to preferred Vendor"
+    },
+    "preferredVendorName": {
+      "type": "string",
+      "description": "Denormalized vendor name"
+    },
+    "lastUnitPrice": {
+      "type": "number",
+      "description": "Most recent unit price paid (USD)"
+    },
+    "currentStock": {
+      "type": "number",
+      "default": 0,
+      "description": "Current stock level on hand"
+    },
+    "minStockLevel": {
+      "type": "number",
+      "default": 0,
+      "description": "Minimum stock level before reorder is triggered"
+    },
+    "reorderQuantity": {
+      "type": "number",
+      "default": 1,
+      "description": "Standard quantity to order when restocking"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch this item belongs to (blank = company-wide)"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Vendor SKU or part number"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this item is active in the catalog"
+    }
+  },
+  "required": [
+    "name",
+    "category",
+    "unit"
+  ]
+}
