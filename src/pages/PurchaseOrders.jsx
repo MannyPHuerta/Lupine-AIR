@@ -101,10 +101,16 @@ function POCard({ po, user, onUpdate }) {
               <CheckCircle className="w-3 h-3" /> Approve
             </Button>
           )}
-          {(po.status === 'approved' || po.status === 'submitted') && po.vendorEmail && (
-            <Button size="sm" className="text-xs gap-1 bg-indigo-600 hover:bg-indigo-700" onClick={handleSendToVendor} disabled={acting}>
-              {acting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Send to Vendor
-            </Button>
+          {(po.status === 'approved' || po.status === 'submitted') && (
+            po.vendorEmail ? (
+              <Button size="sm" className="text-xs gap-1 bg-indigo-600 hover:bg-indigo-700" onClick={handleSendToVendor} disabled={acting}>
+                {acting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Send to Vendor
+              </Button>
+            ) : (
+              <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                <AlertTriangle className="w-3 h-3" /> No vendor email — edit PO to add one
+              </span>
+            )
           )}
           {(po.status === 'submitted' || po.status === 'ordered' || po.status === 'partially_received') && (
             <Button size="sm" className="text-xs gap-1 bg-green-600 hover:bg-green-700" onClick={handleReceive} disabled={acting}>
