@@ -41,6 +41,16 @@ const araFeatures = [
   { name: "Job costing", demand: 7.9, category: "Accounting" },
   { name: "Event space CAD renderings", demand: 6.8, category: "Events" },
   { name: "Rent to own", demand: 1.13, category: "Sales" },
+  { name: "Supply & procurement management", demand: 18.0, category: "Procurement" },
+  { name: "Automated low stock alerts", demand: 14.0, category: "Procurement" },
+  { name: "Purchasing approval workflow", demand: 13.0, category: "Procurement" },
+  { name: "Spend analytics", demand: 11.0, category: "Procurement" },
+  { name: "RFQ management", demand: 9.0, category: "Procurement" },
+  { name: "Fleet disposition reporting", demand: 8.5, category: "Fleet" },
+  { name: "Driver mobile dashboard", demand: 16.0, category: "Delivery" },
+  { name: "Dispatch board", demand: 14.5, category: "Delivery" },
+  { name: "Recovery / theft intelligence", demand: 7.5, category: "Security" },
+  { name: "Role-based access control", demand: 22.0, category: "Admin" },
 ];
 
 const airCapabilities = {
@@ -80,6 +90,16 @@ const airCapabilities = {
   "Job costing": { supported: true, note: "Major job P&L tracking" },
   "Event space CAD renderings": { supported: true, note: "Event planner with canvas/SVG rendering" },
   "Rent to own": { supported: true, note: "Customers can apply rental payments toward purchase, automatic credit tracking" },
+  "Supply & procurement management": { supported: true, note: "Supply catalog, vendor management, purchase orders with multi-step approval workflow" },
+  "Automated low stock alerts": { supported: true, note: "Daily check — emails purchasing team per branch when items drop below minimum stock level" },
+  "Purchasing approval workflow": { supported: true, note: "Draft → Purchasing review → Approve & send to vendor + accounting CC in one action" },
+  "Spend analytics": { supported: true, note: "Spend by branch/category/vendor, monthly trends, fraud detection (split POs, price spikes)" },
+  "RFQ management": { supported: true, note: "AI-powered RFQ analysis, compliance matrix, line-item generation, and response drafting" },
+  "Fleet disposition reporting": { supported: true, note: "Fleet review workflow with sell/repair/discard recommendations, photo uploads, marketplace posting" },
+  "Driver mobile dashboard": { supported: true, note: "Driver-facing delivery dashboard with route, status updates, photo capture, and signature" },
+  "Dispatch board": { supported: true, note: "Drag-and-drop dispatch assignment with route optimization" },
+  "Recovery / theft intelligence": { supported: true, note: "AIRecovery with geofence breach detection, DL scan intel, threat watch panel" },
+  "Role-based access control": { supported: true, note: "Granular RBAC with built-in roles: Admin, Branch Manager, Counter Staff, Mechanic, Driver, Accountant, Purchasing" },
 };
 
 export default function FeatureMatrix() {

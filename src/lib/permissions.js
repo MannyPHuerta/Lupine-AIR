@@ -45,6 +45,32 @@ export const PERMISSIONS = {
   EXPENSE_DELETE: 'expense.delete',
   INVOICE_VOID: 'invoice.void',
 
+  // Procurement / Supply
+  SUPPLY_READ: 'supply.read',
+  SUPPLY_MANAGE: 'supply.manage',
+  PO_CREATE: 'po.create',
+  PO_SUBMIT: 'po.submit',           // Submit draft → purchasing
+  PO_APPROVE: 'po.approve',         // Approve & send to vendor (purchasing role)
+  PO_RECEIVE: 'po.receive',
+  VENDOR_MANAGE: 'vendor.manage',
+  SPEND_VIEW: 'spend.view',
+
+  // Delivery
+  DELIVERY_READ: 'delivery.read',
+  DELIVERY_MANAGE: 'delivery.manage',
+
+  // Fleet / Reports
+  FLEET_REVIEW: 'fleet.review',
+  FLEET_SEND: 'fleet.send',
+
+  // RFQ
+  RFQ_CREATE: 'rfq.create',
+  RFQ_MANAGE: 'rfq.manage',
+
+  // Timesheets
+  TIMESHEET_OWN: 'timesheet.own',
+  TIMESHEET_MANAGE: 'timesheet.manage',
+
   // Admin
   USER_MANAGE: 'user.manage',
   ROLE_MANAGE: 'role.manage',
@@ -117,6 +143,22 @@ export const BUILT_IN_ROLES = {
       PERMISSIONS.REPORT_READ,
       PERMISSIONS.REPORT_CREATE,
       PERMISSIONS.AUDIT_VIEW,
+      PERMISSIONS.SUPPLY_READ,
+      PERMISSIONS.SUPPLY_MANAGE,
+      PERMISSIONS.PO_CREATE,
+      PERMISSIONS.PO_SUBMIT,
+      PERMISSIONS.PO_APPROVE,
+      PERMISSIONS.PO_RECEIVE,
+      PERMISSIONS.VENDOR_MANAGE,
+      PERMISSIONS.SPEND_VIEW,
+      PERMISSIONS.DELIVERY_READ,
+      PERMISSIONS.DELIVERY_MANAGE,
+      PERMISSIONS.FLEET_REVIEW,
+      PERMISSIONS.FLEET_SEND,
+      PERMISSIONS.RFQ_CREATE,
+      PERMISSIONS.RFQ_MANAGE,
+      PERMISSIONS.TIMESHEET_OWN,
+      PERMISSIONS.TIMESHEET_MANAGE,
     ],
     isBuiltIn: true,
   },
@@ -135,6 +177,11 @@ export const BUILT_IN_ROLES = {
       PERMISSIONS.CUSTOMER_UPDATE,
       PERMISSIONS.DISCOUNT_APPLY,
       PERMISSIONS.PAYMENT_PROCESS,
+      PERMISSIONS.SUPPLY_READ,
+      PERMISSIONS.PO_CREATE,
+      PERMISSIONS.PO_SUBMIT,
+      PERMISSIONS.TIMESHEET_OWN,
+      PERMISSIONS.DELIVERY_READ,
     ],
     isBuiltIn: true,
   },
@@ -149,6 +196,10 @@ export const BUILT_IN_ROLES = {
       PERMISSIONS.MAINTENANCE_LOG,
       PERMISSIONS.MAINTENANCE_SCHEDULE,
       PERMISSIONS.REPORT_READ,
+      PERMISSIONS.SUPPLY_READ,
+      PERMISSIONS.PO_CREATE,
+      PERMISSIONS.PO_SUBMIT,
+      PERMISSIONS.TIMESHEET_OWN,
     ],
     isBuiltIn: true,
   },
@@ -160,6 +211,30 @@ export const BUILT_IN_ROLES = {
     permissions: [
       PERMISSIONS.RENTAL_READ,
       PERMISSIONS.RENTAL_UPDATE,
+      PERMISSIONS.DELIVERY_READ,
+      PERMISSIONS.DELIVERY_MANAGE,
+      PERMISSIONS.TIMESHEET_OWN,
+    ],
+    isBuiltIn: true,
+  },
+
+  PURCHASING: {
+    name: 'Purchasing',
+    description: 'Review, approve, and send purchase orders to vendors',
+    level: 45,
+    scope: 'subscriber',
+    permissions: [
+      PERMISSIONS.SUPPLY_READ,
+      PERMISSIONS.SUPPLY_MANAGE,
+      PERMISSIONS.PO_CREATE,
+      PERMISSIONS.PO_SUBMIT,
+      PERMISSIONS.PO_APPROVE,
+      PERMISSIONS.PO_RECEIVE,
+      PERMISSIONS.VENDOR_MANAGE,
+      PERMISSIONS.SPEND_VIEW,
+      PERMISSIONS.RFQ_CREATE,
+      PERMISSIONS.RFQ_MANAGE,
+      PERMISSIONS.REPORT_READ,
     ],
     isBuiltIn: true,
   },
@@ -180,6 +255,9 @@ export const BUILT_IN_ROLES = {
       PERMISSIONS.RENTAL_READ,
       PERMISSIONS.CUSTOMER_READ,
       PERMISSIONS.AUDIT_VIEW,
+      PERMISSIONS.SUPPLY_READ,
+      PERMISSIONS.SPEND_VIEW,
+      PERMISSIONS.PO_RECEIVE,
     ],
     isBuiltIn: true,
   },
@@ -256,6 +334,27 @@ export function canPerformAction(userRole, action, allRoles = []) {
     manage_users: PERMISSIONS.USER_MANAGE,
     manage_settings: PERMISSIONS.SETTINGS_MANAGE,
     view_audit: PERMISSIONS.AUDIT_VIEW,
+    // Procurement
+    view_supply_catalog: PERMISSIONS.SUPPLY_READ,
+    manage_supply_catalog: PERMISSIONS.SUPPLY_MANAGE,
+    create_po: PERMISSIONS.PO_CREATE,
+    submit_po: PERMISSIONS.PO_SUBMIT,
+    approve_po: PERMISSIONS.PO_APPROVE,
+    receive_po: PERMISSIONS.PO_RECEIVE,
+    manage_vendors: PERMISSIONS.VENDOR_MANAGE,
+    view_spend: PERMISSIONS.SPEND_VIEW,
+    // Delivery
+    view_deliveries: PERMISSIONS.DELIVERY_READ,
+    manage_deliveries: PERMISSIONS.DELIVERY_MANAGE,
+    // Fleet
+    fleet_review: PERMISSIONS.FLEET_REVIEW,
+    fleet_send: PERMISSIONS.FLEET_SEND,
+    // RFQ
+    create_rfq: PERMISSIONS.RFQ_CREATE,
+    manage_rfq: PERMISSIONS.RFQ_MANAGE,
+    // Timesheets
+    own_timesheet: PERMISSIONS.TIMESHEET_OWN,
+    manage_timesheets: PERMISSIONS.TIMESHEET_MANAGE,
   };
 
   const permission = actionToPermission[action];
