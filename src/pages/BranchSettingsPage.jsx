@@ -46,13 +46,15 @@ export default function BranchSettingsPage() {
           phone: r.phone || '',
           email: r.email || '',
           partsBuyerEmail: r.partsBuyerEmail || '',
+          purchasingEmail: r.purchasingEmail || '',
+          accountingEmail: r.accountingEmail || '',
           defaultAreaCode: r.defaultAreaCode || '',
           certifications: r.certifications || [],
         };
       });
       // Fill in any branches not yet configured
       BRANCHES.forEach(b => {
-        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '', partsBuyerEmail: '', defaultAreaCode: '', certifications: [] };
+        if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '', partsBuyerEmail: '', purchasingEmail: '', accountingEmail: '', defaultAreaCode: '', certifications: [] };
       });
       setSettings(map);
       setLoading(false);
@@ -74,6 +76,8 @@ export default function BranchSettingsPage() {
       phone: s.phone,
       email: s.email,
       partsBuyerEmail: s.partsBuyerEmail,
+      purchasingEmail: s.purchasingEmail,
+      accountingEmail: s.accountingEmail,
       defaultAreaCode: s.defaultAreaCode,
       certifications: s.certifications || [],
     };
@@ -236,6 +240,31 @@ export default function BranchSettingsPage() {
                            placeholder="buyer@example.com"
                          />
                          <p className="text-xs text-gray-500 mt-1">Shop Floor will use this email by default; supervisors can override it manually.</p>
+                       </div>
+                     </div>
+                     <div className="border-t pt-4">
+                       <div className="text-xs font-semibold text-gray-700 mb-3">Procurement Routing</div>
+                       <div className="grid grid-cols-1 gap-4">
+                         <div>
+                           <label className="block text-xs font-medium text-gray-600 mb-1">Purchasing Department Email</label>
+                           <Input
+                             type="email"
+                             value={s.purchasingEmail}
+                             onChange={e => handleChange(branch, 'purchasingEmail', e.target.value)}
+                             placeholder="purchasing@example.com"
+                           />
+                           <p className="text-xs text-gray-500 mt-1">Notified when a PO is submitted for purchasing review.</p>
+                         </div>
+                         <div>
+                           <label className="block text-xs font-medium text-gray-600 mb-1">Accounting Email</label>
+                           <Input
+                             type="email"
+                             value={s.accountingEmail}
+                             onChange={e => handleChange(branch, 'accountingEmail', e.target.value)}
+                             placeholder="accounting@example.com"
+                           />
+                           <p className="text-xs text-gray-500 mt-1">Receives a copy of every approved PO at the same time it is sent to the vendor.</p>
+                         </div>
                        </div>
                      </div>
                   </div>

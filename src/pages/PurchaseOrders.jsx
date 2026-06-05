@@ -11,6 +11,7 @@ const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', 
 
 const STATUS_COLORS = {
   draft: 'bg-gray-100 text-gray-600',
+  pending_purchasing: 'bg-yellow-100 text-yellow-700',
   pending_approval: 'bg-yellow-100 text-yellow-700',
   approved: 'bg-blue-100 text-blue-700',
   submitted: 'bg-indigo-100 text-indigo-700',
@@ -22,9 +23,16 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABELS = {
-  draft: 'Draft', pending_approval: 'Pending Approval', approved: 'Approved',
-  submitted: 'Submitted to Vendor', ordered: 'Ordered', partially_received: 'Partially Received',
-  received: 'Received', closed: 'Closed', cancelled: 'Cancelled',
+  draft: 'Draft',
+  pending_purchasing: 'Pending Purchasing',
+  pending_approval: 'Pending Approval',
+  approved: 'Approved',
+  submitted: 'Sent to Vendor',
+  ordered: 'Ordered',
+  partially_received: 'Partially Received',
+  received: 'Received',
+  closed: 'Closed',
+  cancelled: 'Cancelled',
 };
 
 function POCard({ po, user, onUpdate }) {
@@ -40,10 +48,23 @@ function POCard({ po, user, onUpdate }) {
     setActing(false);
   };
 
-  const handleSendToVendor = async () => {
+  const handleSendToPurchasing = async () => {
+    setActing(true);
+    const updated = await base44.entities.PurchaseOrder.update(po.id, { status: 'pending_purchasing' });
+    await base44.functions.invoke('notifyPurchasing', { poId: po.id });
+    onUpdate(updated);
+    setActing(false);
+  };
+
+  const handleApproveAndSend = async () => {
     setActing(true);
     await base44.functions.invoke('sendPurchaseOrder', { poId: po.id });
-    const updated = await base44.entities.PurchaseOrder.update(po.id, { status: 'submitted', submittedAt: new Date().toISOString() });
+    const updated = await base44.entities.PurchaseOrder.update(po.id, {
+      status: 'submitted',
+      submittedAt: new Date().toISOString(),
+      approvedBy: user?.email,
+      approvedAt: new Date().toISOString(),
+    });
     onUpdate(updated);
     setActing(false);
   };
@@ -73,19 +94,14 @@ function POCard({ po, user, onUpdate }) {
         {/* Action buttons */}
         <div className="flex gap-2 mt-3 flex-wrap">
           {po.status === 'draft' && (
-            <Button size="sm" variant="outline" className="text-xs gap-1" onClick={() => act({ status: 'pending_approval' })}>
-              Submit for Approval
+            <Button size="sm" variant="outline" className="text-xs gap-1 border-yellow-400 text-yellow-700 hover:bg-yellow-50" onClick={handleSendToPurchasing} disabled={acting}>
+              {acting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Submit to Purchasing
             </Button>
           )}
-          {po.status === 'pending_approval' && (
-            <Button size="sm" className="text-xs gap-1 bg-blue-600 hover:bg-blue-700" onClick={() => act({ status: 'approved', approvedBy: user?.email, approvedAt: new Date().toISOString() })}>
-              <CheckCircle className="w-3 h-3" /> Approve
-            </Button>
-          )}
-          {(po.status === 'approved' || po.status === 'submitted') && (
+          {(po.status === 'pending_purchasing' || po.status === 'pending_approval') && (
             po.vendorEmail ? (
-              <Button size="sm" className="text-xs gap-1 bg-indigo-600 hover:bg-indigo-700" onClick={handleSendToVendor} disabled={acting}>
-                {acting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Send to Vendor
+              <Button size="sm" className="text-xs gap-1 bg-indigo-600 hover:bg-indigo-700" onClick={handleApproveAndSend} disabled={acting}>
+                {acting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><CheckCircle className="w-3 h-3" /><Send className="w-3 h-3" /></>} Approve & Send to Vendor
               </Button>
             ) : (
               <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
@@ -163,7 +179,7 @@ export default function PurchaseOrders() {
   const filtered = useMemo(() => {
     let result = pos.filter(po => {
       const branchMatch = filterBranch === 'All Branches' || po.branch === filterBranch;
-      const activeStatuses = ['draft', 'pending_approval', 'approved', 'submitted', 'ordered', 'partially_received'];
+      const activeStatuses = ['draft', 'pending_purchasing', 'pending_approval', 'approved', 'submitted', 'ordered', 'partially_received'];
       const statusMatch = filterStatus === 'all' || (filterStatus === 'active' ? activeStatuses.includes(po.status) : po.status === filterStatus);
       return branchMatch && statusMatch;
     });
@@ -177,7 +193,7 @@ export default function PurchaseOrders() {
 
   const handleUpdate = (updated) => setPos(prev => prev.map(p => p.id === updated.id ? updated : p));
 
-  const pendingApproval = pos.filter(p => p.status === 'pending_approval').length;
+  const pendingApproval = pos.filter(p => p.status === 'pending_purchasing' || p.status === 'pending_approval').length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -196,9 +212,8 @@ export default function PurchaseOrders() {
             <option value="active">Active Orders</option>
             <option value="all">All Orders</option>
             <option value="draft">Draft</option>
-            <option value="pending_approval">Pending Approval</option>
-            <option value="approved">Approved</option>
-            <option value="submitted">Submitted</option>
+            <option value="pending_purchasing">Pending Purchasing</option>
+            <option value="submitted">Sent to Vendor</option>
             <option value="received">Received</option>
             <option value="cancelled">Cancelled</option>
           </select>
