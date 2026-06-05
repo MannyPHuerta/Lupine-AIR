@@ -164,6 +164,7 @@ export default function PurchaseOrders() {
   const [user, setUser] = useState(null);
   const [filterStatus, setFilterStatus] = useState('active');
   const [filterBranch, setFilterBranch] = useState('All Branches');
+  const [sortDate, setSortDate] = useState('desc');
 
   useEffect(() => {
     Promise.all([
@@ -172,12 +173,20 @@ export default function PurchaseOrders() {
     ]).then(([orders, me]) => { setPos(orders); setUser(me); setLoading(false); });
   }, []);
 
-  const filtered = useMemo(() => pos.filter(po => {
-    const branchMatch = filterBranch === 'All Branches' || po.branch === filterBranch;
-    const activeStatuses = ['draft', 'pending_approval', 'approved', 'submitted', 'ordered', 'partially_received'];
-    const statusMatch = filterStatus === 'all' || (filterStatus === 'active' ? activeStatuses.includes(po.status) : po.status === filterStatus);
-    return branchMatch && statusMatch;
-  }), [pos, filterStatus, filterBranch]);
+  const filtered = useMemo(() => {
+    let result = pos.filter(po => {
+      const branchMatch = filterBranch === 'All Branches' || po.branch === filterBranch;
+      const activeStatuses = ['draft', 'pending_approval', 'approved', 'submitted', 'ordered', 'partially_received'];
+      const statusMatch = filterStatus === 'all' || (filterStatus === 'active' ? activeStatuses.includes(po.status) : po.status === filterStatus);
+      return branchMatch && statusMatch;
+    });
+    result.sort((a, b) => {
+      const aDate = new Date(a.created_date).getTime();
+      const bDate = new Date(b.created_date).getTime();
+      return sortDate === 'desc' ? bDate - aDate : aDate - bDate;
+    });
+    return result;
+  }, [pos, filterStatus, filterBranch, sortDate]);
 
   const handleUpdate = (updated) => setPos(prev => prev.map(p => p.id === updated.id ? updated : p));
 
@@ -209,6 +218,10 @@ export default function PurchaseOrders() {
           <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} className="h-8 border rounded-lg px-3 text-sm bg-white">
             <option>All Branches</option>
             {BRANCHES.map(b => <option key={b}>{b}</option>)}
+          </select>
+          <select value={sortDate} onChange={e => setSortDate(e.target.value)} className="h-8 border rounded-lg px-3 text-sm bg-white">
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
           </select>
         </div>
 

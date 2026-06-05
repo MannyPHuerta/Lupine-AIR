@@ -17,6 +17,7 @@ export default function SpendAnalytics() {
   const [filterCategory, setFilterCategory] = useState('All Categories');
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [activeTab, setActiveTab] = useState('overview');
+  const [sortDate, setSortDate] = useState('desc');
 
   useEffect(() => {
     base44.entities.PurchaseOrder.list('-created_date', 1000).then(orders => {
@@ -25,12 +26,20 @@ export default function SpendAnalytics() {
     });
   }, []);
 
-  const filtered = useMemo(() => pos.filter(po => {
-    const branchMatch = filterBranch === 'All Branches' || po.branch === filterBranch;
-    const yearMatch = !filterYear || (po.created_date || '').startsWith(filterYear);
-    const catMatch = filterCategory === 'All Categories' || (po.lineItems || []).some(l => l.category === filterCategory);
-    return branchMatch && yearMatch && catMatch;
-  }), [pos, filterBranch, filterYear, filterCategory]);
+  const filtered = useMemo(() => {
+    let result = pos.filter(po => {
+      const branchMatch = filterBranch === 'All Branches' || po.branch === filterBranch;
+      const yearMatch = !filterYear || (po.created_date || '').startsWith(filterYear);
+      const catMatch = filterCategory === 'All Categories' || (po.lineItems || []).some(l => l.category === filterCategory);
+      return branchMatch && yearMatch && catMatch;
+    });
+    result.sort((a, b) => {
+      const aDate = new Date(a.created_date).getTime();
+      const bDate = new Date(b.created_date).getTime();
+      return sortDate === 'desc' ? bDate - aDate : aDate - bDate;
+    });
+    return result;
+  }, [pos, filterBranch, filterYear, filterCategory, sortDate]);
 
   const totalSpend = filtered.reduce((s, po) => s + (po.totalAmount || 0), 0);
 
@@ -144,6 +153,10 @@ export default function SpendAnalytics() {
           <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="h-8 border rounded-lg px-3 text-sm bg-white">
             {years.map(y => <option key={y}>{y}</option>)}
             {years.length === 0 && <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>}
+          </select>
+          <select value={sortDate} onChange={e => setSortDate(e.target.value)} className="h-8 border rounded-lg px-3 text-sm bg-white">
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
           </select>
         </div>
 
