@@ -208,6 +208,8 @@ export default function AIRoads() {
         ? loads.map(t => ({ id: t.id, type: t.type, name: t.name }))
         : [{ id: 'truck-1', type: '18wheeler', name: 'Truck 1' }];
 
+      console.log('[AIRoads] Sending to autoPack:', { equipmentCount: eventEquipment.length, summarizedCount: summarized.length, truckConfigs });
+      console.log('[AIRoads] Summarized items:', summarized);
       const res = await base44.functions.invoke('autoPackEquipment', {
         equipment: eventEquipment,
         summarized,
@@ -215,10 +217,11 @@ export default function AIRoads() {
         truckConfigs,
         truckType: truckConfigs[0]?.type || '18wheeler',
       });
+      console.log('[AIRoads] Received from autoPack:', res.data);
       if (res.data?.loads) {
         setLoads(res.data.loads);
         setEventEquipment([]);
-        toast({ title: '✅ Auto Pack complete', description: `Equipment packed across ${res.data.loads.length} trucks.` });
+        toast({ title: '✅ Auto Pack complete', description: `Equipment packed across ${res.data.loads.length} trucks. Total items: ${res.data.loads.reduce((sum, t) => sum + (t.items?.length || 0), 0)}` });
       } else {
         toast({ title: 'No result', description: 'Auto Pack returned no result. Try again or adjust truck count.', variant: 'destructive' });
       }
