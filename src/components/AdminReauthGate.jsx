@@ -45,7 +45,7 @@ export default function AdminReauthGate({ children, title = 'Internal Fraud Cont
 
   // Wrap everything in a PremiumGate — Professional or higher required
   return (
-    <PremiumGate requiredTier="professional" featureName="Fraud Controls">
+    <PremiumGate requiredTier="pro" featureName="Fraud Controls">
       <AdminReauthGateInner verified={verified} setVerified={setVerified} pin={pin} setPin={setPin} error={error} setError={setError} loading={loading} setLoading={setLoading} title={title}>
         {children}
       </AdminReauthGateInner>

@@ -2,81 +2,76 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Lock, ShieldCheck, Zap, Loader2, CheckCircle2, Star } from 'lucide-react';
 
-const TIER_ORDER = { core: 0, professional: 1, pro: 1, enterprise: 2, security_plus: 3 };
+// Matches the actual plan tiers sold on the website
+const TIER_ORDER = { core: 0, pro: 1, custom: 2, enterprise: 3 };
 
 const PLANS = {
-  professional: {
-    name: 'AIR Professional',
-    price: '$149/mo',
+  pro: {
+    name: 'AIR Pro',
+    price: '$799/mo',
+    color: '#22d3ee',
+    colorClass: 'text-cyan-400',
+    borderClass: 'border-cyan-500/40',
+    bgClass: 'bg-cyan-500/10',
+    icon: <Zap className="w-7 h-7 text-cyan-400" />,
+    features: [
+      'Everything in Core',
+      'Up to 3 branches, unlimited users',
+      'Cross-branch transfers & visibility',
+      'Shop management & work orders',
+      'GPS tracking (Samsara, CalAmp, etc.)',
+      'AIRecovery — theft prevention',
+      'Fraud Intelligence dashboard',
+      'Cash drawer variance & AI audit',
+      'Weekly AI Fraud Digest',
+      'Loyalty programs & volume discounts',
+      'Priority support',
+    ],
+  },
+  custom: {
+    name: 'AIR Custom',
+    price: '$1,499/mo',
     color: '#a78bfa',
     colorClass: 'text-purple-400',
     borderClass: 'border-purple-500/40',
     bgClass: 'bg-purple-500/10',
-    icon: <Zap className="w-7 h-7 text-purple-400" />,
+    icon: <ShieldCheck className="w-7 h-7 text-purple-400" />,
     features: [
-      'Fraud Intelligence dashboard — Benford\'s Law analysis',
-      'Cash drawer variance analysis & AI audit',
-      'Threshold & round-number clustering detection',
-      'Employee void & discount rate monitoring',
-      'Weekly AI Fraud Digest emailed every Monday',
-      'PIN-gated internal controls section',
-      'Up to 5 branches',
+      'Everything in Pro',
+      'Up to 10 branches',
+      'AIRfq — government bid intelligence',
+      'AIRoads — multi-truck load planning',
+      'Advanced repair & predictive maintenance',
+      'Event profit tracking (major jobs)',
+      'Custom integrations & API access',
+      'Account manager & SLA',
     ],
   },
   enterprise: {
     name: 'AIR Enterprise',
-    price: 'Contact us',
+    price: 'Custom pricing',
     color: '#f59e0b',
     colorClass: 'text-amber-400',
     borderClass: 'border-amber-500/40',
     bgClass: 'bg-amber-500/10',
     icon: <ShieldCheck className="w-7 h-7 text-amber-400" />,
     features: [
-      'Everything in Professional',
+      'Everything in Custom',
       'Unlimited branches',
-      'Priority support & onboarding',
-      'Custom integrations',
-    ],
-  },
-  pro: {
-    name: 'AIR Pro',
-    price: '$49/mo',
-    color: '#a78bfa',
-    colorClass: 'text-purple-400',
-    borderClass: 'border-purple-500/40',
-    bgClass: 'bg-purple-500/10',
-    icon: <Zap className="w-7 h-7 text-purple-400" />,
-    features: [
-      'Fraud Intel tab — Benford\'s Law analysis',
-      'Threshold & round-number clustering',
-      'Employee void & discount rate monitoring',
-      'Weekly Fraud Digest email every Monday',
-    ],
-  },
-  security_plus: {
-    name: 'AIR Security+',
-    price: '$99/mo',
-    color: '#22d3ee',
-    colorClass: 'text-cyan-400',
-    borderClass: 'border-cyan-500/40',
-    bgClass: 'bg-cyan-500/10',
-    icon: <ShieldCheck className="w-7 h-7 text-cyan-400" />,
-    features: [
-      'Everything in Pro',
-      'GPS provider integrations (Samsara, Geotab, etc.)',
-      'Real-time geofence breach SMS & email alerts',
-      'Night movement & speed anomaly detection',
-      'Theft Intelligence & Boundary Vigilance panels',
-      'ThreatWatch with DL verification',
+      'White-label domain & branding',
+      'SSO (Google Workspace, Microsoft, Okta)',
+      'Custom AI model tuning',
+      'Dedicated infrastructure',
+      'Premium support & technical services',
     ],
   },
 };
 
 /**
  * Wraps premium content. Shows children if user has required tier, otherwise shows upgrade gate.
- * 
+ *
  * Props:
- *   requiredTier: 'pro' | 'security_plus'
+ *   requiredTier: 'pro' | 'custom' | 'enterprise'
  *   featureName: string  — short name for what's locked
  *   returnPath: string   — path to return to after checkout (default: current path)
  *   children: ReactNode  — the premium content
@@ -99,9 +94,7 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
     const params = new URLSearchParams(window.location.search);
     const subscribed = params.get('subscribed');
     if (subscribed && user) {
-      // Refresh user data to get updated tier
       base44.auth.me().then(u => setUser(u));
-      // Clean up URL
       const url = new URL(window.location.href);
       url.searchParams.delete('subscribed');
       window.history.replaceState({}, '', url.toString());
@@ -123,11 +116,16 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
 
   if (hasAccess) return children;
 
-  // Show upgrade wall
-  const plan = PLANS[requiredTier];
+  const plan = PLANS[requiredTier] || PLANS.pro;
   const rPath = returnPath || window.location.pathname;
+  const isEnterprise = requiredTier === 'enterprise';
 
   const handleUpgrade = async (tier) => {
+    if (isEnterprise || tier === 'enterprise') {
+      document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
+      window.location.href = '/air#waitlist';
+      return;
+    }
     if (window.self !== window.top) {
       alert('Checkout is only available from the published app, not the preview.');
       return;
@@ -154,8 +152,8 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
         {/* Locked banner */}
         <div className={`${plan.bgClass} ${plan.borderClass} border rounded-2xl p-6 mb-6 text-center`}>
           <div className="flex justify-center mb-3">{plan.icon}</div>
-          <div className={`text-lg font-black ${plan.colorClass} mb-1`}>{featureName} is a {plan.name} Feature</div>
-          <p className="text-white/50 text-sm">Upgrade to unlock this feature and everything listed below.</p>
+          <div className={`text-lg font-black ${plan.colorClass} mb-1`}>{featureName} requires {plan.name}</div>
+          <p className="text-white/50 text-sm">Upgrade your plan to unlock this feature.</p>
         </div>
 
         {/* Plan card */}
@@ -163,7 +161,7 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
           <div className="flex items-center justify-between mb-5">
             <div>
               <div className={`text-xl font-black ${plan.colorClass}`}>{plan.name}</div>
-              <div className="text-white/40 text-sm">Billed monthly, cancel anytime</div>
+              <div className="text-white/40 text-sm">{isEnterprise ? 'Contact us for pricing' : 'Billed monthly, cancel anytime'}</div>
             </div>
             <div className="text-right">
               <div className="text-2xl font-black text-white">{plan.price}</div>
@@ -182,11 +180,13 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
           <button
             onClick={() => handleUpgrade(requiredTier)}
             disabled={checkoutLoading}
-            className={`w-full flex items-center justify-center gap-2 font-bold rounded-xl py-3.5 transition text-black`}
+            className="w-full flex items-center justify-center gap-2 font-bold rounded-xl py-3.5 transition text-black"
             style={{ background: plan.color }}
           >
             {checkoutLoading
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting to checkout…</>
+              : isEnterprise
+              ? <><Star className="w-4 h-4" /> Contact Sales →</>
               : <><Star className="w-4 h-4" /> Upgrade to {plan.name} — {plan.price}</>
             }
           </button>
@@ -198,29 +198,8 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
           )}
         </div>
 
-        {/* Show Security+ upsell if gating Pro (they could jump straight to Security+) */}
-        {requiredTier === 'pro' && (
-          <div className="bg-slate-900 border border-cyan-500/20 rounded-2xl p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <ShieldCheck className="w-5 h-5 text-cyan-400" />
-              <div>
-                <div className="text-cyan-400 font-bold text-sm">Or go straight to Security+</div>
-                <div className="text-white/40 text-xs">Includes everything in Pro plus GPS tracking & threat intelligence</div>
-              </div>
-              <div className="ml-auto text-white font-bold text-sm">$99/mo</div>
-            </div>
-            <button
-              onClick={() => handleUpgrade('security_plus')}
-              disabled={checkoutLoading}
-              className="w-full border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 font-semibold rounded-xl py-2.5 transition text-sm"
-            >
-              Upgrade to Security+ instead →
-            </button>
-          </div>
-        )}
-
         <p className="text-center text-white/20 text-xs mt-4">
-          Admins always have full access. Subscription applies per user account.
+          Questions? <a href="/air#waitlist" className="underline hover:text-white/40 transition">Contact us</a> — we're happy to walk you through the right plan.
         </p>
       </div>
     </div>

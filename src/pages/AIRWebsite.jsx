@@ -737,7 +737,7 @@ function PricingSection() {
             <span>✓ You pay 60-80% less at scale</span>
           </div>
           </FadeUp>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {tiers.map((tier, i) => (
               <FadeUp key={i} delay={i * 0.1}>
                 <div className={`rounded-2xl border p-8 h-full flex flex-col relative ${tier.highlight ? 'bg-cyan-500/10 border-cyan-400/50' : 'bg-white/5 border-white/10'}`}>

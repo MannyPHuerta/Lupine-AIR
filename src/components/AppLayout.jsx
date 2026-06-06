@@ -282,9 +282,9 @@ function NavGroup({ group, location, onNavigate, allGroupRefs, user }) {
             // Handle nested subcategory
             if (item.children) {
               const isFraud = item.fraudSection;
-              const PROFESSIONAL_TIERS = ['professional', 'enterprise', 'security_plus'];
+              const PREMIUM_TIERS = ['pro', 'custom', 'enterprise'];
               const userTier = user?.subscriptionTier || 'core';
-              const fraudLocked = isFraud && !PROFESSIONAL_TIERS.includes(userTier);
+              const fraudLocked = isFraud && !PREMIUM_TIERS.includes(userTier);
               return (
                 <div key={item.label} className="pb-1">
                   <div className={`px-4 py-2 text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${isFraud ? 'text-red-400' : 'text-slate-500'}`}>
