@@ -193,11 +193,11 @@ export default function AIRoads() {
       const summarized = [];
       const seen = {};
       for (const item of eventEquipment) {
-        const key = item.equipmentName;
+        const key = item.equipmentName || item.name;
         if (seen[key]) {
           seen[key].quantity = (seen[key].quantity || 1) + 1;
         } else {
-          const copy = { ...item, quantity: 1 };
+          const copy = { ...item, quantity: 1, equipmentName: item.equipmentName || item.name };
           seen[key] = copy;
           summarized.push(copy);
         }
