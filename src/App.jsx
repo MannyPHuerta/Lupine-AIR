@@ -102,6 +102,7 @@ import PurchaseOrders from "./pages/PurchaseOrders";
 import NewPurchaseOrder from "./pages/NewPurchaseOrder";
 import SpendAnalytics from "./pages/SpendAnalytics";
 import CashDrawerReconciliation from "./pages/CashDrawerReconciliation";
+import AdminReauthGate from "./components/AdminReauthGate";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -214,6 +215,11 @@ const AuthenticatedApp = () => {
         <Route path="/purchase-order-new" element={<NewPurchaseOrder />} />
         <Route path="/spend-analytics" element={<SpendAnalytics />} />
         <Route path="/cash-drawer" element={<CashDrawerReconciliation />} />
+        {/* PIN-gated Internal Fraud Controls — admin only */}
+        <Route path="/admin/fraud/audit-logs" element={<AdminReauthGate title="Audit Logs"><AuditLogDashboard /></AdminReauthGate>} />
+        <Route path="/admin/fraud/reports" element={<AdminReauthGate title="Fraud Intelligence"><AIReports /></AdminReauthGate>} />
+        <Route path="/admin/fraud/digest" element={<AdminReauthGate title="AI Fraud Digest"><AIReports /></AdminReauthGate>} />
+        <Route path="/admin/fraud/recovery" element={<AdminReauthGate title="Recovery Intelligence"><AIRecovery /></AdminReauthGate>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

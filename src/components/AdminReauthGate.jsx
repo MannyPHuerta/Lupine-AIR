@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, Lock, CheckCircle } from 'lucide-react';
+import { ShieldAlert, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { base44 } from '@/api/base44Client';
 
 const SESSION_KEY = 'air_fraud_section_unlocked';
 const SESSION_DURATION_MS = 30 * 60 * 1000; // 30 minutes
@@ -48,24 +49,12 @@ export default function AdminReauthGate({ children, title = 'Internal Fraud Cont
     setError('');
 
     try {
-      // Call backend to validate the PIN securely (avoids hardcoding in frontend)
-      const res = await fetch('/functions/verifyAdminPin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pin.trim() }),
-        credentials: 'include',
-      });
-
-      if (res.ok) {
-        setSession();
-        setVerified(true);
-      } else {
-        setError('Incorrect PIN. Access denied.');
-        setPin('');
-      }
+      await base44.functions.invoke('verifyAdminPin', { pin: pin.trim() });
+      setSession();
+      setVerified(true);
     } catch {
-      // Graceful fallback — shouldn't happen in production
-      setError('Verification service unavailable. Try again.');
+      setError('Incorrect PIN. Access denied.');
+      setPin('');
     }
     setLoading(false);
   };

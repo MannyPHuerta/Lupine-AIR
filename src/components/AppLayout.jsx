@@ -11,7 +11,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot, Wifi, ShoppingBag
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot, Wifi, ShoppingBag, ShieldAlert
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -45,7 +45,6 @@ const navGroups = [
       { label: 'Cash Drawer', path: '/cash-drawer', icon: DollarSign },
       { label: 'Loyalty Manager', path: '/loyalty-manager', icon: Star },
       { label: 'Inventory Health', path: '/inventory-health', icon: AlertTriangle },
-      { label: 'Audit Logs', path: '/audit-logs', icon: Shield },
       { label: '— Asset Wolf —', path: null, icon: null, divider: true },
       { label: 'Submit Report', path: '/report-form', icon: Send },
       { label: 'Fleet Review', path: '/fleet-review', icon: Truck },
@@ -114,10 +113,22 @@ const navGroups = [
     label: 'Admin',
     color: 'text-slate-400',
     description: 'System administration',
+    adminOnly: true,
     items: [
       { label: 'Feature Matrix', path: '/feature-matrix', icon: TrendingUp },
-      { label: 'RFID Settings', path: '/rfid-settings', icon: Wifi, adminOnly: true },
+      { label: 'RFID Settings', path: '/rfid-settings', icon: Wifi },
       { label: 'Train AI Assistant', path: '/ai-training', icon: Bot },
+      {
+        label: '🔒 Internal Fraud Controls',
+        fraudSection: true,
+        description: 'PIN-protected fraud & security tools',
+        children: [
+          { label: 'Audit Logs', path: '/admin/fraud/audit-logs', icon: Shield },
+          { label: 'Fraud Intelligence', path: '/admin/fraud/reports', icon: AlertTriangle },
+          { label: 'AI Fraud Digest', path: '/admin/fraud/digest', icon: ChartNoAxesCombined },
+          { label: 'Recovery Intelligence', path: '/admin/fraud/recovery', icon: RotateCcw },
+        ],
+      },
       {
         label: 'Pricing & Catalog',
         description: 'Rates, specs & categories',
@@ -169,7 +180,7 @@ const navGroups = [
   },
 ];
 
-function NavGroup({ group, location, onNavigate, allGroupRefs }) {
+function NavGroup({ group, location, onNavigate, allGroupRefs, user }) {
   // Flatten nested children for activity detection and navigation
   const flatItems = group.items.flatMap(i => i.children || [i]);
   const isActive = flatItems.some(i => i.path === location.pathname);
@@ -185,6 +196,8 @@ function NavGroup({ group, location, onNavigate, allGroupRefs }) {
     }
   });
 
+  // Hide admin-only group from non-admins (after all hooks)
+  if (group.adminOnly && user?.role !== 'admin') return null;
   const handleHeaderKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -268,10 +281,12 @@ function NavGroup({ group, location, onNavigate, allGroupRefs }) {
             }
             // Handle nested subcategory
             if (item.children) {
+              const isFraud = item.fraudSection;
               return (
                 <div key={item.label} className="pb-1">
-                  <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                    {item.label}
+                  <div className={`px-4 py-2 text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${isFraud ? 'text-red-400' : 'text-slate-500'}`}>
+                    {isFraud && <ShieldAlert className="w-3 h-3" />}
+                    {isFraud ? 'Fraud Controls' : item.label}
                   </div>
                   {item.children.map((child) => {
                     const active = location.pathname === child.path;
@@ -283,8 +298,8 @@ function NavGroup({ group, location, onNavigate, allGroupRefs }) {
                         onClick={onNavigate}
                         className={`flex items-center gap-2.5 px-6 py-1.5 text-sm transition border-l-4 focus:outline-none focus:bg-slate-700/60 ${
                           active
-                            ? `font-semibold ${group.color} bg-slate-700/60 border-current`
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40 border-transparent'
+                            ? `font-semibold text-red-400 bg-slate-700/60 border-red-400`
+                            : 'text-slate-400 hover:text-red-300 hover:bg-slate-700/40 border-transparent'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -370,6 +385,7 @@ export default function AppLayout() {
             location={location}
             onNavigate={() => setSidebarOpen(false)}
             allGroupRefs={allGroupRefs}
+            user={user}
           />
         ))}
       </div>
