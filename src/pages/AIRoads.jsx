@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Truck, Package, Scale, Printer, Download, AlertCircle, Loader2, Plus, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,12 +156,11 @@ export default function AIRoads() {
   const handleAutoBalance = async () => {
     const allItems = [...eventEquipment, ...loads.flatMap(t => t.items || [])];
     if (allItems.length === 0) {
-      alert('Add equipment first before balancing.');
+      toast({ title: 'No equipment', description: 'Add equipment first before balancing.', variant: 'destructive' });
       return;
     }
     setAutoBalancing(true);
     try {
-      // Pass per-truck configs so the optimizer respects individual capacities
       const truckConfigs = loads.map(t => ({ id: t.id, type: t.type, name: t.name }));
       const res = await base44.functions.invoke('optimizeLoadDistribution', {
         equipment: allItems,
@@ -171,11 +171,12 @@ export default function AIRoads() {
       if (res.data?.loads) {
         setLoads(res.data.loads);
         setEventEquipment([]);
+        toast({ title: '✅ Load optimized', description: `Distributed across ${res.data.loads.length} trucks.` });
       } else {
-        alert('Optimize returned no result.');
+        toast({ title: 'No result', description: 'Optimize returned no result.', variant: 'destructive' });
       }
     } catch (err) {
-      alert(`Optimize failed: ${err.message}`);
+      toast({ title: 'Optimize failed', description: err.message, variant: 'destructive' });
     } finally {
       setAutoBalancing(false);
     }
@@ -183,7 +184,7 @@ export default function AIRoads() {
 
   const handleAutoPack = async () => {
     if (eventEquipment.length === 0) {
-      alert('Add equipment first before packing.');
+      toast({ title: 'No equipment', description: 'Add equipment first before packing.', variant: 'destructive' });
       return;
     }
     setAutoPacking(true);
@@ -217,12 +218,12 @@ export default function AIRoads() {
       if (res.data?.loads) {
         setLoads(res.data.loads);
         setEventEquipment([]);
+        toast({ title: '✅ Auto Pack complete', description: `Equipment packed across ${res.data.loads.length} trucks.` });
       } else {
-        alert('Auto Pack returned no result. Try again or adjust truck count.');
+        toast({ title: 'No result', description: 'Auto Pack returned no result. Try again or adjust truck count.', variant: 'destructive' });
       }
     } catch (err) {
-      console.error('AutoPack error:', err);
-      alert(`Auto Pack failed: ${err.message}`);
+      toast({ title: 'Auto Pack failed', description: err.message, variant: 'destructive' });
     } finally {
       setAutoPacking(false);
     }
@@ -415,8 +416,16 @@ export default function AIRoads() {
             </div>
           </div>
           {loads.length === 0 && (
-            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              ① Add trucks above → ② Set each truck's type in <strong>Load Split</strong> → ③ Hit <strong>Auto Pack</strong> or <strong>Optimize</strong>
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              <div className="text-sm text-amber-800">
+                Start by adding your first truck, then assign equipment and pack.
+              </div>
+              <button
+                onClick={handleAddTruck}
+                className="ml-4 flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition flex-shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add First Truck
+              </button>
             </div>
           )}
         </div>

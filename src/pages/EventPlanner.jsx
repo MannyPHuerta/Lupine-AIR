@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Loader2, Wand2, Lock } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import EventCanvas from '@/components/canvas/EventCanvas';
 import CanvasToolbar from '@/components/canvas/CanvasToolbar';
 import CanvasItemDetail from '@/components/canvas/CanvasItemDetail';
@@ -290,31 +291,49 @@ export default function EventPlanner() {
   };
 
   const handleRequestReview = async () => {
-    await handleSave();
+    // Capture current plan state BEFORE save (avoid stale closure)
     const currentPlan = plan;
-    const nextStatus = currentPlan?.status === 'draft' ? 'customer_review'
-      : currentPlan?.status === 'customer_review' ? 'planner_review'
-      : currentPlan?.status === 'planner_review' ? 'finalized'
-      : currentPlan?.status;
+    const currentCanvasItems = canvasItems;
 
+    if (!isUnlocked) {
+      setShowPaywall(true);
+      return;
+    }
+
+    setSaving(true);
+    const data = buildPlanData();
+    let savedPlan = currentPlan;
     if (currentPlan?.id) {
-      await base44.entities.EventPlan.update(currentPlan.id, { status: nextStatus });
+      savedPlan = await base44.entities.EventPlan.update(currentPlan.id, data);
+      setPlan(savedPlan);
+    } else {
+      savedPlan = await base44.entities.EventPlan.create({ ...data, ownerEmail: user?.email, ownerRole: 'staff', status: 'draft' });
+      setPlan(savedPlan);
+      window.history.replaceState({}, '', `/event-planner/${savedPlan.id}`);
+    }
+    setSaving(false);
+
+    const nextStatus = savedPlan?.status === 'draft' ? 'customer_review'
+      : savedPlan?.status === 'customer_review' ? 'planner_review'
+      : savedPlan?.status === 'planner_review' ? 'finalized'
+      : savedPlan?.status;
+
+    if (savedPlan?.id) {
+      await base44.entities.EventPlan.update(savedPlan.id, { status: nextStatus });
       setPlan(p => ({ ...p, status: nextStatus }));
 
-      // Planner finalizes → auto-convert to Rental
       if (nextStatus === 'finalized') {
-        const rental = await convertToRental({ ...currentPlan, canvasItems });
-        alert(`✅ Plan finalized and converted to rental quote!\nRental ID: ${rental.id}\nNavigate to Rental History to view.`);
+        const rental = await convertToRental({ ...savedPlan, canvasItems: currentCanvasItems });
+        toast({ title: '✅ Plan finalized', description: `Converted to rental quote. Rental ID: ${rental.id}` });
         navigate('/rental-history');
         return;
       }
 
-      alert(nextStatus === 'customer_review'
-        ? '✅ Plan submitted for planner review!'
-        : nextStatus === 'planner_review'
-        ? '✅ Plan sent to planner queue!'
-        : `Plan status: ${nextStatus}`
-      );
+      toast({
+        title: nextStatus === 'customer_review' ? '✅ Submitted for planner review'
+          : nextStatus === 'planner_review' ? '✅ Sent to planner queue'
+          : `Status: ${nextStatus}`,
+      });
     }
   };
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Loader2, Wrench, Calendar, Save, Users, Shield } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Wrench, Calendar, Save, Users, Shield, Award } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ export default function EmployeeProfileManager() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('staff'); // 'staff' | 'mechanics' | 'planners'
   const [mechanics, setMechanics] = useState([]);
+  const [planners, setPlanners] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -38,13 +40,18 @@ export default function EmployeeProfileManager() {
   const [saving, setSaving] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [editingUserForm, setEditingUserForm] = useState(null);
+  const [editingPlannerId, setEditingPlannerId] = useState(null);
+  const [plannerForm, setPlannerForm] = useState(null);
 
   useEffect(() => {
     Promise.all([
       base44.entities.MechanicProfile.list('fullName', 200),
       base44.entities.User.list('full_name', 200),
     ]).then(([mech, u]) => {
-      setMechanics(mech);
+      // Separate mechanics and planners by role tag (use a notes/tag field heuristic — planners have planner role)
+      const plannerEmails = new Set(u.filter(usr => usr.role === 'planner').map(usr => usr.email));
+      setMechanics(mech.filter(m => !plannerEmails.has(m.email)));
+      setPlanners(mech.filter(m => plannerEmails.has(m.email)));
       setUsers(u);
       setLoading(false);
     });
@@ -64,23 +71,21 @@ export default function EmployeeProfileManager() {
   };
 
   const handleSave = async () => {
-    if (!form.email || !form.fullName) { alert('Email and name required'); return; }
+    if (!form.email || !form.fullName) { toast({ title: 'Required fields missing', description: 'Email and name are required.', variant: 'destructive' }); return; }
     setSaving(true);
-    try {
-      await base44.entities.MechanicProfile.update(editingId, form);
-      setMechanics(prev => prev.map(m => m.id === editingId ? form : m));
-      cancelEdit();
-    } catch (err) {
-      alert(`Error: ${err.message}`);
-    } finally {
-      setSaving(false);
-    }
+    await base44.entities.MechanicProfile.update(editingId, form);
+    setMechanics(prev => prev.map(m => m.id === editingId ? form : m));
+    cancelEdit();
+    setSaving(false);
+    toast({ title: '✅ Mechanic profile saved' });
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this mechanic profile?')) return;
+    const mech = mechanics.find(m => m.id === id);
+    if (!window.confirm(`Delete profile for ${mech?.fullName || 'this mechanic'}?`)) return;
     await base44.entities.MechanicProfile.delete(id);
     setMechanics(prev => prev.filter(m => m.id !== id));
+    toast({ title: 'Profile deleted' });
   };
 
   const startEditUser = (user) => {
@@ -95,18 +100,14 @@ export default function EmployeeProfileManager() {
 
   const handleSaveUser = async () => {
     setSaving(true);
-    try {
-      await base44.entities.User.update(editingUserId, { 
-        homeBranch: editingUserForm.homeBranch,
-        role: editingUserForm.role,
-      });
-      setUsers(prev => prev.map(u => u.id === editingUserId ? editingUserForm : u));
-      cancelEditUser();
-    } catch (err) {
-      alert(`Error: ${err.message}`);
-    } finally {
-      setSaving(false);
-    }
+    await base44.entities.User.update(editingUserId, { 
+      homeBranch: editingUserForm.homeBranch,
+      role: editingUserForm.role,
+    });
+    setUsers(prev => prev.map(u => u.id === editingUserId ? editingUserForm : u));
+    cancelEditUser();
+    setSaving(false);
+    toast({ title: '✅ Staff record saved' });
   };
 
   const handleCreateNew = async (userEmail) => {
@@ -122,6 +123,37 @@ export default function EmployeeProfileManager() {
       maxConcurrentJobs: 2,
     });
     setMechanics(prev => [...prev, newProf]);
+    toast({ title: '✅ Mechanic profile created' });
+  };
+
+  const handleCreatePlanner = async (userEmail) => {
+    const user = users.find(u => u.email === userEmail);
+    if (!user) return;
+    const newProf = await base44.entities.MechanicProfile.create({
+      email: userEmail,
+      fullName: user.full_name || userEmail,
+      skills: [],
+      certifications: [],
+      branch: '01 McAllen',
+      isActive: true,
+      maxConcurrentJobs: 5,
+    });
+    setPlanners(prev => [...prev, newProf]);
+    toast({ title: '✅ Planner profile created' });
+  };
+
+  const handleSavePlanner = async () => {
+    if (!plannerForm.email || !plannerForm.fullName) {
+      toast({ title: 'Required fields missing', description: 'Email and name are required.', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    await base44.entities.MechanicProfile.update(editingPlannerId, plannerForm);
+    setPlanners(prev => prev.map(p => p.id === editingPlannerId ? plannerForm : p));
+    setEditingPlannerId(null);
+    setPlannerForm(null);
+    setSaving(false);
+    toast({ title: '✅ Planner profile saved' });
   };
 
   if (loading) {
@@ -133,7 +165,7 @@ export default function EmployeeProfileManager() {
   }
 
   const mechanicEmails = new Set(mechanics.map(m => m.email));
-  const plannerEmails = new Set();
+  const plannerEmails = new Set(planners.map(p => p.email));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -443,10 +475,138 @@ export default function EmployeeProfileManager() {
             </div>
           </>
         ) : (
-          /* Planners tab - placeholder */
-          <div className="bg-white rounded-lg border p-8 text-center text-gray-400">
-            Planner certification management coming soon. Set certs per state requirements (ISES, MPI, APEX, etc.)
-          </div>
+          /* Planners tab */
+          <>
+            {getPlannerUsers().filter(u => !plannerEmails.has(u.email)).length > 0 && (
+              <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                <div className="text-sm font-semibold text-pink-900 mb-3">Create planner profiles for these users</div>
+                <div className="flex flex-wrap gap-2">
+                  {getPlannerUsers()
+                    .filter(u => !plannerEmails.has(u.email))
+                    .map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => handleCreatePlanner(u.email)}
+                        className="px-3 py-1.5 bg-pink-600 hover:bg-pink-700 text-white text-xs font-medium rounded transition flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> {u.full_name || u.email}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+            <div className="space-y-3">
+              {planners.length === 0 ? (
+                <div className="bg-white rounded-lg border p-8 text-center text-gray-400">No planner profiles yet. Assign a user the "planner" role on the Staff tab first.</div>
+              ) : (
+                planners.map(planner => (
+                  <div key={planner.id} className="bg-white rounded-lg border shadow-sm overflow-hidden">
+                    {editingPlannerId === planner.id ? (
+                      <div className="p-5 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-medium text-gray-600 block mb-1">Full Name</label>
+                            <Input value={plannerForm.fullName} onChange={e => setPlannerForm(f => ({ ...f, fullName: e.target.value }))} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-gray-600 block mb-1">Email</label>
+                            <Input value={plannerForm.email} disabled className="bg-gray-100" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-1">Branch</label>
+                          <select
+                            value={plannerForm.branch || ''}
+                            onChange={e => setPlannerForm(f => ({ ...f, branch: e.target.value }))}
+                            className="w-full border border-input rounded-md px-3 py-2 text-sm bg-white"
+                          >
+                            <option value="">— Select —</option>
+                            {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-2">Certifications</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {PLANNER_CERTS.map(cert => (
+                              <label key={cert} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+                                <input
+                                  type="checkbox"
+                                  checked={(plannerForm.certifications || []).includes(cert)}
+                                  onChange={e => setPlannerForm(f => ({
+                                    ...f,
+                                    certifications: e.target.checked
+                                      ? [...(f.certifications || []), cert]
+                                      : (f.certifications || []).filter(c => c !== cert)
+                                  }))}
+                                  className="w-4 h-4 rounded"
+                                />
+                                <span className="text-xs text-gray-700">{cert}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <Input
+                            className="mt-2"
+                            placeholder="Add custom cert…"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && e.target.value.trim()) {
+                                const cert = e.target.value.trim();
+                                setPlannerForm(f => ({ ...f, certifications: [...(f.certifications || []), cert] }));
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-1">Notes</label>
+                          <Input value={plannerForm.notes || ''} onChange={e => setPlannerForm(f => ({ ...f, notes: e.target.value }))} placeholder="Availability constraints, specialties…" />
+                        </div>
+                        <div className="flex gap-2 justify-end pt-2 border-t">
+                          <Button variant="outline" size="sm" onClick={() => { setEditingPlannerId(null); setPlannerForm(null); }}>Cancel</Button>
+                          <Button size="sm" onClick={handleSavePlanner} disabled={saving} className="text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}>
+                            {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-5 py-4 flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="font-semibold text-gray-900">{planner.fullName}</div>
+                            {planner.isActive !== false && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Active</span>}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">{planner.email}{planner.branch ? ` · ${planner.branch}` : ''}</div>
+                          {planner.certifications?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {planner.certifications.map(c => (
+                                <span key={c} className="text-xs bg-pink-50 text-pink-700 px-2 py-1 rounded flex items-center gap-1">
+                                  <Award className="w-3 h-3" /> {c}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {planner.notes && <div className="text-xs text-gray-400 mt-1 italic">{planner.notes}</div>}
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button onClick={() => { setEditingPlannerId(planner.id); setPlannerForm({ ...planner }); }} className="text-gray-400 hover:text-indigo-600 p-1.5 rounded hover:bg-gray-50">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={async () => {
+                            if (!window.confirm(`Delete planner profile for ${planner.fullName}?`)) return;
+                            await base44.entities.MechanicProfile.delete(planner.id);
+                            setPlanners(prev => prev.filter(p => p.id !== planner.id));
+                            toast({ title: 'Planner profile deleted' });
+                          }} className="text-gray-400 hover:text-red-600 p-1.5 rounded hover:bg-gray-50">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
