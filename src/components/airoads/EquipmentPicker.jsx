@@ -71,22 +71,22 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
         <h3 className="font-bold text-gray-900">Add Equipment</h3>
         <div className="flex items-center gap-3">
           {/* Quantity selector */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-500 font-medium">Qty:</span>
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+            <span className="text-xs text-gray-600 font-semibold">Qty:</span>
             <button
               onClick={() => setQty(q => Math.max(1, q - 1))}
-              className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold"
+              className="w-7 h-7 rounded bg-white border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-100 text-base font-bold shadow-sm"
             >−</button>
             <input
               type="number"
               min="1"
               value={qty}
               onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-12 h-6 border border-gray-300 rounded text-center text-sm font-bold text-gray-900"
+              className="w-14 h-7 border border-gray-300 rounded text-center text-base font-bold text-gray-900 bg-white"
             />
             <button
               onClick={() => setQty(q => q + 1)}
-              className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold"
+              className="w-7 h-7 rounded bg-white border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-100 text-base font-bold shadow-sm"
             >+</button>
           </div>
           <button onClick={() => setShowManual(!showManual)} className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
@@ -110,17 +110,24 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
                 <button
                   key={item.id}
                   onClick={() => handleAddCatalogItem(item)}
-                  className="w-full text-left px-4 py-2 hover:bg-indigo-50 border-b last:border-b-0 transition flex items-center justify-between group"
+                  className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 border-b last:border-b-0 transition flex items-center justify-between group"
                 >
-                  <div>
+                  <div className="flex-1">
                     <div className="font-medium text-sm text-gray-900">{item.name}</div>
-                     <div className="text-xs text-gray-500">{item.category || '—'}</div>
+                    <div className="text-xs text-gray-500">{item.category || '—'}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {qty > 1 && (
+                      <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                        Adding {qty}×
+                      </span>
+                    )}
+                    <div className="w-8 h-8 rounded-full bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center">
+                      <Plus className="w-4 h-4 text-indigo-600" />
                     </div>
-                    <span className="flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded group-hover:bg-indigo-100">
-                      <Plus className="w-3 h-3" />{qty > 1 ? `×${qty}` : ''}
-                    </span>
-                    </button>
-                    ))}
+                  </div>
+                </button>
+              ))}
                     {filtered.length === 0 && isSearching && (
                 <div className="flex items-center gap-2 px-4 py-3 text-sm text-indigo-500">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching by alternate names…
@@ -135,15 +142,22 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
                     <button
                       key={item.id}
                       onClick={() => handleAddCatalogItem(item)}
-                      className="w-full text-left px-4 py-2 hover:bg-indigo-50 border-b last:border-b-0 transition flex items-center justify-between group"
+                      className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 border-b last:border-b-0 transition flex items-center justify-between group"
                     >
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium text-sm text-gray-900">{item.name}</div>
-                        <div className="text-xs text-gray-500">{item.category || '—'}</div>
+                          <div className="text-xs text-gray-500">{item.category || '—'}</div>
                       </div>
-                      <span className="flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded group-hover:bg-indigo-100">
-                        <Plus className="w-3 h-3" />{qty > 1 ? `×${qty}` : ''}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {qty > 1 && (
+                          <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                            Adding {qty}×
+                          </span>
+                        )}
+                        <div className="w-8 h-8 rounded-full bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center">
+                          <Plus className="w-4 h-4 text-indigo-600" />
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </>
@@ -158,6 +172,25 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
             value={manualName}
             onChange={e => setManualName(e.target.value)}
           />
+          <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+            <span className="text-xs text-amber-800 font-semibold">Quantity:</span>
+            <button
+              onClick={() => setQty(q => Math.max(1, q - 1))}
+              className="w-7 h-7 rounded bg-white border border-amber-300 flex items-center justify-center text-amber-700 hover:bg-amber-100 text-base font-bold"
+            >−</button>
+            <input
+              type="number"
+              min="1"
+              value={qty}
+              onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-14 h-7 border border-amber-300 rounded text-center text-base font-bold text-amber-900 bg-white"
+            />
+            <button
+              onClick={() => setQty(q => q + 1)}
+              className="w-7 h-7 rounded bg-white border border-amber-300 flex items-center justify-center text-amber-700 hover:bg-amber-100 text-base font-bold"
+            >+</button>
+            {qty > 1 && <span className="text-xs text-amber-700 font-semibold ml-1">({qty} items will be added)</span>}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-600 mb-1 font-semibold">Weight (lbs)</label>
@@ -185,7 +218,7 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
               Cancel
             </Button>
             <Button size="sm" onClick={handleAddManual} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
-              Add Item
+              Add {qty > 1 ? `${qty} Items` : 'Item'}
             </Button>
           </div>
         </div>
