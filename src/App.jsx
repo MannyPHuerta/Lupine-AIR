@@ -50,7 +50,6 @@ import RoleManager from "./pages/RoleManager";
 import AuditLogDashboard from "./pages/AuditLogDashboard";
 import BrandingSettings from "./pages/BrandingSettings";
 import Counter from "./pages/Counter";
-import ManagerDashboard from "./pages/ManagerDashboard";
 import DriverDashboard from "./pages/DriverDashboard";
 import DeliveryDetail from "./pages/DeliveryDetail";
 import DeliveryAssignment from "./pages/DeliveryAssignment";
@@ -183,7 +182,6 @@ const AuthenticatedApp = () => {
         <Route path="/legacy-mapper" element={<LegacyMapper />} />
         <Route path="/loyalty-manager" element={<LoyaltyManager />} />
         <Route path="/lupine" element={<LupinePlan />} />
-        <Route path="/manager" element={<ManagerDashboard />} />
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/parts-procurement" element={<PartsProcurementReport />} />
         <Route path="/pending" element={<PendingReports />} />

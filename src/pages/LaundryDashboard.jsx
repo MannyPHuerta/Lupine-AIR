@@ -118,7 +118,7 @@ export default function LaundryDashboard() {
         title="Laundry Operations"
         subtitle={`${metrics.inQueue} items in queue`}
         icon={Droplets}
-        backTo="/manager"
+        backTo="/laundry"
         action={
           <div className="flex items-center gap-2">
             <select value={branch} onChange={e => setBranch(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
