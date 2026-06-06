@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, Lock } from 'lucide-react';
+import { ShieldAlert, Lock, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { base44 } from '@/api/base44Client';
+import PremiumGate from '@/components/premium/PremiumGate';
 
 const SESSION_KEY = 'air_fraud_section_unlocked';
 const SESSION_DURATION_MS = 30 * 60 * 1000; // 30 minutes
@@ -42,6 +43,18 @@ export default function AdminReauthGate({ children, title = 'Internal Fraud Cont
     setVerified(isSessionValid());
   }, []);
 
+  // Wrap everything in a PremiumGate — Professional or higher required
+  return (
+    <PremiumGate requiredTier="professional" featureName="Fraud Controls">
+      <AdminReauthGateInner verified={verified} setVerified={setVerified} pin={pin} setPin={setPin} error={error} setError={setError} loading={loading} setLoading={setLoading} title={title}>
+        {children}
+      </AdminReauthGateInner>
+    </PremiumGate>
+  );
+}
+
+function AdminReauthGateInner({ children, title, verified, setVerified, pin, setPin, error, setError, loading, setLoading }) {
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!pin.trim()) return;
@@ -59,7 +72,7 @@ export default function AdminReauthGate({ children, title = 'Internal Fraud Cont
     setLoading(false);
   };
 
-  if (verified) return <>{children}</>;
+  if (verified) return children;
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">

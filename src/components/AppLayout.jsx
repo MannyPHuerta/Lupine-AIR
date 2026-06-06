@@ -11,7 +11,7 @@ import {
   Wrench, ClipboardList, DollarSign, Settings, ChevronDown, ChevronRight,
   Menu, Package, MapPin, Star, Shield, FileText, Zap, Globe,
   Building2, AlertTriangle, Layers, TrendingUp, UserCog, Route,
-  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot, Wifi, ShoppingBag, ShieldAlert
+  Receipt, HardHat, Send, ChartNoAxesCombined, Clock, LogOut, Download, Trophy, CircleHelp, Bot, Wifi, ShoppingBag, ShieldAlert, Lock
 } from 'lucide-react';
 
 // Each top-level group maps to one of the 6 AIR modules + Admin
@@ -119,7 +119,7 @@ const navGroups = [
       { label: 'RFID Settings', path: '/rfid-settings', icon: Wifi },
       { label: 'Train AI Assistant', path: '/ai-training', icon: Bot },
       {
-        label: '🔒 Internal Fraud Controls',
+        label: 'Internal Fraud Controls',
         fraudSection: true,
         description: 'PIN-protected fraud & security tools',
         children: [
@@ -282,11 +282,19 @@ function NavGroup({ group, location, onNavigate, allGroupRefs, user }) {
             // Handle nested subcategory
             if (item.children) {
               const isFraud = item.fraudSection;
+              const PROFESSIONAL_TIERS = ['professional', 'enterprise', 'security_plus'];
+              const userTier = user?.subscriptionTier || 'core';
+              const fraudLocked = isFraud && !PROFESSIONAL_TIERS.includes(userTier);
               return (
                 <div key={item.label} className="pb-1">
                   <div className={`px-4 py-2 text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${isFraud ? 'text-red-400' : 'text-slate-500'}`}>
                     {isFraud && <ShieldAlert className="w-3 h-3" />}
                     {isFraud ? 'Fraud Controls' : item.label}
+                    {fraudLocked && (
+                      <span className="ml-auto flex items-center gap-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide">
+                        <Lock className="w-2.5 h-2.5" /> PRO
+                      </span>
+                    )}
                   </div>
                   {item.children.map((child) => {
                     const active = location.pathname === child.path;
@@ -299,11 +307,14 @@ function NavGroup({ group, location, onNavigate, allGroupRefs, user }) {
                         className={`flex items-center gap-2.5 px-6 py-1.5 text-sm transition border-l-4 focus:outline-none focus:bg-slate-700/60 ${
                           active
                             ? `font-semibold text-red-400 bg-slate-700/60 border-red-400`
+                            : fraudLocked
+                            ? 'text-slate-600 hover:text-slate-500 hover:bg-slate-700/20 border-transparent cursor-pointer'
                             : 'text-slate-400 hover:text-red-300 hover:bg-slate-700/40 border-transparent'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                         {child.label}
+                        {fraudLocked && <Lock className="w-2.5 h-2.5 ml-auto text-slate-600" />}
                       </Link>
                     );
                   })}

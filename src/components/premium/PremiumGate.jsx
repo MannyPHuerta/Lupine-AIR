@@ -2,9 +2,42 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Lock, ShieldCheck, Zap, Loader2, CheckCircle2, Star } from 'lucide-react';
 
-const TIER_ORDER = { core: 0, pro: 1, security_plus: 2 };
+const TIER_ORDER = { core: 0, professional: 1, pro: 1, enterprise: 2, security_plus: 3 };
 
 const PLANS = {
+  professional: {
+    name: 'AIR Professional',
+    price: '$149/mo',
+    color: '#a78bfa',
+    colorClass: 'text-purple-400',
+    borderClass: 'border-purple-500/40',
+    bgClass: 'bg-purple-500/10',
+    icon: <Zap className="w-7 h-7 text-purple-400" />,
+    features: [
+      'Fraud Intelligence dashboard — Benford\'s Law analysis',
+      'Cash drawer variance analysis & AI audit',
+      'Threshold & round-number clustering detection',
+      'Employee void & discount rate monitoring',
+      'Weekly AI Fraud Digest emailed every Monday',
+      'PIN-gated internal controls section',
+      'Up to 5 branches',
+    ],
+  },
+  enterprise: {
+    name: 'AIR Enterprise',
+    price: 'Contact us',
+    color: '#f59e0b',
+    colorClass: 'text-amber-400',
+    borderClass: 'border-amber-500/40',
+    bgClass: 'bg-amber-500/10',
+    icon: <ShieldCheck className="w-7 h-7 text-amber-400" />,
+    features: [
+      'Everything in Professional',
+      'Unlimited branches',
+      'Priority support & onboarding',
+      'Custom integrations',
+    ],
+  },
   pro: {
     name: 'AIR Pro',
     price: '$49/mo',
@@ -83,11 +116,10 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
     );
   }
 
-  // Admins always get access (they own the account)
   const userTier = user?.subscriptionTier || 'core';
   const userTierLevel = TIER_ORDER[userTier] ?? 0;
   const requiredLevel = TIER_ORDER[requiredTier] ?? 1;
-  const hasAccess = user?.role === 'admin' || userTierLevel >= requiredLevel;
+  const hasAccess = userTierLevel >= requiredLevel;
 
   if (hasAccess) return children;
 
