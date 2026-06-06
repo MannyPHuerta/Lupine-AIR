@@ -35,14 +35,13 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
   const handleAddCatalogItem = (item) => {
     const hasRealDims = item.footprintWidth && item.footprintLength;
     const count = Math.max(1, parseInt(qty) || 1);
-    for (let i = 0; i < count; i++) {
-      onAdd({
-        id: `${item.id}-${Date.now()}-${i}`,
-        name: item.name,
-        weight: hasRealDims ? ((item.footprintWidth * item.footprintLength) / 100) * 1500 : 500,
-        volume: hasRealDims ? item.footprintWidth * item.footprintLength : 10,
-      });
-    }
+    const newItems = Array.from({ length: count }).map((_, i) => ({
+      id: `${item.id}-${Date.now()}-${i}`,
+      name: item.name,
+      weight: hasRealDims ? ((item.footprintWidth * item.footprintLength) / 100) * 1500 : 500,
+      volume: hasRealDims ? item.footprintWidth * item.footprintLength : 10,
+    }));
+    onAdd(newItems);
     setSearch('');
     setQty(1);
   };
@@ -50,14 +49,13 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
   const handleAddManual = () => {
     if (!manualName.trim()) return;
     const count = Math.max(1, parseInt(qty) || 1);
-    for (let i = 0; i < count; i++) {
-      onAdd({
-        id: `manual-${Date.now()}-${i}`,
-        name: manualName,
-        weight: parseInt(weight) || 500,
-        volume: parseInt(volume) || 10,
-      });
-    }
+    const newItems = Array.from({ length: count }).map((_, i) => ({
+      id: `manual-${Date.now()}-${i}`,
+      name: manualName,
+      weight: parseInt(weight) || 500,
+      volume: parseInt(volume) || 10,
+    }));
+    onAdd(newItems);
     setManualName('');
     setWeight('');
     setVolume('');

@@ -461,7 +461,7 @@ export default function AIRoads() {
         <EquipmentPicker
           equipment={eventEquipment}
           allEquipment={allEquipment}
-          onAdd={(item) => setEventEquipment([...eventEquipment, item])}
+          onAdd={(items) => setEventEquipment(prev => [...prev, ...items])}
         />
 
         {/* Main content */}
