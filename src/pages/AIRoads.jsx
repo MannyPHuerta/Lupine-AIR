@@ -208,8 +208,6 @@ export default function AIRoads() {
         ? loads.map(t => ({ id: t.id, type: t.type, name: t.name }))
         : [{ id: 'truck-1', type: '18wheeler', name: 'Truck 1' }];
 
-      console.log('[AIRoads] Sending to autoPack:', { equipmentCount: eventEquipment.length, summarizedCount: summarized.length, truckConfigs });
-      console.log('[AIRoads] Summarized items:', JSON.stringify(summarized, null, 2));
       const res = await base44.functions.invoke('autoPackEquipment', {
         equipment: eventEquipment,
         summarized,
@@ -217,7 +215,6 @@ export default function AIRoads() {
         truckConfigs,
         truckType: truckConfigs[0]?.type || '18wheeler',
       });
-      console.log('[AIRoads] Received from autoPack - loads:', JSON.stringify(res.data.loads, null, 2));
       if (res.data?.loads) {
         setLoads(res.data.loads);
         setEventEquipment([]);
@@ -259,10 +256,10 @@ export default function AIRoads() {
   };
 
   const stats = useMemo(() => {
-    const totalWeight = eventEquipment.reduce((sum, e) => sum + (e.weight || 0), 0);
-    const totalVolume = eventEquipment.reduce((sum, e) => sum + (e.volume || 0), 0);
-    const assignedWeight = loads.reduce((sum, t) => sum + (t.items?.reduce((s, e) => s + (e.weight || 0), 0) || 0), 0);
-    const assignedVolume = loads.reduce((sum, t) => sum + (t.items?.reduce((s, e) => s + (e.volume || 0), 0) || 0), 0);
+    const totalWeight = eventEquipment.reduce((sum, e) => sum + ((e.weight || 0) * (e.quantity || 1)), 0);
+    const totalVolume = eventEquipment.reduce((sum, e) => sum + ((e.volume || 0) * (e.quantity || 1)), 0);
+    const assignedWeight = loads.reduce((sum, t) => sum + (t.items?.reduce((s, e) => s + ((e.weight || 0) * (e.quantity || 1)), 0) || 0), 0);
+    const assignedVolume = loads.reduce((sum, t) => sum + (t.items?.reduce((s, e) => s + ((e.volume || 0) * (e.quantity || 1)), 0) || 0), 0);
     // Total cost sums each truck's individual type cost
     const totalCost = loads.reduce((sum, t) => {
       const spec = TRUCK_SPECS[t.type] || TRUCK_SPECS['18wheeler'];
