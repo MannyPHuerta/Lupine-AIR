@@ -109,10 +109,10 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
     );
   }
 
-  const userTier = user?.subscriptionTier || 'core';
+  const userTier = user?.subscriptionTier || user?.data?.subscriptionTier || 'core';
   const userTierLevel = TIER_ORDER[userTier] ?? 0;
   const requiredLevel = TIER_ORDER[requiredTier] ?? 1;
-  const hasAccess = userTierLevel >= requiredLevel;
+  const hasAccess = user?.role === 'admin' || userTierLevel >= requiredLevel;
 
   if (hasAccess) return children;
 
