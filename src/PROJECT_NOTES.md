@@ -75,6 +75,36 @@ TWILIO_PHONE_NUMBER       = [same as Base44]
 - [ ] Also add `app.theprojectair.com` → same Vercel project (for future)
 - [ ] Wait for DNS propagation (usually <30 min with Cloudflare, up to 24h otherwise)
 
+### PRE-MIGRATION TASK — AI Credit System (do BEFORE Step 5)
+> ⚠️ **Must be built before Vercel migration.** Base44's native integration credits won't exist on Vercel.
+>
+> **Design:**
+> - Add `aiCreditsBalance`, `aiCreditsMonthlyLimit`, `aiCreditsResetDate` to `Tenant` entity
+> - Build `checkAndDeductCredits(tenantId, costUSD)` helper — called at the top of every AI backend function
+> - If balance < cost → return `{ error: 'CREDITS_EXHAUSTED' }` (soft fail, never crash)
+> - Frontend catches `CREDITS_EXHAUSTED` and shows a friendly nudge banner (not a hard block)
+> - Monthly reset automation: resets `aiCreditsBalance` to `aiCreditsMonthlyLimit` on the 1st of each month
+> - Stripe topup flow: credit pack checkout → webhook adds to `aiCreditsBalance`
+> - **Plan limits:** Starter $25/mo · Pro $75/mo · Enterprise unlimited
+> - **Staff always unlocked for saving** — paywall only applies to external customer-facing flows (e.g. Event Planner public submission)
+>
+> **AI call cost reference (approximate USD):**
+> | Call Type | Cost |
+> |---|---|
+> | Simple suggestion / bundle nudge | $0.05 |
+> | Repair analysis / demand patterns | $0.20 |
+> | Full RFQ analysis (multi-step) | $0.50 |
+> | Load optimization / fraud digest | $0.25 |
+>
+> - [ ] Update `Tenant` entity schema with credit fields
+> - [ ] Write `checkAndDeductCredits` backend function
+> - [ ] Add credit exhaustion UI component (soft nudge banner)
+> - [ ] Wire into all AI-calling backend functions
+> - [ ] Monthly reset automation
+> - [ ] Stripe topup flow
+
+---
+
 ### STEP 5 — SDK Swap: Replace Base44 calls with Supabase (I do this in Base44)
 - [ ] Swap `base44.auth.*` → `supabase.auth.*`
 - [ ] Swap `base44.entities.*` → `supabase.from('table').*`
