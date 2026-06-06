@@ -26,21 +26,37 @@ function VarianceBadge({ variance }) {
   return <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">↑ Over ${abs}</span>;
 }
 
-function OpenDrawerModal({ branches, user, onCreated, onClose }) {
+function OpenDrawerModal({ branches, branchSettingsMap, user, onCreated, onClose }) {
   const [branch, setBranch] = useState(branches[0] || '');
   const [shiftLabel, setShiftLabel] = useState('Full Day');
-  const [startingFloat, setStartingFloat] = useState('');
+  const [startingFloat, setStartingFloat] = useState(() => {
+    const bs = branchSettingsMap[branches[0]] ;
+    return bs?.defaultStartingFloat != null ? String(bs.defaultStartingFloat) : '';
+  });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  const handleBranchChange = (b) => {
+    setBranch(b);
+    const bs = branchSettingsMap[b];
+    if (bs?.defaultStartingFloat != null) setStartingFloat(String(bs.defaultStartingFloat));
+    else setStartingFloat('');
+  };
 
   const handleOpen = async () => {
     if (!branch) return;
     setSaving(true);
+    const floatAmt = parseFloat(startingFloat) || 0;
+    // Save as new default for this branch if it changed
+    const bs = branchSettingsMap[branch];
+    if (bs && bs.defaultStartingFloat !== floatAmt) {
+      await base44.entities.BranchSettings.update(bs.id, { defaultStartingFloat: floatAmt });
+    }
     const drawer = await base44.entities.CashDrawer.create({
       branch,
       shiftDate: new Date().toISOString().slice(0, 10),
       shiftLabel,
-      startingFloat: parseFloat(startingFloat) || 0,
+      startingFloat: floatAmt,
       openedBy: user?.email || '',
       openedAt: new Date().toISOString(),
       status: 'open',
@@ -64,7 +80,7 @@ function OpenDrawerModal({ branches, user, onCreated, onClose }) {
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-600 block mb-1">Branch</label>
-          <select value={branch} onChange={e => setBranch(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">
+          <select value={branch} onChange={e => handleBranchChange(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">
             {branches.map(b => <option key={b}>{b}</option>)}
           </select>
         </div>
@@ -77,6 +93,9 @@ function OpenDrawerModal({ branches, user, onCreated, onClose }) {
         <div>
           <label className="text-xs font-semibold text-gray-600 block mb-1">Starting Float (cash in drawer)</label>
           <Input type="number" placeholder="e.g. 200.00" value={startingFloat} onChange={e => setStartingFloat(e.target.value)} />
+          {branchSettingsMap[branch]?.defaultStartingFloat != null && (
+            <div className="text-xs text-gray-400 mt-1">💾 Pre-filled from last saved float for this branch</div>
+          )}
         </div>
         <Button onClick={handleOpen} disabled={saving} className="w-full bg-green-600 hover:bg-green-700">
           {saving ? 'Opening…' : 'Open Drawer'}
@@ -365,6 +384,7 @@ export default function CashDrawerReconciliation() {
   const { user } = useAuth();
   const [drawers, setDrawers] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [branchSettingsMap, setBranchSettingsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [showOpen, setShowOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('open');
@@ -378,6 +398,9 @@ export default function CashDrawerReconciliation() {
     ]);
     setDrawers(drawersData);
     setBranches(branchData.map(b => b.branch).filter(Boolean));
+    const bsMap = {};
+    branchData.forEach(b => { if (b.branch) bsMap[b.branch] = b; });
+    setBranchSettingsMap(bsMap);
     setLoading(false);
   };
 
@@ -455,7 +478,7 @@ export default function CashDrawerReconciliation() {
         )}
       </div>
 
-      {showOpen && <OpenDrawerModal branches={branches} user={user} onCreated={() => { load(); setShowOpen(false); }} onClose={() => setShowOpen(false)} />}
+      {showOpen && <OpenDrawerModal branches={branches} branchSettingsMap={branchSettingsMap} user={user} onCreated={() => { load(); setShowOpen(false); }} onClose={() => setShowOpen(false)} />}
     </div>
   );
 }

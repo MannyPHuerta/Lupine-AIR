@@ -49,6 +49,11 @@
         "type": "string"
       },
       "description": "Branch-level certifications or licenses held (e.g. TX Rental Dealer License, DOT Number)"
+    },
+    "defaultStartingFloat": {
+      "type": "number",
+      "default": 0,
+      "description": "Default starting cash float for this branch when opening a new cash drawer (USD)"
     }
   },
   "required": [
