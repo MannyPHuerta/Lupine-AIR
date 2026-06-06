@@ -12,7 +12,7 @@
     },
     "websiteUrl": {
       "type": "string",
-      "description": "Subscriber's public website URL \u2014 used by AI image enrichment to source equipment photos for the online store (e.g. https://rentalworld.com)"
+      "description": "Subscriber's public website URL \u2014 used by AI image enrichment to source equipment photos for the online store"
     },
     "taxId": {
       "type": "string",
@@ -78,17 +78,17 @@
     "lateFeePerDay": {
       "type": "number",
       "default": 0,
-      "description": "Late fee amount per day (USD) - flat fee charged for each day overdue"
+      "description": "Late fee amount per day (USD)"
     },
     "lateFeePenaltyRate": {
       "type": "number",
       "default": 0,
-      "description": "Late fee penalty rate (as decimal, e.g. 0.10 for 10%) - percentage of daily rate charged per day overdue"
+      "description": "Late fee penalty rate (as decimal, e.g. 0.10 for 10%)"
     },
     "lateFeeGracePeriod": {
       "type": "integer",
       "default": 0,
-      "description": "Grace period in days before late fees start accruing (e.g. 1 = fees start on 2nd day late)"
+      "description": "Grace period in days before late fees start accruing"
     },
     "lateFeeMaxCap": {
       "type": "number",
@@ -129,7 +129,7 @@
     },
     "seasonalThemeKey": {
       "type": "string",
-      "description": "Manually selected seasonal theme key (e.g. 'christmas', 'halloween'). Used when headerStyle is 'seasonal' and auto-activate is off."
+      "description": "Manually selected seasonal theme key (e.g. 'christmas', 'halloween')."
     },
     "authMethod": {
       "type": "string",
@@ -146,7 +146,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Phone numbers (E.164 format, e.g. +12105551234) to receive SMS alerts on geofence breaches"
+      "description": "Phone numbers (E.164 format) to receive SMS alerts on geofence breaches"
     },
     "geofenceAlertEmails": {
       "type": "array",
@@ -154,6 +154,20 @@
         "type": "string"
       },
       "description": "Email addresses to receive geofence breach alerts"
+    },
+    "fraudAlertPhones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Phone numbers (E.164 format, e.g. +12105551234) to receive real-time fraud/theft SMS alerts and daily fraud briefings"
+    },
+    "fraudAlertEmails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Email addresses to receive real-time fraud alerts and manager override audit emails"
     },
     "demoModeEnabled": {
       "type": "boolean",
@@ -183,7 +197,7 @@
         "immersive"
       ],
       "default": "split_screen",
-      "description": "Visual style of the one-time intent chooser modal shown to first-time store visitors (only applies when storeMode is 'both')."
+      "description": "Visual style of the one-time intent chooser modal shown to first-time store visitors."
     },
     "rfidOptions": {
       "type": "object",
@@ -191,18 +205,15 @@
       "properties": {
         "option1KeyboardEmulation": {
           "type": "boolean",
-          "default": false,
-          "description": "Enable keyboard-emulation RFID scanners (V1 - works in all browsers)"
+          "default": false
         },
         "option2WebUSB": {
           "type": "boolean",
-          "default": false,
-          "description": "Enable WebUSB direct integration (Coming Soon - Chrome/Edge only)"
+          "default": false
         },
         "option3Bluetooth": {
           "type": "boolean",
-          "default": false,
-          "description": "Enable WebBluetooth wireless scanners (Coming Soon - limited browser support)"
+          "default": false
         }
       }
     }

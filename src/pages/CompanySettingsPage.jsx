@@ -40,6 +40,8 @@ export default function CompanySettingsPage() {
   const [certInput, setCertInput] = useState('');
   const [alertPhoneInput, setAlertPhoneInput] = useState('');
   const [alertEmailInput, setAlertEmailInput] = useState('');
+  const [fraudPhoneInput, setFraudPhoneInput] = useState('');
+  const [fraudEmailInput, setFraudEmailInput] = useState('');
 
   const phoneToE164 = (raw) => {
     const digits = raw.replace(/\D/g, '');
@@ -118,6 +120,8 @@ export default function CompanySettingsPage() {
 
     payload.geofenceAlertPhones = settings.geofenceAlertPhones || [];
     payload.geofenceAlertEmails = settings.geofenceAlertEmails || [];
+    payload.fraudAlertPhones = settings.fraudAlertPhones || [];
+    payload.fraudAlertEmails = settings.fraudAlertEmails || [];
     payload.demoModeEnabled = settings.demoModeEnabled === true;
     payload.demoBranch = settings.demoBranch || '';
     payload.storeMode = settings.storeMode || 'both';
@@ -476,6 +480,103 @@ export default function CompanySettingsPage() {
                     </div>
                   </label>
                 ))}
+              </div>
+            </div>
+
+            {/* Fraud Alert Contacts */}
+            <div className="bg-white rounded-xl border-2 border-red-200 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🕵️</span>
+                <div className="font-semibold text-gray-900">Real-Time Fraud Alert Contacts</div>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                These contacts receive <strong>immediate</strong> SMS + email the moment a fraud signal is detected at any branch:
+                no-invoice active rentals, blacklisted customers, deep discounts (&gt;30%), and cancel+resell patterns.
+                Every alert names the responsible employee. These contacts also receive the daily 7:30am briefing SMS.
+              </p>
+
+              {/* SMS phones */}
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">SMS Alert Numbers (E.164 format)</label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={fraudPhoneInput}
+                    onChange={e => setFraudPhoneInput(e.target.value)}
+                    placeholder="+12105551234"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = phoneToE164(fraudPhoneInput.trim());
+                        if (val) {
+                          setSettings(prev => ({ ...prev, fraudAlertPhones: [...(prev.fraudAlertPhones || []), val] }));
+                          setFraudPhoneInput('');
+                          setDirty(true);
+                        }
+                      }
+                    }}
+                  />
+                  <Button variant="outline" onClick={() => {
+                    const val = phoneToE164(fraudPhoneInput.trim());
+                    if (val) {
+                      setSettings(prev => ({ ...prev, fraudAlertPhones: [...(prev.fraudAlertPhones || []), val] }));
+                      setFraudPhoneInput('');
+                      setDirty(true);
+                    }
+                  }}>Add</Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(settings.fraudAlertPhones || []).map((phone, i) => (
+                    <div key={i} className="bg-red-50 border border-red-200 rounded-full px-3 py-1 text-xs text-red-800 flex items-center gap-2">
+                      📱 {phone}
+                      <button onClick={() => { setSettings(prev => ({ ...prev, fraudAlertPhones: prev.fraudAlertPhones.filter((_, j) => j !== i) })); setDirty(true); }} className="text-red-500 hover:text-red-700">×</button>
+                    </div>
+                  ))}
+                  {(settings.fraudAlertPhones || []).length === 0 && (
+                    <span className="text-xs text-gray-400 italic">No SMS numbers configured — alerts will not fire</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Email recipients */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">Email Alert Recipients</label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={fraudEmailInput}
+                    onChange={e => setFraudEmailInput(e.target.value)}
+                    placeholder="owner@rentalworld.com"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = fraudEmailInput.trim();
+                        if (val) {
+                          setSettings(prev => ({ ...prev, fraudAlertEmails: [...(prev.fraudAlertEmails || []), val] }));
+                          setFraudEmailInput('');
+                          setDirty(true);
+                        }
+                      }
+                    }}
+                  />
+                  <Button variant="outline" onClick={() => {
+                    const val = fraudEmailInput.trim();
+                    if (val) {
+                      setSettings(prev => ({ ...prev, fraudAlertEmails: [...(prev.fraudAlertEmails || []), val] }));
+                      setFraudEmailInput('');
+                      setDirty(true);
+                    }
+                  }}>Add</Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(settings.fraudAlertEmails || []).map((email, i) => (
+                    <div key={i} className="bg-red-50 border border-red-200 rounded-full px-3 py-1 text-xs text-red-800 flex items-center gap-2">
+                      ✉️ {email}
+                      <button onClick={() => { setSettings(prev => ({ ...prev, fraudAlertEmails: prev.fraudAlertEmails.filter((_, j) => j !== i) })); setDirty(true); }} className="text-red-500 hover:text-red-700">×</button>
+                    </div>
+                  ))}
+                  {(settings.fraudAlertEmails || []).length === 0 && (
+                    <span className="text-xs text-gray-400 italic">No email recipients configured</span>
+                  )}
+                </div>
               </div>
             </div>
 
