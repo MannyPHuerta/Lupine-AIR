@@ -161,9 +161,23 @@ export default function AIRoads() {
     }
     setAutoBalancing(true);
     try {
+      // Summarize items by name to handle quantities correctly
+      const summarized = [];
+      const seen = {};
+      for (const item of allItems) {
+        const key = item.equipmentName || item.name;
+        if (seen[key]) {
+          seen[key].quantity = (seen[key].quantity || 1) + (item.quantity || 1);
+        } else {
+          const copy = { ...item, quantity: item.quantity || 1, equipmentName: item.equipmentName || item.name };
+          seen[key] = copy;
+          summarized.push(copy);
+        }
+      }
+
       const truckConfigs = loads.map(t => ({ id: t.id, type: t.type, name: t.name }));
       const res = await base44.functions.invoke('optimizeLoadDistribution', {
-        equipment: allItems,
+        equipment: summarized,
         numTrucks: loads.length,
         truckConfigs,
         truckType: loads[0]?.type || '18wheeler',
@@ -171,7 +185,8 @@ export default function AIRoads() {
       if (res.data?.loads) {
         setLoads(res.data.loads);
         setEventEquipment([]);
-        toast({ title: '✅ Load optimized', description: `Distributed across ${res.data.loads.length} trucks.` });
+        const totalItems = res.data.loads.reduce((sum, t) => sum + (t.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0), 0);
+        toast({ title: '✅ Load optimized', description: `Distributed across ${res.data.loads.length} trucks. Total units: ${totalItems}` });
       } else {
         toast({ title: 'No result', description: 'Optimize returned no result.', variant: 'destructive' });
       }
@@ -281,7 +296,7 @@ export default function AIRoads() {
     <div className="min-h-screen bg-gray-50">
       <AppPageHeader
         title="AIRoads – Load Planner"
-        subtitle={eventPlan ? `${eventPlan.eventName || eventPlan.title} · ${eventEquipment.length} items` : 'Load optimization & logistics'}
+        subtitle={eventPlan ? `${eventPlan.eventName || eventPlan.title} · ${eventEquipment.reduce((sum, e) => sum + (e.quantity || 1), 0)} units` : 'Load optimization & logistics'}
         icon={Truck}
         action={
           <div className="flex items-center gap-1 flex-wrap">
@@ -529,7 +544,7 @@ export default function AIRoads() {
                             variant={selectedTruckForLabels?.id === truck.id ? 'default' : 'outline'}
                             className="justify-start"
                           >
-                            {truck.name} ({truck.items?.length || 0} items)
+                            {truck.name} ({truck.items?.reduce((sum, i) => sum + (i.quantity || 1), 0) || 0} units)
                           </Button>
                         ))}
                       </div>
@@ -584,7 +599,7 @@ export default function AIRoads() {
                       variant={selectedTruckForScanner?.id === truck.id ? 'default' : 'outline'}
                       className="justify-start"
                     >
-                      {truck.name} ({truck.items?.length || 0} items)
+                      {truck.name} ({truck.items?.reduce((sum, i) => sum + (i.quantity || 1), 0) || 0} units)
                     </Button>
                   ))}
                 </div>

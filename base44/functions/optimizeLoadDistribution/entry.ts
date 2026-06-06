@@ -30,36 +30,64 @@ Deno.serve(async (req) => {
       usedVolume: 0,
     }));
     
-    // Greedy allocation: place each item in the truck with most remaining space that fits it
+    // Greedy allocation with quantity support: distribute quantities across trucks
     for (const item of sorted) {
-      const itemWeight = item.weight || 500;
-      const itemVolume = item.volume || 10;
+      const totalQty = item.quantity || 1;
+      const unitWeight = item.weight || 500;
+      const unitVolume = item.volume || 10;
       
-      // Find best truck (most remaining capacity that still fits this item)
-      let bestTruck = null;
-      let bestRemainingCapacity = -1;
+      let remaining = totalQty;
       
-      for (const truck of trucks) {
-        const canFitWeight = truck.usedWeight + itemWeight <= spec.weightCapacity;
-        const canFitVolume = truck.usedVolume + itemVolume <= spec.volumeCapacity;
+      while (remaining > 0) {
+        // Find best truck (most remaining capacity that still fits this item)
+        let bestTruck = null;
+        let bestRemainingCapacity = -1;
         
-        if (canFitWeight && canFitVolume) {
-          const remainingCapacity = 
-            (spec.weightCapacity - truck.usedWeight) + 
-            (spec.volumeCapacity - truck.usedVolume);
+        for (const truck of trucks) {
+          const canFitWeight = truck.usedWeight + unitWeight <= spec.weightCapacity;
+          const canFitVolume = truck.usedVolume + unitVolume <= spec.volumeCapacity;
           
-          if (remainingCapacity > bestRemainingCapacity) {
-            bestRemainingCapacity = remainingCapacity;
-            bestTruck = truck;
+          if (canFitWeight && canFitVolume) {
+            const remainingCapacity = 
+              (spec.weightCapacity - truck.usedWeight) + 
+              (spec.volumeCapacity - truck.usedVolume);
+            
+            if (remainingCapacity > bestRemainingCapacity) {
+              bestRemainingCapacity = remainingCapacity;
+              bestTruck = truck;
+            }
           }
         }
-      }
-      
-      // If item fits in a truck, add it; otherwise skip (respects max truck count)
-      if (bestTruck) {
-        bestTruck.items.push(item);
-        bestTruck.usedWeight += itemWeight;
-        bestTruck.usedVolume += itemVolume;
+        
+        if (bestTruck) {
+          // Calculate how many units can fit in this truck
+          const weightRoom = Math.max(0, spec.weightCapacity - bestTruck.usedWeight);
+          const volumeRoom = Math.max(0, spec.volumeCapacity - bestTruck.usedVolume);
+          const canFitByWeight = unitWeight > 0 ? Math.floor(weightRoom / unitWeight) : remaining;
+          const canFitByVolume = unitVolume > 0 ? Math.floor(volumeRoom / unitVolume) : remaining;
+          const canFit = Math.min(canFitByWeight, canFitByVolume, remaining);
+          
+          const assignQty = canFit > 0 ? canFit : 1;
+          bestTruck.items.push({
+            ...item,
+            quantity: assignQty,
+            id: `${item.equipmentName || item.name}-${bestTruck.id}-${Math.random()}`,
+          });
+          bestTruck.usedWeight += unitWeight * assignQty;
+          bestTruck.usedVolume += unitVolume * assignQty;
+          remaining -= assignQty;
+        } else {
+          // No truck can fit - force assign to least loaded truck (overflow)
+          const targetTruck = trucks.reduce((best, t) => t.usedWeight < best.usedWeight ? t : best, trucks[0]);
+          targetTruck.items.push({
+            ...item,
+            quantity: remaining,
+            id: `${item.equipmentName || item.name}-${targetTruck.id}-${Math.random()}`,
+          });
+          targetTruck.usedWeight += unitWeight * remaining;
+          targetTruck.usedVolume += unitVolume * remaining;
+          remaining = 0;
+        }
       }
     }
     
