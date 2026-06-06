@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // ── Benford's Law helpers ──────────────────────────────────────────────────
 const BENFORD = { 1:30.1, 2:17.6, 3:12.5, 4:9.7, 5:7.9, 6:6.7, 7:5.8, 8:5.1, 9:4.6 };
@@ -77,6 +77,46 @@ Deno.serve(async (req) => {
     });
     const topRound = Object.entries(roundHits).sort(([,a],[,b]) => b-a).slice(0, 5);
 
+    // ── Cash Invoice Suppression Detection ────────────────────────────────────
+    // Rentals with status 'out' or stuck at 'contract' with no invoice number
+    // and created more than 4 hours ago — possible employee pocketing cash
+    const fourHoursAgo = new Date(Date.now() - 4 * 3600000).toISOString();
+    const suspiciousCash = weekRentals.filter(r =>
+      ['out', 'contract'].includes(r.status) &&
+      !r.invoiceNumber &&
+      r.created_date < fourHoursAgo
+    );
+
+    // Group by employee to catch repeat offenders
+    const cashByEmployee = {};
+    suspiciousCash.forEach(r => {
+      const emp = r.created_by || 'Unknown';
+      cashByEmployee[emp] = (cashByEmployee[emp] || 0) + 1;
+    });
+
+    // ── Hour Meter Anomaly Detection ───────────────────────────────────────────
+    // Pull completed/returned rentals with hour meter data
+    const meterRentals = allRentals.filter(r =>
+      ['returned', 'completed'].includes(r.status) &&
+      r.hourMeterStart != null && r.hourMeterEnd != null &&
+      r.created_date >= cutoffStr
+    );
+
+    const meterAnomalies = [];
+    meterRentals.forEach(r => {
+      const hoursUsed = r.hourMeterEnd - r.hourMeterStart;
+      const days = r.totalDays || Math.max(1, Math.round((new Date(r.endDate) - new Date(r.startDate)) / 86400000) + 1);
+      const hpd = hoursUsed / days;
+
+      if (r.hourMeterEnd < r.hourMeterStart) {
+        meterAnomalies.push({ type: 'rollback', rental: r, hoursUsed, hpd });
+      } else if (hpd > 22) {
+        meterAnomalies.push({ type: 'impossible', rental: r, hoursUsed, hpd });
+      } else if (hpd > 16) {
+        meterAnomalies.push({ type: 'high_usage', rental: r, hoursUsed, hpd });
+      }
+    });
+
     // Employee void/discount rates
     const empMap = {};
     weekRentals.forEach(r => {
@@ -91,8 +131,14 @@ Deno.serve(async (req) => {
       .filter(e => e.total >= 2 && (e.cancelRate > 20 || e.discRate > 20))
       .sort((a, b) => (b.cancelRate + b.discRate) - (a.cancelRate + a.discRate));
 
-    // Determine overall risk
-    const overallScore = Math.max(benford.score, benfordDisc.score);
+    // Determine overall risk (include new signals)
+    const overallScore = Math.max(
+      benford.score,
+      benfordDisc.score,
+      suspiciousCash.length >= 3 ? 15 : suspiciousCash.length >= 1 ? 8 : 0,
+      meterAnomalies.filter(a => a.type === 'rollback').length >= 1 ? 20 : 0,
+      meterAnomalies.filter(a => a.type === 'impossible').length >= 1 ? 13 : 0
+    );
     const overallRisk = riskLabel(overallScore);
 
     // Build AI narrative
@@ -108,6 +154,8 @@ DATA FOR THE PAST 7 DAYS:
 - Threshold clustering hits: ${thresholdHits.map(x => `$${x.t}: ${x.count}×`).join(', ') || 'none'}
 - Round number clusters: ${topRound.map(([amt, cnt]) => `$${amt}: ${cnt}×`).join(', ') || 'none'}
 - Flagged employees: ${flaggedEmployees.map(e => `${e.emp} (${e.cancelRate.toFixed(0)}% cancel, ${e.discRate.toFixed(0)}% discount)`).join('; ') || 'none'}
+- Cash invoice suppression suspects: ${suspiciousCash.length} rentals with no invoice number stuck in active status (${Object.entries(cashByEmployee).map(([e,c]) => `${e}: ${c}`).join(', ') || 'none'})
+- Hour meter anomalies: ${meterAnomalies.length} flagged (rollbacks: ${meterAnomalies.filter(a=>a.type==='rollback').length}, impossible hours: ${meterAnomalies.filter(a=>a.type==='impossible').length}, unusually high: ${meterAnomalies.filter(a=>a.type==='high_usage').length})
 
 Write 2-3 short paragraphs: overall status, specific concerns if any, and recommended action this week. Be direct but professional. If risk is LOW with nothing flagged, keep it brief and positive.`;
 
@@ -200,6 +248,29 @@ Write 2-3 short paragraphs: overall status, specific concerns if any, and recomm
         </thead>
         <tbody>${empRows}</tbody>
       </table>
+    </div>` : ''}
+
+    ${suspiciousCash.length > 0 ? `
+    <!-- Cash Invoice Suppression -->
+    <div style="background:#1e293b;border:1px solid #f97316;border-radius:10px;padding:20px;margin-bottom:16px;">
+      <div style="color:#fb923c;font-size:12px;font-weight:700;margin-bottom:10px;">💵 POSSIBLE CASH INVOICE SUPPRESSION — ${suspiciousCash.length} SUSPECT RENTAL${suspiciousCash.length>1?'S':''}</div>
+      <div style="color:#94a3b8;font-size:12px;margin-bottom:8px;">Active rentals with no invoice number, created 4+ hours ago. Possible employee pocketing cash.</div>
+      ${Object.entries(cashByEmployee).map(([emp, cnt]) => `<div style="color:#e2e8f0;font-size:13px;padding:4px 0;">${emp}: <strong style="color:#fb923c;">${cnt} transaction${cnt>1?'s':''}</strong></div>`).join('')}
+    </div>` : ''}
+
+    ${meterAnomalies.length > 0 ? `
+    <!-- Hour Meter Anomalies -->
+    <div style="background:#1e293b;border:1px solid ${meterAnomalies.some(a=>a.type==='rollback')?'#ef4444':'#f59e0b'};border-radius:10px;padding:20px;margin-bottom:16px;">
+      <div style="color:${meterAnomalies.some(a=>a.type==='rollback')?'#f87171':'#fbbf24'};font-size:12px;font-weight:700;margin-bottom:10px;">⏱ HOUR METER ANOMALIES DETECTED — ${meterAnomalies.length} FLAGGED</div>
+      <div style="color:#94a3b8;font-size:12px;margin-bottom:8px;">Possible meter tampering, rollback, or falsified readings.</div>
+      ${meterAnomalies.slice(0,8).map(a => `
+        <div style="padding:8px 0;border-bottom:1px solid #334155;">
+          <div style="color:#e2e8f0;font-size:13px;font-weight:600;">${a.rental.equipmentName || a.rental.equipmentId} — ${a.rental.customerName}</div>
+          <div style="color:${a.type==='rollback'?'#f87171':a.type==='impossible'?'#fb923c':'#fbbf24'};font-size:12px;margin-top:2px;">
+            ${a.type==='rollback'?'🚨 METER ROLLBACK':a.type==='impossible'?'🚨 IMPOSSIBLE HOURS':'⚠️ High Usage'}:
+            ${a.hoursUsed.toFixed(1)} hrs used (${a.hpd.toFixed(1)} hrs/day) · Invoice: ${a.rental.invoiceNumber||'—'}
+          </div>
+        </div>`).join('')}
     </div>` : ''}
 
     ${thresholdHits.length > 0 ? `

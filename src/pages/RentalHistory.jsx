@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download, ClipboardList, Camera, AlertCircle, Check, Clock, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download, ClipboardList, AlertCircle, Clock, ShoppingBag } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import EditRentalPanel from '@/components/rentals/EditRentalPanel';
 import SignaturePad from '@/components/invoice/SignaturePad';
-import PhotoCapture from '@/components/delivery/PhotoCapture';
+
 import ExtraShiftBillingModal from '@/components/rentals/ExtraShiftBillingModal';
 import RentToOwnPanel from '@/components/rentals/RentToOwnPanel';
+import ReturnCheckInModal from '@/components/rentals/ReturnCheckInModal';
 
 
 const STATUS_COLORS = {
@@ -92,9 +93,6 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
   const [agreement, setAgreement] = useState(null);
   const [loadingAgreement, setLoadingAgreement] = useState(false);
   const [showReturnCheckIn, setShowReturnCheckIn] = useState(false);
-  const [returnPhotos, setReturnPhotos] = useState([]);
-  const [conditionNotes, setConditionNotes] = useState({});
-  const [needsRouting, setNeedsRouting] = useState({});
   const [showExtraShift, setShowExtraShift] = useState(false);
   const [showRentToOwn, setShowRentToOwn] = useState(false);
 
@@ -213,74 +211,7 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
     onConfirmed();
   };
 
-  const handleReturnCheckIn = async () => {
-    if (!showReturnCheckIn) {
-      setShowReturnCheckIn(true);
-      return;
-    }
-    
-    setAdvancingStatus(true);
-    try {
-      // Update all rentals to "returned" status
-      for (const rentalId of order.rentalIds) {
-        const rental = rentals.find(r => r.id === rentalId);
-        if (!rental) continue;
-
-        const equipment = rental.equipmentId ? equipment.find(e => e.id === rental.equipmentId) : null;
-        
-        // Get hour meter end reading from user
-        let hourMeterEnd = null;
-        if (equipment?.hasHourMeter) {
-          const prompt = `Enter hour meter reading for ${equipment.name} (current: ${equipment.currentHourMeterReading || 0}):`;
-          hourMeterEnd = prompt(prompt);
-          if (hourMeterEnd) {
-            await base44.entities.Equipment.update(rental.equipmentId, {
-              currentHourMeterReading: parseFloat(hourMeterEnd)
-            });
-          }
-        }
-
-        // Calculate hours used and charges
-        const hourMeterStart = rental.hourMeterStart || 0;
-        const hoursUsed = hourMeterEnd ? (parseFloat(hourMeterEnd) - hourMeterStart) : 0;
-        const hourlyRate = rental.hourlyRate || equipment?.hourlyRate || 0;
-        const hourMeterCharges = hoursUsed > 0 ? (hoursUsed * hourlyRate) : 0;
-
-        // Get condition notes and routing
-        const conditionNote = conditionNotes[rentalId] || '';
-        const routing = needsRouting[rentalId] || 'available';
-
-        // Update rental with return data
-        await base44.entities.Rental.update(rentalId, {
-          status: 'returned',
-          hourMeterEnd: hourMeterEnd ? parseFloat(hourMeterEnd) : null,
-          hoursUsed: hoursUsed > 0 ? hoursUsed : null,
-          hourMeterCharges: hourMeterCharges > 0 ? hourMeterCharges : 0,
-          returnConditionNotes: conditionNote,
-          returnPhotos: returnPhotos[rentalId] || [],
-        });
-
-        // Update equipment status based on routing
-        if (rental.equipmentId && rental.equipmentId !== 'quote-item') {
-          await base44.entities.Equipment.update(rental.equipmentId, {
-            unitStatus: routing,
-            statusNote: conditionNote || null
-          });
-        }
-      }
-
-      alert('✓ Equipment returned successfully!');
-      setShowReturnCheckIn(false);
-      setReturnPhotos({});
-      setConditionNotes({});
-      setNeedsRouting({});
-      onConfirmed();
-    } catch (err) {
-      alert(`Error processing return: ${err.message}`);
-    } finally {
-      setAdvancingStatus(false);
-    }
-  };
+  const handleReturnCheckIn = () => setShowReturnCheckIn(true);
 
   const handleEmailInvoice = async () => {
     if (!emailAddress) {
@@ -435,115 +366,14 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
             />
           )}
 
-          {/* Return Check-In Modal */}
           {showReturnCheckIn && (
-            <div className="border rounded-lg p-4 bg-gray-50 space-y-4">
-              <div className="flex items-center gap-2 text-green-800 font-semibold">
-                <Camera className="w-5 h-5" />
-                Equipment Return Check-In
-              </div>
-
-              {order.lines.map((line, idx) => {
-                const eq = equipment.find(e => e.id === line.equipmentId);
-                const rental = rentals.find(r => r.id === line.rentalId);
-                return (
-                  <div key={line.rentalId} className="border rounded-lg p-3 bg-white space-y-3">
-                    <div className="font-medium text-gray-900">{line.equipmentName}</div>
-                    
-                    {/* Hour meter */}
-                    {eq?.hasHourMeter && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Hour Meter Reading</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          placeholder={`Current: ${eq.currentHourMeterReading || 0}`}
-                          className="border rounded px-2 py-1 text-sm w-full"
-                          onChange={async (e) => {
-                            const val = parseFloat(e.target.value);
-                            if (val) {
-                              await base44.entities.Equipment.update(eq.id, { currentHourMeterReading: val });
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Condition notes */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Condition Notes</label>
-                      <textarea
-                        placeholder="Any damage, cleaning needed, issues..."
-                        className="border rounded px-2 py-1 text-sm w-full h-20"
-                        value={conditionNotes[line.rentalId] || ''}
-                        onChange={(e) => setConditionNotes(prev => ({ ...prev, [line.rentalId]: e.target.value }))}
-                      />
-                    </div>
-
-                    {/* Photos */}
-                    <PhotoCapture
-                      photos={returnPhotos[line.rentalId] || []}
-                      onAddPhoto={(photo) => setReturnPhotos(prev => ({
-                        ...prev,
-                        [line.rentalId]: [...(prev[line.rentalId] || []), photo]
-                      }))}
-                      onRemovePhoto={(idx) => setReturnPhotos(prev => ({
-                        ...prev,
-                        [line.rentalId]: (prev[line.rentalId] || []).filter((_, i) => i !== idx)
-                      }))}
-                    />
-
-                    {/* Routing */}
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-2">Route Equipment To:</label>
-                      <div className="space-y-2">
-                        {[
-                          { value: 'available', label: '✓ Available (Ready to Rent)', color: 'green' },
-                          { value: 'in_shop', label: '🔧 Needs Repair (Shop)', color: 'orange' },
-                          { value: 'in_laundry', label: '🧼 Needs Cleaning (Laundry)', color: 'blue' },
-                          { value: 'awaiting_parts', label: '⏳ Awaiting Parts', color: 'yellow' },
-                        ].map(opt => (
-                          <label key={opt.value} className="flex items-center gap-2 cursor-pointer p-2 rounded border hover:bg-gray-50">
-                            <input
-                              type="radio"
-                              name={`routing-${line.rentalId}`}
-                              value={opt.value}
-                              checked={(needsRouting[line.rentalId] || 'available') === opt.value}
-                              onChange={() => setNeedsRouting(prev => ({ ...prev, [line.rentalId]: opt.value }))}
-                              className={`w-4 h-4 accent-${opt.color}-600`}
-                            />
-                            <span className="text-sm font-medium text-gray-700">{opt.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setShowReturnCheckIn(false);
-                    setReturnPhotos({});
-                    setConditionNotes({});
-                    setNeedsRouting({});
-                  }}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleReturnCheckIn}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  <Check className="w-4 h-4 mr-2" /> Complete Check-In
-                </Button>
-              </div>
-            </div>
+            <ReturnCheckInModal
+              order={order}
+              rentals={rentals}
+              equipment={equipment}
+              onClose={() => setShowReturnCheckIn(false)}
+              onCompleted={() => { setShowReturnCheckIn(false); onConfirmed(); }}
+            />
           )}
 
           <div className="flex justify-end gap-2 flex-wrap">
