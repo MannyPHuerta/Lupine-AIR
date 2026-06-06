@@ -4,9 +4,11 @@ import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Wallet, Plus, X, Lock, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Receipt } from 'lucide-react';
+import { Wallet, Plus, X, Lock, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Receipt, UserPlus } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import VarianceAnalysisPanel from '@/components/cash/VarianceAnalysisPanel';
+import VarianceTrendChart from '@/components/cash/VarianceTrendChart';
+import AttendantLogModal from '@/components/cash/AttendantLogModal';
 
 const PETTY_CASH_CATEGORIES = [
   'Office Supplies', 'Fuel', 'Cleaning', 'Food/Drinks', 'Small Parts',
@@ -261,6 +263,7 @@ function DrawerCard({ drawer, user, isAdmin, onRefresh }) {
   const [expanded, setExpanded] = useState(drawer.status === 'open');
   const [showPettyCash, setShowPettyCash] = useState(false);
   const [showClose, setShowClose] = useState(false);
+  const [showAttendant, setShowAttendant] = useState(false);
   const { toast } = useToast();
 
   const pettyCashOut = (drawer.pettyCashTransactions || []).filter(t => t.type === 'out').reduce((s, t) => s + t.amount, 0);
@@ -310,6 +313,22 @@ function DrawerCard({ drawer, user, isAdmin, onRefresh }) {
             ))}
           </div>
 
+          {/* Attendant log */}
+          {(drawer.attendantLog || []).length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-gray-600 mb-2">👤 Drawer Attendants</div>
+              <div className="space-y-1">
+                {drawer.attendantLog.map((a, i) => (
+                  <div key={i} className="flex justify-between text-xs bg-indigo-50 rounded px-3 py-1.5">
+                    <span className="font-medium text-indigo-700">{a.email}</span>
+                    {a.note && <span className="text-gray-500 italic">{a.note}</span>}
+                    <span className="text-gray-400">{new Date(a.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Petty cash log */}
           {(drawer.pettyCashTransactions || []).length > 0 && (
             <div>
@@ -353,6 +372,9 @@ function DrawerCard({ drawer, user, isAdmin, onRefresh }) {
           <div className="flex gap-2 flex-wrap">
             {drawer.status === 'open' && (
               <>
+                <Button size="sm" variant="outline" onClick={() => setShowAttendant(true)} className="gap-1 border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                  <UserPlus className="w-4 h-4" /> Log Attendant
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => setShowPettyCash(true)} className="gap-1">
                   <Receipt className="w-4 h-4" /> Petty Cash
                 </Button>
@@ -360,11 +382,6 @@ function DrawerCard({ drawer, user, isAdmin, onRefresh }) {
                   <Lock className="w-4 h-4" /> Close Drawer
                 </Button>
               </>
-            )}
-            {drawer.status === 'open' && (
-              <Button size="sm" variant="outline" onClick={() => setShowPettyCash(true)} className="gap-1 border-green-300 text-green-700 hover:bg-green-50">
-                <Plus className="w-4 h-4" /> Add Petty Cash
-              </Button>
             )}
             {drawer.status === 'closed' && isAdmin && (
               <Button size="sm" onClick={handleReconcile} className="gap-1 bg-indigo-600 hover:bg-indigo-700">
@@ -377,6 +394,7 @@ function DrawerCard({ drawer, user, isAdmin, onRefresh }) {
 
       {showPettyCash && <PettyCashModal drawer={drawer} user={user} onClose={() => setShowPettyCash(false)} onSaved={onRefresh} />}
       {showClose && <CloseDrawerModal drawer={drawer} user={user} onClose={() => setShowClose(false)} onSaved={onRefresh} />}
+      {showAttendant && <AttendantLogModal drawer={drawer} user={user} onClose={() => setShowAttendant(false)} onSaved={onRefresh} />}
     </div>
   );
 }
@@ -460,6 +478,11 @@ export default function CashDrawerReconciliation() {
             {branches.map(b => <option key={b}>{b}</option>)}
           </select>
         </div>
+
+        {/* Variance trend chart — admin only */}
+        {isAdmin && !loading && drawers.filter(d => d.status !== 'open').length > 1 && (
+          <VarianceTrendChart drawers={drawers} />
+        )}
 
         {/* Admin-only AI Variance Analysis */}
         {isAdmin && !loading && drawers.length > 0 && (

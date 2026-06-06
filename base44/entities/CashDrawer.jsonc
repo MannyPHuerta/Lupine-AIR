@@ -35,6 +35,27 @@
       "default": 0,
       "description": "Starting cash float (USD)"
     },
+    "attendantLog": {
+      "type": "array",
+      "description": "Log of all staff who worked this drawer during the shift",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "loggedBy": {
+            "type": "string"
+          },
+          "loggedAt": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "closedBy": {
       "type": "string",
       "description": "Email of staff who closed the drawer"
