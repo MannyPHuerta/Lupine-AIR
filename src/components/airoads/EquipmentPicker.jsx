@@ -10,6 +10,7 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
   const [volume, setVolume] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [manualName, setManualName] = useState('');
+  const [qty, setQty] = useState(1);
   const timerRef = useRef(null);
   const { aiSuggestions, isSearching, triggerAISearch, clearAISuggestions } = useAIEquipmentSearch(allEquipment);
 
@@ -33,26 +34,34 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
 
   const handleAddCatalogItem = (item) => {
     const hasRealDims = item.footprintWidth && item.footprintLength;
-    onAdd({
-      id: item.id,
-      name: item.name,
-      weight: hasRealDims ? ((item.footprintWidth * item.footprintLength) / 100) * 1500 : 500, // 500 lbs default
-      volume: hasRealDims ? item.footprintWidth * item.footprintLength : 10, // 10 cu ft default
-    });
+    const count = Math.max(1, parseInt(qty) || 1);
+    for (let i = 0; i < count; i++) {
+      onAdd({
+        id: `${item.id}-${Date.now()}-${i}`,
+        name: item.name,
+        weight: hasRealDims ? ((item.footprintWidth * item.footprintLength) / 100) * 1500 : 500,
+        volume: hasRealDims ? item.footprintWidth * item.footprintLength : 10,
+      });
+    }
     setSearch('');
+    setQty(1);
   };
 
   const handleAddManual = () => {
     if (!manualName.trim()) return;
-    onAdd({
-      id: `manual-${Date.now()}`,
-      name: manualName,
-      weight: parseInt(weight) || 500, // 500 lbs default if blank
-      volume: parseInt(volume) || 10, // 10 cu ft default if blank
-    });
+    const count = Math.max(1, parseInt(qty) || 1);
+    for (let i = 0; i < count; i++) {
+      onAdd({
+        id: `manual-${Date.now()}-${i}`,
+        name: manualName,
+        weight: parseInt(weight) || 500,
+        volume: parseInt(volume) || 10,
+      });
+    }
     setManualName('');
     setWeight('');
     setVolume('');
+    setQty(1);
     setShowManual(false);
   };
 
@@ -60,9 +69,30 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
     <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-gray-900">Add Equipment</h3>
-        <button onClick={() => setShowManual(!showManual)} className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
-          {showManual ? 'Search Catalog' : 'Enter Manually'}
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Quantity selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-500 font-medium">Qty:</span>
+            <button
+              onClick={() => setQty(q => Math.max(1, q - 1))}
+              className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold"
+            >−</button>
+            <input
+              type="number"
+              min="1"
+              value={qty}
+              onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-12 h-6 border border-gray-300 rounded text-center text-sm font-bold text-gray-900"
+            />
+            <button
+              onClick={() => setQty(q => q + 1)}
+              className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-sm font-bold"
+            >+</button>
+          </div>
+          <button onClick={() => setShowManual(!showManual)} className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
+            {showManual ? 'Search Catalog' : 'Enter Manually'}
+          </button>
+        </div>
       </div>
 
       {!showManual ? (
@@ -84,12 +114,14 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
                 >
                   <div>
                     <div className="font-medium text-sm text-gray-900">{item.name}</div>
-                    <div className="text-xs text-gray-500">{item.category || '—'}</div>
-                  </div>
-                  <Plus className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
-                </button>
-              ))}
-              {filtered.length === 0 && isSearching && (
+                     <div className="text-xs text-gray-500">{item.category || '—'}</div>
+                    </div>
+                    <span className="flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded group-hover:bg-indigo-100">
+                      <Plus className="w-3 h-3" />{qty > 1 ? `×${qty}` : ''}
+                    </span>
+                    </button>
+                    ))}
+                    {filtered.length === 0 && isSearching && (
                 <div className="flex items-center gap-2 px-4 py-3 text-sm text-indigo-500">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching by alternate names…
                 </div>
@@ -109,7 +141,9 @@ export default function EquipmentPicker({ equipment, onAdd, allEquipment = [] })
                         <div className="font-medium text-sm text-gray-900">{item.name}</div>
                         <div className="text-xs text-gray-500">{item.category || '—'}</div>
                       </div>
-                      <Plus className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
+                      <span className="flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded group-hover:bg-indigo-100">
+                        <Plus className="w-3 h-3" />{qty > 1 ? `×${qty}` : ''}
+                      </span>
                     </button>
                   ))}
                 </>
