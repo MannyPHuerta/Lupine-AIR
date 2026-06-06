@@ -85,7 +85,6 @@ const navGroups = [
     description: 'Theft prevention & recovery',
     items: [
       { label: 'Recovery Intelligence', path: '/airecovery', icon: AlertTriangle },
-      { label: 'Equipment GPS Tracking', path: '/equipment-status', icon: MapPin },
       { label: 'GPS Providers', path: '/gps-settings', icon: Settings },
     ],
   },
@@ -283,8 +282,8 @@ function NavGroup({ group, location, onNavigate, allGroupRefs, user }) {
             if (item.children) {
               const isFraud = item.fraudSection;
               const PREMIUM_TIERS = ['pro', 'custom', 'enterprise'];
-              const userTier = user?.subscriptionTier || 'core';
-              const fraudLocked = isFraud && !PREMIUM_TIERS.includes(userTier);
+              const userTier = user?.subscriptionTier || user?.data?.subscriptionTier || 'core';
+              const fraudLocked = isFraud && user?.role !== 'admin' && !PREMIUM_TIERS.includes(userTier);
               return (
                 <div key={item.label} className="pb-1">
                   <div className={`px-4 py-2 text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${isFraud ? 'text-red-400' : 'text-slate-500'}`}>
