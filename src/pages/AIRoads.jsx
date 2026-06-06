@@ -209,7 +209,7 @@ export default function AIRoads() {
         : [{ id: 'truck-1', type: '18wheeler', name: 'Truck 1' }];
 
       console.log('[AIRoads] Sending to autoPack:', { equipmentCount: eventEquipment.length, summarizedCount: summarized.length, truckConfigs });
-      console.log('[AIRoads] Summarized items:', summarized);
+      console.log('[AIRoads] Summarized items:', JSON.stringify(summarized, null, 2));
       const res = await base44.functions.invoke('autoPackEquipment', {
         equipment: eventEquipment,
         summarized,
@@ -217,11 +217,12 @@ export default function AIRoads() {
         truckConfigs,
         truckType: truckConfigs[0]?.type || '18wheeler',
       });
-      console.log('[AIRoads] Received from autoPack:', res.data);
+      console.log('[AIRoads] Received from autoPack - loads:', JSON.stringify(res.data.loads, null, 2));
       if (res.data?.loads) {
         setLoads(res.data.loads);
         setEventEquipment([]);
-        toast({ title: '✅ Auto Pack complete', description: `Equipment packed across ${res.data.loads.length} trucks. Total items: ${res.data.loads.reduce((sum, t) => sum + (t.items?.length || 0), 0)}` });
+        const totalItems = res.data.loads.reduce((sum, t) => sum + (t.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0), 0);
+        toast({ title: '✅ Auto Pack complete', description: `Equipment packed across ${res.data.loads.length} trucks. Total units: ${totalItems}` });
       } else {
         toast({ title: 'No result', description: 'Auto Pack returned no result. Try again or adjust truck count.', variant: 'destructive' });
       }
