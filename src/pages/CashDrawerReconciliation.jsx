@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Wallet, Plus, X, Lock, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Receipt } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import VarianceAnalysisPanel from '@/components/cash/VarianceAnalysisPanel';
 
 const PETTY_CASH_CATEGORIES = [
   'Office Supplies', 'Fuel', 'Cleaning', 'Food/Drinks', 'Small Parts',
@@ -459,6 +460,11 @@ export default function CashDrawerReconciliation() {
             {branches.map(b => <option key={b}>{b}</option>)}
           </select>
         </div>
+
+        {/* Admin-only AI Variance Analysis */}
+        {isAdmin && !loading && drawers.length > 0 && (
+          <VarianceAnalysisPanel drawers={drawers} />
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12">
