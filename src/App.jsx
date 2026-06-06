@@ -101,6 +101,7 @@ import SupplyCatalog from "./pages/SupplyCatalog";
 import PurchaseOrders from "./pages/PurchaseOrders";
 import NewPurchaseOrder from "./pages/NewPurchaseOrder";
 import SpendAnalytics from "./pages/SpendAnalytics";
+import CashDrawerReconciliation from "./pages/CashDrawerReconciliation";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -212,6 +213,7 @@ const AuthenticatedApp = () => {
         <Route path="/purchase-orders" element={<PurchaseOrders />} />
         <Route path="/purchase-order-new" element={<NewPurchaseOrder />} />
         <Route path="/spend-analytics" element={<SpendAnalytics />} />
+        <Route path="/cash-drawer" element={<CashDrawerReconciliation />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

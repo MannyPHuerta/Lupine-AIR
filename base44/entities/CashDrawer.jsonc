@@ -1,0 +1,153 @@
+{
+  "name": "CashDrawer",
+  "type": "object",
+  "properties": {
+    "branch": {
+      "type": "string",
+      "description": "Branch this drawer belongs to"
+    },
+    "shiftDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of this shift"
+    },
+    "shiftLabel": {
+      "type": "string",
+      "enum": [
+        "Morning",
+        "Afternoon",
+        "Evening",
+        "Full Day"
+      ],
+      "default": "Full Day",
+      "description": "Shift label"
+    },
+    "openedBy": {
+      "type": "string",
+      "description": "Email of staff who opened the drawer"
+    },
+    "openedAt": {
+      "type": "string",
+      "description": "ISO timestamp when drawer was opened"
+    },
+    "startingFloat": {
+      "type": "number",
+      "default": 0,
+      "description": "Starting cash float (USD)"
+    },
+    "closedBy": {
+      "type": "string",
+      "description": "Email of staff who closed the drawer"
+    },
+    "closedAt": {
+      "type": "string",
+      "description": "ISO timestamp when drawer was closed"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "reconciled"
+      ],
+      "default": "open",
+      "description": "Drawer lifecycle status"
+    },
+    "cashCollected": {
+      "type": "number",
+      "default": 0,
+      "description": "Total cash payments collected during shift (USD)"
+    },
+    "cardCollected": {
+      "type": "number",
+      "default": 0,
+      "description": "Total card payments collected during shift (USD)"
+    },
+    "checkCollected": {
+      "type": "number",
+      "default": 0,
+      "description": "Total check payments collected during shift (USD)"
+    },
+    "otherCollected": {
+      "type": "number",
+      "default": 0,
+      "description": "Other payment methods (USD)"
+    },
+    "countedCash": {
+      "type": "number",
+      "description": "Actual cash counted in drawer at close (USD)"
+    },
+    "expectedCash": {
+      "type": "number",
+      "description": "Expected cash at close (startingFloat + cashCollected - pettyCashOut)"
+    },
+    "variance": {
+      "type": "number",
+      "description": "countedCash - expectedCash (negative = short, positive = over)"
+    },
+    "pettyCashTransactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "out",
+              "in"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "receiptUrl": {
+            "type": "string"
+          },
+          "authorizedBy": {
+            "type": "string"
+          },
+          "recordedAt": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Petty cash in/out transactions during this shift"
+    },
+    "rentalPaymentLinks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Rental IDs whose payments are included in this drawer session"
+    },
+    "closingNotes": {
+      "type": "string",
+      "description": "Notes from staff at close"
+    },
+    "reconciledBy": {
+      "type": "string",
+      "description": "Email of manager who reconciled"
+    },
+    "reconciledAt": {
+      "type": "string",
+      "description": "ISO timestamp when reconciled by manager"
+    },
+    "reconciledNotes": {
+      "type": "string",
+      "description": "Manager notes on reconciliation"
+    }
+  },
+  "required": [
+    "branch",
+    "shiftDate"
+  ]
+}

@@ -42,6 +42,7 @@ const navGroups = [
       { label: 'Business Intelligence', path: '/aireports', icon: ChartNoAxesCombined },
       { label: 'Leaderboards', path: '/leaderboard', icon: Trophy },
       { label: 'Accounting', path: '/accounting', icon: Receipt },
+      { label: 'Cash Drawer', path: '/cash-drawer', icon: DollarSign },
       { label: 'Loyalty Manager', path: '/loyalty-manager', icon: Star },
       { label: 'Inventory Health', path: '/inventory-health', icon: AlertTriangle },
       { label: 'Audit Logs', path: '/audit-logs', icon: Shield },
