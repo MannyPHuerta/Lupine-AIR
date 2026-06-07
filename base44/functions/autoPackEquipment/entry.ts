@@ -19,58 +19,70 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Equipment must be an array' }, { status: 400 });
     }
 
-    const spec = TRUCK_SPECS[truckType] || TRUCK_SPECS['18wheeler'];
     const n = Math.max(1, numTrucks || 1);
 
     // Sort by weight descending for better bin-packing
     const sorted = [...items].sort((a, b) => (b.weight || 100) - (a.weight || 100));
 
-    // Initialize trucks
-    const trucks = Array.from({ length: n }, (_, i) => ({
-      id: `truck-${Date.now()}-${i}`,
-      name: `Truck ${i + 1}`,
-      type: truckType,
-      items: [],
-      usedWeight: 0,
-      usedVolume: 0,
-    }));
+    // Initialize trucks — use truckConfigs if provided to preserve user names/types
+    const configs = body.truckConfigs && body.truckConfigs.length > 0 ? body.truckConfigs : [];
+    const trucks = Array.from({ length: n }, (_, i) => {
+      const cfg = configs[i];
+      const tType = cfg?.type || truckType || '18wheeler';
+      return {
+        id: cfg?.id || `truck-${Date.now()}-${i}`,
+        name: cfg?.name || `Truck ${i + 1}`,
+        type: tType,
+        items: [],
+        usedWeight: 0,
+        usedVolume: 0,
+        _spec: TRUCK_SPECS[tType] || TRUCK_SPECS['18wheeler'],
+      };
+    });
 
-    // Balanced bin-packing: split large quantities across trucks evenly
+    // Balanced distribution: spread items evenly across all trucks by weight percentage
     for (const item of sorted) {
       const totalQty = item.quantity || 1;
       const unitWeight = item.weight || 100;
       const unitVolume = item.volume || 5;
 
-      let remaining = totalQty;
+      // Distribute evenly: split quantity across trucks proportionally, then assign leftovers
+      const basePerTruck = Math.floor(totalQty / trucks.length);
+      const remainder = totalQty % trucks.length;
 
-      while (remaining > 0) {
-        // Always pick the truck with the least used weight (most room)
-        const targetTruck = trucks.reduce((best, t) => t.usedWeight < best.usedWeight ? t : best, trucks[0]);
+      for (let i = 0; i < trucks.length; i++) {
+        const truck = trucks[i];
+        const assignQty = basePerTruck + (i < remainder ? 1 : 0);
+        if (assignQty <= 0) continue;
 
-        // Figure out how many units can fit in this truck
-        const weightRoom = Math.max(0, spec.weightCapacity - targetTruck.usedWeight);
-        const volumeRoom = Math.max(0, spec.volumeCapacity - targetTruck.usedVolume);
-        const canFitByWeight = unitWeight > 0 ? Math.floor(weightRoom / unitWeight) : remaining;
-        const canFitByVolume = unitVolume > 0 ? Math.floor(volumeRoom / unitVolume) : remaining;
-        const canFit = Math.min(canFitByWeight, canFitByVolume, remaining);
+        const spec = truck._spec;
+        const weightRoom = Math.max(0, spec.weightCapacity - truck.usedWeight);
+        const volumeRoom = Math.max(0, spec.volumeCapacity - truck.usedVolume);
+        const canFitByWeight = unitWeight > 0 ? Math.floor(weightRoom / unitWeight) : assignQty;
+        const canFitByVolume = unitVolume > 0 ? Math.floor(volumeRoom / unitVolume) : assignQty;
+        const actualQty = Math.min(assignQty, canFitByWeight, canFitByVolume, assignQty);
 
-        const assignQty = canFit > 0 ? canFit : remaining; // overflow: force assign
-        targetTruck.items.push({
-          ...item,
-          quantity: assignQty,
-          id: `${item.equipmentName || item.name}-${targetTruck.id}-${Math.random()}`,
-        });
-        targetTruck.usedWeight += unitWeight * assignQty;
-        targetTruck.usedVolume += unitVolume * assignQty;
-        remaining -= assignQty;
+        if (actualQty > 0) {
+          truck.items.push({
+            ...item,
+            quantity: actualQty,
+            id: `${item.equipmentName || item.name}-${truck.id}-${Math.random()}`,
+          });
+          truck.usedWeight += unitWeight * actualQty;
+          truck.usedVolume += unitVolume * actualQty;
+        }
       }
     }
 
-    const loads = trucks.map(truck => ({
-      ...truck,
-      weightPercent: Math.round((truck.usedWeight / spec.weightCapacity) * 100),
-      volumePercent: Math.round((truck.usedVolume / spec.volumeCapacity) * 100),
-    }));
+    const loads = trucks.map(truck => {
+      const spec = truck._spec;
+      const { _spec, ...rest } = truck;
+      return {
+        ...rest,
+        weightPercent: Math.round((truck.usedWeight / spec.weightCapacity) * 100),
+        volumePercent: Math.round((truck.usedVolume / spec.volumeCapacity) * 100),
+      };
+    });
 
     const weights = loads.map(t => t.usedWeight);
     const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length;

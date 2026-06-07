@@ -134,7 +134,7 @@ export default function LoadPlanner({
       >
         <div className="flex items-center gap-2 font-bold text-gray-900 mb-4">
           <Package className="w-5 h-5 text-gray-600" />
-          Unassigned Equipment ({eventEquipment.length})
+          Unassigned Equipment ({eventEquipment.reduce((s, e) => s + (e.quantity || 1), 0)} units, {eventEquipment.length} line{eventEquipment.length !== 1 ? 's' : ''})
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {eventEquipment.length === 0 ? (

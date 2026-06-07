@@ -127,18 +127,15 @@ export default function AIRoads() {
         setEventPlan(plan);
         const items = plan.canvasItems || plan.equipment || [];
         if (items.length > 0) {
-          // Expand canvas items by quantity and attach weight/volume defaults
-          const expanded = items.flatMap(item => {
-            const qty = item.quantity || 1;
-            return Array.from({ length: qty }).map((_, i) => ({
-              ...item,
-              id: `${item.id}-${i}`,
-              quantity: 1,
-              weight: item.weight || estimateWeight(item),
-              volume: item.volume || estimateVolume(item),
-            }));
-          });
-          setEventEquipment(expanded);
+          // Keep items grouped with their quantities
+          const grouped = items.map(item => ({
+            ...item,
+            id: `${item.id}-plan`,
+            quantity: item.quantity || 1,
+            weight: item.weight || estimateWeight(item),
+            volume: item.volume || estimateVolume(item),
+          }));
+          setEventEquipment(grouped);
         }
         if (plan.linkedRentalInvoice) {
           const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
@@ -161,15 +158,15 @@ export default function AIRoads() {
     }
     setAutoBalancing(true);
     try {
-      // Summarize items by name to handle quantities correctly
-      const summarized = [];
+      // Merge same-named items across unassigned + assigned loads
       const seen = {};
+      const summarized = [];
       for (const item of allItems) {
         const key = item.equipmentName || item.name;
         if (seen[key]) {
           seen[key].quantity = (seen[key].quantity || 1) + (item.quantity || 1);
         } else {
-          const copy = { ...item, quantity: item.quantity || 1, equipmentName: item.equipmentName || item.name };
+          const copy = { ...item, quantity: item.quantity || 1 };
           seen[key] = copy;
           summarized.push(copy);
         }
@@ -204,28 +201,13 @@ export default function AIRoads() {
     }
     setAutoPacking(true);
     try {
-      // Summarize items by name to reduce payload size (avoid sending 355 individual chairs)
-      const summarized = [];
-      const seen = {};
-      for (const item of eventEquipment) {
-        const key = item.equipmentName || item.name;
-        if (seen[key]) {
-          seen[key].quantity = (seen[key].quantity || 1) + 1;
-        } else {
-          const copy = { ...item, quantity: 1, equipmentName: item.equipmentName || item.name };
-          seen[key] = copy;
-          summarized.push(copy);
-        }
-      }
-
-      // Pass per-truck configs so packing respects individual vehicle capacities
+      // Items are already grouped with quantities — send directly
       const truckConfigs = loads.length > 0
         ? loads.map(t => ({ id: t.id, type: t.type, name: t.name }))
         : [{ id: 'truck-1', type: '18wheeler', name: 'Truck 1' }];
 
       const res = await base44.functions.invoke('autoPackEquipment', {
-        equipment: eventEquipment,
-        summarized,
+        summarized: eventEquipment,
         numTrucks: truckConfigs.length,
         truckConfigs,
         truckType: truckConfigs[0]?.type || '18wheeler',
@@ -326,17 +308,14 @@ export default function AIRoads() {
                   if (plan) {
                     setEventPlan(plan);
                     const items = plan.canvasItems || plan.equipment || [];
-                    const expanded = items.flatMap(item => {
-                      const qty = item.quantity || 1;
-                      return Array.from({ length: qty }).map((_, i) => ({
-                        ...item,
-                        id: `${item.id}-${i}`,
-                        quantity: 1,
-                        weight: item.weight || estimateWeight(item),
-                        volume: item.volume || estimateVolume(item),
-                      }));
-                    });
-                    setEventEquipment(expanded);
+                    const grouped = items.map(item => ({
+                      ...item,
+                      id: `${item.id}-plan`,
+                      quantity: item.quantity || 1,
+                      weight: item.weight || estimateWeight(item),
+                      volume: item.volume || estimateVolume(item),
+                    }));
+                    setEventEquipment(grouped);
                     // Auto-link rental if the plan has one
                     if (plan.linkedRentalInvoice) {
                       const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
