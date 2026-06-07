@@ -400,15 +400,16 @@ export default function AIRoads() {
           />
         </div>
 
-        {/* ── STEP 3: Trucks / Distance / Pack ── */}
+        {/* ── STEP 3a: Configure Trucks ── */}
         <div className="bg-white rounded-xl border shadow-sm p-4">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
-            Step 3 — Configure Trucks &amp; Pack
+            Step 3a — Set Up Your Trucks <span className="normal-case font-normal text-gray-400 ml-1">(do this before packing)</span>
           </div>
-          <div className="flex flex-wrap items-end gap-4">
-            {/* Truck count */}
+
+          {/* Count controls */}
+          <div className="flex items-center gap-4 mb-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Trucks</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Number of trucks</label>
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => {
@@ -428,8 +429,6 @@ export default function AIRoads() {
                 >+</button>
               </div>
             </div>
-
-            {/* Distance */}
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1.5">Distance (mi one-way)</label>
               <Input
@@ -440,38 +439,33 @@ export default function AIRoads() {
                 className="h-8 text-sm w-28"
               />
             </div>
-
-            {/* Pack / Optimize buttons */}
-            <div className="flex gap-2 flex-1 min-w-48">
-              <Button
-                onClick={handleAutoPack}
-                disabled={autoPacking || eventEquipment.length === 0}
-                className="flex-1 bg-amber-600 hover:bg-amber-700 gap-1.5 h-8 text-sm"
-              >
-                {autoPacking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
-                Auto Pack
-              </Button>
-              <Button
-                onClick={handleAutoBalance}
-                disabled={autoBalancing || (eventEquipment.length === 0 && loads.flatMap(t => t.items || []).length === 0)}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-1.5 h-8 text-sm"
-              >
-                {autoBalancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />}
-                Optimize
-              </Button>
-            </div>
-
-            {/* Inline stats */}
-            <div className="flex gap-3 text-xs text-gray-500 ml-auto">
-              <span><b className="text-gray-800">{(stats.totalWeight / 1000).toFixed(1)}k</b> lbs</span>
-              <span><b className="text-gray-800">{stats.totalVolume.toLocaleString()}</b> cu ft</span>
-              <span><b className="text-indigo-700">${stats.totalCost.toFixed(0)}</b> est.</span>
-            </div>
           </div>
 
+          {/* Per-truck type selector */}
+          {loads.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-500 mb-1">Truck types:</div>
+              {loads.map((truck, idx) => (
+                <div key={truck.id} className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">{truck.name}</span>
+                  <select
+                    value={truck.type}
+                    onChange={e => handleTruckTypeChange(truck.id, e.target.value)}
+                    className="h-8 border border-gray-300 rounded-md px-2 bg-white text-sm flex-1 max-w-xs"
+                  >
+                    <option value="18wheeler">18-Wheeler (80k lbs / 3,000 cu ft)</option>
+                    <option value="26ft">26ft Box Truck (26k lbs / 1,400 cu ft)</option>
+                    <option value="24ft">24ft Box Truck (24k lbs / 1,200 cu ft)</option>
+                    <option value="sprinter">Sprinter Van (5k lbs / 300 cu ft)</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
           {loads.length === 0 && (
-            <div className="mt-3 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
-              <span className="text-sm text-amber-800">No trucks yet — add at least one before packing.</span>
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5">
+              <span className="text-sm text-amber-800">Add at least one truck before packing.</span>
               <button
                 onClick={handleAddTruck}
                 className="ml-4 flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg"
@@ -481,6 +475,41 @@ export default function AIRoads() {
             </div>
           )}
         </div>
+
+        {/* ── STEP 3b: Pack ── */}
+        {loads.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="text-xs font-bold text-amber-900 uppercase tracking-wide mb-3">
+              Step 3b — Pack Equipment into Trucks
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                onClick={handleAutoPack}
+                disabled={autoPacking || eventEquipment.length === 0}
+                className="bg-amber-600 hover:bg-amber-700 gap-1.5"
+              >
+                {autoPacking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scale className="w-4 h-4" />}
+                Auto Pack
+              </Button>
+              <Button
+                onClick={handleAutoBalance}
+                disabled={autoBalancing || (eventEquipment.length === 0 && loads.flatMap(t => t.items || []).length === 0)}
+                className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
+              >
+                {autoBalancing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scale className="w-4 h-4" />}
+                Optimize / Rebalance
+              </Button>
+              <div className="flex gap-4 text-xs text-gray-500 ml-auto">
+                <span><b className="text-gray-800">{(stats.totalWeight / 1000).toFixed(1)}k</b> lbs unassigned</span>
+                <span><b className="text-gray-800">{stats.totalVolume.toLocaleString()}</b> cu ft</span>
+                <span><b className="text-indigo-700">${stats.totalCost.toFixed(0)}</b> est. fleet cost</span>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 mt-2">
+              ⬆️ Set truck types above first — Auto Pack respects each truck's actual weight &amp; volume capacity.
+            </p>
+          </div>
+        )}
 
         <FleetCostNudge loads={loads} eventEquipment={eventEquipment} distance={distance} />
 
