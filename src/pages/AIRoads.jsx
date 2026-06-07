@@ -15,6 +15,7 @@ import LabelStockSelector from '@/components/airoads/LabelStockSelector';
 import JobPLPanel from '@/components/airoads/JobPLPanel';
 import FleetCostNudge from '@/components/airoads/FleetCostNudge';
 import TruckFloorPlan from '@/components/airoads/TruckFloorPlan';
+import TruckLoadingChecklist from '@/components/airoads/TruckLoadingChecklist';
 import PremiumGate from '@/components/premium/PremiumGate';
 
 const TRUCK_SPECS = {
@@ -92,6 +93,58 @@ const SECONDARY_TABS = [
   { key: 'scanner', label: '📷 Scanner' },
   { key: 'pl', label: '💰 P&L' },
 ];
+
+function FloorPlanTab({ loads }) {
+  const [tripMode, setTripMode] = useState('load');
+  const trucksWithItems = loads.filter(t => t.items?.length > 0);
+
+  if (trucksWithItems.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border p-8 text-center text-gray-400">
+        No items assigned to trucks yet. Use Auto Pack first.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Trip mode toggle */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-gray-700">Trip mode:</span>
+        <div className="flex gap-1 bg-white border rounded-lg p-1 shadow-sm">
+          <button
+            onClick={() => setTripMode('load')}
+            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${tripMode === 'load' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            📦 Outbound Load
+          </button>
+          <button
+            onClick={() => setTripMode('return')}
+            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${tripMode === 'return' ? 'bg-amber-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            🔁 Return Trip
+          </button>
+        </div>
+        <span className="text-xs text-gray-400 italic">
+          {tripMode === 'return' ? 'Reload at venue — same manifest, reload for home' : 'Loading at warehouse — follow checklist order'}
+        </span>
+      </div>
+
+      {/* Per-truck: floor plan + checklist side by side */}
+      {trucksWithItems.map(truck => (
+        <div key={truck.id} className="space-y-3">
+          <div className="text-sm font-bold text-gray-700 uppercase tracking-wide border-b pb-1">
+            {truck.name}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <TruckFloorPlan truck={truck} truckType={truck.type} />
+            <TruckLoadingChecklist truck={truck} mode={tripMode} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function AIRoads() {
   const [searchParams] = useSearchParams();
@@ -501,15 +554,7 @@ export default function AIRoads() {
             )}
 
             {activeTab === 'floorplan' && (
-              <div className="space-y-4">
-                {loads.filter(t => t.items?.length > 0).length === 0 ? (
-                  <div className="bg-white rounded-xl border p-8 text-center text-gray-400">No items assigned to trucks yet. Use Auto Pack first.</div>
-                ) : (
-                  loads.filter(t => t.items?.length > 0).map(truck => (
-                    <TruckFloorPlan key={truck.id} truck={truck} truckType={truck.type} />
-                  ))
-                )}
-              </div>
+              <FloorPlanTab loads={loads} />
             )}
 
             {activeTab === 'manifest' && (
