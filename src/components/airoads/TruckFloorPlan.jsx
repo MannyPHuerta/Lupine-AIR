@@ -24,20 +24,19 @@ function getFootprint(item) {
   return { w: 2, l: 3, label: item.equipmentName || item.name, color: '#64748b' };
 }
 
-// Shelf-based 2D bin packing — each UNIT gets its own rectangle on the floor plan
-// Items with qty > 1 are drawn as individual footprints, so you see exactly how they fill the truck
+// Shelf-based 2D bin packing
+// Stackable items (chairs, dance floor) are grouped into stacks; all others get one block per item.
+// Each block clearly shows how many units it represents.
 function packItems(items, truckW, truckL) {
   const placements = [];
   let curX = 0;
   let curY = 0;
   let rowHeight = 0;
-  const GAP = 0.15; // ft between items
+  const GAP = 0.2; // ft between items
 
   for (const item of items) {
     const fp = getFootprint(item);
     const qty = item.quantity || 1;
-
-    // For stackable items (chairs, dance floor panels), group into physical stacks
     const stackSize = fp.stackSize || 1;
     const numBlocks = Math.ceil(qty / stackSize);
 
@@ -46,14 +45,12 @@ function packItems(items, truckW, truckL) {
       const w = fp.w;
       const l = fp.l;
 
-      // Advance to next shelf row if this block doesn't fit horizontally
       if (curX + w + GAP > truckW) {
         curX = 0;
         curY += rowHeight + GAP;
         rowHeight = 0;
       }
 
-      // If we've run out of vertical space, stop (overflow — shouldn't happen with correct packing)
       if (curY + l > truckL + 1) break;
 
       placements.push({
@@ -65,6 +62,7 @@ function packItems(items, truckW, truckL) {
         label: fp.label,
         unitCount: unitsInBlock,
         stackSize,
+        isStack: stackSize > 1,
       });
 
       curX += w + GAP;
@@ -188,12 +186,12 @@ export default function TruckFloorPlan({ truck, truckType }) {
                   stroke="white"
                   strokeWidth={1}
                 />
-                {/* Label — show if block is large enough to fit text */}
+                {/* Label — always show name + unit count */}
                 {p.w * SCALE > 18 && p.l * SCALE > 12 && (
                   <>
                     <text
                       x={8 + p.x * SCALE + (p.w * SCALE) / 2}
-                      y={16 + p.y * SCALE + (p.l * SCALE) / 2 - (p.stackSize > 1 && p.unitCount > 0 ? 4 : 0)}
+                      y={16 + p.y * SCALE + (p.l * SCALE) / 2 - 5}
                       textAnchor="middle"
                       fill="white"
                       fontSize={7}
@@ -201,17 +199,16 @@ export default function TruckFloorPlan({ truck, truckType }) {
                     >
                       {p.label.length > 12 ? p.label.slice(0, 11) + '…' : p.label}
                     </text>
-                    {p.stackSize > 1 && p.unitCount > 1 && (
-                      <text
-                        x={8 + p.x * SCALE + (p.w * SCALE) / 2}
-                        y={16 + p.y * SCALE + (p.l * SCALE) / 2 + 7}
-                        textAnchor="middle"
-                        fill="white"
-                        fontSize={7}
-                      >
-                        ×{p.unitCount}
-                      </text>
-                    )}
+                    <text
+                      x={8 + p.x * SCALE + (p.w * SCALE) / 2}
+                      y={16 + p.y * SCALE + (p.l * SCALE) / 2 + 6}
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize={8}
+                      fontWeight="bold"
+                    >
+                      {p.isStack ? `stack of ${p.unitCount}` : `×${p.unitCount}`}
+                    </text>
                   </>
                 )}
               </g>
@@ -229,14 +226,20 @@ export default function TruckFloorPlan({ truck, truckType }) {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {legendItems.map(p => (
-          <div key={p.color} className="flex items-center gap-1 text-xs text-gray-600">
-            <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: p.color }} />
-            {p.label}
-          </div>
-        ))}
+      {/* Item summary table — clear count per equipment type */}
+      <div className="mt-4 border-t pt-3">
+        <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Items in this truck</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1">
+          {truck.items?.map((item, i) => (
+            <div key={i} className="flex items-center justify-between text-sm py-0.5 border-b border-gray-100">
+              <span className="text-gray-800 truncate">{item.equipmentName || item.name}</span>
+              <span className="ml-2 font-bold text-gray-900 flex-shrink-0">×{item.quantity || 1}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 text-xs text-gray-400 italic">
+          Floor plan above shows approximate spatial arrangement — each labeled block shows unit count per position.
+        </div>
       </div>
     </div>
   );
