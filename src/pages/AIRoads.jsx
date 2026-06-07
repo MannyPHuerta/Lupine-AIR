@@ -282,8 +282,19 @@ export default function AIRoads() {
       });
       if (res.data?.loads) {
         setLoads(res.data.loads);
-        setEventEquipment([]);
-        toast({ title: '✅ Auto Pack complete', description: `Equipment packed across ${res.data.loads.length} trucks.` });
+        // Put overflow items back into the unassigned pool — never silently drop them
+        const overflow = res.data.overflow || [];
+        setEventEquipment(overflow);
+        if (overflow.length > 0) {
+          const extra = res.data.additionalTrucksNeeded || 1;
+          toast({
+            title: `⚠️ ${res.data.overflowUnitCount} units didn't fit`,
+            description: `Add ${extra} more truck${extra > 1 ? 's' : ''} and repack. Overflow items are shown in Unassigned.`,
+            variant: 'destructive',
+          });
+        } else {
+          toast({ title: '✅ Auto Pack complete', description: `All equipment packed across ${res.data.loads.length} trucks.` });
+        }
       }
     } catch (err) {
       toast({ title: 'Auto Pack failed', description: err.message, variant: 'destructive' });
@@ -562,6 +573,33 @@ export default function AIRoads() {
             {/* Tab panels */}
             {activeTab === 'planner' && (
               <>
+                {/* Overflow warning — shown when items couldn't fit in the configured trucks */}
+                {eventEquipment.length > 0 && loads.length > 0 && (
+                  <div className="bg-red-50 border-2 border-red-400 rounded-xl px-4 py-3 flex flex-wrap items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-red-800 text-sm mb-1">
+                        ⚠️ {eventEquipment.reduce((s, e) => s + (e.quantity || 1), 0)} units couldn't fit — trucks are at capacity
+                      </div>
+                      <div className="text-xs text-red-700 space-y-0.5">
+                        {eventEquipment.map((item, i) => (
+                          <span key={i} className="inline-block mr-3">
+                            {item.quantity || 1}× {item.equipmentName || item.name}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="text-xs text-red-600 mt-1.5 font-semibold">
+                        Add more trucks in Step 3a, then click Auto Pack again to fit all items.
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => { handleAddTruck(); }}
+                      className="bg-red-600 hover:bg-red-700 gap-1 flex-shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Truck
+                    </Button>
+                  </div>
+                )}
                 {loads.some(t => !t.items?.length) && loads.some(t => t.items?.length) && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 flex items-center justify-between">
                     <span className="text-sm text-amber-800">Some trucks are empty. Run <b>Auto Pack</b> again to redistribute across all trucks.</span>
