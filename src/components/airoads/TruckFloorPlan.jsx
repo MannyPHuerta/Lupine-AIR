@@ -24,55 +24,51 @@ function getFootprint(item) {
   return { w: 2, l: 3, label: item.equipmentName || item.name, color: '#64748b' };
 }
 
-// Simple shelf-based 2D bin packing (strip packing)
-// Each item entry (which may have qty > 1) becomes one labeled block showing its count
+// Shelf-based 2D bin packing — each UNIT gets its own rectangle on the floor plan
+// Items with qty > 1 are drawn as individual footprints, so you see exactly how they fill the truck
 function packItems(items, truckW, truckL) {
   const placements = [];
   let curX = 0;
   let curY = 0;
   let rowHeight = 0;
-  const PADDING = 0.3;
+  const GAP = 0.15; // ft between items
 
   for (const item of items) {
     const fp = getFootprint(item);
     const qty = item.quantity || 1;
 
-    // Each distinct item line is one block, scaled slightly for high quantities
-    const scale = qty > 10 ? Math.min(1.5, 1 + (qty - 10) * 0.02) : 1;
-    const w = fp.w * scale + PADDING;
-    const l = fp.l * scale + PADDING;
+    // For stackable items (chairs, dance floor panels), group into physical stacks
+    const stackSize = fp.stackSize || 1;
+    const numBlocks = Math.ceil(qty / stackSize);
 
-    // Try to fit in current row
-    if (curX + w > truckW) {
-      curX = 0;
-      curY += rowHeight + PADDING;
-      rowHeight = 0;
-    }
+    for (let b = 0; b < numBlocks; b++) {
+      const unitsInBlock = Math.min(stackSize, qty - b * stackSize);
+      const w = fp.w;
+      const l = fp.l;
 
-    if (curY + l <= truckL) {
+      // Advance to next shelf row if this block doesn't fit horizontally
+      if (curX + w + GAP > truckW) {
+        curX = 0;
+        curY += rowHeight + GAP;
+        rowHeight = 0;
+      }
+
+      // If we've run out of vertical space, stop (overflow — shouldn't happen with correct packing)
+      if (curY + l > truckL + 1) break;
+
       placements.push({
         x: curX,
         y: curY,
-        w: fp.w * scale,
-        l: fp.l * scale,
+        w,
+        l,
         color: fp.color,
         label: fp.label,
-        qty,
+        unitCount: unitsInBlock,
+        stackSize,
       });
-      curX += w;
+
+      curX += w + GAP;
       rowHeight = Math.max(rowHeight, l);
-    } else {
-      // Overflow: force into last row at bottom
-      placements.push({
-        x: 0,
-        y: Math.max(curY, truckL - fp.l * scale),
-        w: fp.w * scale,
-        l: fp.l * scale,
-        color: fp.color,
-        label: fp.label,
-        qty,
-        overflow: true,
-      });
     }
   }
 
@@ -126,9 +122,9 @@ export default function TruckFloorPlan({ truck, truckType }) {
   const usedLength = placements.length > 0
     ? Math.max(...placements.map(p => p.y + p.l))
     : 0;
-  const fillPct = Math.round((usedLength / dims.length) * 100);
+  const fillPct = Math.min(100, Math.round((usedLength / dims.length) * 100));
 
-  const legendItems = [...new Map(placements.map(p => [p.color, p])).values()];
+  const legendItems = [...new Map(placements.map(p => [p.label, p])).values()];
 
   const handlePrint = () => {
     const svgEl = document.getElementById(`floorplan-svg-${truck.id}`);
@@ -192,12 +188,12 @@ export default function TruckFloorPlan({ truck, truckType }) {
                   stroke="white"
                   strokeWidth={1}
                 />
-                {/* Label if wide enough */}
-                {p.w * SCALE > 16 && p.l * SCALE > 10 && (
+                {/* Label — show if block is large enough to fit text */}
+                {p.w * SCALE > 18 && p.l * SCALE > 12 && (
                   <>
                     <text
                       x={8 + p.x * SCALE + (p.w * SCALE) / 2}
-                      y={16 + p.y * SCALE + (p.l * SCALE) / 2 - (p.qty > 1 ? 4 : 0)}
+                      y={16 + p.y * SCALE + (p.l * SCALE) / 2 - (p.stackSize > 1 && p.unitCount > 0 ? 4 : 0)}
                       textAnchor="middle"
                       fill="white"
                       fontSize={7}
@@ -205,16 +201,15 @@ export default function TruckFloorPlan({ truck, truckType }) {
                     >
                       {p.label.length > 12 ? p.label.slice(0, 11) + '…' : p.label}
                     </text>
-                    {p.qty > 1 && (
+                    {p.stackSize > 1 && p.unitCount > 1 && (
                       <text
                         x={8 + p.x * SCALE + (p.w * SCALE) / 2}
                         y={16 + p.y * SCALE + (p.l * SCALE) / 2 + 7}
                         textAnchor="middle"
                         fill="white"
-                        fontSize={8}
-                        fontWeight="bold"
+                        fontSize={7}
                       >
-                        ×{p.qty}
+                        ×{p.unitCount}
                       </text>
                     )}
                   </>
