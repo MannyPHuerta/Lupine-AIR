@@ -21,8 +21,17 @@ Deno.serve(async (req) => {
 
     const n = Math.max(1, numTrucks || 1);
 
+    // Explode grouped items into individual units for proper per-unit distribution
+    const units = [];
+    for (const item of items) {
+      const qty = item.quantity || 1;
+      for (let i = 0; i < qty; i++) {
+        units.push({ ...item, quantity: 1, _unitIndex: i });
+      }
+    }
+
     // Sort by weight descending for better bin-packing
-    const sorted = [...items].sort((a, b) => (b.weight || 100) - (a.weight || 100));
+    units.sort((a, b) => (b.weight || 100) - (a.weight || 100));
 
     // Initialize trucks — use truckConfigs if provided to preserve user names/types
     const configs = body.truckConfigs && body.truckConfigs.length > 0 ? body.truckConfigs : [];
@@ -40,45 +49,72 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Balanced distribution: spread items evenly across all trucks by weight percentage
-    for (const item of sorted) {
-      const totalQty = item.quantity || 1;
-      const unitWeight = item.weight || 100;
-      const unitVolume = item.volume || 5;
+    // Round-robin distribute individual units across trucks, respecting capacity
+    let truckIndex = 0;
+    const overflow = [];
 
-      // Distribute evenly: split quantity across trucks proportionally, then assign leftovers
-      const basePerTruck = Math.floor(totalQty / trucks.length);
-      const remainder = totalQty % trucks.length;
+    for (const unit of units) {
+      const unitWeight = unit.weight || 100;
+      const unitVolume = unit.volume || 5;
+      let placed = false;
 
-      for (let i = 0; i < trucks.length; i++) {
-        const truck = trucks[i];
-        const assignQty = basePerTruck + (i < remainder ? 1 : 0);
-        if (assignQty <= 0) continue;
-
+      // Try placing starting at current round-robin position, cycle through all trucks
+      for (let attempt = 0; attempt < trucks.length; attempt++) {
+        const truck = trucks[(truckIndex + attempt) % trucks.length];
         const spec = truck._spec;
-        const weightRoom = Math.max(0, spec.weightCapacity - truck.usedWeight);
-        const volumeRoom = Math.max(0, spec.volumeCapacity - truck.usedVolume);
-        const canFitByWeight = unitWeight > 0 ? Math.floor(weightRoom / unitWeight) : assignQty;
-        const canFitByVolume = unitVolume > 0 ? Math.floor(volumeRoom / unitVolume) : assignQty;
-        const actualQty = Math.min(assignQty, canFitByWeight, canFitByVolume, assignQty);
+        const weightOk = (truck.usedWeight + unitWeight) <= spec.weightCapacity;
+        const volumeOk = (truck.usedVolume + unitVolume) <= spec.volumeCapacity;
 
-        if (actualQty > 0) {
-          truck.items.push({
-            ...item,
-            quantity: actualQty,
-            id: `${item.equipmentName || item.name}-${truck.id}-${Math.random()}`,
-          });
-          truck.usedWeight += unitWeight * actualQty;
-          truck.usedVolume += unitVolume * actualQty;
+        if (weightOk && volumeOk) {
+          // Merge with existing entry for same item on this truck if present
+          const existing = truck.items.find(i => (i.equipmentName || i.name) === (unit.equipmentName || unit.name));
+          if (existing) {
+            existing.quantity = (existing.quantity || 1) + 1;
+          } else {
+            truck.items.push({
+              ...unit,
+              quantity: 1,
+              id: `${unit.equipmentName || unit.name}-${truck.id}-${Math.random()}`,
+            });
+          }
+          truck.usedWeight += unitWeight;
+          truck.usedVolume += unitVolume;
+          placed = true;
+          truckIndex = (truckIndex + 1) % trucks.length;
+          break;
         }
       }
+
+      if (!placed) {
+        overflow.push(unit);
+      }
+    }
+
+    // Overflow: force-assign to least loaded truck
+    for (const unit of overflow) {
+      const truck = trucks.reduce((least, t) => t.usedWeight < least.usedWeight ? t : least, trucks[0]);
+      const existing = truck.items.find(i => (i.equipmentName || i.name) === (unit.equipmentName || unit.name));
+      if (existing) {
+        existing.quantity = (existing.quantity || 1) + 1;
+      } else {
+        truck.items.push({
+          ...unit,
+          quantity: 1,
+          id: `${unit.equipmentName || unit.name}-${truck.id}-${Math.random()}`,
+        });
+      }
+      truck.usedWeight += unit.weight || 100;
+      truck.usedVolume += unit.volume || 5;
     }
 
     const loads = trucks.map(truck => {
       const spec = truck._spec;
       const { _spec, ...rest } = truck;
+      // Strip internal _unitIndex from items
+      const cleanItems = rest.items.map(({ _unitIndex, ...item }) => item);
       return {
         ...rest,
+        items: cleanItems,
         weightPercent: Math.round((truck.usedWeight / spec.weightCapacity) * 100),
         volumePercent: Math.round((truck.usedVolume / spec.volumeCapacity) * 100),
       };
