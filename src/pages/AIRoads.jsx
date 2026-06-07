@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useSearchParams } from 'react-router-dom';
-import { Truck, Scale, Loader2, Plus } from 'lucide-react';
+import { Truck, Scale, Loader2, Plus, Printer, Save } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import TransitScanner from '@/components/airoads/TransitScanner';
 import LabelStockSelector from '@/components/airoads/LabelStockSelector';
 import JobPLPanel from '@/components/airoads/JobPLPanel';
 import FleetCostNudge from '@/components/airoads/FleetCostNudge';
+import TruckFloorPlan from '@/components/airoads/TruckFloorPlan';
 import PremiumGate from '@/components/premium/PremiumGate';
 
 const TRUCK_SPECS = {
@@ -80,8 +81,12 @@ function estimateVolume(item) {
   return 5;
 }
 
-const VIEW_TABS = [
+const PRIMARY_TABS = [
   { key: 'planner', label: '📦 Load Split' },
+  { key: 'floorplan', label: '🗺️ Floor Plan' },
+];
+
+const SECONDARY_TABS = [
   { key: 'manifest', label: '📋 Manifest' },
   { key: 'labels', label: '🏷️ Labels' },
   { key: 'scanner', label: '📷 Scanner' },
@@ -197,9 +202,19 @@ export default function AIRoads() {
   };
 
   const handleAutoPack = async () => {
-    if (eventEquipment.length === 0) {
+    // Gather ALL equipment — unassigned + already-assigned — so adding a truck then repacking works
+    const allItems = [...eventEquipment, ...loads.flatMap(t => t.items || [])];
+    if (allItems.length === 0) {
       toast({ title: 'No equipment', description: 'Add equipment first before packing.', variant: 'destructive' });
       return;
+    }
+    // Merge same-named items
+    const seen = {};
+    const summarized = [];
+    for (const item of allItems) {
+      const key = item.equipmentName || item.name;
+      if (seen[key]) { seen[key].quantity = (seen[key].quantity || 1) + (item.quantity || 1); }
+      else { const copy = { ...item, quantity: item.quantity || 1 }; seen[key] = copy; summarized.push(copy); }
     }
     setAutoPacking(true);
     try {
@@ -207,7 +222,7 @@ export default function AIRoads() {
         ? loads.map(t => ({ id: t.id, type: t.type, name: t.name }))
         : [{ id: 'truck-1', type: '18wheeler', name: 'Truck 1' }];
       const res = await base44.functions.invoke('autoPackEquipment', {
-        summarized: eventEquipment,
+        summarized,
         numTrucks: truckConfigs.length,
         truckConfigs,
         truckType: truckConfigs[0]?.type || '18wheeler',
@@ -416,35 +431,85 @@ export default function AIRoads() {
 
         <FleetCostNudge loads={loads} eventEquipment={eventEquipment} distance={distance} />
 
-        {/* ── STEP 4: View tabs directly above truck graphics ── */}
+        {/* ── STEP 4: View ── */}
         {(loads.length > 0 || eventEquipment.length > 0) && (
-          <div>
-            {/* Tab bar */}
-            <div className="flex gap-1 mb-3 bg-white border rounded-xl p-1 w-fit shadow-sm">
-              {VIEW_TABS.map(t => (
-                <button
-                  key={t.key}
-                  onClick={() => setActiveTab(t.key)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition ${
-                    activeTab === t.key ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+          <div className="space-y-3">
+
+            {/* Primary tabs: Load Split + Floor Plan */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex gap-1 bg-white border rounded-xl p-1 shadow-sm">
+                {PRIMARY_TABS.map(t => (
+                  <button key={t.key} onClick={() => setActiveTab(t.key)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${activeTab === t.key ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Secondary tabs */}
+              <div className="flex gap-1 bg-white border rounded-xl p-1 shadow-sm">
+                {SECONDARY_TABS.map(t => (
+                  <button key={t.key} onClick={() => setActiveTab(t.key)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition ${activeTab === t.key ? 'bg-gray-700 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Print + Save buttons */}
+              <div className="flex gap-2 ml-auto">
+                <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
+                  <Printer className="w-3.5 h-3.5" /> Print
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => {
+                    const data = JSON.stringify({ eventPlan: eventPlan?.id, loads, eventEquipment, distance }, null, 2);
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `load-plan-${Date.now()}.json`; a.click();
+                    URL.revokeObjectURL(url);
+                    toast({ title: 'Saved', description: 'Load plan downloaded as JSON.' });
+                  }}
+                  className="gap-1.5">
+                  <Save className="w-3.5 h-3.5" /> Save
+                </Button>
+              </div>
             </div>
 
             {/* Tab panels */}
             {activeTab === 'planner' && (
-              <LoadPlanner
-                eventEquipment={eventEquipment}
-                loads={loads}
-                truckSpecs={TRUCK_SPECS}
-                onLoadsChange={setLoads}
-                onEquipmentChange={setEventEquipment}
-                onRemoveTruck={handleRemoveTruck}
-                onTruckTypeChange={handleTruckTypeChange}
-              />
+              <>
+                {loads.some(t => !t.items?.length) && loads.some(t => t.items?.length) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 flex items-center justify-between">
+                    <span className="text-sm text-amber-800">Some trucks are empty. Run <b>Auto Pack</b> again to redistribute across all trucks.</span>
+                    <Button size="sm" onClick={handleAutoPack} disabled={autoPacking} className="ml-3 bg-amber-600 hover:bg-amber-700 gap-1">
+                      {autoPacking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Scale className="w-3.5 h-3.5" />} Repack
+                    </Button>
+                  </div>
+                )}
+                <LoadPlanner
+                  eventEquipment={eventEquipment}
+                  loads={loads}
+                  truckSpecs={TRUCK_SPECS}
+                  onLoadsChange={setLoads}
+                  onEquipmentChange={setEventEquipment}
+                  onRemoveTruck={handleRemoveTruck}
+                  onTruckTypeChange={handleTruckTypeChange}
+                />
+              </>
+            )}
+
+            {activeTab === 'floorplan' && (
+              <div className="space-y-4">
+                {loads.filter(t => t.items?.length > 0).length === 0 ? (
+                  <div className="bg-white rounded-xl border p-8 text-center text-gray-400">No items assigned to trucks yet. Use Auto Pack first.</div>
+                ) : (
+                  loads.filter(t => t.items?.length > 0).map(truck => (
+                    <TruckFloorPlan key={truck.id} truck={truck} truckType={truck.type} />
+                  ))
+                )}
+              </div>
             )}
 
             {activeTab === 'manifest' && (
