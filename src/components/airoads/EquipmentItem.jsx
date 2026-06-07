@@ -1,14 +1,14 @@
-import { GripVertical } from 'lucide-react';
+import { GripVertical, X } from 'lucide-react';
 
-export default function EquipmentItem({ item, onDragStart, isDragging = false }) {
-  const vol = item.volume || 10; // Default 10 cu ft placeholder
+export default function EquipmentItem({ item, onDragStart, isDragging = false, onRemove }) {
+  const vol = item.volume || 10;
   const isPlaceholder = !item.volume;
 
   return (
     <div
       draggable
       onDragStart={onDragStart}
-      className={`flex items-center gap-2 px-2 py-1.5 rounded border cursor-move transition flex-shrink-0 ${
+      className={`flex items-center gap-2 px-2 py-1.5 rounded border cursor-move transition flex-shrink-0 group ${
         isDragging
           ? 'opacity-50 border-gray-300'
           : isPlaceholder
@@ -22,9 +22,19 @@ export default function EquipmentItem({ item, onDragStart, isDragging = false })
         {item.equipmentName || item.name}
         {item.quantity > 1 && <span className="ml-1 text-indigo-600">×{item.quantity}</span>}
       </div>
-      <span className={`text-xs ml-auto flex-shrink-0 ${isPlaceholder ? 'text-gray-400' : 'text-gray-500'}`}>
+      <span className={`text-xs flex-shrink-0 ${isPlaceholder ? 'text-gray-400' : 'text-gray-500'}`}>
         {vol * (item.quantity || 1)}cf {isPlaceholder && '(est)'}
       </span>
+      {onRemove && (
+        <button
+          onClick={e => { e.stopPropagation(); onRemove(item); }}
+          onMouseDown={e => e.stopPropagation()}
+          className="ml-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500"
+          title="Remove from truck"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }

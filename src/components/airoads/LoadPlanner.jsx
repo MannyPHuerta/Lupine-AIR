@@ -156,13 +156,21 @@ export default function LoadPlanner({
               >
                 {truck.items?.length === 0 ? null : (
                   <div className="w-full flex flex-wrap gap-2">
-                    {truck.items?.map((item, idx) => (
-                      <EquipmentItem
-                        key={item.id || `${truck.id}-item-${idx}`}
-                        item={item}
-                        onDragStart={e => handleDragStart(e, item, 'truck', truck.id)}
-                      />
-                    ))}
+                  {truck.items?.map((item, idx) => (
+                    <EquipmentItem
+                      key={item.id || `${truck.id}-item-${idx}`}
+                      item={item}
+                      onDragStart={e => handleDragStart(e, item, 'truck', truck.id)}
+                      onRemove={(removedItem) => {
+                        onLoadsChange(loads.map(t =>
+                          t.id === truck.id
+                            ? { ...t, items: t.items.filter(i => i.id !== removedItem.id) }
+                            : t
+                        ));
+                        onEquipmentChange([...eventEquipment, removedItem]);
+                      }}
+                    />
+                  ))}
                   </div>
                 )}
               </VisualTruckContainer>
