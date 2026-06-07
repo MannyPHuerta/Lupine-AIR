@@ -25,46 +25,54 @@ function getFootprint(item) {
 }
 
 // Simple shelf-based 2D bin packing (strip packing)
+// Each item entry (which may have qty > 1) becomes one labeled block showing its count
 function packItems(items, truckW, truckL) {
   const placements = [];
   let curX = 0;
   let curY = 0;
   let rowHeight = 0;
-  const PADDING = 0.2;
+  const PADDING = 0.3;
 
   for (const item of items) {
     const fp = getFootprint(item);
     const qty = item.quantity || 1;
-    const stackSize = fp.stackSize || 1;
-    const stacks = Math.ceil(qty / stackSize);
 
-    for (let s = 0; s < stacks; s++) {
-      const w = fp.w + PADDING;
-      const l = fp.l + PADDING;
+    // Each distinct item line is one block, scaled slightly for high quantities
+    const scale = qty > 10 ? Math.min(1.5, 1 + (qty - 10) * 0.02) : 1;
+    const w = fp.w * scale + PADDING;
+    const l = fp.l * scale + PADDING;
 
-      // Try to fit in current row
-      if (curX + w > truckW) {
-        // Move to next row
-        curX = 0;
-        curY += rowHeight + PADDING;
-        rowHeight = 0;
-      }
+    // Try to fit in current row
+    if (curX + w > truckW) {
+      curX = 0;
+      curY += rowHeight + PADDING;
+      rowHeight = 0;
+    }
 
-      if (curY + l <= truckL) {
-        placements.push({
-          x: curX,
-          y: curY,
-          w: fp.w,
-          l: fp.l,
-          color: fp.color,
-          label: fp.label,
-          qty: Math.min(stackSize, qty - s * stackSize),
-          totalQty: qty,
-          stacks,
-        });
-        curX += w;
-        rowHeight = Math.max(rowHeight, l);
-      }
+    if (curY + l <= truckL) {
+      placements.push({
+        x: curX,
+        y: curY,
+        w: fp.w * scale,
+        l: fp.l * scale,
+        color: fp.color,
+        label: fp.label,
+        qty,
+      });
+      curX += w;
+      rowHeight = Math.max(rowHeight, l);
+    } else {
+      // Overflow: force into last row at bottom
+      placements.push({
+        x: 0,
+        y: Math.max(curY, truckL - fp.l * scale),
+        w: fp.w * scale,
+        l: fp.l * scale,
+        color: fp.color,
+        label: fp.label,
+        qty,
+        overflow: true,
+      });
     }
   }
 
@@ -185,11 +193,11 @@ export default function TruckFloorPlan({ truck, truckType }) {
                   strokeWidth={1}
                 />
                 {/* Label if wide enough */}
-                {p.w * SCALE > 20 && p.l * SCALE > 12 && (
+                {p.w * SCALE > 16 && p.l * SCALE > 10 && (
                   <>
                     <text
                       x={8 + p.x * SCALE + (p.w * SCALE) / 2}
-                      y={16 + p.y * SCALE + (p.l * SCALE) / 2 - 3}
+                      y={16 + p.y * SCALE + (p.l * SCALE) / 2 - (p.qty > 1 ? 4 : 0)}
                       textAnchor="middle"
                       fill="white"
                       fontSize={7}
@@ -197,13 +205,14 @@ export default function TruckFloorPlan({ truck, truckType }) {
                     >
                       {p.label.length > 12 ? p.label.slice(0, 11) + '…' : p.label}
                     </text>
-                    {p.stacks > 1 && (
+                    {p.qty > 1 && (
                       <text
                         x={8 + p.x * SCALE + (p.w * SCALE) / 2}
                         y={16 + p.y * SCALE + (p.l * SCALE) / 2 + 7}
                         textAnchor="middle"
                         fill="white"
-                        fontSize={6}
+                        fontSize={8}
+                        fontWeight="bold"
                       >
                         ×{p.qty}
                       </text>

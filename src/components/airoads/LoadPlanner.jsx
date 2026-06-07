@@ -168,7 +168,7 @@ export default function LoadPlanner({
       </div>
 
       {/* Trucks with Visual Containers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-6">
         {loads.map(truck => {
           const { weight, volume, weightPct, volumePct, spec } = getTruckStats(truck);
 
@@ -199,6 +199,11 @@ export default function LoadPlanner({
                 )}
               </VisualTruckContainer>
 
+              {/* Floor plan inline — always visible when truck has items */}
+              {truck.items?.length > 0 && (
+                <TruckFloorPlan truck={truck} truckType={truck.type} />
+              )}
+
               {/* Truck-specific controls */}
               <div className="flex gap-2">
                 <Button
@@ -219,7 +224,7 @@ export default function LoadPlanner({
                 </Button>
               </div>
 
-              {/* Scanner or labels */}
+              {/* Scanner */}
               {scannerTruck?.id === truck.id && (
                 <LoadScanner truck={truck} onStatusUpdate={(update) => console.log('Status:', update)} />
               )}
