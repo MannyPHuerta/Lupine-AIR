@@ -104,6 +104,7 @@ import CashDrawerReconciliation from "./pages/CashDrawerReconciliation";
 import AdminReauthGate from "./components/AdminReauthGate";
 import FraudIntelligencePage from "./pages/FraudIntelligencePage";
 import FraudDigestPage from "./pages/FraudDigestPage";
+import SupabaseTest from "./pages/SupabaseTest";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -220,6 +221,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/fraud/reports" element={<AdminReauthGate title="Fraud Intelligence"><FraudIntelligencePage /></AdminReauthGate>} />
         <Route path="/admin/fraud/digest" element={<AdminReauthGate title="AI Fraud Digest"><FraudDigestPage /></AdminReauthGate>} />
         <Route path="/admin/fraud/recovery" element={<AdminReauthGate title="Recovery Intelligence"><AIRecovery /></AdminReauthGate>} />
+        <Route path="/supabase-test" element={<SupabaseTest />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
