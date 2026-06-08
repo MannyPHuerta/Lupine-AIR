@@ -18,39 +18,56 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Test 1: Basic connectivity — list tables in public schema
-    const { data: tables, error: tablesError } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .limit(50);
+    // Use the Supabase REST API directly to list tables via pg_catalog
+    // (information_schema queries via .from() are blocked by RLS)
+    const tablesRes = await fetch(
+      `${supabaseUrl}/rest/v1/rpc/get_tables`,
+      { method: 'POST', headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' }, body: '{}' }
+    );
 
-    // Test 2: Try a raw RPC ping (works even with no tables)
-    const { data: pingData, error: pingError } = await supabase.rpc('version');
+    // Fallback: try a known table (equipment) to confirm schema exists
+    const { data: equipmentSample, error: equipmentError } = await supabase
+      .from('equipment')
+      .select('id, name')
+      .limit(1);
 
-    // Fallback: try selecting from pg_tables via rpc if direct query fails
-    let tableList = [];
-    let tableError = null;
+    const { data: customerSample, error: customerError } = await supabase
+      .from('customers')
+      .select('id')
+      .limit(1);
 
-    if (tablesError) {
-      // Try alternate approach
-      const { data: altTables, error: altError } = await supabase
-        .rpc('get_table_names')
-        .select('*');
-      tableError = altError?.message || tablesError.message;
-    } else {
-      tableList = (tables || []).map(t => t.table_name);
-    }
+    const { data: rentalSample, error: rentalError } = await supabase
+      .from('rentals')
+      .select('id')
+      .limit(1);
+
+    // Build table status list by probing known tables
+    const knownTables = [
+      'equipment', 'customers', 'rentals', 'deliveries', 'work_orders',
+      'maintenance_logs', 'expenses', 'event_plans', 'profiles', 'audit_logs',
+      'timesheets', 'gps_providers', 'recurring_rentals', 'rto_payments',
+      'reports', 'rfq_records', 'branch_settings', 'company_settings',
+    ];
+
+    const tableChecks = await Promise.all(
+      knownTables.map(async (t) => {
+        const { error } = await supabase.from(t).select('id').limit(1);
+        // "no rows" is fine — only flag if table doesn't exist
+        const exists = !error || error.code !== '42P01';
+        return { table: t, exists, error: exists ? null : error?.message };
+      })
+    );
+
+    const foundTables = tableChecks.filter(t => t.exists).map(t => t.table);
+    const missingTables = tableChecks.filter(t => !t.exists).map(t => t.table);
 
     return Response.json({
       success: true,
       connected: true,
       supabaseUrl: supabaseUrl.replace(/https?:\/\//, '').split('.')[0] + '.supabase.co',
-      tableCount: tableList.length,
-      tables: tableList,
-      tableError,
-      ping: pingError ? null : pingData,
-      pingError: pingError?.message || null,
+      tableCount: foundTables.length,
+      tables: foundTables,
+      missingTables,
     });
 
   } catch (error) {

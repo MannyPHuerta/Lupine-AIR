@@ -86,23 +86,23 @@ export default function SupabaseTest() {
                     ))}
                   </div>
                 )}
-                {result.tables?.length === 0 && !result.tableError && (
-                  <div className="text-xs text-gray-400 italic px-1">No public tables found — schema may not be deployed yet.</div>
+                {result.tables?.length === 0 && (
+                  <div className="text-xs text-red-500 italic px-1">No known tables found — schema may not be deployed yet.</div>
+                )}
+                {result.missingTables?.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-xs font-semibold text-red-600 mb-1">Missing tables ({result.missingTables.length}):</div>
+                    <div className="flex flex-wrap gap-1">
+                      {result.missingTables.map(t => (
+                        <span key={t} className="bg-red-50 border border-red-200 rounded px-2 py-0.5 text-xs font-mono text-red-600">{t}</span>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Ping */}
-            {result.connected && (
-              <div className="flex items-center gap-2">
-                <StatusIcon ok={!result.pingError} />
-                <span className="text-sm text-gray-700">
-                  {result.pingError
-                    ? `Ping: ${result.pingError}`
-                    : `Ping OK${result.ping ? ` — ${String(result.ping).slice(0, 60)}` : ''}`}
-                </span>
-              </div>
-            )}
+
           </div>
         )}
       </div>
