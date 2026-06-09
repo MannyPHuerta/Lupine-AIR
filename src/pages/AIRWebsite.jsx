@@ -811,22 +811,7 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (supabaseUrl && supabaseKey) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        await fetch(`${supabaseUrl}/functions/v1/waitlistSubmit`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify({ name, email, phone, company, branches }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-      }
+      await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
     } catch (_) {}
     setSubmitted(true);
     setSubmitting(false);
