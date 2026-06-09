@@ -812,12 +812,15 @@ function WaitlistSection() {
     setSubmitting(true);
     try {
       console.log('[Waitlist] Submitting:', { name, email, phone, company, branches });
+      const isAuthed = await base44.auth.isAuthenticated();
+      console.log('[Waitlist] Is authenticated:', isAuthed);
       const res = await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
       console.log('[Waitlist] Response:', res);
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err);
-      alert('Something went wrong. Please email info@theprojectair.com directly.');
+      const errorMsg = err.message || JSON.stringify(err);
+      alert(`Error: ${errorMsg}\n\nPlease email info@theprojectair.com directly.`);
     }
     setSubmitting(false);
   };
