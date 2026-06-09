@@ -8,28 +8,28 @@ const STEPS = ['Company', 'Branch', 'Plan', 'Done'];
 const PLAN_OPTIONS = [
   {
     id: 'starter',
-    name: 'Starter',
-    price: '$99/mo',
-    description: 'Perfect for single-location dealers getting started.',
-    features: ['1 Branch', 'Counter & Rentals', 'Basic Reporting', 'Email Support'],
+    name: 'Core',
+    price: '$299/mo',
+    description: 'Essential rental operations with AI included. One location, unlimited users.',
+    features: ['1 Branch', 'Counter & Rentals', 'AIRental + AIEvents', 'AIReports', 'Email & SMS'],
     color: 'border-slate-300',
     badge: '',
   },
   {
     id: 'professional',
-    name: 'Professional',
-    price: '$249/mo',
-    description: 'Full AI toolkit for growing rental operations.',
-    features: ['Up to 5 Branches', 'All AI Modules', 'Advanced Analytics', 'SMS Reminders', 'Priority Support'],
+    name: 'Pro',
+    price: '$799/mo',
+    description: 'Multi-location operations with shop management, GPS tracking, and advanced analytics.',
+    features: ['Up to 3 Branches', 'All AI Modules', 'AIRepair + AIRecovery', 'GPS Tracking', 'Priority Support'],
     color: 'border-blue-500',
     badge: 'Most Popular',
   },
   {
     id: 'enterprise',
-    name: 'Enterprise',
-    price: 'Custom',
-    description: 'Unlimited scale with dedicated support.',
-    features: ['Unlimited Branches', 'White Label', 'Custom Integrations', 'Dedicated CSM'],
+    name: 'Custom',
+    price: '$1,499/mo',
+    description: 'Regional operations with government bidding, load planning, and dedicated support.',
+    features: ['Up to 10 Branches', 'AIRfq + AIRoads', 'Advanced Maintenance', 'Account Manager & SLA'],
     color: 'border-purple-500',
     badge: '',
   },
@@ -53,7 +53,7 @@ export default function Onboarding() {
   const [branchEmail, setBranchEmail] = useState('');
 
   // Step 2 — Plan
-  const [planTier, setPlanTier] = useState('professional');
+  const [planTier, setPlanTier] = useState('pro');
 
   const canNextStep0 = companyName.trim().length >= 2;
   const canNextStep1 = branchName.trim().length >= 2;
