@@ -10,9 +10,12 @@ Deno.serve(async (req) => {
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
-    await resend.emails.send({
-      from: 'AIR Platform <noreply@theprojectair.com>',
-      to: ['info@theprojectair.com'],
+    // Send to the Resend account owner email (always works without domain verification)
+    // reply-to is set to the submitter so you can reply directly to them
+    const result = await resend.emails.send({
+      from: 'AIR Waitlist <onboarding@resend.dev>',
+      to: ['mannyph2003@hotmail.com'],
+      reply_to: email,
       subject: `🚀 New Early Access Request — ${company || email}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -43,12 +46,23 @@ Deno.serve(async (req) => {
               <td style="padding: 8px;">${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} CST</td>
             </tr>
           </table>
+          <p style="color: #888; font-size: 12px; margin-top: 16px;">
+            Reply to this email to reach ${name || 'the submitter'} directly at ${email}.
+          </p>
         </div>
       `,
     });
 
+    console.log('Resend result:', JSON.stringify(result));
+
+    if (result.error) {
+      console.error('Resend error:', JSON.stringify(result.error));
+      return Response.json({ error: result.error.message }, { status: 500 });
+    }
+
     return Response.json({ success: true });
   } catch (error) {
+    console.error('Caught error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
