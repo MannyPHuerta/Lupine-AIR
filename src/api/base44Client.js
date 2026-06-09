@@ -157,6 +157,7 @@ export const base44 = {
 
   functions: {
     invoke: async (functionName, params) => {
+      if (!supabase) throw new Error('Supabase not configured — cannot invoke functions in preview mode.');
       const { data, error } = await supabase.functions.invoke(functionName, { body: params });
       if (error) throw error;
       return { data };
