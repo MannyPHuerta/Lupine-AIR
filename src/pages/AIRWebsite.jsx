@@ -791,17 +791,26 @@ function PricingSection() {
 
 // ─── Waitlist ────────────────────────────────────────────────────────────────
 function WaitlistSection() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
   const [branches, setBranches] = useState('1');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const formatPhone = (val) => {
+    const digits = val.replace(/\D/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
     setSubmitting(true);
-    await base44.functions.invoke('waitlistSubmit', { email, company, branches });
+    await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
     setSubmitted(true);
     setSubmitting(false);
   };
@@ -831,6 +840,24 @@ function WaitlistSection() {
           ) : (
             <FadeUp>
               <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-2xl p-8 space-y-4 text-left">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Your Name *</label>
+                    <input
+                      type="text" required value={name} onChange={e => setName(e.target.value)}
+                      placeholder="Jane Smith"
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Phone</label>
+                    <input
+                      type="tel" value={phone} onChange={e => setPhone(formatPhone(e.target.value))}
+                      placeholder="(555) 000-0000"
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Work Email *</label>
                   <input

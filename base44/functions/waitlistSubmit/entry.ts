@@ -2,7 +2,7 @@ import { Resend } from 'npm:resend@2.0.0';
 
 Deno.serve(async (req) => {
   try {
-    const { email, company, branches } = await req.json();
+    const { email, company, branches, name, phone } = await req.json();
 
     if (!email) {
       return Response.json({ error: 'Email is required' }, { status: 400 });
@@ -19,8 +19,16 @@ Deno.serve(async (req) => {
           <h2 style="color: #0ea5e9;">New Early Access Request</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
+              <td style="padding: 8px; font-weight: bold; color: #555;">Name</td>
+              <td style="padding: 8px;">${name || '—'}</td>
+            </tr>
+            <tr style="background: #f9f9f9;">
               <td style="padding: 8px; font-weight: bold; color: #555;">Email</td>
               <td style="padding: 8px;">${email}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #555;">Phone</td>
+              <td style="padding: 8px;">${phone || '—'}</td>
             </tr>
             <tr style="background: #f9f9f9;">
               <td style="padding: 8px; font-weight: bold; color: #555;">Company</td>
