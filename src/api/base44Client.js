@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase client for real auth + data
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Supabase client for real auth + data (only when env vars are present)
+const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 // Shim: map Supabase session user to the shape AuthContext expects
 const mapUser = (supabaseUser) => ({
@@ -18,16 +20,18 @@ const mapUser = (supabaseUser) => ({
 export const base44 = {
   auth: {
     me: async () => {
+      if (!supabase) throw { status: 401, message: 'Not authenticated' };
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw { status: 401, message: 'Not authenticated' };
       return mapUser(session.user);
     },
     isAuthenticated: async () => {
+      if (!supabase) return false;
       const { data: { session } } = await supabase.auth.getSession();
       return !!session;
     },
     logout: async (redirectUrl) => {
-      await supabase.auth.signOut();
+      if (supabase) await supabase.auth.signOut();
       window.location.href = redirectUrl || '/signin';
     },
     redirectToLogin: (nextUrl) => {
