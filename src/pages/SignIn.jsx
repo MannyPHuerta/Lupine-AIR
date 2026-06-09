@@ -16,6 +16,7 @@ export default function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) return;
+    if (!supabase) { setError('Not available in preview mode.'); return; }
     setLoading(true);
     setError('');
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
@@ -29,6 +30,7 @@ export default function SignIn() {
 
   const handleMagicLink = async () => {
     if (!email) { setError('Enter your email first.'); return; }
+    if (!supabase) { setError('Not available in preview mode.'); return; }
     setLoading(true);
     setError('');
     const { error: mlError } = await supabase.auth.signInWithOtp({
@@ -44,6 +46,7 @@ export default function SignIn() {
   };
 
   const handleGoogle = async () => {
+    if (!supabase) { setError('Not available in preview mode.'); return; }
     setGoogleLoading(true);
     await supabase.auth.signInWithOAuth({
       provider: 'google',
