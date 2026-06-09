@@ -1,189 +1,122 @@
-import { createClient } from '@supabase/supabase-js';
+// Base44 SDK client for production app
+// This file provides a unified interface that works on Base44 platform
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+let base44SDK = null;
+let sdkInitializing = false;
 
-// Supabase client for real auth + data (only when env vars are present)
-const supabase = (typeof window !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY)
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+// Initialize Base44 SDK (only available in production Base44 app)
+async function initSDK() {
+  if (sdkInitializing || base44SDK) return;
+  sdkInitializing = true;
+  
+  try {
+    if (typeof window !== 'undefined') {
+      const { createClient } = await import('npm:@base44/sdk@0.8.31');
+      base44SDK = createClient();
+    }
+  } catch (e) {
+    console.log('Base44 SDK not available (preview mode)');
+  } finally {
+    sdkInitializing = false;
+  }
+}
 
-// Shim: map Supabase session user to the shape AuthContext expects
-const mapUser = (supabaseUser) => ({
-  id: supabaseUser.id,
-  email: supabaseUser.email,
-  full_name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
-  role: supabaseUser.user_metadata?.role || 'user',
-});
+// Auto-initialize
+initSDK();
 
-// Build a base44-compatible API surface backed by Supabase
 export const base44 = {
   auth: {
     me: async () => {
-      if (!supabase) throw { status: 401, message: 'Not authenticated' };
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw { status: 401, message: 'Not authenticated' };
-      return mapUser(session.user);
+      if (!base44SDK) throw { status: 401, message: 'Not authenticated' };
+      return await base44SDK.auth.me();
     },
     isAuthenticated: async () => {
-      if (!supabase) return false;
-      const { data: { session } } = await supabase.auth.getSession();
-      return !!session;
+      if (!base44SDK) return false;
+      return await base44SDK.auth.isAuthenticated();
     },
     logout: async (redirectUrl) => {
-      if (supabase) await supabase.auth.signOut();
-      window.location.href = redirectUrl || '/signin';
+      if (base44SDK) {
+        await base44SDK.auth.logout(redirectUrl);
+      } else {
+        window.location.href = redirectUrl || '/signin';
+      }
     },
     redirectToLogin: (nextUrl) => {
-      window.location.href = nextUrl
-        ? `/signin?next=${encodeURIComponent(nextUrl)}`
-        : '/signin';
+      if (base44SDK) {
+        base44SDK.auth.redirectToLogin(nextUrl);
+      } else {
+        window.location.href = nextUrl ? `/signin?next=${encodeURIComponent(nextUrl)}` : '/signin';
+      }
     },
     updateMe: async (data) => {
-      const { error } = await supabase.auth.updateUser({ data });
-      if (error) throw error;
+      if (!base44SDK) throw new Error('Not authenticated');
+      await base44SDK.auth.updateMe(data);
     },
   },
 
   entities: new Proxy({}, {
     get: (_, entityName) => {
-      const table = entityName.replace(/([A-Z])/g, (m, l, i) =>
-        i === 0 ? l.toLowerCase() : '_' + l.toLowerCase()
-      );
-      return {
-        list: async (order, limit) => {
-          if (!supabase) return [];
-          let q = supabase.from(table).select('*');
-          if (order) {
-            const desc = order.startsWith('-');
-            q = q.order(order.replace(/^-/, ''), { ascending: !desc });
-          }
-          if (limit) q = q.limit(limit);
-          const { data, error } = await q;
-          if (error) throw error;
-          return data || [];
-        },
-        filter: async (filters, order, limit) => {
-          if (!supabase) return [];
-          let q = supabase.from(table).select('*');
-          if (filters) {
-            Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
-          }
-          if (order) {
-            const desc = order.startsWith('-');
-            q = q.order(order.replace(/^-/, ''), { ascending: !desc });
-          }
-          if (limit) q = q.limit(limit);
-          const { data, error } = await q;
-          if (error) throw error;
-          return data || [];
-        },
-        get: async (id) => {
-          if (!supabase) return null;
-          const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
-          if (error) throw error;
-          return data;
-        },
-        create: async (record) => {
-          if (!supabase) return null;
-          const { data, error } = await supabase.from(table).insert(record).select().single();
-          if (error) throw error;
-          return data;
-        },
-        bulkCreate: async (records) => {
-          if (!supabase) return [];
-          const { data, error } = await supabase.from(table).insert(records).select();
-          if (error) throw error;
-          return data;
-        },
-        update: async (id, updates) => {
-          if (!supabase) return null;
-          const { data, error } = await supabase.from(table).update(updates).eq('id', id).select().single();
-          if (error) throw error;
-          return data;
-        },
-        delete: async (id) => {
-          if (!supabase) return;
-          const { error } = await supabase.from(table).delete().eq('id', id);
-          if (error) throw error;
-        },
-        schema: async () => {
-          // Return empty schema — not needed outside Base44 editor
-          return { type: 'object', properties: {} };
-        },
-        subscribe: (callback) => {
-          if (!supabase) return () => {};
-          const channel = supabase
-            .channel(`${table}_changes`)
-            .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
-              const typeMap = { INSERT: 'create', UPDATE: 'update', DELETE: 'delete' };
-              callback({
-                type: typeMap[payload.eventType] || payload.eventType,
-                id: payload.new?.id || payload.old?.id,
-                data: payload.new || payload.old,
-              });
-            })
-            .subscribe();
-          return () => supabase.removeChannel(channel);
-        },
-      };
+      if (!base44SDK) {
+        return {
+          list: async () => [],
+          filter: async () => [],
+          get: async () => null,
+          create: async () => null,
+          bulkCreate: async () => [],
+          update: async () => null,
+          delete: async () => {},
+          schema: async () => ({ type: 'object', properties: {} }),
+          subscribe: () => () => {},
+        };
+      }
+      return base44SDK.entities[entityName];
     },
   }),
+
+  functions: {
+    invoke: async (functionName, params) => {
+      if (!base44SDK) {
+        throw new Error('Functions not available in preview mode. Please use the production app.');
+      }
+      return await base44SDK.functions.invoke(functionName, params);
+    },
+  },
 
   integrations: {
     Core: {
       InvokeLLM: async (params) => {
-        // Will be handled by Supabase Edge Functions — stub for now
-        console.warn('InvokeLLM: migrate to Supabase Edge Function', params);
-        return {};
+        if (!base44SDK) throw new Error('Integrations not available in preview mode');
+        return await base44SDK.integrations.Core.InvokeLLM(params);
       },
       SendEmail: async (params) => {
-        console.warn('SendEmail: migrate to Supabase Edge Function', params);
-        return {};
+        if (!base44SDK) throw new Error('Integrations not available in preview mode');
+        return await base44SDK.integrations.Core.SendEmail(params);
       },
       UploadFile: async ({ file }) => {
-        const path = `uploads/${Date.now()}_${file.name}`;
-        const { error } = await supabase.storage.from('assets').upload(path, file);
-        if (error) throw error;
-        const { data } = supabase.storage.from('assets').getPublicUrl(path);
-        return { file_url: data.publicUrl };
+        if (!base44SDK) throw new Error('Integrations not available in preview mode');
+        return await base44SDK.integrations.Core.UploadFile({ file });
       },
       GenerateImage: async (params) => {
-        console.warn('GenerateImage: migrate to Supabase Edge Function', params);
-        return { image_url: '' };
+        if (!base44SDK) throw new Error('Integrations not available in preview mode');
+        return await base44SDK.integrations.Core.GenerateImage(params);
       },
-    },
-  },
-
-  functions: {
-    invoke: async (functionName, params) => {
-      // Try Base44 SDK first (for deployed backend functions)
-      try {
-        const { base44: b44 } = await import('./base44Client.js');
-        // Base44 SDK uses different structure
-      } catch {}
-      
-      // Fallback to Supabase Functions
-      if (!supabase) throw new Error('Supabase not configured — cannot invoke functions in preview mode.');
-      const { data, error } = await supabase.functions.invoke(functionName, { body: params });
-      if (error) throw error;
-      return { data };
     },
   },
 
   analytics: {
     track: (event) => {
-      // No-op or hook into your own analytics
-      console.log('[analytics]', event);
+      if (base44SDK) {
+        base44SDK.analytics.track(event);
+      } else {
+        console.log('[analytics]', event);
+      }
     },
   },
 
   users: {
     inviteUser: async (email, role) => {
-      const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
-        data: { role }
-      });
-      if (error) throw error;
+      if (!base44SDK) throw new Error('User management not available in preview mode');
+      await base44SDK.users.inviteUser(email, role);
     },
   },
 };
