@@ -105,6 +105,7 @@ import AdminReauthGate from "./components/AdminReauthGate";
 import FraudIntelligencePage from "./pages/FraudIntelligencePage";
 import FraudDigestPage from "./pages/FraudDigestPage";
 import SupabaseTest from "./pages/SupabaseTest";
+import Onboarding from "./pages/Onboarding";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -251,6 +252,8 @@ function App() {
             <Route path="/clockin" element={<ClockIn />} />
             {/* Public marketing website */}
             <Route path="/" element={<AIRWebsite />} />
+            {/* Onboarding — requires auth but no tenant */}
+            <Route path="/onboarding" element={<Onboarding />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>
