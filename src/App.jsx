@@ -123,7 +123,7 @@ const AuthenticatedApp = () => {
   }
 
   if (!isLoadingAuth && !isAuthenticated) {
-    base44.auth.redirectToLogin(window.location.pathname);
+    window.location.href = `/signin?next=${encodeURIComponent(window.location.pathname)}`;
     return null;
   }
 
