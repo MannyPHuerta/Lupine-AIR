@@ -123,7 +123,8 @@ const AuthenticatedApp = () => {
   }
 
   if (!isLoadingAuth && !isAuthenticated) {
-    window.location.href = `/signin?next=${encodeURIComponent(window.location.pathname)}`;
+    const next = window.location.pathname + window.location.search;
+    window.location.replace(`/signin?next=${encodeURIComponent(next)}`);
     return null;
   }
 
@@ -132,6 +133,7 @@ const AuthenticatedApp = () => {
     <Routes>
       {/* All internal routes wrapped in sidebar layout */}
       <Route element={<AppLayout />}>
+        <Route path="/ops" element={<DailyOps />} />
         <Route path="/" element={<DailyOps />} />
         <Route path="/about" element={<About />} />
         <Route path="/accounting" element={<AccountingDashboard />} />
@@ -247,6 +249,8 @@ function App() {
             <Route path="/airfq" element={<AIRfq />} />
             <Route path="/report/:id" element={<ReportView />} />
             <Route path="/clockin" element={<ClockIn />} />
+            {/* Public marketing website */}
+            <Route path="/" element={<AIRWebsite />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>

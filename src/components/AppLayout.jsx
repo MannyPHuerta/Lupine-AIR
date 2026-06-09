@@ -21,7 +21,7 @@ const navGroups = [
     color: 'text-cyan-400',
     description: 'Daily counter ops',
     items: [
-      { label: 'Daily Ops', path: '/', icon: LayoutDashboard },
+      { label: 'Daily Ops', path: '/ops', icon: LayoutDashboard },
       { label: 'Counter / Quick Sale', path: '/counter', icon: Zap },
       { label: 'New Rental / Availability', path: '/availability', icon: Calendar },
       { label: 'Delivery Assignment', path: '/assign-deliveries', icon: MapPin },
