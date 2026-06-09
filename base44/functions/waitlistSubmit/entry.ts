@@ -10,11 +10,9 @@ Deno.serve(async (req) => {
 
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
-    // Send to the Resend account owner email (always works without domain verification)
-    // reply-to is set to the submitter so you can reply directly to them
     const result = await resend.emails.send({
       from: 'AIR Waitlist <onboarding@resend.dev>',
-      to: ['mannyph2003@hotmail.com'],
+      to: ['info@theprojectair.com'],
       reply_to: email,
       subject: `🚀 New Early Access Request — ${company || email}`,
       html: `
