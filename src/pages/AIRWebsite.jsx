@@ -801,13 +801,7 @@ function WaitlistSection() {
     e.preventDefault();
     if (!email.trim()) return;
     setSubmitting(true);
-    try {
-      await fetch('https://formspree.io/f/xnnqolwa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, company, branches }),
-      });
-    } catch (_) {}
+    await base44.functions.invoke('waitlistSubmit', { email, company, branches });
     setSubmitted(true);
     setSubmitting(false);
   };
