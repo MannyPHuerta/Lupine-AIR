@@ -813,14 +813,20 @@ function WaitlistSection() {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      await fetch(`${supabaseUrl}/functions/v1/waitlistSubmit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({ name, email, phone, company, branches }),
-      });
+      if (supabaseUrl && supabaseKey) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        await fetch(`${supabaseUrl}/functions/v1/waitlistSubmit`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ name, email, phone, company, branches }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+      }
     } catch (_) {}
     setSubmitted(true);
     setSubmitting(false);
