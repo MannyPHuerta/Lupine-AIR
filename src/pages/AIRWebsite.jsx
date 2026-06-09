@@ -811,9 +811,14 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
-    } catch (_) {}
-    setSubmitted(true);
+      console.log('[Waitlist] Submitting:', { name, email, phone, company, branches });
+      const res = await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
+      console.log('[Waitlist] Response:', res);
+      setSubmitted(true);
+    } catch (err) {
+      console.error('[Waitlist] Error:', err);
+      alert('Something went wrong. Please email info@theprojectair.com directly.');
+    }
     setSubmitting(false);
   };
 
