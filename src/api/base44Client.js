@@ -1,62 +1,53 @@
 // Base44 SDK client for production app
 // This file provides a unified interface that works on Base44 platform
 
-let base44SDK = null;
-let sdkInitializing = false;
-
-// Initialize Base44 SDK (only available in production Base44 app)
-async function initSDK() {
-  if (sdkInitializing || base44SDK) return;
-  sdkInitializing = true;
-  
-  try {
-    if (typeof window !== 'undefined') {
-      const { createClient } = await import('npm:@base44/sdk@0.8.31');
-      base44SDK = createClient();
-    }
-  } catch (e) {
-    console.log('Base44 SDK not available (preview mode)');
-  } finally {
-    sdkInitializing = false;
+// Base44 SDK is available globally in production Base44 app
+const getBase44SDK = () => {
+  if (typeof window !== 'undefined' && window.base44) {
+    return window.base44;
   }
-}
-
-// Auto-initialize
-initSDK();
+  return null;
+};
 
 export const base44 = {
   auth: {
     me: async () => {
-      if (!base44SDK) throw { status: 401, message: 'Not authenticated' };
-      return await base44SDK.auth.me();
+      const sdk = getBase44SDK();
+      if (!sdk) throw { status: 401, message: 'Not authenticated' };
+      return await sdk.auth.me();
     },
     isAuthenticated: async () => {
-      if (!base44SDK) return false;
-      return await base44SDK.auth.isAuthenticated();
+      const sdk = getBase44SDK();
+      if (!sdk) return false;
+      return await sdk.auth.isAuthenticated();
     },
     logout: async (redirectUrl) => {
-      if (base44SDK) {
-        await base44SDK.auth.logout(redirectUrl);
+      const sdk = getBase44SDK();
+      if (sdk) {
+        await sdk.auth.logout(redirectUrl);
       } else {
         window.location.href = redirectUrl || '/signin';
       }
     },
     redirectToLogin: (nextUrl) => {
-      if (base44SDK) {
-        base44SDK.auth.redirectToLogin(nextUrl);
+      const sdk = getBase44SDK();
+      if (sdk) {
+        sdk.auth.redirectToLogin(nextUrl);
       } else {
         window.location.href = nextUrl ? `/signin?next=${encodeURIComponent(nextUrl)}` : '/signin';
       }
     },
     updateMe: async (data) => {
-      if (!base44SDK) throw new Error('Not authenticated');
-      await base44SDK.auth.updateMe(data);
+      const sdk = getBase44SDK();
+      if (!sdk) throw new Error('Not authenticated');
+      await sdk.auth.updateMe(data);
     },
   },
 
   entities: new Proxy({}, {
     get: (_, entityName) => {
-      if (!base44SDK) {
+      const sdk = getBase44SDK();
+      if (!sdk) {
         return {
           list: async () => [],
           filter: async () => [],
@@ -69,44 +60,50 @@ export const base44 = {
           subscribe: () => () => {},
         };
       }
-      return base44SDK.entities[entityName];
+      return sdk.entities[entityName];
     },
   }),
 
   functions: {
     invoke: async (functionName, params) => {
-      if (!base44SDK) {
+      const sdk = getBase44SDK();
+      if (!sdk) {
         throw new Error('Functions not available in preview mode. Please use the production app.');
       }
-      return await base44SDK.functions.invoke(functionName, params);
+      return await sdk.functions.invoke(functionName, params);
     },
   },
 
   integrations: {
     Core: {
       InvokeLLM: async (params) => {
-        if (!base44SDK) throw new Error('Integrations not available in preview mode');
-        return await base44SDK.integrations.Core.InvokeLLM(params);
+        const sdk = getBase44SDK();
+        if (!sdk) throw new Error('Integrations not available in preview mode');
+        return await sdk.integrations.Core.InvokeLLM(params);
       },
       SendEmail: async (params) => {
-        if (!base44SDK) throw new Error('Integrations not available in preview mode');
-        return await base44SDK.integrations.Core.SendEmail(params);
+        const sdk = getBase44SDK();
+        if (!sdk) throw new Error('Integrations not available in preview mode');
+        return await sdk.integrations.Core.SendEmail(params);
       },
       UploadFile: async ({ file }) => {
-        if (!base44SDK) throw new Error('Integrations not available in preview mode');
-        return await base44SDK.integrations.Core.UploadFile({ file });
+        const sdk = getBase44SDK();
+        if (!sdk) throw new Error('Integrations not available in preview mode');
+        return await sdk.integrations.Core.UploadFile({ file });
       },
       GenerateImage: async (params) => {
-        if (!base44SDK) throw new Error('Integrations not available in preview mode');
-        return await base44SDK.integrations.Core.GenerateImage(params);
+        const sdk = getBase44SDK();
+        if (!sdk) throw new Error('Integrations not available in preview mode');
+        return await sdk.integrations.Core.GenerateImage(params);
       },
     },
   },
 
   analytics: {
     track: (event) => {
-      if (base44SDK) {
-        base44SDK.analytics.track(event);
+      const sdk = getBase44SDK();
+      if (sdk) {
+        sdk.analytics.track(event);
       } else {
         console.log('[analytics]', event);
       }
@@ -115,8 +112,9 @@ export const base44 = {
 
   users: {
     inviteUser: async (email, role) => {
-      if (!base44SDK) throw new Error('User management not available in preview mode');
-      await base44SDK.users.inviteUser(email, role);
+      const sdk = getBase44SDK();
+      if (!sdk) throw new Error('User management not available in preview mode');
+      await sdk.users.inviteUser(email, role);
     },
   },
 };
