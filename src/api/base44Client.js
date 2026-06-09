@@ -1,120 +1,68 @@
-// Base44 SDK client for production app
-// The Base44 platform automatically injects the base44 global object in production
+// Base44 SDK client for frontend
+// Initialize the Base44 SDK for browser use
 
-function getSDK() {
-  // In production Base44 app, the SDK is available as a global
-  if (typeof window !== 'undefined' && window.base44) {
-    return window.base44;
-  }
-  return null;
-}
+import base44SDK from 'npm:@base44/sdk@0.8.31';
+
+// Create a singleton client instance
+const sdkInstance = base44SDK;
 
 export const base44 = {
   auth: {
     me: async () => {
-      const sdk = getSDK();
-      if (!sdk) throw { status: 401, message: 'Not authenticated' };
-      return sdk.auth.me();
+      return sdkInstance.auth.me();
     },
     isAuthenticated: async () => {
-      const sdk = getSDK();
-      if (!sdk) return false;
-      return sdk.auth.isAuthenticated();
+      return sdkInstance.auth.isAuthenticated();
     },
     logout: async (redirectUrl) => {
-      const sdk = getSDK();
-      if (sdk) {
-        sdk.auth.logout(redirectUrl);
-      } else {
-        window.location.href = redirectUrl || '/signin';
-      }
+      sdkInstance.auth.logout(redirectUrl);
     },
     redirectToLogin: (nextUrl) => {
-      const sdk = getSDK();
-      if (sdk) {
-        sdk.auth.redirectToLogin(nextUrl);
-      } else {
-        window.location.href = nextUrl ? `/signin?next=${encodeURIComponent(nextUrl)}` : '/signin';
-      }
+      sdkInstance.auth.redirectToLogin(nextUrl);
     },
     updateMe: async (data) => {
-      const sdk = getSDK();
-      if (!sdk) throw new Error('Not authenticated');
-      sdk.auth.updateMe(data);
+      await sdkInstance.auth.updateMe(data);
     },
   },
 
   entities: new Proxy({}, {
     get: (_, entityName) => {
-      const sdk = getSDK();
-      if (!sdk) {
-        return {
-          list: async () => [],
-          filter: async () => [],
-          get: async () => null,
-          create: async () => null,
-          bulkCreate: async () => [],
-          update: async () => null,
-          delete: async () => {},
-          schema: async () => ({ type: 'object', properties: {} }),
-          subscribe: () => () => {},
-        };
-      }
-      return sdk.entities[entityName];
+      return sdkInstance.entities[entityName];
     },
   }),
 
   functions: {
     invoke: async (functionName, params) => {
-      const sdk = getSDK();
-      if (!sdk) {
-        throw new Error('Functions not available in preview mode. Please use the production app.');
-      }
-      return sdk.functions.invoke(functionName, params);
+      return sdkInstance.functions.invoke(functionName, params);
     },
   },
 
   integrations: {
     Core: {
       InvokeLLM: async (params) => {
-        const sdk = getSDK();
-        if (!sdk) throw new Error('Integrations not available in preview mode');
-        return sdk.integrations.Core.InvokeLLM(params);
+        return sdkInstance.integrations.Core.InvokeLLM(params);
       },
       SendEmail: async (params) => {
-        const sdk = getSDK();
-        if (!sdk) throw new Error('Integrations not available in preview mode');
-        return sdk.integrations.Core.SendEmail(params);
+        return sdkInstance.integrations.Core.SendEmail(params);
       },
       UploadFile: async ({ file }) => {
-        const sdk = getSDK();
-        if (!sdk) throw new Error('Integrations not available in preview mode');
-        return sdk.integrations.Core.UploadFile({ file });
+        return sdkInstance.integrations.Core.UploadFile({ file });
       },
       GenerateImage: async (params) => {
-        const sdk = getSDK();
-        if (!sdk) throw new Error('Integrations not available in preview mode');
-        return sdk.integrations.Core.GenerateImage(params);
+        return sdkInstance.integrations.Core.GenerateImage(params);
       },
     },
   },
 
   analytics: {
     track: (event) => {
-      const sdk = getSDK();
-      if (sdk) {
-        sdk.analytics.track(event);
-      } else {
-        console.log('[analytics]', event);
-      }
+      sdkInstance.analytics.track(event);
     },
   },
 
   users: {
     inviteUser: async (email, role) => {
-      const sdk = getSDK();
-      if (!sdk) throw new Error('User management not available in preview mode');
-      sdk.users.inviteUser(email, role);
+      await sdkInstance.users.inviteUser(email, role);
     },
   },
 };
