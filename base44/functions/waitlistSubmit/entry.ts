@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
     const result = await resend.emails.send({
-      from: 'AIR Waitlist <onboarding@resend.dev>',
+      from: 'AIR Waitlist <noreply@theprojectair.com>',
       to: ['info@theprojectair.com'],
       reply_to: email,
       subject: `🚀 New Early Access Request — ${company || email}`,
