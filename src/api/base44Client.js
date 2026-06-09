@@ -52,6 +52,7 @@ export const base44 = {
       );
       return {
         list: async (order, limit) => {
+          if (!supabase) return [];
           let q = supabase.from(table).select('*');
           if (order) {
             const desc = order.startsWith('-');
@@ -63,6 +64,7 @@ export const base44 = {
           return data || [];
         },
         filter: async (filters, order, limit) => {
+          if (!supabase) return [];
           let q = supabase.from(table).select('*');
           if (filters) {
             Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
@@ -77,26 +79,31 @@ export const base44 = {
           return data || [];
         },
         get: async (id) => {
+          if (!supabase) return null;
           const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
           if (error) throw error;
           return data;
         },
         create: async (record) => {
+          if (!supabase) return null;
           const { data, error } = await supabase.from(table).insert(record).select().single();
           if (error) throw error;
           return data;
         },
         bulkCreate: async (records) => {
+          if (!supabase) return [];
           const { data, error } = await supabase.from(table).insert(records).select();
           if (error) throw error;
           return data;
         },
         update: async (id, updates) => {
+          if (!supabase) return null;
           const { data, error } = await supabase.from(table).update(updates).eq('id', id).select().single();
           if (error) throw error;
           return data;
         },
         delete: async (id) => {
+          if (!supabase) return;
           const { error } = await supabase.from(table).delete().eq('id', id);
           if (error) throw error;
         },
@@ -105,6 +112,7 @@ export const base44 = {
           return { type: 'object', properties: {} };
         },
         subscribe: (callback) => {
+          if (!supabase) return () => {};
           const channel = supabase
             .channel(`${table}_changes`)
             .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
