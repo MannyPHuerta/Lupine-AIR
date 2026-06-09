@@ -9,7 +9,16 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
 
+  const isEditorPreview = !import.meta.env.VITE_SUPABASE_URL;
+
   useEffect(() => {
+    if (isEditorPreview) {
+      // No Supabase credentials — running in Base44 editor preview, bypass auth
+      setUser({ id: 'preview', email: 'preview@base44.com', full_name: 'Preview User', role: 'admin' });
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      return;
+    }
     base44.auth.me()
       .then((currentUser) => {
         setUser(currentUser);
