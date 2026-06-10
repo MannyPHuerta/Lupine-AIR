@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Loader2, ArrowLeft, Calendar, Users, RefreshCw, ExternalLink } from 'lucide-react';
 
 const STATUS_LABELS = {
@@ -21,11 +21,8 @@ export default function PlannerQueue() {
 
   const load = async () => {
     setLoading(true);
-    const [me, all] = await Promise.all([
-      base44.auth.me().catch(() => null),
-      base44.entities.EventPlan.list('-updated_date', 200),
-    ]);
-    setUser(me);
+    const all = await supabaseData.EventPlan.list('-updated_at', 200);
+    setUser(null);
     setPlans(all);
     setLoading(false);
   };
