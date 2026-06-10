@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Mail, Loader2, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 
@@ -10,8 +10,13 @@ export default function FraudDigestPage() {
   const runDigest = async () => {
     setRunning(true);
     setResult(null);
-    const res = await base44.functions.invoke('fraudDigest', {});
-    setResult(res.data);
+    const response = await fetch('/api/functions/fraudDigest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const res = await response.json();
+    setResult(res);
     setRunning(false);
   };
 

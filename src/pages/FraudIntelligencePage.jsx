@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { ShieldAlert, RefreshCw, Loader2, DollarSign } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import FraudIntelTab from '@/components/reports/FraudIntelTab';
@@ -13,8 +13,8 @@ export default function FraudIntelligencePage() {
   const load = async () => {
     setLoading(true);
     const [rent, drawerList] = await Promise.all([
-      base44.entities.Rental.list('-created_date', 2000),
-      base44.entities.CashDrawer.list('-shiftDate', 500),
+      supabaseData.Rental.list('-created_date', 2000),
+      supabaseData.CashDrawer.list('-shiftDate', 500),
     ]);
     setRentals(rent);
     setDrawers(drawerList);
