@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Plus, Pencil, AlertTriangle, Check, Package, ShoppingCart, History, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -25,8 +25,8 @@ function ItemForm({ item, vendors, onSave, onCancel }) {
     setSaving(true);
     const data = { ...form, lastUnitPrice: form.lastUnitPrice ? parseFloat(form.lastUnitPrice) : null };
     const saved = item?.id
-      ? await base44.entities.SupplyItem.update(item.id, data)
-      : await base44.entities.SupplyItem.create(data);
+      ? await supabaseData.SupplyItem.update(item.id, data)
+      : await supabaseData.SupplyItem.create(data);
     onSave(saved);
     setSaving(false);
   };
@@ -112,8 +112,8 @@ export default function SupplyCatalog() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.SupplyItem.list('name', 500),
-      base44.entities.Vendor.list('name', 200),
+      supabaseData.SupplyItem.list('name', 500),
+      supabaseData.Vendor.list('name', 200),
     ]).then(([its, vens]) => { setItems(its.filter(i => i.isActive !== false)); setVendors(vens); setLoading(false); });
   }, []);
 
@@ -144,29 +144,29 @@ export default function SupplyCatalog() {
       byVendor[item.preferredVendorId].items.push(item);
     });
 
-    const allPos = await base44.entities.PurchaseOrder.list('-created_date', 1);
+    const allPos = await supabaseData.PurchaseOrder.list('-created_at', 1);
     let nextNum = 1000 + allPos.length;
 
     for (const { vendor, items: vItems } of Object.values(byVendor)) {
       const lineItems = vItems.map(item => ({
-        supplyItemId: item.id,
-        itemName: item.name,
+        supply_item_id: item.id,
+        item_name: item.name,
         category: item.category,
         unit: item.unit,
-        qtyRequested: item.reorderQuantity || 1,
-        unitPrice: item.lastUnitPrice || null,
-        lineTotal: item.lastUnitPrice ? (item.reorderQuantity || 1) * item.lastUnitPrice : null,
-        qtyReceived: 0,
+        qty_requested: item.reorderQuantity || 1,
+        unit_price: item.lastUnitPrice || null,
+        line_total: item.lastUnitPrice ? (item.reorderQuantity || 1) * item.lastUnitPrice : null,
+        qty_received: 0,
       }));
-      const total = lineItems.reduce((s, l) => s + (l.lineTotal || 0), 0);
-      await base44.entities.PurchaseOrder.create({
-        poNumber: `PO-${nextNum++}`,
+      const total = lineItems.reduce((s, l) => s + (l.line_total || 0), 0);
+      await supabaseData.PurchaseOrder.create({
+        po_number: `PO-${nextNum++}`,
         branch: items[0]?.branch || '01 McAllen',
-        vendorId: vendor.id,
-        vendorName: vendor.name,
-        vendorEmail: vendor.email || '',
-        lineItems,
-        totalAmount: total,
+        vendor_id: vendor.id,
+        vendor_name: vendor.name,
+        vendor_email: vendor.email || '',
+        line_items: lineItems,
+        total_amount: total,
         status: 'draft',
         notes: 'Auto-generated from low stock alert',
       });
