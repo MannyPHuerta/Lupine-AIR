@@ -653,8 +653,14 @@ export default function AvailabilityManager() {
             autoSendCommunications,
           });
           console.log('[PrintConfirm] Email result:', emailRes?.data);
+          if (emailRes?.data?.error) {
+            alert('⚠️ Email failed to send: ' + emailRes.data.error);
+          } else if (emailRes?.data?.skipped) {
+            alert('ℹ️ Email was skipped (check auto-send settings)');
+          }
         } catch (err) {
           console.error('[PrintConfirm] Failed to send confirmation:', err);
+          alert('⚠️ Email error: ' + err.message);
         }
       } else {
         console.warn('[PrintConfirm] Email skipped — practiceMode:', practiceMode, '| autoSend:', autoSendCommunications, '| email:', emailToSend, '| rentalIds:', rentalIds);
@@ -709,15 +715,19 @@ export default function AvailabilityManager() {
       // Send email/SMS if enabled
       if (autoSendCommunications && emailToSend && rentalIds.length > 0) {
         try {
-          await base44.functions.invoke('sendRentalConfirmation', {
+          const emailRes = await base44.functions.invoke('sendRentalConfirmation', {
             rentalIds,
             customerEmail: emailToSend,
             customerPhone: phoneToSend,
             invoiceNumber: pendingInvoice.invNumber,
             autoSendCommunications,
           });
+          if (emailRes?.data?.error) {
+            alert('⚠️ Email failed: ' + emailRes.data.error);
+          }
         } catch (err) {
           console.error('Failed to send confirmation:', err);
+          alert('⚠️ Email error: ' + err.message);
         }
       }
 
