@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Plus, FileText, Clock, CheckCircle2, XCircle, Trophy, Loader2, Search, Filter, Star, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export default function RFQManager() {
   const [activeTab, setActiveTab] = useState('rfqs');
 
   useEffect(() => {
-    base44.entities.RFQRecord.list('-created_date', 200).then(data => {
+    supabaseData.RFQRecord.list('-created_at', 200).then(data => {
       setRfqs(data);
       setLoading(false);
     });
