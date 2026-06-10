@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Save, Loader2, Search, CheckCircle, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -25,10 +25,19 @@ function EnrichButton({ equipmentId, onEnriched }) {
     e.stopPropagation();
     setLoading(true);
     setStatus(null);
-    const res = await base44.functions.invoke('enrichFromManufacturer', { equipmentId });
-    const item = res?.data?.results?.[0];
-    if (item?.specs || item?.imageUrl) onEnriched(item.specs || {}, item.imageUrl || null);
-    setStatus(item?.enriched?.length > 0 ? `✓ Filled: ${item.enriched.join(', ')}` : 'No new data found');
+    try {
+      const res = await fetch('/api/functions/enrichFromManufacturer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ equipmentId }),
+      });
+      const data = await res.json();
+      const item = data?.results?.[0];
+      if (item?.specs || item?.imageUrl) onEnriched(item.specs || {}, item.imageUrl || null);
+      setStatus(item?.enriched?.length > 0 ? `✓ Filled: ${item.enriched.join(', ')}` : 'No new data found');
+    } catch (err) {
+      setStatus('Error: ' + err.message);
+    }
     setLoading(false);
   };
 
@@ -60,7 +69,7 @@ function SpecRow({ eq, onSave }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Equipment.update(eq.id, { specs });
+    await supabaseData.Equipment.update(eq.id, { specs });
     setSaving(false);
     setSaved(true);
     onSave({ ...eq, specs });
@@ -141,7 +150,7 @@ export default function EquipmentSpecsEditor() {
   const [filterMissing, setFilterMissing] = useState(false);
 
   useEffect(() => {
-    base44.entities.Equipment.list('name', 2000).then(eq => {
+    supabaseData.Equipment.list('name', 2000).then(eq => {
       setEquipment(eq.filter(e => CATEGORIES_WITH_SPECS.includes(e.category)));
       setLoading(false);
     });
