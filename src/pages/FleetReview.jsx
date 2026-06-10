@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Pencil, CheckCircle, ChevronLeft, ChevronRight, Send, Printer, Loader2, X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -126,7 +126,7 @@ function VehicleCard({ report, onUpdate, onDispatch, user }) {
     const update = isReviewed
       ? { reviewedAt: null, reviewedBy: null }
       : { reviewedAt: new Date().toISOString(), reviewedBy: user?.email || '' };
-    await base44.entities.Report.update(report.id, update);
+    await supabaseData.Report.update(report.id, update);
     onUpdate({ ...report, ...update });
     setTogglingReview(false);
   };
@@ -227,21 +227,18 @@ export default function FleetReview() {
   const [dateTo, setDateTo] = useState('');
   const [dispatchReports, setDispatchReports] = useState(null);
 
-  const loadReports = () => {
-    return base44.entities.Report.list('-created_date', 500).then(rpts =>
-      setReports(rpts.filter(r => !r.isDeleted))
-    );
+  const loadReports = async () => {
+    try {
+      const rpts = await supabaseData.Report.list('-created_at', 500);
+      setReports(rpts.filter(r => !r.isDeleted));
+    } catch (err) {
+      console.error('[FleetReview] Failed to load reports:', err);
+    }
   };
 
   useEffect(() => {
-    Promise.all([
-      base44.entities.Report.list('-created_date', 500),
-      base44.auth.me(),
-    ]).then(([rpts, me]) => {
-      setReports(rpts.filter(r => !r.isDeleted));
-      setUser(me);
-      setLoading(false);
-    });
+    loadReports();
+    setLoading(false);
   }, []);
 
   const filtered = useMemo(() => reports.filter(r => {
