@@ -83,6 +83,10 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
   const [checkoutError, setCheckoutError] = useState(null);
 
   useEffect(() => {
+    if (!base44 || !base44.auth) {
+      setLoading(false);
+      return;
+    }
     base44.auth.me().then(u => {
       setUser(u);
       setLoading(false);
@@ -93,7 +97,7 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const subscribed = params.get('subscribed');
-    if (subscribed && user) {
+    if (subscribed && user && base44?.auth) {
       base44.auth.me().then(u => setUser(u));
       const url = new URL(window.location.href);
       url.searchParams.delete('subscribed');
@@ -129,6 +133,10 @@ export default function PremiumGate({ requiredTier, featureName, returnPath, chi
     }
     if (window.self !== window.top) {
       alert('Checkout is only available from the published app, not the preview.');
+      return;
+    }
+    if (!base44 || !base44.functions) {
+      setCheckoutError('Base44 SDK not available');
       return;
     }
     setCheckoutLoading(true);
