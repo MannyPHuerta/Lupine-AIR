@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { AlertTriangle, Zap, Moon, X, Bell } from 'lucide-react';
 
 /**
@@ -12,68 +12,78 @@ export default function ThreatNotificationBanner() {
   const seenIds = useRef(new Set());
 
   useEffect(() => {
-    const unsubscribe = base44.entities.EquipmentGPSLink.subscribe((event) => {
-      if (event.type !== 'update' || !event.data) return;
-      const link = event.data;
-      const newAlerts = [];
+    if (!supabase) return;
 
-      if (link.geofenceBreached && link.geofenceBreachedAt) {
-        const key = `geo-${link.id}-${link.geofenceBreachedAt}`;
-        if (!seenIds.current.has(key)) {
-          seenIds.current.add(key);
-          newAlerts.push({
-            id: key,
-            type: 'geofence',
-            icon: AlertTriangle,
-            color: 'bg-red-600',
-            title: '⚠️ Geo-fence Breach',
-            message: `${link.equipmentName || 'Equipment'} has left its assigned worksite.`,
-            location: link.lastKnownAddress,
-            ts: Date.now(),
-          });
+    const channel = supabase
+      .channel('equipment-gps-alerts')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'equipment_gps_links',
+      }, (payload) => {
+        const link = payload.new;
+        const newAlerts = [];
+
+        if (link.geofence_breached && link.geofence_breached_at) {
+          const key = `geo-${link.id}-${link.geofence_breached_at}`;
+          if (!seenIds.current.has(key)) {
+            seenIds.current.add(key);
+            newAlerts.push({
+              id: key,
+              type: 'geofence',
+              icon: AlertTriangle,
+              color: 'bg-red-600',
+              title: '⚠️ Geo-fence Breach',
+              message: `${link.equipment_name || 'Equipment'} has left its assigned worksite.`,
+              location: link.last_known_address,
+              ts: Date.now(),
+            });
+          }
         }
-      }
 
-      if (link.speedAnomalyDetected && link.speedAnomalyAt) {
-        const key = `speed-${link.id}-${link.speedAnomalyAt}`;
-        if (!seenIds.current.has(key)) {
-          seenIds.current.add(key);
-          newAlerts.push({
-            id: key,
-            type: 'speed',
-            icon: Zap,
-            color: 'bg-amber-600',
-            title: '⚡ High-Speed Movement',
-            message: `${link.equipmentName || 'Equipment'} detected at ${link.lastKnownSpeed || '?'} mph — possible trailer transport.`,
-            location: link.lastKnownAddress,
-            ts: Date.now(),
-          });
+        if (link.speed_anomaly_detected && link.speed_anomaly_at) {
+          const key = `speed-${link.id}-${link.speed_anomaly_at}`;
+          if (!seenIds.current.has(key)) {
+            seenIds.current.add(key);
+            newAlerts.push({
+              id: key,
+              type: 'speed',
+              icon: Zap,
+              color: 'bg-amber-600',
+              title: '⚡ High-Speed Movement',
+              message: `${link.equipment_name || 'Equipment'} detected at ${link.last_known_speed || '?'} mph — possible trailer transport.`,
+              location: link.last_known_address,
+              ts: Date.now(),
+            });
+          }
         }
-      }
 
-      if (link.nightMovementDetected && link.nightMovementAt) {
-        const key = `night-${link.id}-${link.nightMovementAt}`;
-        if (!seenIds.current.has(key)) {
-          seenIds.current.add(key);
-          newAlerts.push({
-            id: key,
-            type: 'night',
-            icon: Moon,
-            color: 'bg-indigo-700',
-            title: '🌙 Night Movement Detected',
-            message: `${link.equipmentName || 'Equipment'} is moving outside normal operating hours.`,
-            location: link.lastKnownAddress,
-            ts: Date.now(),
-          });
+        if (link.night_movement_detected && link.night_movement_at) {
+          const key = `night-${link.id}-${link.night_movement_at}`;
+          if (!seenIds.current.has(key)) {
+            seenIds.current.add(key);
+            newAlerts.push({
+              id: key,
+              type: 'night',
+              icon: Moon,
+              color: 'bg-indigo-700',
+              title: '🌙 Night Movement Detected',
+              message: `${link.equipment_name || 'Equipment'} is moving outside normal operating hours.`,
+              location: link.last_known_address,
+              ts: Date.now(),
+            });
+          }
         }
-      }
 
-      if (newAlerts.length > 0) {
-        setAlerts(prev => [...newAlerts, ...prev].slice(0, 10));
-      }
-    });
+        if (newAlerts.length > 0) {
+          setAlerts(prev => [...newAlerts, ...prev].slice(0, 10));
+        }
+      })
+      .subscribe();
 
-    return () => unsubscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const dismiss = (id) => setAlerts(prev => prev.filter(a => a.id !== id));
