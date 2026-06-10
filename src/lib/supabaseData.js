@@ -45,6 +45,14 @@ const TABLE_MAPPINGS = {
   RentalAgreement: 'rental_agreements',
   EquipmentCategory: 'equipment_categories',
   InventoryItem: 'inventory_items',
+  User: 'users',
+  CproContact: 'cpro_contacts',
+  SupplyItem: 'supply_items',
+  Vendor: 'vendors',
+  PurchaseOrder: 'purchase_orders',
+  CashDrawer: 'cash_drawers',
+  LaundryReport: 'laundry_reports',
+  DriverReport: 'driver_reports',
 };
 
 function createEntityAccessor(entityName) {
@@ -70,6 +78,10 @@ function createEntityAccessor(entityName) {
      */
     list: async (sortField = '-created_at', limit = 1000) => {
       try {
+        if (!supabase) {
+          console.warn(`[supabaseData.${entityName}] Supabase client not initialized`);
+          return [];
+        }
         const descending = sortField.startsWith('-');
         const field = descending ? sortField.slice(1) : sortField;
         
@@ -79,10 +91,16 @@ function createEntityAccessor(entityName) {
           .order(field, { ascending: !descending })
           .limit(limit);
         
-        if (error) throw error;
+        if (error) {
+          if (error.code === '42P01') {
+            console.warn(`[supabaseData.${entityName}] Table ${tableName} does not exist yet`);
+            return [];
+          }
+          throw error;
+        }
         return data || [];
       } catch (error) {
-        console.error(`[supabaseData.${entityName}.list] Error:`, error);
+        console.error(`[supabaseData.${entityName}.list] Error:`, error.message);
         return [];
       }
     },
@@ -95,6 +113,10 @@ function createEntityAccessor(entityName) {
      */
     filter: async (filters = {}, sortField = '-created_at', limit = 1000) => {
       try {
+        if (!supabase) {
+          console.warn(`[supabaseData.${entityName}] Supabase client not initialized`);
+          return [];
+        }
         const descending = sortField.startsWith('-');
         const field = descending ? sortField.slice(1) : sortField;
         
@@ -111,10 +133,16 @@ function createEntityAccessor(entityName) {
           .order(field, { ascending: !descending })
           .limit(limit);
         
-        if (error) throw error;
+        if (error) {
+          if (error.code === '42P01') {
+            console.warn(`[supabaseData.${entityName}] Table ${tableName} does not exist yet`);
+            return [];
+          }
+          throw error;
+        }
         return data || [];
       } catch (error) {
-        console.error(`[supabaseData.${entityName}.filter] Error:`, error);
+        console.error(`[supabaseData.${entityName}.filter] Error:`, error.message);
         return [];
       }
     },
