@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Clock, CheckCircle2, AlertTriangle, Zap, TrendingUp, Droplets, FileBarChart, RefreshCw } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -18,12 +18,16 @@ export default function LaundryDashboard() {
 
   const load = async () => {
     setLoading(true);
-    const [eq, logs] = await Promise.all([
-      base44.entities.Equipment.list('-updated_date', 500),
-      base44.entities.MaintenanceLog.filter({ type: 'cleaning' }),
-    ]);
-    setEquipment(eq);
-    setMaintenanceLogs(logs);
+    try {
+      const [eq, logs] = await Promise.all([
+        supabaseData.Equipment.list('-updated_at', 500),
+        supabaseData.MaintenanceLog.filter({ type: 'cleaning' }),
+      ]);
+      setEquipment(eq);
+      setMaintenanceLogs(logs);
+    } catch (err) {
+      console.error('[LaundryDashboard] Failed to load:', err);
+    }
     setLoading(false);
   };
 
@@ -31,25 +35,25 @@ export default function LaundryDashboard() {
 
   const laundryQueue = useMemo(() => {
     return equipment
-      .filter(e => e.unitStatus === 'in_laundry' && (branch === 'All Branches' || e.location === branch))
-      .sort((a, b) => new Date(a.statusUpdatedAt) - new Date(b.statusUpdatedAt));
+      .filter(e => e.unit_status === 'in_laundry' && (branch === 'All Branches' || e.location === branch))
+      .sort((a, b) => new Date(a.status_updated_at) - new Date(b.status_updated_at));
   }, [equipment, branch]);
 
   const completedToday = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     return maintenanceLogs.filter(m =>
       m.type === 'cleaning' &&
-      m.completedDate === today &&
+      m.completed_date === today &&
       (branch === 'All Branches' || m.branch === branch)
     );
   }, [maintenanceLogs, branch]);
 
   const metrics = useMemo(() => {
-    const completed = maintenanceLogs.filter(m => m.type === 'cleaning' && m.completedDate);
+    const completed = maintenanceLogs.filter(m => m.type === 'cleaning' && m.completed_date);
     const avgTime = completed.length > 0
       ? completed.reduce((sum, m) => {
-          const start = new Date(m.scheduledDate);
-          const end = new Date(m.completedDate);
+          const start = new Date(m.scheduled_date);
+          const end = new Date(m.completed_date);
           return sum + (end - start) / (1000 * 60 * 60);
         }, 0) / completed.length
       : 0;
@@ -65,15 +69,15 @@ export default function LaundryDashboard() {
   const staffPerformance = useMemo(() => {
     const staff = {};
     maintenanceLogs
-      .filter(m => m.type === 'cleaning' && m.performedBy)
+      .filter(m => m.type === 'cleaning' && m.performed_by)
       .forEach(m => {
-        if (!staff[m.performedBy]) {
-          staff[m.performedBy] = { count: 0, totalHours: 0 };
+        if (!staff[m.performed_by]) {
+          staff[m.performed_by] = { count: 0, totalHours: 0 };
         }
-        staff[m.performedBy].count += 1;
-        if (m.completedDate) {
-          const hours = (new Date(m.completedDate) - new Date(m.scheduledDate)) / (1000 * 60 * 60);
-          staff[m.performedBy].totalHours += hours;
+        staff[m.performed_by].count += 1;
+        if (m.completed_date) {
+          const hours = (new Date(m.completed_date) - new Date(m.scheduled_date)) / (1000 * 60 * 60);
+          staff[m.performed_by].totalHours += hours;
         }
       });
 
@@ -89,13 +93,13 @@ export default function LaundryDashboard() {
   const handleUpdateStatus = async (equipmentId, newStatus) => {
     setUpdatingId(equipmentId);
     try {
-      const updates = { unitStatus: newStatus };
+      const updates = { unit_status: newStatus };
       if (newStatus === 'available') {
-        updates.statusUpdatedAt = new Date().toISOString();
-        updates.statusUpdatedBy = 'laundry';
-        updates.statusNote = 'Returned from laundry';
+        updates.status_updated_at = new Date().toISOString();
+        updates.status_updated_by = 'laundry';
+        updates.status_note = 'Returned from laundry';
       }
-      await base44.entities.Equipment.update(equipmentId, updates);
+      await supabaseData.Equipment.update(equipmentId, updates);
       load();
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -156,7 +160,7 @@ export default function LaundryDashboard() {
           ) : (
             <div className="divide-y max-h-96 overflow-y-auto">
               {laundryQueue.map(item => {
-                const queueTime = new Date() - new Date(item.statusUpdatedAt);
+                const queueTime = new Date() - new Date(item.status_updated_at);
                 const queueHours = (queueTime / (1000 * 60 * 60)).toFixed(1);
 
                 return (
@@ -166,8 +170,8 @@ export default function LaundryDashboard() {
                       <div className="text-xs text-gray-500 mt-1">
                         Waiting: <strong>{queueHours}h</strong> · {item.location}
                       </div>
-                      {item.statusNote && (
-                        <div className="text-xs text-gray-600 mt-1">{item.statusNote}</div>
+                      {item.status_note && (
+                        <div className="text-xs text-gray-600 mt-1">{item.status_note}</div>
                       )}
                     </div>
                     <Button
@@ -230,8 +234,8 @@ export default function LaundryDashboard() {
             <div className="divide-y max-h-48 overflow-y-auto">
               {completedToday.map(log => (
                 <div key={log.id} className="p-3 text-xs hover:bg-gray-50 transition">
-                  <div className="font-medium text-gray-900">{log.equipmentName}</div>
-                  <div className="text-gray-500 mt-0.5">By: {log.performedBy}</div>
+                  <div className="font-medium text-gray-900">{log.equipment_name}</div>
+                  <div className="text-gray-500 mt-0.5">By: {log.performed_by}</div>
                 </div>
               ))}
             </div>
