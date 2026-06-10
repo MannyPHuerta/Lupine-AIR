@@ -18,6 +18,12 @@ export default function ManagerDashboard() {
 
   const load = () => {
     setLoading(true);
+    // Defensive check for preview mode
+    if (!base44 || !base44.auth || !base44.entities) {
+      console.warn('[ManagerDashboard] Base44 SDK not available, skipping data load');
+      setLoading(false);
+      return;
+    }
     Promise.all([
       base44.entities.Rental.list('-created_date', 500),
       base44.entities.Equipment.list('-updated_date', 500),
