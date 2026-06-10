@@ -3,14 +3,14 @@ import { Resend } from 'npm:resend@2.0.0';
 Deno.serve(async (req) => {
   try {
     const { email, company, branches, name, phone } = await req.json();
-    console.log('Received payload:', { email, company, branches, name, phone });
+    console.log('[WaitlistBackend] Received payload:', { email, company, branches, name, phone });
 
     if (!email) {
       return Response.json({ error: 'Email is required' }, { status: 400 });
     }
 
     const apiKey = Deno.env.get('RESEND_API_KEY');
-    console.log('RESEND_API_KEY exists:', !!apiKey);
+    console.log('[WaitlistBackend] RESEND_API_KEY exists:', !!apiKey);
     
     if (!apiKey) {
       return Response.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     const resend = new Resend(apiKey);
 
     // Send notification email to admin
+    console.log('[WaitlistBackend] Sending admin notification...');
     const adminResult = await resend.emails.send({
       from: 'AIR Waitlist <onboarding@resend.dev>',
       to: ['info@theprojectair.com'],
@@ -60,9 +61,10 @@ Deno.serve(async (req) => {
       `,
     });
 
-    console.log('Admin notification result:', JSON.stringify(adminResult));
+    console.log('[WaitlistBackend] Admin notification result:', JSON.stringify(adminResult, null, 2));
 
     // Send confirmation email to submitter
+    console.log('[WaitlistBackend] Sending confirmation to submitter...');
     const confirmationResult = await resend.emails.send({
       from: 'AIR Waitlist <onboarding@resend.dev>',
       to: [email],
@@ -92,20 +94,26 @@ Deno.serve(async (req) => {
       `,
     });
 
-    console.log('Confirmation email result:', JSON.stringify(confirmationResult));
+    console.log('[WaitlistBackend] Confirmation email result:', JSON.stringify(confirmationResult, null, 2));
 
     if (adminResult.error) {
-      console.error('Admin email error:', JSON.stringify(adminResult.error));
+      console.error('[WaitlistBackend] Admin email error:', JSON.stringify(adminResult.error, null, 2));
       return Response.json({ error: adminResult.error.message }, { status: 500 });
     }
 
+    if (confirmationResult.error) {
+      console.error('[WaitlistBackend] Confirmation email error:', JSON.stringify(confirmationResult.error, null, 2));
+      return Response.json({ error: confirmationResult.error.message }, { status: 500 });
+    }
+
+    console.log('[WaitlistBackend] Both emails sent successfully!');
     return Response.json({ 
       success: true, 
       adminEmailId: adminResult.data?.id,
       confirmationEmailId: confirmationResult.data?.id
     });
   } catch (error) {
-    console.error('Caught error:', error.message);
+    console.error('[WaitlistBackend] Caught error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
