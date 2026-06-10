@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import {
   RefreshCw, Download, Loader2, BarChart2, FileText, Receipt, Brain, TrendingDown
@@ -285,24 +285,30 @@ export default function AccountingDashboard() {
 
   const load = async () => {
     setLoading(true);
-    const [me, r, exp, eq, ts] = await Promise.all([
-      base44.auth.me(),
-      base44.entities.Rental.list('-startDate', 2000),
-      base44.entities.Expense.list('-date', 2000),
-      base44.entities.Equipment.list('-created_date', 500),
-      base44.entities.Timesheet.list('-workDate', 2000),
-    ]);
-    setUser(me);
-    setRentals(r);
-    setExpenses(exp);
-    setEquipment(eq);
-    setTimesheets(ts);
+    try {
+      const [r, exp, eq, ts] = await Promise.all([
+        supabaseData.Rental.list('-start_date', 2000),
+        supabaseData.Expense.list('-date', 2000),
+        supabaseData.Equipment.list('-created_at', 500),
+        supabaseData.Timesheet.list('-work_date', 2000),
+      ]);
+      setRentals(r);
+      setExpenses(exp);
+      setEquipment(eq);
+      setTimesheets(ts);
+    } catch (err) {
+      console.error('[AccountingDashboard] Failed to load:', err);
+    }
     setLoading(false);
   };
 
   const loadExpenses = async () => {
-    const exp = await base44.entities.Expense.list('-date', 2000);
-    setExpenses(exp);
+    try {
+      const exp = await supabaseData.Expense.list('-date', 2000);
+      setExpenses(exp);
+    } catch (err) {
+      console.error('[AccountingDashboard] Failed to load expenses:', err);
+    }
   };
 
   useEffect(() => { load(); }, []);

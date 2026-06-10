@@ -440,12 +440,6 @@ function RtoTab({ rentals, equipment }) {
   const [aiLoading, setAiLoading] = useState(false);
 
   const generateRtoAnalysis = async () => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.integrations || !base44.integrations.Core) {
-      alert('AI analysis not available in preview mode');
-      return;
-    }
-    
     setAiLoading(true);
     try {
       const completed = rentals.filter(r => r.isRentToOwn && (r.status === 'completed' || r.balanceRemaining <= 0));
