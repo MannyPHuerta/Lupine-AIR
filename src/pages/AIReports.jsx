@@ -440,6 +440,12 @@ function RtoTab({ rentals, equipment }) {
   const [aiLoading, setAiLoading] = useState(false);
 
   const generateRtoAnalysis = async () => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.integrations || !base44.integrations.Core) {
+      alert('AI analysis not available in preview mode');
+      return;
+    }
+    
     setAiLoading(true);
     try {
       const completed = rentals.filter(r => r.isRentToOwn && (r.status === 'completed' || r.balanceRemaining <= 0));
@@ -889,6 +895,13 @@ export default function AIReports() {
   const [branch, setBranch] = useState('all');
 
   const load = async () => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[AIReports] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     const [rent, eq] = await Promise.all([
       base44.entities.Rental.list('-created_date', 2000),
