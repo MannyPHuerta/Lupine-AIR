@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Plus, Send, CheckCircle, Package, AlertTriangle, ChevronDown, ChevronUp, Loader2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -43,23 +43,31 @@ function POCard({ po, user, onUpdate }) {
 
   const act = async (updates) => {
     setActing(true);
-    const updated = await base44.entities.PurchaseOrder.update(po.id, updates);
+    const updated = await supabaseData.PurchaseOrder.update(po.id, updates);
     onUpdate(updated);
     setActing(false);
   };
 
   const handleSendToPurchasing = async () => {
     setActing(true);
-    const updated = await base44.entities.PurchaseOrder.update(po.id, { status: 'pending_purchasing' });
-    await base44.functions.invoke('notifyPurchasing', { poId: po.id });
+    const updated = await supabaseData.PurchaseOrder.update(po.id, { status: 'pending_purchasing' });
+    await fetch('/api/functions/notifyPurchasing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ poId: po.id }),
+    });
     onUpdate(updated);
     setActing(false);
   };
 
   const handleApproveAndSend = async () => {
     setActing(true);
-    await base44.functions.invoke('sendPurchaseOrder', { poId: po.id });
-    const updated = await base44.entities.PurchaseOrder.update(po.id, {
+    await fetch('/api/functions/sendPurchaseOrder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ poId: po.id }),
+    });
+    const updated = await supabaseData.PurchaseOrder.update(po.id, {
       status: 'submitted',
       submittedAt: new Date().toISOString(),
       approvedBy: user?.email,
@@ -171,8 +179,8 @@ export default function PurchaseOrders() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.PurchaseOrder.list('-created_date', 300),
-      base44.auth.me(),
+      supabaseData.PurchaseOrder.list('-created_at', 300),
+      Promise.resolve(null), // Skip auth.me() - not needed for this page
     ]).then(([orders, me]) => { setPos(orders); setUser(me); setLoading(false); });
   }, []);
 
