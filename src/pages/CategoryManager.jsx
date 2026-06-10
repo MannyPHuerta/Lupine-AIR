@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, ChevronRight, X, Loader2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -34,9 +34,9 @@ function CategoryForm({ category, onSave, onCancel }) {
     setSaving(true);
     const payload = { ...form, attributes: selectedAttrs };
     if (category) {
-      await base44.entities.EquipmentCategory.update(category.id, payload);
+      await supabaseData.EquipmentCategory.update(category.id, payload);
     } else {
-      await base44.entities.EquipmentCategory.create(payload);
+      await supabaseData.EquipmentCategory.create(payload);
     }
     setSaving(false);
     onSave();
@@ -148,7 +148,7 @@ export default function CategoryManager() {
 
   const load = () => {
     setLoading(true);
-    base44.entities.EquipmentCategory.list('-created_date', 500)
+    supabaseData.EquipmentCategory.list('-created_at', 500)
       .then(cats => {
         const withCounts = cats.map(cat => ({
           ...cat,
@@ -175,7 +175,7 @@ export default function CategoryManager() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this category? Equipment assigned to it will need recategorization.')) return;
-    await base44.entities.EquipmentCategory.delete(id);
+    await supabaseData.EquipmentCategory.delete(id);
     load();
   };
 
