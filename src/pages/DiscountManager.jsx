@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Tag, BarChart2, Trash2, Edit2, Check, X, TrendingDown } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -27,9 +27,9 @@ export default function DiscountManager() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.PromoCode.list('-created_date', 200),
-      base44.entities.VolumeDiscountRule.list('-created_date', 200),
-      base44.entities.DiscountLog.list('-created_date', 500),
+      supabaseData.PromoCode.list('-created_at', 200),
+      supabaseData.VolumeDiscountRule.list('-created_at', 200),
+      supabaseData.DiscountLog.list('-created_at', 500),
     ]).then(([p, v, l]) => {
       setPromos(p);
       setVolumeRules(v);
@@ -58,10 +58,10 @@ export default function DiscountManager() {
       expiresAt: promoForm.expiresAt || null,
     };
     if (editingPromo) {
-      const updated = await base44.entities.PromoCode.update(editingPromo.id, payload);
+      const updated = await supabaseData.PromoCode.update(editingPromo.id, payload);
       setPromos(prev => prev.map(p => p.id === editingPromo.id ? { ...p, ...payload } : p));
     } else {
-      const created = await base44.entities.PromoCode.create({ ...payload, usageCount: 0, active: payload.active !== false });
+      const created = await supabaseData.PromoCode.create({ ...payload, usageCount: 0, active: payload.active !== false });
       setPromos(prev => [created, ...prev]);
     }
     setShowPromoForm(false);
@@ -71,12 +71,12 @@ export default function DiscountManager() {
 
   const deletePromo = async (id) => {
     if (!confirm('Delete this promo code?')) return;
-    await base44.entities.PromoCode.delete(id);
+    await supabaseData.PromoCode.delete(id);
     setPromos(prev => prev.filter(p => p.id !== id));
   };
 
   const togglePromo = async (promo) => {
-    await base44.entities.PromoCode.update(promo.id, { active: !promo.active });
+    await supabaseData.PromoCode.update(promo.id, { active: !promo.active });
     setPromos(prev => prev.map(p => p.id === promo.id ? { ...p, active: !p.active } : p));
   };
 
@@ -88,10 +88,10 @@ export default function DiscountManager() {
       discountValue: parseFloat(volumeForm.discountValue) || 0,
     };
     if (editingVolume) {
-      await base44.entities.VolumeDiscountRule.update(editingVolume.id, payload);
+      await supabaseData.VolumeDiscountRule.update(editingVolume.id, payload);
       setVolumeRules(prev => prev.map(v => v.id === editingVolume.id ? { ...v, ...payload } : v));
     } else {
-      const created = await base44.entities.VolumeDiscountRule.create(payload);
+      const created = await supabaseData.VolumeDiscountRule.create(payload);
       setVolumeRules(prev => [created, ...prev]);
     }
     setShowVolumeForm(false);
@@ -101,12 +101,12 @@ export default function DiscountManager() {
 
   const deleteVolume = async (id) => {
     if (!confirm('Delete this volume rule?')) return;
-    await base44.entities.VolumeDiscountRule.delete(id);
+    await supabaseData.VolumeDiscountRule.delete(id);
     setVolumeRules(prev => prev.filter(v => v.id !== id));
   };
 
   const toggleVolume = async (rule) => {
-    await base44.entities.VolumeDiscountRule.update(rule.id, { active: !rule.active });
+    await supabaseData.VolumeDiscountRule.update(rule.id, { active: !rule.active });
     setVolumeRules(prev => prev.map(v => v.id === rule.id ? { ...v, active: !v.active } : v));
   };
 
