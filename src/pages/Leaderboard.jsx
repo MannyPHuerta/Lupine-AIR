@@ -53,6 +53,13 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[Leaderboard] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     const [r, wo] = await Promise.all([
       base44.entities.Rental.list('-created_date', 1000),
