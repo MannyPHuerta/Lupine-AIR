@@ -189,6 +189,8 @@ export function CustomerIdentity({ customer, onChange, rentals = [], lines = [],
 
   // Load customer records once for lookup
   useEffect(() => {
+    if (!base44) return;
+    
     base44.entities.Customer.list('-created_date', 500).then(setCustomers);
   }, []);
 
