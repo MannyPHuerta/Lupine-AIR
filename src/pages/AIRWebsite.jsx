@@ -816,7 +816,7 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
+      await window.base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err);
