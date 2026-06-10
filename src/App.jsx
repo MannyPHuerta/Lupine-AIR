@@ -117,13 +117,41 @@ import Onboarding from "./pages/Onboarding";
 
 const AuthenticatedApp = () => {
   const supabaseAuth = useSupabaseAuth();
+  // 'checking' | 'preview' | 'supabase'
+  const [authMode, setAuthMode] = React.useState(window.base44 ? 'preview' : 'checking');
 
-  // Base44 preview injects window.base44 — bypass all auth gating immediately
-  if (window.base44) {
+  React.useEffect(() => {
+    if (authMode !== 'checking') return;
+    let tries = 0;
+    const interval = setInterval(() => {
+      tries++;
+      if (window.base44) {
+        setAuthMode('preview');
+        clearInterval(interval);
+      } else if (tries >= 30) {
+        // 3s elapsed, no preview injection — use Supabase
+        setAuthMode('supabase');
+        clearInterval(interval);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [authMode]);
+
+  // Still waiting to detect environment
+  if (authMode === 'checking') {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Base44 preview — no auth needed
+  if (authMode === 'preview') {
     return <AuthenticatedRoutes />;
   }
 
-  // On Vercel (Supabase env vars present), use Supabase session
+  // Supabase auth (Vercel production)
   const { isLoadingAuth, isAuthenticated, authError } = supabaseAuth;
 
   if (isLoadingAuth) {
