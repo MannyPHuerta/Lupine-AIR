@@ -18,11 +18,11 @@ Deno.serve(async (req) => {
 
     const resend = new Resend(apiKey);
 
-    // Send notification email to admin
+    // Send notification email to admin (using verified email for sandbox mode)
     console.log('[WaitlistBackend] Sending admin notification...');
     const adminResult = await resend.emails.send({
       from: 'AIR Waitlist <onboarding@resend.dev>',
-      to: ['info@theprojectair.com'],
+      to: ['mannyph2003@hotmail.com'],
       reply_to: email,
       subject: `🚀 New Early Access Request — ${company || email}`,
       html: `
