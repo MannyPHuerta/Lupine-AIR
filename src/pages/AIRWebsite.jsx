@@ -816,39 +816,7 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      // Call Resend directly — works from any host (Base44, Vercel, etc.) without auth
-      const submittedAt = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: 'AIR Waitlist <info@theprojectair.com>',
-          to: ['info@theprojectair.com'],
-          reply_to: email,
-          subject: `🚀 New Early Access Request — ${company || email}`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-              <h2 style="color:#0ea5e9;">New Early Access Request</h2>
-              <table style="width:100%;border-collapse:collapse;">
-                <tr><td style="padding:8px;font-weight:bold;color:#555;">Name</td><td style="padding:8px;">${name || '—'}</td></tr>
-                <tr style="background:#f9f9f9;"><td style="padding:8px;font-weight:bold;color:#555;">Email</td><td style="padding:8px;">${email}</td></tr>
-                <tr><td style="padding:8px;font-weight:bold;color:#555;">Phone</td><td style="padding:8px;">${phone || '—'}</td></tr>
-                <tr style="background:#f9f9f9;"><td style="padding:8px;font-weight:bold;color:#555;">Company</td><td style="padding:8px;">${company || '—'}</td></tr>
-                <tr><td style="padding:8px;font-weight:bold;color:#555;">Branches</td><td style="padding:8px;">${branches || '—'}</td></tr>
-                <tr style="background:#f9f9f9;"><td style="padding:8px;font-weight:bold;color:#555;">Submitted</td><td style="padding:8px;">${submittedAt} CST</td></tr>
-              </table>
-              <p style="color:#888;font-size:12px;margin-top:16px;">Reply to this email to reach ${name || 'the submitter'} directly at ${email}.</p>
-            </div>
-          `,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Email send failed');
-      }
+      await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err);
