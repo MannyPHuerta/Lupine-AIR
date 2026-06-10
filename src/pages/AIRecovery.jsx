@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { supabaseData } from '@/lib/supabaseData';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -34,11 +35,11 @@ function RecoveryCard({ recovery, rental, equipment, onAIInsight, aiResult }) {
   const meta = RECOVERY_STATUS_META[recovery.status] || RECOVERY_STATUS_META.scheduled;
   const StatusIcon = meta.icon;
 
-  const damages = recovery.detectedDamages || [];
-  const totalDamageCost = damages.reduce((s, d) => s + (d.estimatedRepairCost || 0), 0);
+  const damages = recovery.detected_damages || [];
+  const totalDamageCost = damages.reduce((s, d) => s + (d.estimated_repair_cost || 0), 0);
   const hasDamage = damages.length > 0;
 
-  const eq = equipment.find(e => e.id === recovery.items?.[0]?.equipmentId);
+  const eq = equipment.find(e => e.id === recovery.items?.[0]?.equipment_id);
 
   const handleAI = async () => {
     if (aiResult) { setExpanded(!expanded); return; }
@@ -52,10 +53,10 @@ function RecoveryCard({ recovery, rental, equipment, onAIInsight, aiResult }) {
   };
 
   const daysOverdue = rental ? (() => {
-    if (!rental.endDate || rental.status !== 'out') return 0;
+    if (!rental.end_date || rental.status !== 'out') return 0;
     const today = new Date().toISOString().split('T')[0];
-    if (rental.endDate >= today) return 0;
-    return Math.floor((new Date(today) - new Date(rental.endDate)) / 86400000);
+    if (rental.end_date >= today) return 0;
+    return Math.floor((new Date(today) - new Date(rental.end_date)) / 86400000);
   })() : 0;
 
   return (
@@ -67,7 +68,7 @@ function RecoveryCard({ recovery, rental, equipment, onAIInsight, aiResult }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-gray-900 truncate">{recovery.customerName}</span>
+              <span className="font-semibold text-gray-900 truncate">{recovery.customer_name}</span>
               {daysOverdue > 0 && (
                 <span className="text-xs bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full">
                   ⚠️ {daysOverdue}d overdue
@@ -80,14 +81,14 @@ function RecoveryCard({ recovery, rental, equipment, onAIInsight, aiResult }) {
               )}
             </div>
             <div className="text-xs text-gray-500 mt-0.5 flex flex-wrap gap-2">
-              <span>{recovery.items?.map(i => i.equipmentName).join(', ') || 'Items pending'}</span>
+              <span>{recovery.items?.map(i => i.equipment_name).join(', ') || 'Items pending'}</span>
               <span>·</span>
               <span>{recovery.branch}</span>
-              {recovery.scheduledDate && <><span>·</span><span>📅 {recovery.scheduledDate}</span></>}
+              {recovery.scheduled_date && <><span>·</span><span>📅 {recovery.scheduled_date}</span></>}
               {rental?.invoiceNumber && <><span>·</span><span className="font-mono text-indigo-500">#{rental.invoiceNumber}</span></>}
             </div>
-            {recovery.driverName && (
-              <div className="text-xs text-gray-400 mt-0.5">🚚 Driver: {recovery.driverName}</div>
+            {recovery.driver_name && (
+              <div className="text-xs text-gray-400 mt-0.5">🚚 Driver: {recovery.driver_name}</div>
             )}
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
@@ -111,8 +112,8 @@ function RecoveryCard({ recovery, rental, equipment, onAIInsight, aiResult }) {
             <div className="text-xs font-semibold text-red-800 mb-1">🔴 Damage Detected</div>
             {damages.map((d, i) => (
               <div key={i} className="flex items-center justify-between text-xs text-red-700">
-                <span>{d.equipmentName} · <span className="capitalize">{d.damageType}</span> ({d.severity})</span>
-                {d.estimatedRepairCost && <span className="font-semibold">${d.estimatedRepairCost.toFixed(0)}</span>}
+                <span>{d.equipment_name} · <span className="capitalize">{d.damage_type}</span> ({d.severity})</span>
+                {d.estimated_repair_cost && <span className="font-semibold">${d.estimated_repair_cost.toFixed(0)}</span>}
               </div>
             ))}
             <div className="flex justify-between font-bold text-red-900 border-t border-red-200 pt-1 mt-1 text-xs">
@@ -160,22 +161,22 @@ function RecoveryCard({ recovery, rental, equipment, onAIInsight, aiResult }) {
 
 function OverdueRentalRow({ rental }) {
   const today = new Date().toISOString().split('T')[0];
-  const daysOverdue = Math.floor((new Date(today) - new Date(rental.endDate)) / 86400000);
+  const daysOverdue = Math.floor((new Date(today) - new Date(rental.end_date)) / 86400000);
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b last:border-0 hover:bg-red-50 transition">
       <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm text-gray-900 truncate">{rental.customerName}</div>
-        <div className="text-xs text-gray-500 truncate">{rental.equipmentName} · {rental.branch}</div>
-        {rental.invoiceNumber && <div className="text-xs font-mono text-indigo-500">#{rental.invoiceNumber}</div>}
+        <div className="font-semibold text-sm text-gray-900 truncate">{rental.customer_name}</div>
+        <div className="text-xs text-gray-500 truncate">{rental.equipment_name} · {rental.branch}</div>
+        {rental.invoice_number && <div className="text-xs font-mono text-indigo-500">#{rental.invoice_number}</div>}
       </div>
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
         <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">{daysOverdue}d overdue</span>
-        <span className="text-xs text-gray-400">Due {rental.endDate}</span>
-        {rental.customerPhone && (
-          <a href={`tel:${rental.customerPhone}`} onClick={e => e.stopPropagation()}
+        <span className="text-xs text-gray-400">Due {rental.end_date}</span>
+        {rental.customer_phone && (
+          <a href={`tel:${rental.customer_phone}`} onClick={e => e.stopPropagation()}
             className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800">
-            <Phone className="w-3 h-3" /> {rental.customerPhone}
+            <Phone className="w-3 h-3" /> {rental.customer_phone}
           </a>
         )}
       </div>
@@ -198,14 +199,18 @@ export default function AIRecovery() {
 
   const load = async () => {
     setLoading(true);
-    const [rec, rent, eq] = await Promise.all([
-      base44.entities.Recovery.list('-scheduledDate', 500),
-      base44.entities.Rental.list('-startDate', 1000),
-      base44.entities.Equipment.list('name', 2000),
-    ]);
-    setRecoveries(rec);
-    setRentals(rent);
-    setEquipment(eq);
+    try {
+      const [rec, rent, eq] = await Promise.all([
+        supabaseData.Recovery.list('-scheduled_date', 500),
+        supabaseData.Rental.list('-start_date', 1000),
+        supabaseData.Equipment.list('name', 2000),
+      ]);
+      setRecoveries(rec);
+      setRentals(rent);
+      setEquipment(eq);
+    } catch (err) {
+      console.error('[AIRecovery] Failed to load:', err);
+    }
     setLoading(false);
   };
 
@@ -215,13 +220,13 @@ export default function AIRecovery() {
 
   // Overdue rentals (out past end date, no recovery scheduled)
   const overdueRentals = useMemo(() => {
-    const recoveredRentalIds = new Set(recoveries.map(r => r.rentalId));
+    const recoveredRentalIds = new Set(recoveries.map(r => r.rental_id));
     return rentals.filter(r =>
       r.status === 'out' &&
-      r.endDate < today &&
+      r.end_date < today &&
       !recoveredRentalIds.has(r.id) &&
       (branch === 'All Branches' || r.branch === branch)
-    ).sort((a, b) => a.endDate.localeCompare(b.endDate));
+    ).sort((a, b) => a.end_date.localeCompare(b.end_date));
   }, [rentals, recoveries, branch, today]);
 
   const filteredRecoveries = useMemo(() => {
@@ -236,20 +241,20 @@ export default function AIRecovery() {
       if (statusFilter === 'open') {
         return OPEN_STATUSES.indexOf(a.status) - OPEN_STATUSES.indexOf(b.status);
       }
-      return (b.scheduledDate || '').localeCompare(a.scheduledDate || '');
+      return (b.scheduled_date || '').localeCompare(a.scheduled_date || '');
     });
   }, [recoveries, branch, statusFilter]);
 
   const counts = useMemo(() => ({
     open:      recoveries.filter(r => OPEN_STATUSES.includes(r.status)).length,
-    withDamage:recoveries.filter(r => r.detectedDamages?.length > 0).length,
+    withDamage:recoveries.filter(r => r.detected_damages?.length > 0).length,
     completed: recoveries.filter(r => r.status === 'completed').length,
     overdue:   overdueRentals.length,
   }), [recoveries, overdueRentals]);
 
   const totalDamageValue = useMemo(() =>
     recoveries.reduce((sum, r) =>
-      sum + (r.detectedDamages || []).reduce((s, d) => s + (d.estimatedRepairCost || 0), 0), 0
+      sum + (r.detected_damages || []).reduce((s, d) => s + (d.estimated_repair_cost || 0), 0), 0
     ), [recoveries]);
 
   const handleAIInsight = async (recovery, rental, eq) => {
@@ -257,15 +262,15 @@ export default function AIRecovery() {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Analyze this equipment recovery situation and provide actionable insights:
 
-Customer: ${recovery.customerName}
-Equipment: ${recovery.items?.map(i => i.equipmentName).join(', ')}
+Customer: ${recovery.customer_name}
+Equipment: ${recovery.items?.map(i => i.equipment_name).join(', ')}
 Recovery Status: ${recovery.status}
-Scheduled Date: ${recovery.scheduledDate || 'Not scheduled'}
+Scheduled Date: ${recovery.scheduled_date || 'Not scheduled'}
 Branch: ${recovery.branch}
-Rental End Date: ${rental?.endDate || 'Unknown'}
+Rental End Date: ${rental?.end_date || 'Unknown'}
 Rental Status: ${rental?.status || 'Unknown'}
-Damage Detected: ${recovery.detectedDamages?.length > 0 ? JSON.stringify(recovery.detectedDamages) : 'None'}
-Driver Assigned: ${recovery.driverName || 'Not assigned'}
+Damage Detected: ${recovery.detected_damages?.length > 0 ? JSON.stringify(recovery.detected_damages) : 'None'}
+Driver Assigned: ${recovery.driver_name || 'Not assigned'}
 Equipment Condition Before: ${eq?.condition || 'Unknown'}
 
 Provide a recovery risk assessment and recommended action.`,
@@ -290,10 +295,10 @@ Provide a recovery risk assessment and recommended action.`,
     setAnalysisResult(null);
     try {
       const overdueList = overdueRentals.slice(0, 20).map(r => ({
-        customer: r.customerName, equipment: r.equipmentName, daysOverdue: Math.floor((new Date(today) - new Date(r.endDate)) / 86400000), phone: r.customerPhone
+        customer: r.customer_name, equipment: r.equipment_name, daysOverdue: Math.floor((new Date(today) - new Date(r.end_date)) / 86400000), phone: r.customer_phone
       }));
-      const damageList = recoveries.filter(r => r.detectedDamages?.length > 0).slice(0, 10).map(r => ({
-        customer: r.customerName, damages: r.detectedDamages.map(d => `${d.damageType} (${d.severity}) $${d.estimatedRepairCost || 0}`).join('; ')
+      const damageList = recoveries.filter(r => r.detected_damages?.length > 0).slice(0, 10).map(r => ({
+        customer: r.customer_name, damages: r.detected_damages.map(d => `${d.damage_type} (${d.severity}) $${d.estimated_repair_cost || 0}`).join('; ')
       }));
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Analyze the overall equipment recovery situation for a rental company and provide strategic insights:
@@ -301,7 +306,7 @@ Provide a recovery risk assessment and recommended action.`,
 OVERDUE RENTALS (${overdueRentals.length} total):
 ${overdueList.map(r => `- ${r.customer}: ${r.equipment} — ${r.daysOverdue} days overdue`).join('\n') || 'None'}
 
-DAMAGE REPORTS (${recoveries.filter(r => r.detectedDamages?.length > 0).length} total):
+DAMAGE REPORTS (${recoveries.filter(r => r.detected_damages?.length > 0).length} total):
 ${damageList.map(r => `- ${r.customer}: ${r.damages}`).join('\n') || 'None'}
 
 OPEN RECOVERIES: ${counts.open}
@@ -330,14 +335,14 @@ Provide a strategic recovery action plan for the operations manager.`,
   const handleExportCSV = () => {
     const headers = ['Customer', 'Equipment', 'Status', 'Branch', 'Driver', 'Scheduled Date', 'Damage Count', 'Damage Value'];
     const rows = filteredRecoveries.map(r => [
-      r.customerName || '',
-      r.items?.map(i => i.equipmentName).join('; ') || '',
+      r.customer_name || '',
+      r.items?.map(i => i.equipment_name).join('; ') || '',
       r.status || '',
       r.branch || '',
-      r.driverName || '',
-      r.scheduledDate || '',
-      r.detectedDamages?.length || 0,
-      (r.detectedDamages || []).reduce((s, d) => s + (d.estimatedRepairCost || 0), 0).toFixed(0),
+      r.driver_name || '',
+      r.scheduled_date || '',
+      r.detected_damages?.length || 0,
+      (r.detected_damages || []).reduce((s, d) => s + (d.estimated_repair_cost || 0), 0).toFixed(0),
     ]);
     const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -549,7 +554,7 @@ Provide a strategic recovery action plan for the operations manager.`,
         ) : (
           <div className="space-y-4">
             {filteredRecoveries.map(recovery => {
-              const rental = rentals.find(r => r.id === recovery.rentalId);
+              const rental = rentals.find(r => r.id === recovery.rental_id);
               return (
                 <RecoveryCard
                   key={recovery.id}
