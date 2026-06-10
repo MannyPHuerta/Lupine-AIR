@@ -105,40 +105,55 @@ export default function AvailabilityManager() {
 
   // Fetch catalog and rental data
   useEffect(() => {
-    Promise.resolve(null).then(u => {
-      setCurrentUser(u);
-    }).catch(() => {});
-    // Batch into two groups to avoid rate limiting
-    Promise.all([
-      supabaseData.Equipment.list('name', 2000),
-      supabaseData.Rental.list('-created_date', 1000),
-      supabaseData.CompanySettings.list(),
-      supabaseData.BranchSettings.list(),
-    ]).then(async ([eq, rent, company, branches]) => {
-      const [matrices, volRules, promoCodes, agreements] = await Promise.all([
-        supabaseData.DeliveryMatrix.list(),
-        supabaseData.VolumeDiscountRule.filter({ active: true }),
-        supabaseData.PromoCode.list('-created_date', 200),
-        supabaseData.RentalAgreement.list(),
-      ]);
-      return [eq, rent, company, branches, matrices, volRules, promoCodes, agreements];
-    }).then(([eq, rent, company, branches, matrices, volRules, promoCodes, agreements]) => {
-      setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
-      setRentals(rent);
-      setCompanyInfo(company[0] || null);
-      const branchMap = {};
-      branches.forEach(b => { branchMap[b.branch] = b; });
-      setBranchSettings(branchMap);
-      const matrixMap = {};
-      matrices.forEach(m => { matrixMap[m.branch] = m; });
-      setDeliveryMatrices(matrixMap);
-      const agreementMap = {};
-      agreements.forEach(a => { agreementMap[a.branch] = a; });
-      setRentalAgreements(agreementMap);
-      setVolumeRules(volRules);
-      setPromoCodes(promoCodes);
-      setLoading(false);
-    });
+    let cancelled = false;
+    
+    const loadData = async () => {
+      try {
+        // Load all data in parallel with timeout
+        const [eq, rent, company, branches, matrices, volRules, promoCodes, agreements] = await Promise.all([
+          supabaseData.Equipment.list('name', 2000),
+          supabaseData.Rental.list('-created_date', 1000),
+          supabaseData.CompanySettings.list(),
+          supabaseData.BranchSettings.list(),
+          supabaseData.DeliveryMatrix.list(),
+          supabaseData.VolumeDiscountRule.filter({ active: true }),
+          supabaseData.PromoCode.list('-created_date', 200),
+          supabaseData.RentalAgreement.list(),
+        ]);
+        
+        if (cancelled) return;
+        
+        setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
+        setRentals(rent);
+        setCompanyInfo(company[0] || null);
+        
+        const branchMap = {};
+        branches.forEach(b => { branchMap[b.branch] = b; });
+        setBranchSettings(branchMap);
+        
+        const matrixMap = {};
+        matrices.forEach(m => { matrixMap[m.branch] = m; });
+        setDeliveryMatrices(matrixMap);
+        
+        const agreementMap = {};
+        agreements.forEach(a => { agreementMap[a.branch] = a; });
+        setRentalAgreements(agreementMap);
+        
+        setVolumeRules(volRules);
+        setPromoCodes(promoCodes);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        if (!cancelled) {
+          setLoading(false);
+          alert('Failed to load data. Please refresh the page.');
+        }
+      }
+    };
+    
+    loadData();
+    
+    return () => { cancelled = true; };
   }, []);
 
   const updateLine = (id, updated) => {
