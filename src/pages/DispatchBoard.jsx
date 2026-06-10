@@ -67,6 +67,13 @@ export default function DispatchBoard() {
 
   const load = () => {
     setLoading(true);
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[DispatchBoard] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     Promise.all([
       base44.entities.Delivery.list('-scheduledDate', 200),
       base44.entities.Recovery.list('-scheduledDate', 200),
