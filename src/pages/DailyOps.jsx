@@ -162,6 +162,12 @@ export default function DailyOps() {
 
   const load = async () => {
     setLoading(true);
+    // Defensive check for preview mode
+    if (!base44 || !base44.auth || !base44.entities) {
+      console.warn('[DailyOps] Base44 SDK not available, skipping data load');
+      setLoading(false);
+      return;
+    }
     const [me, r, eq, dels, rtoPays] = await Promise.all([
       base44.auth.me(),
       base44.entities.Rental.list('-startDate', 500),
