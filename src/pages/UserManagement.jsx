@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabaseData } from '@/lib/supabaseData';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,24 +10,20 @@ import CSVImportPanel from '@/components/users/CSVImportPanel';
 import RosterPanel from '@/components/users/RosterPanel';
 
 export default function UserManagement() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
   const [showCSVImport, setShowCSVImport] = useState(false);
   const [activeTab, setActiveTab] = useState('users'); // 'users' | 'roster'
 
   useEffect(() => {
-    Promise.all([
-      supabaseData.User.list(),
-      Promise.resolve(null) // Skip auth.me() - not needed
-    ]).then(([userList, me]) => {
+    supabaseData.User.list().then(userList => {
       setUsers(userList);
-      setCurrentUser(me);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
