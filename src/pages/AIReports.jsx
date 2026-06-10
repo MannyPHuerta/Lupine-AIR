@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { BarChart3, TrendingUp, Package, AlertTriangle, RefreshCw, Loader2, Download, Printer, ShoppingBag, Sparkles } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import {
@@ -508,12 +508,13 @@ Provide a concise analysis covering:
 
 Format with clear headings and bullet points. Be direct and data-driven.`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        add_context_from_internet: false,
-      });
-
-      setAiAnalysis(typeof response === 'string' ? response : response.data || response);
+      // Use backend function instead of direct integration call
+      const response = await fetch('/api/functions/getPlatformKnowledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      }).then(r => r.json());
+      setAiAnalysis(typeof response === 'string' ? response : response.response || response.data || response);
     } catch (err) {
       console.error('AI analysis failed:', err);
       setAiAnalysis('Failed to generate analysis. Please try again.');
@@ -895,20 +896,17 @@ export default function AIReports() {
   const [branch, setBranch] = useState('all');
 
   const load = async () => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      console.warn('[AIReports] Base44 SDK not available');
-      setLoading(false);
-      return;
-    }
-    
     setLoading(true);
-    const [rent, eq] = await Promise.all([
-      base44.entities.Rental.list('-created_date', 2000),
-      base44.entities.Equipment.list('-created_date', 500),
-    ]);
-    setRentals(rent);
-    setEquipment(eq);
+    try {
+      const [rent, eq] = await Promise.all([
+        supabaseData.Rental.list('-created_at', 2000),
+        supabaseData.Equipment.list('-created_at', 500),
+      ]);
+      setRentals(rent);
+      setEquipment(eq);
+    } catch (err) {
+      console.error('[AIReports] Failed to load data:', err);
+    }
     setLoading(false);
   };
 

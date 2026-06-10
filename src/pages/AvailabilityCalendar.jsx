@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, RefreshCw, Printer, ChevronLeft, ChevronRight,
@@ -41,24 +41,21 @@ export default function AvailabilityCalendar() {
   const [viewDate, setViewDate] = useState(() => focusDate ? new Date(focusDate + 'T12:00:00') : new Date());
 
   const load = async () => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.auth || !base44.entities) {
-      console.warn('[AvailabilityCalendar] Base44 SDK not available');
-      return;
+    try {
+      const [eq, rent, dels, usrs] = await Promise.all([
+        supabaseData.Equipment.list('-created_at', 500),
+        supabaseData.Rental.list('-start_date', 2000),
+        supabaseData.Delivery.list('-created_at', 1000),
+        supabaseData.UserRoster.list('-created_at', 200),
+      ]);
+      // For now, skip auth - can be added later
+      setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
+      setRentals(rent);
+      setDeliveries(dels);
+      setUsers(usrs);
+    } catch (err) {
+      console.error('[AvailabilityCalendar] Failed to load data:', err);
     }
-    
-    const [me, eq, rent, dels, usrs] = await Promise.all([
-      base44.auth.me(),
-      base44.entities.Equipment.list('-created_date', 500),
-      base44.entities.Rental.list('-startDate', 2000),
-      base44.entities.Delivery.list('-created_date', 1000),
-      base44.entities.User.list(),
-    ]);
-    setCurrentUser(me);
-    setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
-    setRentals(rent);
-    setDeliveries(dels);
-    setUsers(usrs);
   };
 
   useEffect(() => { load().finally(() => setLoading(false)); }, []);
