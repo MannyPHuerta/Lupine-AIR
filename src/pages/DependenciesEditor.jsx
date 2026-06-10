@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -18,7 +18,7 @@ export default function DependenciesEditor() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    base44.entities.Equipment.list('-created_date', 500).then(eq => {
+    supabaseData.Equipment.list('name', 500).then(eq => {
       setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name)));
       setLoading(false);
     });
@@ -55,7 +55,7 @@ export default function DependenciesEditor() {
         ...selectedEquip,
         dependencies: [...currentDeps, newDep]
       };
-      await base44.entities.Equipment.update(selectedEquipmentId, {
+      await supabaseData.Equipment.update(selectedEquipmentId, {
         dependencies: updated.dependencies
       });
       
@@ -80,7 +80,7 @@ export default function DependenciesEditor() {
         ...selectedEquip,
         dependencies: currentDeps.filter(d => d.equipmentId !== equipmentIdToRemove)
       };
-      await base44.entities.Equipment.update(selectedEquipmentId, {
+      await supabaseData.Equipment.update(selectedEquipmentId, {
         dependencies: updated.dependencies
       });
       
