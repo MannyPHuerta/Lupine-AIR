@@ -626,6 +626,11 @@ function PricingSection() {
 
   const handleCheckout = async (tier) => {
     setLoadingTier(tier);
+    if (!base44 || !base44.auth) {
+      alert('Authentication unavailable in preview mode.');
+      setLoadingTier(null);
+      return;
+    }
     const isAuthed = await base44.auth.isAuthenticated();
     if (!isAuthed) {
       base44.auth.redirectToLogin(window.location.pathname + '#pricing');
