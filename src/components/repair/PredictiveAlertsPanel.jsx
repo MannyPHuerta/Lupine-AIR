@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { AlertTriangle, CheckCircle, Clock, Zap, TrendingDown, X, Loader2 } from 'lucide-react';
 
 const ALERT_ICONS = {
@@ -32,7 +32,7 @@ export default function PredictiveAlertsPanel() {
   useEffect(() => {
     const load = async () => {
       try {
-        const active = await base44.entities.PredictiveAlert.filter({ status: 'active' });
+        const active = await supabaseData.PredictiveAlert.filter({ status: 'active' });
         setAlerts(active.sort((a, b) => {
           const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
           return severityOrder[a.severity] - severityOrder[b.severity];
@@ -45,19 +45,12 @@ export default function PredictiveAlertsPanel() {
     };
 
     load();
-    const unsub = base44.entities.PredictiveAlert.subscribe((event) => {
-      if (event.type === 'create' || event.type === 'update' || event.type === 'delete') {
-        load();
-      }
-    });
-
-    return unsub;
   }, []);
 
   const handleAcknowledge = async (alertId) => {
     setAcknowledging(alertId);
     try {
-      await base44.entities.PredictiveAlert.update(alertId, { 
+      await supabaseData.PredictiveAlert.update(alertId, { 
         status: 'acknowledged',
         acknowledgedAt: new Date().toISOString(),
       });
