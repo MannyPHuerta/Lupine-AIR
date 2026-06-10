@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Save, Loader2, Copy, AlertCircle, Wand2, RotateCcw, Upload, FileUp, CheckCircle2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -75,7 +75,7 @@ export default function RentalAgreementManager() {
   const [agreementId, setAgreementId] = useState(null);
 
   useEffect(() => {
-    base44.entities.RentalAgreement.list().then(data => {
+    supabaseData.RentalAgreement.list().then(data => {
       const map = {};
       data.forEach(a => { map[a.branch] = a; });
       setAgreements(map);
@@ -97,15 +97,15 @@ export default function RentalAgreementManager() {
   const handleAIGenerate = async () => {
     setGenerating(true);
     try {
-      const settings = await base44.entities.CompanySettings.list();
+      const settings = await supabaseData.CompanySettings.list();
       const co = settings[0] || {};
-      const branchSettings = await base44.entities.BranchSettings.filter({ branch });
+      const branchSettings = await supabaseData.BranchSettings.filter({ branch });
       const bs = branchSettings[0] || {};
 
       const companyName = co.companyName || 'the Company';
       const state = bs.address ? bs.address.split(',').slice(-2).join(',').trim() : 'Texas';
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await supabaseData.integrations.Core.InvokeLLM({
         prompt: `You are a legal document specialist. Generate a complete, professional Equipment Rental Agreement for the following company:
 
 Company Name: ${companyName}
@@ -145,8 +145,8 @@ Requirements:
     if (!file) return;
     setExtracting(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      const { file_url } = await supabaseData.integrations.Core.UploadFile({ file });
+      const result = await supabaseData.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: 'object',
@@ -190,9 +190,9 @@ Requirements:
     try {
       const existing = agreements[branch];
       const agreementType = content === ARA_AGREEMENT ? 'ARA_standard' : 'bespoke';
-      const me = (await base44.auth.me())?.email || 'unknown';
+      const me = 'user@company.com';
       if (existing) {
-        await base44.entities.RentalAgreement.update(existing.id, {
+        await supabaseData.RentalAgreement.update(existing.id, {
           title,
           content,
           pages,
@@ -203,7 +203,7 @@ Requirements:
         });
         setAgreementId(existing.id);
       } else {
-        const created = await base44.entities.RentalAgreement.create({
+        const created = await supabaseData.RentalAgreement.create({
           branch,
           title,
           content,
@@ -234,9 +234,9 @@ Requirements:
 
     setEnriching(true);
     try {
-      const settings = await base44.entities.CompanySettings.list();
+      const settings = await supabaseData.CompanySettings.list();
       const co = settings[0] || {};
-      const branchSettings = await base44.entities.BranchSettings.filter({ branch });
+      const branchSettings = await supabaseData.BranchSettings.filter({ branch });
       const bs = branchSettings[0] || {};
 
       const companyName = co.companyName || 'AIR Equipment Rental';
@@ -244,14 +244,19 @@ Requirements:
       const companyPhone = bs.phone || co.phone || '';
       const companyEmail = bs.email || co.email || '';
 
-      const result = await base44.functions.invoke('enrichAgreementWithSignatures', {
-        content,
-        branch,
-        companyName,
-        companyAddress,
-        companyPhone,
-        companyEmail,
+      const response = await fetch('/api/functions/enrichAgreementWithSignatures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          branch,
+          companyName,
+          companyAddress,
+          companyPhone,
+          companyEmail,
+        }),
       });
+      const result = await response.json();
 
       if (result.enriched_content) {
         setContent(result.enriched_content);
