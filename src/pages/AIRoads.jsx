@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useSearchParams } from 'react-router-dom';
 import { Truck, Scale, Loader2, Plus, Printer, Save } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -35,7 +35,7 @@ function InvoiceLinker({ onLink }) {
     if (!inv) return;
     setSearching(true);
     setNotFound(false);
-    const rentals = await base44.entities.Rental.filter({ invoiceNumber: inv });
+    const rentals = await supabaseData.Rental.filter({ invoiceNumber: inv });
     if (rentals[0]) { onLink(rentals[0]); }
     else { setNotFound(true); }
     setSearching(false);
@@ -169,8 +169,8 @@ export default function AIRoads() {
   useEffect(() => {
     (async () => {
       const [eq, plans] = await Promise.all([
-        base44.entities.Equipment.list('name', 2000),
-        base44.entities.EventPlan.list('-created_date', 100),
+        supabaseData.Equipment.list('name', 2000),
+        supabaseData.EventPlan.list('-created_at', 100),
       ]);
       setAllEquipment(eq);
       setEventPlans(plans);
@@ -190,7 +190,7 @@ export default function AIRoads() {
             })));
           }
           if (plan.linkedRentalInvoice) {
-            const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
+            const rentals = await supabaseData.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
             if (rentals[0]) setLinkedRental(rentals[0]);
           }
         }
@@ -211,7 +211,7 @@ export default function AIRoads() {
     })));
     setLoads([]);
     if (plan.linkedRentalInvoice) {
-      const rentals = await base44.entities.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
+      const rentals = await supabaseData.Rental.filter({ invoiceNumber: plan.linkedRentalInvoice });
       if (rentals[0]) setLinkedRental(rentals[0]);
       else setLinkedRental(null);
     } else {
@@ -236,12 +236,16 @@ export default function AIRoads() {
         else { const copy = { ...item, quantity: item.quantity || 1 }; seen[key] = copy; summarized.push(copy); }
       }
       const truckConfigs = loads.map(t => ({ id: t.id, type: t.type, name: t.name }));
-      const res = await base44.functions.invoke('optimizeLoadDistribution', {
-        equipment: summarized,
-        numTrucks: loads.length,
-        truckConfigs,
-        truckType: loads[0]?.type || '18wheeler',
-      });
+      const res = await fetch('/api/functions/optimizeLoadDistribution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipment: summarized,
+          numTrucks: loads.length,
+          truckConfigs,
+          truckType: loads[0]?.type || '18wheeler',
+        }),
+      }).then(r => r.json());
       if (res.data?.loads) {
         setLoads(res.data.loads);
         setEventEquipment([]);
@@ -274,12 +278,16 @@ export default function AIRoads() {
       const truckConfigs = loads.length > 0
         ? loads.map(t => ({ id: t.id, type: t.type, name: t.name }))
         : [{ id: 'truck-1', type: '18wheeler', name: 'Truck 1' }];
-      const res = await base44.functions.invoke('autoPackEquipment', {
-        summarized,
-        numTrucks: truckConfigs.length,
-        truckConfigs,
-        truckType: truckConfigs[0]?.type || '18wheeler',
-      });
+      const res = await fetch('/api/functions/autoPackEquipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summarized,
+          numTrucks: truckConfigs.length,
+          truckConfigs,
+          truckType: truckConfigs[0]?.type || '18wheeler',
+        }),
+      }).then(r => r.json());
       if (res.data?.loads) {
         setLoads(res.data.loads);
         // Put overflow items back into the unassigned pool — never silently drop them
