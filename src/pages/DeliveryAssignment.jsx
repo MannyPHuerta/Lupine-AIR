@@ -18,6 +18,13 @@ export default function DeliveryAssignment() {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[DeliveryAssignment] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     Promise.all([
       base44.entities.Rental.list('-created_date', 500),
       base44.entities.Delivery.list('-created_date', 500),
@@ -53,6 +60,12 @@ export default function DeliveryAssignment() {
   }, [deliveries, branchFilter]);
 
   const handleCreateDelivery = async (rental, teamDriverIds) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Delivery assignment not available in preview mode');
+      return;
+    }
+
     setCreating(true);
     try {
       const now = new Date().toISOString();
@@ -133,6 +146,13 @@ export default function DeliveryAssignment() {
                   drivers={users.filter(u => ['driver', 'field_crew', 'user'].includes(u.role))}
                   isCreating={creating}
                   onAssign={async (deliveryId, teamDriverIds) => {
+                    // Defensive check for preview mode
+                    if (!base44 || !base44.entities) {
+                      alert('Delivery assignment not available in preview mode');
+                      setCreating(false);
+                      return;
+                    }
+
                     setCreating(true);
                     try {
                       const me = await base44.auth.me();
