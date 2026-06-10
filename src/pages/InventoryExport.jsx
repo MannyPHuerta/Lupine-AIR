@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Download, RefreshCw, Filter } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -66,7 +66,7 @@ export default function InventoryExport() {
 
   const load = () => {
     setLoading(true);
-    base44.entities.Equipment.list('name', 2000)
+    supabaseData.Equipment.list('name', 2000)
       .then(eq => { setEquipment(eq); setLoading(false); });
   };
 
