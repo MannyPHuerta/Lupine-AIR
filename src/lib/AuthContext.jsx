@@ -17,8 +17,15 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (!base44 || !base44.auth) {
-        // Base44 SDK not available — fallback to preview mode
+      // Wait up to 3s for the platform to inject window.base44
+      let attempts = 0;
+      while (!window.base44 && attempts < 30) {
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+      }
+
+      if (!window.base44) {
+        // SDK never arrived — fallback to preview mode
         setUser({ id: 'preview', email: 'preview@base44.com', full_name: 'Preview User', role: 'admin' });
         setIsAuthenticated(true);
         setIsLoadingAuth(false);
