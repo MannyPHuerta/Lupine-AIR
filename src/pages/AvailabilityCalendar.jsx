@@ -41,6 +41,12 @@ export default function AvailabilityCalendar() {
   const [viewDate, setViewDate] = useState(() => focusDate ? new Date(focusDate + 'T12:00:00') : new Date());
 
   const load = async () => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.auth || !base44.entities) {
+      console.warn('[AvailabilityCalendar] Base44 SDK not available');
+      return;
+    }
+    
     const [me, eq, rent, dels, usrs] = await Promise.all([
       base44.auth.me(),
       base44.entities.Equipment.list('-created_date', 500),
