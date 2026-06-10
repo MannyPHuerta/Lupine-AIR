@@ -28,6 +28,12 @@ export default function DriverDashboard() {
   const [printDate, setPrintDate] = useState('');
 
   const handleMarkReceived = async (delivery) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Operation not available in preview mode');
+      return;
+    }
+    
     setMarkingReceived(delivery.id);
     try {
       const now = new Date().toISOString();
@@ -46,6 +52,13 @@ export default function DriverDashboard() {
   };
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.auth || !base44.entities) {
+      console.warn('[DriverDashboard] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     Promise.all([
       base44.auth.me(),
       base44.entities.Delivery.list('-created_date', 50),
