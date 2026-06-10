@@ -32,7 +32,7 @@ export default function SmartSchedulePanel() {
     );
   }
 
-  if (!schedule || schedule.smartSchedule.length === 0) {
+  if (!schedule || !schedule.smartSchedule || schedule.smartSchedule.length === 0) {
     return <div className="text-xs text-gray-400 py-4">No smart scheduling data available</div>;
   }
 
