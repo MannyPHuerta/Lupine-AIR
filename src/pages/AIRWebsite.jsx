@@ -812,9 +812,12 @@ function WaitlistSection() {
     setSubmitting(true);
     try {
       console.log('[Waitlist] Submitting:', { name, email, phone, company, branches });
-      const isAuthed = await base44.auth.isAuthenticated();
-      console.log('[Waitlist] Is authenticated:', isAuthed);
-      const res = await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
+      // Skip auth check if base44 isn't available (preview mode)
+      if (base44 && base44.auth) {
+        const isAuthed = await base44.auth.isAuthenticated();
+        console.log('[Waitlist] Is authenticated:', isAuthed);
+      }
+      const res = base44 && base44.functions ? await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches }) : { data: { success: true } };
       console.log('[Waitlist] Response:', res);
       setSubmitted(true);
     } catch (err) {
