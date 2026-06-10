@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench, FlaskConical, ShoppingBag } from 'lucide-react';
 import RtoSetupModal from '@/components/rentals/RtoSetupModal';
@@ -41,8 +41,7 @@ const newLine = () => ({
   deposit: 0,
 });
 
-// Helper to check if base44 SDK is available
-const isBase44Available = () => typeof base44 !== 'undefined' && base44 !== null;
+
 
 export default function AvailabilityManager() {
   const navigate = useNavigate();
@@ -84,27 +83,7 @@ export default function AvailabilityManager() {
   const qtyRefs = useRef({});
   const addButtonRef = useRef(null);
 
-  // Helper: Log financial audit for rental updates
-  const logFinancialAudit = async (rentalId, changes, reason, action = 'update') => {
-    try {
-      const rental = await base44.entities.Rental.get(rentalId);
-      if (rental) {
-        await base44.entities.AuditLog.create({
-          action,
-          entityName: 'Rental',
-          entityId: rentalId,
-          entityLabel: `${rental.equipmentName} - ${rental.customerName}`,
-          performedBy: currentUser?.email || 'system',
-          performedAt: new Date().toISOString(),
-          branch: rental.branch,
-          changes,
-          reason,
-        });
-      }
-    } catch (e) {
-      console.warn('Audit log failed:', e.message);
-    }
-  };
+
 
   const [currentUser, setCurrentUser] = useState(null);
   const [companyInfo, setCompanyInfo] = useState(null);
@@ -126,29 +105,21 @@ export default function AvailabilityManager() {
 
   // Fetch catalog and rental data
   useEffect(() => {
-    if (!isBase44Available()) {
-      setLoading(false);
-      return;
-    }
-    
-    base44.auth.me().then(u => {
+    Promise.resolve(null).then(u => {
       setCurrentUser(u);
-      if (u?.homeBranch) {
-        setCustomer(prev => ({ ...prev, branch: u.homeBranch }));
-      }
     }).catch(() => {});
     // Batch into two groups to avoid rate limiting
     Promise.all([
-      base44.entities.Equipment.list('name', 2000),
-      base44.entities.Rental.list('-created_date', 1000),
-      base44.entities.CompanySettings.list(),
-      base44.entities.BranchSettings.list(),
+      supabaseData.Equipment.list('name', 2000),
+      supabaseData.Rental.list('-created_date', 1000),
+      supabaseData.CompanySettings.list(),
+      supabaseData.BranchSettings.list(),
     ]).then(async ([eq, rent, company, branches]) => {
       const [matrices, volRules, promoCodes, agreements] = await Promise.all([
-        base44.entities.DeliveryMatrix.list(),
-        base44.entities.VolumeDiscountRule.filter({ active: true }),
-        base44.entities.PromoCode.list('-created_date', 200),
-        base44.entities.RentalAgreement.list(),
+        supabaseData.DeliveryMatrix.list(),
+        supabaseData.VolumeDiscountRule.filter({ active: true }),
+        supabaseData.PromoCode.list('-created_date', 200),
+        supabaseData.RentalAgreement.list(),
       ]);
       return [eq, rent, company, branches, matrices, volRules, promoCodes, agreements];
     }).then(([eq, rent, company, branches, matrices, volRules, promoCodes, agreements]) => {
@@ -300,8 +271,8 @@ export default function AvailabilityManager() {
     if (validLines.some(l => !l.startDate || !l.endDate)) { alert('Please set dates for all equipment lines.'); return false; }
     
     // Check customer status if we have a customer ID
-    if (customer.id && customer.id !== 'walkin' && isBase44Available()) {
-      const custList = await base44.entities.Customer.filter({ id: customer.id });
+    if (customer.id && customer.id !== 'walkin') {
+      const custList = await supabaseData.Customer.filter({ id: customer.id });
       const cust = custList[0];
       if (cust) {
         if (cust.blacklisted) {
@@ -353,13 +324,12 @@ export default function AvailabilityManager() {
 
     // Always auto-assign invoice number from branch sequence on first save
     let invoiceNumber = '';
-    if (!isBase44Available()) return [];
-    const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
+    const branchSettingsList = await supabaseData.BranchSettings.filter({ branch: customer.branch });
     const bs = branchSettingsList[0];
     if (bs) {
       const num = bs.nextInvoiceNumber || 1000;
       invoiceNumber = `${bs.invoicePrefix || ''}-${String(num).padStart(4, '0')}`;
-      await base44.entities.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
+      await supabaseData.BranchSettings.update(bs.id, { nextInvoiceNumber: num + 1 });
     }
 
     setSaving(true);
@@ -367,19 +337,24 @@ export default function AvailabilityManager() {
     try {
       // Auto-sync customer record on all saves (quote or confirmed)
       let customerId = null;
-      if (customer.name && base44 && base44.functions) {
+      if (customer.name) {
         try {
-          const res = await base44.functions.invoke('upsertCustomer', {
-            fullName: customer.name,
-            email: customer.email,
-            phone: customer.phone,
-            address: customer.address,
-            city: customer.city,
-            state: customer.state,
-            zip: customer.zip,
-            branch: customer.branch,
+          const res = await fetch('/api/functions/upsertCustomer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fullName: customer.name,
+              email: customer.email,
+              phone: customer.phone,
+              address: customer.address,
+              city: customer.city,
+              state: customer.state,
+              zip: customer.zip,
+              branch: customer.branch,
+            }),
           });
-          customerId = res?.data?.customerId || null;
+          const data = await res.json();
+          customerId = data?.customerId || null;
         } catch (syncErr) {
           console.warn('Customer sync failed (non-blocking):', syncErr.message);
         }
@@ -404,7 +379,7 @@ export default function AvailabilityManager() {
       // Lock equipment at source branch when cross-branch
       if (line.isCrossBranch && line.equipmentId) {
         try {
-          await base44.entities.Equipment.update(line.equipmentId, {
+          await supabaseData.Equipment.update(line.equipmentId, {
             unitStatus: 'reserved',
             statusNote: `Cross-branch borrow → ${customer.branch} for ${customer.name} (${line.startDate})`,
             statusUpdatedAt: new Date().toISOString(),
@@ -414,7 +389,7 @@ export default function AvailabilityManager() {
       }
 
       const oldRental = null; // New rental, no old data
-      const rental = await base44.entities.Rental.create({
+      const rental = await supabaseData.Rental.create({
         equipmentId: line.equipmentId,
         equipmentName: line.equipmentName,
         startDate: line.startDate,
@@ -471,7 +446,7 @@ export default function AvailabilityManager() {
       });
       
       // Audit: Rental created
-      await base44.entities.AuditLog.create({
+      await supabaseData.AuditLog.create({
         action: 'create',
         entityName: 'Rental',
         entityId: rental.id,
@@ -499,7 +474,7 @@ export default function AvailabilityManager() {
         for (let i = 0; i < rtoData.termMonths; i++) {
           const dueDate = new Date(scheduleStart);
           dueDate.setMonth(dueDate.getMonth() + i + 1);
-          await base44.entities.RtoPayment.create({
+          await supabaseData.RtoPayment.create({
             rentalId: rental.id,
             customerName: customer.name,
             customerEmail: customer.email,
@@ -523,7 +498,7 @@ export default function AvailabilityManager() {
         const line = crossBranchLines[i];
         const rentalId = createdIds[validLines.indexOf(line)];
         try {
-          await base44.entities.Delivery.create({
+          await supabaseData.Delivery.create({
             rentalId: rentalId || createdIds[0],
             customerId: customerId || null,
             customerName: customer.name,
@@ -544,7 +519,7 @@ export default function AvailabilityManager() {
       }
 
       setSaved(true);
-      base44.entities.Rental.list('-created_date', 1000).then(setRentals);
+      supabaseData.Rental.list('-created_date', 1000).then(setRentals);
       setCustomer(EMPTY_CUSTOMER);
       setLines([newLine()]);
       setDiscount('');
@@ -585,7 +560,7 @@ export default function AvailabilityManager() {
 
     // Fetch invoice number preview (not incremented yet — that happens in handleSave)
     let invNumber = '';
-    const _branchSettingsPreview = await base44.entities.BranchSettings.filter({ branch: customer.branch });
+    const _branchSettingsPreview = await supabaseData.BranchSettings.filter({ branch: customer.branch });
     const _bsPreview = _branchSettingsPreview[0];
     if (_bsPreview) {
       invNumber = `${_bsPreview.invoicePrefix || ''}-${String(_bsPreview.nextInvoiceNumber || 1000).padStart(4, '0')}`;
@@ -645,17 +620,22 @@ export default function AvailabilityManager() {
       if (!practiceMode && autoSendCommunications && emailToSend && rentalIds.length > 0) {
         console.log('[PrintConfirm] Sending confirmation email...');
         try {
-          const emailRes = await base44.functions.invoke('sendRentalConfirmation', {
-            rentalIds,
-            customerEmail: emailToSend,
-            customerPhone: phoneToSend,
-            invoiceNumber: invNumber,
-            autoSendCommunications,
+          const emailRes = await fetch('/api/functions/sendRentalConfirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              rentalIds,
+              customerEmail: emailToSend,
+              customerPhone: phoneToSend,
+              invoiceNumber: invNumber,
+              autoSendCommunications,
+            }),
           });
-          console.log('[PrintConfirm] Email result:', emailRes?.data);
-          if (emailRes?.data?.error) {
-            alert('⚠️ Email failed to send: ' + emailRes.data.error);
-          } else if (emailRes?.data?.skipped) {
+          const emailData = await emailRes.json();
+          console.log('[PrintConfirm] Email result:', emailData);
+          if (emailData?.error) {
+            alert('⚠️ Email failed to send: ' + emailData.error);
+          } else if (emailData?.skipped) {
             alert('ℹ️ Email was skipped (check auto-send settings)');
           }
         } catch (err) {
@@ -715,15 +695,20 @@ export default function AvailabilityManager() {
       // Send email/SMS if enabled
       if (autoSendCommunications && emailToSend && rentalIds.length > 0) {
         try {
-          const emailRes = await base44.functions.invoke('sendRentalConfirmation', {
-            rentalIds,
-            customerEmail: emailToSend,
-            customerPhone: phoneToSend,
-            invoiceNumber: pendingInvoice.invNumber,
-            autoSendCommunications,
+          const emailRes = await fetch('/api/functions/sendRentalConfirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              rentalIds,
+              customerEmail: emailToSend,
+              customerPhone: phoneToSend,
+              invoiceNumber: pendingInvoice.invNumber,
+              autoSendCommunications,
+            }),
           });
-          if (emailRes?.data?.error) {
-            alert('⚠️ Email failed: ' + emailRes.data.error);
+          const emailData = await emailRes.json();
+          if (emailData?.error) {
+            alert('⚠️ Email failed: ' + emailData.error);
           }
         } catch (err) {
           console.error('Failed to send confirmation:', err);
@@ -1102,7 +1087,7 @@ export default function AvailabilityManager() {
               onPromoApply={(promo) => {
                 setAppliedPromo(promo);
                 // Increment usage count non-blocking
-                base44.entities.PromoCode.update(promo.id, { usageCount: (promo.usageCount || 0) + 1 }).catch(() => {});
+                supabaseData.PromoCode.update(promo.id, { usageCount: (promo.usageCount || 0) + 1 }).catch(() => {});
               }}
               onPromoRemove={() => setAppliedPromo(null)}
               loyaltyDiscount={loyaltyDiscount}
