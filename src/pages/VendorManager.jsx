@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Plus, Pencil, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -16,10 +16,10 @@ function VendorForm({ vendor, onSave, onCancel }) {
   const handleSave = async () => {
     setSaving(true);
     if (vendor?.id) {
-      const updated = await base44.entities.Vendor.update(vendor.id, form);
+      const updated = await supabaseData.Vendor.update(vendor.id, form);
       onSave(updated);
     } else {
-      const created = await base44.entities.Vendor.create(form);
+      const created = await supabaseData.Vendor.create(form);
       onSave(created);
     }
     setSaving(false);
@@ -84,7 +84,7 @@ export default function VendorManager() {
   const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
-    base44.entities.Vendor.list('-created_date', 200).then(v => { setVendors(v); setLoading(false); });
+    supabaseData.Vendor.list('-created_at', 200).then(v => { setVendors(v); setLoading(false); });
   }, []);
 
   const handleSave = (saved) => {
@@ -94,7 +94,7 @@ export default function VendorManager() {
   };
 
   const handleToggleActive = async (vendor) => {
-    const updated = await base44.entities.Vendor.update(vendor.id, { isActive: !vendor.isActive });
+    const updated = await supabaseData.Vendor.update(vendor.id, { isActive: !vendor.isActive });
     setVendors(prev => prev.map(v => v.id === vendor.id ? updated : v));
   };
 
