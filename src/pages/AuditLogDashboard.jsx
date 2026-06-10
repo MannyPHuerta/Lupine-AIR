@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Download, RefreshCw, Loader2, ChevronDown, ChevronRight, ScrollText } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -93,7 +93,7 @@ export default function AuditLogDashboard() {
 
   const load = () => {
     setLoading(true);
-    base44.entities.AuditLog.list('-performedAt', 5000)
+    supabaseData.AuditLog.list('-performed_at', 5000)
       .then(setLogs)
       .finally(() => setLoading(false));
   };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,8 +22,8 @@ export default function UserManagement() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.User.list(),
-      base44.auth.me()
+      supabaseData.User.list(),
+      Promise.resolve(null) // Skip auth.me() - not needed
     ]).then(([userList, me]) => {
       setUsers(userList);
       setCurrentUser(me);
@@ -40,7 +40,7 @@ export default function UserManagement() {
       updates.deactivatedAt = new Date().toISOString();
       updates.deactivatedBy = currentUser?.email;
     }
-    await base44.entities.User.update(u.id, updates);
+    await supabaseData.User.update(u.id, updates);
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, ...updates } : x));
     setTogglingId(null);
   };
@@ -51,11 +51,11 @@ export default function UserManagement() {
     setInviting(true);
     setInviteMessage(null);
     try {
-      await base44.users.inviteUser(inviteEmail.trim(), inviteRole);
+      await supabaseData.User.invite(inviteEmail.trim(), inviteRole);
       setInviteMessage({ type: 'success', text: `Invite sent to ${inviteEmail}` });
       setInviteEmail('');
       // Refresh user list
-      const updated = await base44.entities.User.list();
+      const updated = await supabaseData.User.list();
       setUsers(updated);
     } catch (err) {
       setInviteMessage({ type: 'error', text: err.message || 'Failed to send invite' });
@@ -93,7 +93,7 @@ export default function UserManagement() {
         <CSVImportPanel
           onClose={() => setShowCSVImport(false)}
           onImportDone={async () => {
-            const updated = await base44.entities.User.list();
+            const updated = await supabaseData.User.list();
             setUsers(updated);
           }}
         />
@@ -113,7 +113,7 @@ export default function UserManagement() {
       </div>
 
       {activeTab === 'roster' && (
-        <RosterPanel onRosterChange={async () => { const updated = await base44.entities.User.list(); setUsers(updated); }} />
+        <RosterPanel onRosterChange={async () => { const updated = await supabaseData.User.list(); setUsers(updated); }} />
       )}
 
       {activeTab === 'users' && <>
@@ -202,7 +202,7 @@ export default function UserManagement() {
                       <button
                         onClick={async () => {
                           if (!confirm(`Permanently delete "${u.full_name || u.email}"? This cannot be undone.`)) return;
-                          await base44.entities.User.delete(u.id);
+                          await supabaseData.User.delete(u.id);
                           setUsers(prev => prev.filter(x => x.id !== u.id));
                         }}
                         title="Delete user"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -35,20 +35,20 @@ export default function BranchSettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.BranchSettings.list().then(records => {
+    supabaseData.BranchSettings.list().then(records => {
       const map = {};
       records.forEach(r => {
         map[r.branch] = {
           id: r.id,
-          prefix: r.invoicePrefix || DEFAULT_PREFIXES[r.branch] || '',
-          nextNumber: r.nextInvoiceNumber ?? 1000,
+          prefix: r.invoice_prefix || DEFAULT_PREFIXES[r.branch] || '',
+          nextNumber: r.next_invoice_number ?? 1000,
           address: r.address || '',
           phone: r.phone || '',
           email: r.email || '',
-          partsBuyerEmail: r.partsBuyerEmail || '',
-          purchasingEmail: r.purchasingEmail || '',
-          accountingEmail: r.accountingEmail || '',
-          defaultAreaCode: r.defaultAreaCode || '',
+          partsBuyerEmail: r.parts_buyer_email || '',
+          purchasingEmail: r.purchasing_email || '',
+          accountingEmail: r.accounting_email || '',
+          defaultAreaCode: r.default_area_code || '',
           certifications: r.certifications || [],
         };
       });
@@ -82,9 +82,9 @@ export default function BranchSettingsPage() {
       certifications: s.certifications || [],
     };
     if (s.id) {
-      await base44.entities.BranchSettings.update(s.id, payload);
+      await supabaseData.BranchSettings.update(s.id, payload);
     } else {
-      const created = await base44.entities.BranchSettings.create(payload);
+      const created = await supabaseData.BranchSettings.create(payload);
       setSettings(prev => ({ ...prev, [branch]: { ...prev[branch], id: created.id } }));
     }
     setSaving(prev => ({ ...prev, [branch]: false }));

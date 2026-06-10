@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Edit2, Trash2, Loader2, Shield, Users, Mail, UserPlus, RefreshCw } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -22,9 +22,9 @@ function RoleForm({ role, onSave, onCancel }) {
     setSaving(true);
     try {
       if (role) {
-        await base44.entities.Role.update(role.id, form);
+        await supabaseData.Role.update(role.id, form);
       } else {
-        await base44.entities.Role.create(form);
+        await supabaseData.Role.create(form);
       }
       onSave();
     } catch (err) {
@@ -209,7 +209,7 @@ function EmployeeSection() {
 
   const loadUsers = async () => {
     setLoading(true);
-    const u = await base44.entities.User.list('full_name', 200);
+    const u = await supabaseData.User.list('full_name', 200);
     setUsers(u);
     setLoading(false);
   };
@@ -220,7 +220,7 @@ function EmployeeSection() {
     if (!inviteEmail.trim()) { alert('Enter an email address'); return; }
     setInviting(true);
     try {
-      await base44.users.inviteUser(inviteEmail.trim(), inviteRole);
+      await supabaseData.User.invite(inviteEmail.trim(), inviteRole);
       setInviteEmail('');
       alert(`Invitation sent to ${inviteEmail.trim()}`);
       loadUsers();
@@ -233,8 +233,7 @@ function EmployeeSection() {
 
   const handleRoleChange = async (userId, newRole) => {
     setUpdatingId(userId);
-    await base44.auth.updateMe ? null : null; // no-op to avoid lint
-    await base44.entities.User.update(userId, { role: newRole });
+    await supabaseData.User.update(userId, { role: newRole });
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
     setUpdatingId(null);
   };
@@ -323,7 +322,7 @@ export default function RoleManager() {
 
   const load = () => {
     setLoading(true);
-    base44.entities.Role.list('-created_date', 100)
+    supabaseData.Role.list('-created_at', 100)
       .then(setRoles)
       .finally(() => setLoading(false));
   };
@@ -332,7 +331,7 @@ export default function RoleManager() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this role?')) return;
-    await base44.entities.Role.delete(id);
+    await supabaseData.Role.delete(id);
     load();
   };
 

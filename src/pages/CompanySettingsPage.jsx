@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Save, Upload, Loader2, Building2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -52,14 +52,7 @@ export default function CompanySettingsPage() {
   };
 
   useEffect(() => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      console.warn('[CompanySettingsPage] Base44 SDK not available');
-      setLoading(false);
-      return;
-    }
-    
-    base44.entities.CompanySettings.list().then(records => {
+    supabaseData.CompanySettings.list().then(records => {
       if (records.length > 0) {
         setSettings(records[0]);
       }
@@ -76,15 +69,9 @@ export default function CompanySettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Defensive check for preview mode
-    if (!base44 || !base44.integrations) {
-      alert('Upload not available in preview mode');
-      return;
-    }
-
     setUploading(true);
     try {
-      const res = await base44.integrations.Core.UploadFile({ file });
+      const res = await supabaseData.uploadFile(file);
       setSettings(prev => ({ ...prev, logoUrl: res.file_url }));
     } finally {
       setUploading(false);
@@ -140,17 +127,10 @@ export default function CompanySettingsPage() {
     payload.storeMode = settings.storeMode || 'both';
     payload.storeIntentStyle = settings.storeIntentStyle || 'split_screen';
 
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      alert('Save not available in preview mode');
-      setSaving(false);
-      return;
-    }
-
     if (settings.id) {
-      await base44.entities.CompanySettings.update(settings.id, payload);
+      await supabaseData.CompanySettings.update(settings.id, payload);
     } else {
-      const created = await base44.entities.CompanySettings.create(payload);
+      const created = await supabaseData.CompanySettings.create(payload);
       setSettings(prev => ({ ...prev, id: created.id }));
     }
 
