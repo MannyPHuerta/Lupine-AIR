@@ -1,19 +1,31 @@
 import { Resend } from 'npm:resend@2.0.0';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   try {
     const { email, company, branches, name, phone } = await req.json();
     console.log('[WaitlistBackend] Received payload:', { email, company, branches, name, phone });
 
     if (!email) {
-      return Response.json({ error: 'Email is required' }, { status: 400 });
+      return Response.json({ error: 'Email is required' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
     const apiKey = Deno.env.get('RESEND_API_KEY');
     console.log('[WaitlistBackend] RESEND_API_KEY exists:', !!apiKey);
     
     if (!apiKey) {
-      return Response.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
+      return Response.json({ error: 'RESEND_API_KEY not configured' }, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
     const resend = new Resend(apiKey);
@@ -98,12 +110,12 @@ Deno.serve(async (req) => {
 
     if (adminResult.error) {
       console.error('[WaitlistBackend] Admin email error:', JSON.stringify(adminResult.error, null, 2));
-      return Response.json({ error: adminResult.error.message }, { status: 500 });
+      return Response.json({ error: adminResult.error.message }, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
     if (confirmationResult.error) {
       console.error('[WaitlistBackend] Confirmation email error:', JSON.stringify(confirmationResult.error, null, 2));
-      return Response.json({ error: confirmationResult.error.message }, { status: 500 });
+      return Response.json({ error: confirmationResult.error.message }, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
     console.log('[WaitlistBackend] Both emails sent successfully!');
@@ -111,9 +123,10 @@ Deno.serve(async (req) => {
       success: true, 
       adminEmailId: adminResult.data?.id,
       confirmationEmailId: confirmationResult.data?.id
-    });
+    }, { headers: { 'Access-Control-Allow-Origin': '*' } });
+
   } catch (error) {
     console.error('[WaitlistBackend] Caught error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 });
