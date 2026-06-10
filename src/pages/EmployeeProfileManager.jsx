@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Loader2, Wrench, Calendar, Save, Users, Shield, Award } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -45,8 +45,8 @@ export default function EmployeeProfileManager() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.MechanicProfile.list('fullName', 200),
-      base44.entities.User.list('full_name', 200),
+      supabaseData.MechanicProfile.list('fullName', 200),
+      supabaseData.User.list('full_name', 200),
     ]).then(([mech, u]) => {
       // Separate mechanics and planners by role tag (use a notes/tag field heuristic — planners have planner role)
       const plannerEmails = new Set(u.filter(usr => usr.role === 'planner').map(usr => usr.email));
@@ -73,7 +73,7 @@ export default function EmployeeProfileManager() {
   const handleSave = async () => {
     if (!form.email || !form.fullName) { toast({ title: 'Required fields missing', description: 'Email and name are required.', variant: 'destructive' }); return; }
     setSaving(true);
-    await base44.entities.MechanicProfile.update(editingId, form);
+    await supabaseData.MechanicProfile.update(editingId, form);
     setMechanics(prev => prev.map(m => m.id === editingId ? form : m));
     cancelEdit();
     setSaving(false);
@@ -83,7 +83,7 @@ export default function EmployeeProfileManager() {
   const handleDelete = async (id) => {
     const mech = mechanics.find(m => m.id === id);
     if (!window.confirm(`Delete profile for ${mech?.fullName || 'this mechanic'}?`)) return;
-    await base44.entities.MechanicProfile.delete(id);
+    await supabaseData.MechanicProfile.delete(id);
     setMechanics(prev => prev.filter(m => m.id !== id));
     toast({ title: 'Profile deleted' });
   };
@@ -100,7 +100,7 @@ export default function EmployeeProfileManager() {
 
   const handleSaveUser = async () => {
     setSaving(true);
-    await base44.entities.User.update(editingUserId, { 
+    await supabaseData.User.update(editingUserId, { 
       homeBranch: editingUserForm.homeBranch,
       role: editingUserForm.role,
     });
@@ -113,7 +113,7 @@ export default function EmployeeProfileManager() {
   const handleCreateNew = async (userEmail) => {
     const user = users.find(u => u.email === userEmail);
     if (!user) return;
-    const newProf = await base44.entities.MechanicProfile.create({
+    const newProf = await supabaseData.MechanicProfile.create({
       email: userEmail,
       fullName: user.full_name || userEmail,
       skills: [],
@@ -129,7 +129,7 @@ export default function EmployeeProfileManager() {
   const handleCreatePlanner = async (userEmail) => {
     const user = users.find(u => u.email === userEmail);
     if (!user) return;
-    const newProf = await base44.entities.MechanicProfile.create({
+    const newProf = await supabaseData.MechanicProfile.create({
       email: userEmail,
       fullName: user.full_name || userEmail,
       skills: [],
@@ -148,7 +148,7 @@ export default function EmployeeProfileManager() {
       return;
     }
     setSaving(true);
-    await base44.entities.MechanicProfile.update(editingPlannerId, plannerForm);
+    await supabaseData.MechanicProfile.update(editingPlannerId, plannerForm);
     setPlanners(prev => prev.map(p => p.id === editingPlannerId ? plannerForm : p));
     setEditingPlannerId(null);
     setPlannerForm(null);
@@ -274,7 +274,7 @@ export default function EmployeeProfileManager() {
                           <button
                             onClick={async () => {
                               if (!confirm(`Delete user "${user.full_name || user.email}"? This cannot be undone.`)) return;
-                              await base44.entities.User.delete(user.id);
+                              await supabaseData.User.delete(user.id);
                               setUsers(prev => prev.filter(u => u.id !== user.id));
                             }}
                             className="text-gray-400 hover:text-red-600 p-1.5 rounded hover:bg-gray-50"
@@ -593,7 +593,7 @@ export default function EmployeeProfileManager() {
                           </button>
                           <button onClick={async () => {
                             if (!window.confirm(`Delete planner profile for ${planner.fullName}?`)) return;
-                            await base44.entities.MechanicProfile.delete(planner.id);
+                            await supabaseData.MechanicProfile.delete(planner.id);
                             setPlanners(prev => prev.filter(p => p.id !== planner.id));
                             toast({ title: 'Planner profile deleted' });
                           }} className="text-gray-400 hover:text-red-600 p-1.5 rounded hover:bg-gray-50">
