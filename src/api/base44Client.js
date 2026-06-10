@@ -1,68 +1,53 @@
 // Base44 SDK client for frontend
-// Initialize the Base44 SDK for browser use
+// Uses the platform-injected global window.base44 object
 
-import base44SDK from 'npm:@base44/sdk@0.8.31';
+const getSDK = () => {
+  if (typeof window !== 'undefined' && window.base44) {
+    return window.base44;
+  }
+  // Return a no-op stub during SSR / before hydration
+  return null;
+};
 
-// Create a singleton client instance
-const sdkInstance = base44SDK;
+const sdk = () => {
+  const s = getSDK();
+  if (!s) throw new Error('Base44 SDK not available');
+  return s;
+};
 
 export const base44 = {
   auth: {
-    me: async () => {
-      return sdkInstance.auth.me();
-    },
-    isAuthenticated: async () => {
-      return sdkInstance.auth.isAuthenticated();
-    },
-    logout: async (redirectUrl) => {
-      sdkInstance.auth.logout(redirectUrl);
-    },
-    redirectToLogin: (nextUrl) => {
-      sdkInstance.auth.redirectToLogin(nextUrl);
-    },
-    updateMe: async (data) => {
-      await sdkInstance.auth.updateMe(data);
-    },
+    me: () => sdk().auth.me(),
+    isAuthenticated: () => sdk().auth.isAuthenticated(),
+    logout: (redirectUrl) => sdk().auth.logout(redirectUrl),
+    redirectToLogin: (nextUrl) => sdk().auth.redirectToLogin(nextUrl),
+    updateMe: (data) => sdk().auth.updateMe(data),
   },
 
   entities: new Proxy({}, {
-    get: (_, entityName) => {
-      return sdkInstance.entities[entityName];
-    },
+    get: (_, entityName) => sdk().entities[entityName],
   }),
 
   functions: {
-    invoke: async (functionName, params) => {
-      return sdkInstance.functions.invoke(functionName, params);
-    },
+    invoke: (functionName, params) => sdk().functions.invoke(functionName, params),
   },
 
   integrations: {
-    Core: {
-      InvokeLLM: async (params) => {
-        return sdkInstance.integrations.Core.InvokeLLM(params);
-      },
-      SendEmail: async (params) => {
-        return sdkInstance.integrations.Core.SendEmail(params);
-      },
-      UploadFile: async ({ file }) => {
-        return sdkInstance.integrations.Core.UploadFile({ file });
-      },
-      GenerateImage: async (params) => {
-        return sdkInstance.integrations.Core.GenerateImage(params);
-      },
-    },
+    Core: new Proxy({}, {
+      get: (_, methodName) => (...args) => sdk().integrations.Core[methodName](...args),
+    }),
   },
 
   analytics: {
-    track: (event) => {
-      sdkInstance.analytics.track(event);
-    },
+    track: (event) => sdk().analytics?.track(event),
   },
 
   users: {
-    inviteUser: async (email, role) => {
-      await sdkInstance.users.inviteUser(email, role);
-    },
+    inviteUser: (email, role) => sdk().users.inviteUser(email, role),
+  },
+
+  connectors: {
+    connectAppUser: (connectorId) => sdk().connectors.connectAppUser(connectorId),
+    disconnectAppUser: (connectorId) => sdk().connectors.disconnectAppUser(connectorId),
   },
 };
