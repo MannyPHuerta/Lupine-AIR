@@ -73,6 +73,7 @@ import InventoryExport from "./pages/InventoryExport";
 import EquipmentSpecsEditor from "./pages/EquipmentSpecsEditor";
 import RentalAgreementManager from "./pages/RentalAgreementManager";
 import LoyaltyManager from "./pages/LoyaltyManager";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import AIRoads from "./pages/AIRoads";
 import LaundryReport from "./pages/LaundryReport";
 import DriverReport from "./pages/DriverReport";
@@ -187,6 +188,7 @@ const AuthenticatedApp = () => {
         <Route path="/loyalty-manager" element={<LoyaltyManager />} />
         <Route path="/lupine" element={<LupinePlan />} />
         <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/manager" element={<ManagerDashboard />} />
         <Route path="/parts-procurement" element={<PartsProcurementReport />} />
         <Route path="/pending" element={<PendingReports />} />
         <Route path="/planner-queue" element={<PlannerQueue />} />
