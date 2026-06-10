@@ -123,6 +123,11 @@ export default function AvailabilityManager() {
 
   // Fetch catalog and rental data
   useEffect(() => {
+    if (!base44) {
+      setLoading(false);
+      return;
+    }
+    
     base44.auth.me().then(u => {
       setCurrentUser(u);
       if (u?.homeBranch) {
