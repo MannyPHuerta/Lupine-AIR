@@ -52,6 +52,14 @@ export default function QRCodeGenerator({ onClose }) {
       setOpenJobs([]);
       return;
     }
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[QRCodeGenerator] Base44 SDK not available');
+      setOpenJobs([]);
+      setLoadingJobs(false);
+      return;
+    }
+    
     setLoadingJobs(true);
     base44.entities.Rental.filter({ branch: params.branch }, '-startDate', 100)
       .then(data => {
