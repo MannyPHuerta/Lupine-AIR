@@ -9,8 +9,8 @@ export default function DemoBanner() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    if (!base44 || !base44.entities) return;
-    
+    if (!window.base44?.entities) return;
+
     base44.entities.CompanySettings.list().then(list => {
       setEnabled(list[0]?.demoModeEnabled === true);
     }).catch(() => {});
@@ -18,7 +18,7 @@ export default function DemoBanner() {
     const unsubscribe = base44.entities.CompanySettings.subscribe((event) => {
       if (event.data) setEnabled(event.data.demoModeEnabled === true);
     });
-    return unsubscribe;
+    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
   }, []);
 
   if (!enabled) return null;
