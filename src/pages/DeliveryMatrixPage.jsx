@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -23,7 +23,7 @@ export default function DeliveryMatrixPage() {
   const [savedBranch, setSavedBranch] = useState('');
 
   useEffect(() => {
-    base44.entities.DeliveryMatrix.list().then(records => {
+    supabaseData.DeliveryMatrix.list().then(records => {
       const map = {};
       records.forEach(r => { map[r.branch] = r; });
       setMatrices(map);
@@ -73,9 +73,9 @@ export default function DeliveryMatrixPage() {
     const data = { ...getMatrix(branch), ...matrices[branch] };
     try {
       if (data.id) {
-        await base44.entities.DeliveryMatrix.update(data.id, data);
+        await supabaseData.DeliveryMatrix.update(data.id, data);
       } else {
-        const created = await base44.entities.DeliveryMatrix.create(data);
+        const created = await supabaseData.DeliveryMatrix.create(data);
         setMatrices(prev => ({ ...prev, [branch]: created }));
       }
       setSavedBranch(branch);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles, User, Star, Repeat } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -64,22 +64,15 @@ export default function Counter() {
   const listRef = useRef(null);
 
   useEffect(() => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      console.warn('[Counter] Base44 SDK not available');
-      setLoading(false);
-      return;
-    }
-    
     Promise.all([
-      base44.entities.Equipment.list('-updated_date', 500),
-      base44.entities.Rental.list('-created_date', 200),
-      base44.entities.BranchSettings.list(),
-      base44.entities.CompanySettings.list(),
-      base44.entities.Customer.list('-created_date', 500),
-      base44.auth.me().catch(() => null),
-      base44.entities.PromoCode.filter({ active: true }),
-      base44.entities.VolumeDiscountRule.filter({ active: true }),
+      supabaseData.Equipment.list('-updated_date', 500),
+      supabaseData.Rental.list('-created_date', 200),
+      supabaseData.BranchSettings.list(),
+      supabaseData.CompanySettings.list(),
+      supabaseData.Customer.list('-created_date', 500),
+      Promise.resolve(null),
+      supabaseData.PromoCode.filter({ active: true }),
+      supabaseData.VolumeDiscountRule.filter({ active: true }),
     ]).then(([eq, rent, bs, cs, custs, user, promos, volRules]) => {
       setEquipment(eq);
       setRentals(rent);
