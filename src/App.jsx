@@ -116,33 +116,16 @@ import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
 
 const AuthenticatedApp = () => {
-  // Always call hooks unconditionally
   const supabaseAuth = useSupabaseAuth();
-  const [base44Auth, setBase44Auth] = React.useState({ isLoadingAuth: true, isAuthenticated: false, authError: null });
 
-  React.useEffect(() => {
-    if (IS_VERCEL) return; // Supabase handles it on Vercel
-    // Base44 environment — poll for window.base44 injection (up to 3s)
-    const check = async () => {
-      let attempts = 0;
-      while (!window.base44 && attempts < 30) {
-        await new Promise(r => setTimeout(r, 100));
-        attempts++;
-      }
-      // If window.base44 is present, we're in the Base44 preview — treat as authenticated
-      if (window.base44) {
-        setBase44Auth({ isLoadingAuth: false, isAuthenticated: true, authError: null });
-        return;
-      }
-      // No window.base44 and no Supabase — unauthenticated
-      setBase44Auth({ isLoadingAuth: false, isAuthenticated: false, authError: null });
-    };
-    check();
-  }, []);
+  // Base44 preview injects window.base44 — bypass all auth gating immediately
+  if (window.base44) {
+    return <AuthenticatedRoutes />;
+  }
 
-  const { isLoadingAuth, isAuthenticated, authError } = IS_VERCEL ? supabaseAuth : base44Auth;
+  // On Vercel (Supabase env vars present), use Supabase session
+  const { isLoadingAuth, isAuthenticated, authError } = supabaseAuth;
 
-  // Show loading spinner while checking auth
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -155,15 +138,16 @@ const AuthenticatedApp = () => {
     return <UserNotRegisteredError />;
   }
 
-  if (!isLoadingAuth && !isAuthenticated) {
+  if (!isAuthenticated) {
     const next = window.location.pathname + window.location.search;
     window.location.replace(`/signin?next=${encodeURIComponent(next)}`);
     return null;
   }
 
-  // Loading spinner while checking auth
+  return <AuthenticatedRoutes />;
+};
 
-  // Render the main app
+const AuthenticatedRoutes = () => {
   return (
     <Routes>
       {/* All internal routes wrapped in sidebar layout */}
@@ -264,7 +248,6 @@ const AuthenticatedApp = () => {
     </Routes>
   );
 };
-
 
 function App() {
 
