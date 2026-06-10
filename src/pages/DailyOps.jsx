@@ -81,11 +81,11 @@ function CrossBranchRow({ rental, type, onMarkDone, equipment, deliveries, navig
   const handleMark = async (e) => {
     e.stopPropagation();
     setSaving(true);
-    await window.base44.entities.Rental.update(rental.id, { [field]: true });
+    await base44.entities.Rental.update(rental.id, { [field]: true });
     // When transfer-back completes, free up the equipment
     if (type === 'back' && rental.equipmentId) {
       try {
-        await window.base44.entities.Equipment.update(rental.equipmentId, {
+        await base44.entities.Equipment.update(rental.equipmentId, {
           unitStatus: 'available',
           statusNote: '',
           statusUpdatedAt: new Date().toISOString(),
@@ -162,13 +162,12 @@ export default function DailyOps() {
 
   const load = async () => {
     setLoading(true);
-    const sdk = window.base44;
     const [me, r, eq, dels, rtoPays] = await Promise.all([
-      sdk.auth.me(),
-      sdk.entities.Rental.list('-startDate', 500),
-      sdk.entities.Equipment.list('name', 500),
-      sdk.entities.Delivery.list('-created_date', 200),
-      sdk.entities.RtoPayment.filter({ status: 'pending' }, 'dueDate', 100).catch(() => []),
+      base44.auth.me(),
+      base44.entities.Rental.list('-startDate', 500),
+      base44.entities.Equipment.list('name', 500),
+      base44.entities.Delivery.list('-created_date', 200),
+      base44.entities.RtoPayment.filter({ status: 'pending' }, 'dueDate', 100).catch(() => []),
     ]);
     setUser(me);
     setRentals(r);
