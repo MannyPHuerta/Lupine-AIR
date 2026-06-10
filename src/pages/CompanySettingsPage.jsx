@@ -52,6 +52,13 @@ export default function CompanySettingsPage() {
   };
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[CompanySettingsPage] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     base44.entities.CompanySettings.list().then(records => {
       if (records.length > 0) {
         setSettings(records[0]);
@@ -68,6 +75,12 @@ export default function CompanySettingsPage() {
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Defensive check for preview mode
+    if (!base44 || !base44.integrations) {
+      alert('Upload not available in preview mode');
+      return;
+    }
 
     setUploading(true);
     try {
@@ -126,6 +139,13 @@ export default function CompanySettingsPage() {
     payload.demoBranch = settings.demoBranch || '';
     payload.storeMode = settings.storeMode || 'both';
     payload.storeIntentStyle = settings.storeIntentStyle || 'split_screen';
+
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Save not available in preview mode');
+      setSaving(false);
+      return;
+    }
 
     if (settings.id) {
       await base44.entities.CompanySettings.update(settings.id, payload);
