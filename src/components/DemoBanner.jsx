@@ -9,7 +9,7 @@ export default function DemoBanner() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    if (!base44) return;
+    if (!base44 || !base44.entities) return;
     
     base44.entities.CompanySettings.list().then(list => {
       setEnabled(list[0]?.demoModeEnabled === true);
