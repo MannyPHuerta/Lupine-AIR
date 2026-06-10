@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle, RefreshCw, ExternalLink, Download, Copy, X, Loader2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -29,30 +29,30 @@ function StatusPicker({ current, onSelect }) {
 
 function EquipmentRow({ eq, onSave, onDetail }) {
   const [editing, setEditing] = useState(false);
-  const [status, setStatus] = useState(eq.unitStatus || 'available');
-  const [note, setNote] = useState(eq.statusNote || '');
+  const [status, setStatus] = useState(eq.unit_status || 'available');
+  const [note, setNote] = useState(eq.status_note || '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const isDirty = status !== (eq.unitStatus || 'available') || note !== (eq.statusNote || '');
+  const isDirty = status !== (eq.unit_status || 'available') || note !== (eq.status_note || '');
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Equipment.update(eq.id, {
-      unitStatus: status,
-      statusNote: note,
-      statusUpdatedAt: new Date().toISOString(),
+    await supabaseData.Equipment.update(eq.id, {
+      unit_status: status,
+      status_note: note,
+      status_updated_at: new Date().toISOString(),
     });
     setSaving(false);
     setSaved(true);
     setEditing(false);
-    onSave({ ...eq, unitStatus: status, statusNote: note });
+    onSave({ ...eq, unit_status: status, status_note: note });
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleCancel = () => {
-    setStatus(eq.unitStatus || 'available');
-    setNote(eq.statusNote || '');
+    setStatus(eq.unit_status || 'available');
+    setNote(eq.status_note || '');
     setEditing(false);
   };
 
@@ -137,7 +137,7 @@ function BulkAddModal({ equipment, onClose, onDone }) {
       statusNote: '',
       statusUpdatedAt: new Date().toISOString(),
     }));
-    await base44.entities.Equipment.bulkCreate(copies);
+    await supabaseData.Equipment.bulkCreate(copies);
     setCreating(false);
     onDone(quantity, sourceEq.name);
   };
@@ -208,8 +208,9 @@ export default function EquipmentStatusManager() {
 
   const load = () => {
     setLoading(true);
-    base44.entities.Equipment.list('-updated_date', 500)
+    supabaseData.Equipment.list('-updated_at', 500)
       .then(eq => setEquipment(eq.sort((a, b) => a.name.localeCompare(b.name))))
+      .catch(err => console.error('[EquipmentStatus] Failed to load:', err))
       .finally(() => setLoading(false));
   };
 
@@ -223,8 +224,8 @@ export default function EquipmentStatusManager() {
     const matchSearch = !search || 
       eq.name.toLowerCase().includes(search.toLowerCase()) || 
       eq.category?.toLowerCase().includes(search.toLowerCase()) ||
-      eq.assetNumber?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'all' || (eq.unitStatus || 'available') === filterStatus;
+      eq.asset_number?.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filterStatus === 'all' || (eq.unit_status || 'available') === filterStatus;
     return matchSearch && matchStatus;
   }), [equipment, search, filterStatus]);
 
@@ -232,7 +233,7 @@ export default function EquipmentStatusManager() {
   const counts = useMemo(() => {
     const c = { all: equipment.length };
     equipment.forEach(eq => {
-      const s = eq.unitStatus || 'available';
+      const s = eq.unit_status || 'available';
       c[s] = (c[s] || 0) + 1;
     });
     return c;
