@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Download, Filter, Loader2, Package, DollarSign, CheckCircle, TrendingUp, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,9 @@ export default function PartsProcurementReport() {
   const [findPart, setFindPart] = useState(null);
 
   useEffect(() => {
-    base44.entities.PartsProcurement.list('-purchaseDate', 1000)
+    supabaseData.PartsProcurement.list('-purchase_date', 1000)
       .then(setProcurements)
+      .catch(err => console.error('[PartsProcurement] Failed to load:', err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -28,7 +29,7 @@ export default function PartsProcurementReport() {
     endDate.setHours(23, 59, 59);
 
     return procurements.filter(p => {
-      const pDate = new Date(p.purchaseDate);
+      const pDate = new Date(p.purchase_date);
       const branchMatch = branch === 'all' || p.branch === branch;
       const statusMatch = status === 'all' || p.status === status;
       const dateMatch = pDate >= startDate && pDate <= endDate;
@@ -37,11 +38,11 @@ export default function PartsProcurementReport() {
   }, [procurements, branch, status, dateFrom, dateTo]);
 
   const metrics = useMemo(() => {
-    const totalSpent = filtered.reduce((sum, p) => sum + (p.totalCost || 0), 0);
+    const totalSpent = filtered.reduce((sum, p) => sum + (p.total_cost || 0), 0);
     const pending = filtered.filter(p => p.status === 'ordered' || p.status === 'in_transit').length;
     const received = filtered.filter(p => p.status === 'received').length;
     const avgUnitCost = filtered.length > 0
-      ? (filtered.reduce((sum, p) => sum + (p.unitCost || 0), 0) / filtered.length)
+      ? (filtered.reduce((sum, p) => sum + (p.unit_cost || 0), 0) / filtered.length)
       : 0;
 
     return { totalSpent, pending, received, avgUnitCost, totalItems: filtered.length };
@@ -52,15 +53,15 @@ export default function PartsProcurementReport() {
   const handleExportCSV = () => {
     const headers = ['Part Name', 'Vendor', 'Qty', 'Unit Cost', 'Total Cost', 'Status', 'Purchase Date', 'Received Date', 'Invoice #', 'Branch'];
     const rows = filtered.map(p => [
-      p.partName,
+      p.part_name,
       p.vendor,
       p.quantity,
-      `$${(p.unitCost || 0).toFixed(2)}`,
-      `$${(p.totalCost || 0).toFixed(2)}`,
+      `$${(p.unit_cost || 0).toFixed(2)}`,
+      `$${(p.total_cost || 0).toFixed(2)}`,
       p.status,
-      p.purchaseDate || '—',
-      p.receivedDate || '—',
-      p.invoiceNumber || '—',
+      p.purchase_date || '—',
+      p.received_date || '—',
+      p.invoice_number || '—',
       p.branch || '—',
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
 
@@ -223,18 +224,18 @@ export default function PartsProcurementReport() {
                 ) : (
                   filtered.map(p => (
                     <tr key={p.id} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-3 text-gray-900">{p.partName}</td>
+                      <td className="px-4 py-3 text-gray-900">{p.part_name}</td>
                       <td className="px-4 py-3 text-gray-600">{p.vendor || <span className="text-gray-300 italic text-xs">No vendor</span>}</td>
                       <td className="px-4 py-3 text-center text-gray-900 font-medium">{p.quantity}</td>
-                      <td className="px-4 py-3 text-right text-gray-900">${(p.unitCost || 0).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right text-gray-900 font-semibold">${(p.totalCost || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-gray-900">${(p.unit_cost || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-gray-900 font-semibold">${(p.total_cost || 0).toFixed(2)}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-1 rounded font-medium ${statusColors[p.status] || 'bg-gray-100'}`}>
                           {p.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{p.purchaseDate || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{p.receivedDate || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">{p.purchase_date || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">{p.received_date || '—'}</td>
                       <td className="px-4 py-3">
                         <Button
                           size="sm"
@@ -276,7 +277,7 @@ export default function PartsProcurementReport() {
                 </div>
                 <div className="flex justify-between pt-2 border-t">
                   <span>Total Items Ordered</span>
-                  <span className="font-bold">{filtered.reduce((sum, p) => sum + p.quantity, 0)}</span>
+                  <span className="font-bold">{filtered.reduce((sum, p) => sum + (p.quantity || 0), 0)}</span>
                 </div>
               </div>
             </div>
@@ -289,15 +290,15 @@ export default function PartsProcurementReport() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Ordered</span>
-                  <span className="font-medium">${filtered.filter(p => p.status === 'ordered').reduce((s, p) => s + (p.totalCost || 0), 0).toFixed(2)}</span>
+                  <span className="font-medium">${filtered.filter(p => p.status === 'ordered').reduce((s, p) => s + (p.total_cost || 0), 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>In Transit</span>
-                  <span className="font-medium">${filtered.filter(p => p.status === 'in_transit').reduce((s, p) => s + (p.totalCost || 0), 0).toFixed(2)}</span>
+                  <span className="font-medium">${filtered.filter(p => p.status === 'in_transit').reduce((s, p) => s + (p.total_cost || 0), 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Received</span>
-                  <span className="font-medium">${filtered.filter(p => p.status === 'received').reduce((s, p) => s + (p.totalCost || 0), 0).toFixed(2)}</span>
+                  <span className="font-medium">${filtered.filter(p => p.status === 'received').reduce((s, p) => s + (p.total_cost || 0), 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t font-bold">
                   <span>Total Cost</span>
