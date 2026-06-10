@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Plus, Pencil, Trash2, Wifi, WifiOff, Settings, ChevronDown, ChevronUp, FlaskConical, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -208,8 +208,12 @@ function ProviderCard({ provider, onEdit, onDelete, onTestResult }) {
   const handleTest = async () => {
     setTesting(true);
     try {
-      const res = await base44.functions.invoke('gpsTestConnection', { providerId: provider.id });
-      const result = { ...res.data, testedAt: new Date().toISOString() };
+      const res = await fetch('/api/functions/gpsTestConnection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerId: provider.id }),
+      }).then(r => r.json());
+      const result = { ...res, testedAt: new Date().toISOString() };
       setTestResult(result);
       onTestResult && onTestResult(provider.id, result);
     } catch (err) {
@@ -286,8 +290,12 @@ export default function GPSProviderSettings() {
 
   const load = async () => {
     setLoading(true);
-    const data = await base44.entities.GPSProvider.list('-created_date', 100);
-    setProviders(data);
+    try {
+      const data = await supabaseData.GPSProvider.list('-created_at', 100);
+      setProviders(data);
+    } catch (err) {
+      console.error('[GPSProvider] Failed to load:', err);
+    }
     setLoading(false);
   };
 
@@ -295,10 +303,10 @@ export default function GPSProviderSettings() {
 
   const handleSave = async (form) => {
     if (editing) {
-      await base44.entities.GPSProvider.update(editing.id, form);
+      await supabaseData.GPSProvider.update(editing.id, form);
       toast.success('Provider updated.');
     } else {
-      await base44.entities.GPSProvider.create(form);
+      await supabaseData.GPSProvider.create(form);
       toast.success('Provider added.');
     }
     setShowForm(false);
@@ -313,7 +321,7 @@ export default function GPSProviderSettings() {
 
   const handleDelete = async (p) => {
     if (!confirm(`Delete "${p.name}"? This will not affect existing equipment links.`)) return;
-    await base44.entities.GPSProvider.delete(p.id);
+    await supabaseData.GPSProvider.delete(p.id);
     toast.success('Provider removed.');
     load();
   };
