@@ -64,6 +64,13 @@ export default function Counter() {
   const listRef = useRef(null);
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[Counter] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     Promise.all([
       base44.entities.Equipment.list('-updated_date', 500),
       base44.entities.Rental.list('-created_date', 200),

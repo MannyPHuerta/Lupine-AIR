@@ -30,6 +30,13 @@ export default function BrandingSettings() {
   const todaysSeasonal = getActiveSeasonalTheme();
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[BrandingSettings] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     base44.entities.CompanySettings.list()
       .then(list => {
         const s = list[0];
@@ -52,6 +59,12 @@ export default function BrandingSettings() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Defensive check for preview mode
+    if (!base44 || !base44.integrations) {
+      alert('Upload not available in preview mode');
+      return;
+    }
+
     try {
       const res = await base44.integrations.Core.UploadFile({ file });
       setForm(f => ({ ...f, logoUrl: res.file_url }));
@@ -61,6 +74,12 @@ export default function BrandingSettings() {
   };
 
   const handleSave = async () => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Save not available in preview mode');
+      return;
+    }
+
     setSaving(true);
     try {
       if (settings?.id) {

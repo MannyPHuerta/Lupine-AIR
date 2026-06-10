@@ -20,6 +20,13 @@ export default function Customers() {
   const [showNew, setShowNew] = useState(false);
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[Customers] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     Promise.all([
       base44.entities.Customer.list('-created_date', 25000),
       base44.entities.Rental.list('-created_date', 2000),
@@ -31,6 +38,12 @@ export default function Customers() {
   }, []);
 
   const refresh = async () => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[Customers] Base44 SDK not available');
+      return;
+    }
+    
     const [c, r] = await Promise.all([
       base44.entities.Customer.list('-created_date', 25000),
       base44.entities.Rental.list('-created_date', 2000),

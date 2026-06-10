@@ -36,7 +36,7 @@ export function useHeaderStyle() {
   const [result, setResult] = useState(cached ? JSON.parse(cached) : null);
 
   useEffect(() => {
-    if (!base44) {
+    if (!base44 || !base44.entities) {
       setResult({ style: 'classic', seasonalTheme: null });
       return;
     }

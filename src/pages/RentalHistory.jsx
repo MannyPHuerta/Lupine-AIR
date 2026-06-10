@@ -507,6 +507,13 @@ export default function RentalHistory() {
   }, []);
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[RentalHistory] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     Promise.all([
       base44.entities.Rental.list('-created_date', 2000),
       base44.entities.Equipment.list('-created_date', 500),
