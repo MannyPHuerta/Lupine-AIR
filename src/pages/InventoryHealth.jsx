@@ -82,11 +82,20 @@ export default function InventoryHealth() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  const load = () => {
+  const load = async () => {
     setLoading(true);
-    base44.functions.invoke('inventoryHealth', {})
-      .then(res => setData(res.data))
-      .finally(() => setLoading(false));
+    try {
+      const response = await fetch('/api/functions/inventoryHealth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const res = await response.json();
+      setData(res);
+    } catch (err) {
+      console.error('[InventoryHealth] Failed to load:', err);
+    }
+    setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
