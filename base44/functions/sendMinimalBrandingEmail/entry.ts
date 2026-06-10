@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { to, subject, contentHtml, fromName = 'Rental World LLC' } = await req.json();
+    const { to, subject, contentHtml, fromName = 'The Project AIR' } = await req.json();
 
     if (!to || !subject || !contentHtml) {
       return Response.json({ error: 'Missing required fields: to, subject, contentHtml' }, { status: 400 });
