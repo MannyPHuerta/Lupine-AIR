@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 
 const BRANCHES = [
-  '01 McAllen',
-  '02 Weslaco',
-  '03 Harlingen',
-  '05 Brownsville',
-  '06 Corpus',
+  '01 State Street',
+  '02 Congress Ave',
+  '03 Riverside Dr',
+  '04 Market Square',
+  '05 Harbor Blvd',
   '98 Shop',
   '99 Warehouse',
 ];
