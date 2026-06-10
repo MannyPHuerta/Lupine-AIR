@@ -114,8 +114,8 @@ import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
 
 const AuthenticatedApp = () => {
-  // On Vercel: use Supabase session directly. On Base44: use Base44 auth context.
-  const supabaseAuth = IS_VERCEL ? useSupabaseAuth() : null;
+  // Always call hooks unconditionally
+  const supabaseAuth = useSupabaseAuth();
   const [base44Auth, setBase44Auth] = React.useState({ isLoadingAuth: true, isAuthenticated: false, authError: null });
 
   React.useEffect(() => {
