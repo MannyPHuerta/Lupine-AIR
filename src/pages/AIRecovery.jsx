@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabaseData } from '@/lib/supabaseData';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
 import {
   ArrowLeft, RefreshCw, Loader2, RotateCcw, AlertTriangle,
   CheckCircle2, Clock, Truck, MapPin, Camera, Zap, TrendingUp,
@@ -185,6 +186,7 @@ function OverdueRentalRow({ rental }) {
 }
 
 export default function AIRecovery() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [recoveries, setRecoveries] = useState([]);
   const [rentals, setRentals] = useState([]);
@@ -196,6 +198,7 @@ export default function AIRecovery() {
   const [runningAnalysis, setRunningAnalysis] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [mainTab, setMainTab] = useState('recoveries');
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   const load = async () => {
     setLoading(true);
@@ -401,18 +404,24 @@ Provide a strategic recovery action plan for the operations manager.`,
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Intelligence Panels — Pro gated */}
-        {mainTab === 'theft_intel' && (
+        {/* Intelligence Panels — Pro gated (admin/owner bypass) */}
+        {mainTab === 'theft_intel' && isAdmin ? (
+          <TheftIntelPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+        ) : mainTab === 'theft_intel' && (
           <PremiumGate requiredTier="pro" featureName="Theft Intelligence" returnPath="/airecovery">
             <TheftIntelPanel rentals={rentals} customers={[]} recoveries={recoveries} />
           </PremiumGate>
         )}
-        {mainTab === 'boundary' && (
+        {mainTab === 'boundary' && isAdmin ? (
+          <BoundaryVigilancePanel rentals={rentals} recoveries={recoveries} />
+        ) : mainTab === 'boundary' && (
           <PremiumGate requiredTier="pro" featureName="Boundary Vigilance" returnPath="/airecovery">
             <BoundaryVigilancePanel rentals={rentals} recoveries={recoveries} />
           </PremiumGate>
         )}
-        {mainTab === 'threatwatch' && (
+        {mainTab === 'threatwatch' && isAdmin ? (
+          <ThreatWatchPanel rentals={rentals} customers={[]} recoveries={recoveries} />
+        ) : mainTab === 'threatwatch' && (
           <PremiumGate requiredTier="pro" featureName="ThreatWatch" returnPath="/airecovery">
             <ThreatWatchPanel rentals={rentals} customers={[]} recoveries={recoveries} />
           </PremiumGate>
