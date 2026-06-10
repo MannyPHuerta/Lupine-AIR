@@ -121,34 +121,26 @@ const AuthenticatedApp = () => {
   const [base44Auth, setBase44Auth] = React.useState({ isLoadingAuth: true, isAuthenticated: false, authError: null });
 
   React.useEffect(() => {
-    if (IS_VERCEL) return; // Supabase handles it
-    // Base44 environment — poll for auth
+    if (IS_VERCEL) return; // Supabase handles it on Vercel
+    // Base44 environment — poll for window.base44 injection (up to 3s)
     const check = async () => {
       let attempts = 0;
       while (!window.base44 && attempts < 30) {
         await new Promise(r => setTimeout(r, 100));
         attempts++;
       }
-      if (!window.base44) {
-        setBase44Auth({ isLoadingAuth: false, isAuthenticated: false, authError: null });
+      // If window.base44 is present, we're in the Base44 preview — treat as authenticated
+      if (window.base44) {
+        setBase44Auth({ isLoadingAuth: false, isAuthenticated: true, authError: null });
         return;
       }
-      try {
-        await base44.auth.me();
-        setBase44Auth({ isLoadingAuth: false, isAuthenticated: true, authError: null });
-      } catch (e) {
-        const authError = e?.status === 403 ? { type: 'user_not_registered' } : null;
-        setBase44Auth({ isLoadingAuth: false, isAuthenticated: false, authError });
-      }
+      // No window.base44 and no Supabase — unauthenticated
+      setBase44Auth({ isLoadingAuth: false, isAuthenticated: false, authError: null });
     };
     check();
   }, []);
 
-  // In Base44 preview, window.base44 is injected — skip auth gating entirely
-  const isBase44Preview = typeof window !== 'undefined' && !!window.base44;
-  const { isLoadingAuth, isAuthenticated, authError } = isBase44Preview
-    ? { isLoadingAuth: false, isAuthenticated: true, authError: null }
-    : IS_VERCEL ? supabaseAuth : base44Auth;
+  const { isLoadingAuth, isAuthenticated, authError } = IS_VERCEL ? supabaseAuth : base44Auth;
 
   // Show loading spinner while checking auth
   if (isLoadingAuth) {
