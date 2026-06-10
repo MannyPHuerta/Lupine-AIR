@@ -18,8 +18,9 @@ Deno.serve(async (req) => {
 
     const resend = new Resend(apiKey);
 
-    const result = await resend.emails.send({
-      from: 'AIR Waitlist <noreply@theprojectair.com>',
+    // Send notification email to admin
+    const adminResult = await resend.emails.send({
+      from: 'AIR Waitlist <onboarding@resend.dev>',
       to: ['info@theprojectair.com'],
       reply_to: email,
       subject: `🚀 New Early Access Request — ${company || email}`,
@@ -59,14 +60,50 @@ Deno.serve(async (req) => {
       `,
     });
 
-    console.log('Resend result:', JSON.stringify(result));
+    console.log('Admin notification result:', JSON.stringify(adminResult));
 
-    if (result.error) {
-      console.error('Resend error:', JSON.stringify(result.error));
-      return Response.json({ error: result.error.message }, { status: 500 });
+    // Send confirmation email to submitter
+    const confirmationResult = await resend.emails.send({
+      from: 'AIR Waitlist <onboarding@resend.dev>',
+      to: [email],
+      subject: 'Thanks for your interest in AIR! 🎉',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #0ea5e9;">Thanks for requesting early access!</h2>
+          <p style="color: #555; line-height: 1.6;">
+            Hi ${name || 'there'},
+          </p>
+          <p style="color: #555; line-height: 1.6;">
+            Thanks for your interest in AIR by Lupine. We've received your request and our team will reach out within 2 business days to schedule your personalized demo.
+          </p>
+          <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #555; margin: 0;"><strong>Your submission:</strong></p>
+            <p style="color: #555; margin: 8px 0 0 0;">Company: ${company || 'N/A'}</p>
+            <p style="color: #555; margin: 4px 0 0 0;">Branches: ${branches}</p>
+            <p style="color: #555; margin: 4px 0 0 0;">Phone: ${phone || 'N/A'}</p>
+          </div>
+          <p style="color: #555; line-height: 1.6;">
+            In the meantime, feel free to explore our platform at <a href="https://www.theprojectair.com" style="color: #0ea5e9;">www.theprojectair.com</a>.
+          </p>
+          <p style="color: #888; font-size: 12px; margin-top: 24px;">
+            Questions? Reply to this email — we're here to help.
+          </p>
+        </div>
+      `,
+    });
+
+    console.log('Confirmation email result:', JSON.stringify(confirmationResult));
+
+    if (adminResult.error) {
+      console.error('Admin email error:', JSON.stringify(adminResult.error));
+      return Response.json({ error: adminResult.error.message }, { status: 500 });
     }
 
-    return Response.json({ success: true });
+    return Response.json({ 
+      success: true, 
+      adminEmailId: adminResult.data?.id,
+      confirmationEmailId: confirmationResult.data?.id
+    });
   } catch (error) {
     console.error('Caught error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
