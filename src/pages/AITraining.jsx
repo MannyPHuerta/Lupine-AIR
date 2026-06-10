@@ -1,32 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { Bot, Send, Pencil, Check, X, Loader2, BookOpen, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function askAssistant(question, history) {
-  const res = await base44.functions.invoke('askAIAssistant', { question, conversationHistory: history });
-  return res.data?.answer || '';
+  const res = await fetch('/functions/askAIAssistant', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, conversationHistory: history }),
+  });
+  const data = await res.json();
+  return data?.answer || '';
 }
 
 async function polishAndSave(rawCorrection, originalQuestion, originalAnswer) {
   // Use LLM to rewrite the correction into clean, AI-like prose, then save it
-  const polished = await base44.integrations.Core.InvokeLLM({
-    prompt: `You are editing a knowledge base for a rental equipment management platform called AIRental.
-
-A user asked: "${originalQuestion}"
-The AI answered: "${originalAnswer}"
-The user's correction / additional information: "${rawCorrection}"
-
-Rewrite the user's correction as a clear, complete, professional answer in 2–4 concise paragraphs. 
-Write it as if you are the AI assistant explaining this to a staff member. Use plain prose — no bullet points or headers needed unless the content really calls for it. Be specific and accurate based on what the user told you.`,
+  const polished = await fetch('/functions/askAIAssistant', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: `Rewrite this correction as a clear, complete answer: "${rawCorrection}"`, conversationHistory: [] }),
   });
+  const data = await polished.json();
+  const finalText = data?.answer || rawCorrection;
 
-  const finalText = polished?.data || polished || rawCorrection;
-
-  // Save as a PlatformFeature record (free-text style — module=Training, featureName=question)
-  await base44.entities.PlatformFeature.create({
+  // Save as a PlatformFeature record
+  await supabaseData.PlatformFeature.create({
     module: 'Training',
     featureName: originalQuestion.slice(0, 80),
     description: finalText,
@@ -143,15 +143,15 @@ function KnowledgePanel({ refresh }) {
 
   const load = async () => {
     setLoading(true);
-    const all = await base44.entities.PlatformFeature.filter({ module: 'Training' });
-    setItems(all.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+    const all = await supabaseData.PlatformFeature.filter({ module: 'Training' });
+    setItems(all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
     setLoading(false);
   };
 
   useEffect(() => { load(); }, [refresh]);
 
   const handleDelete = async (id) => {
-    await base44.entities.PlatformFeature.delete(id);
+    await supabaseData.PlatformFeature.delete(id);
     setItems(prev => prev.filter(i => i.id !== id));
   };
 
