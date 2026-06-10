@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       if (!base44 || !base44.auth) {
-        // Base44 SDK not available — likely in development/preview mode
+        // Base44 SDK not available — fallback to preview mode
         setUser({ id: 'preview', email: 'preview@base44.com', full_name: 'Preview User', role: 'admin' });
         setIsAuthenticated(true);
         setIsLoadingAuth(false);
@@ -36,12 +36,12 @@ export const AuthProvider = ({ children }) => {
             window.location.replace('/onboarding');
           }
         }
+        setIsLoadingAuth(false);
       } catch (error) {
         if (error?.status === 403 && error?.data?.extra_data?.reason === 'user_not_registered') {
           setAuthError({ type: 'user_not_registered' });
         }
         setIsAuthenticated(false);
-      } finally {
         setIsLoadingAuth(false);
       }
     };
