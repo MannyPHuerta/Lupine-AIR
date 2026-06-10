@@ -161,10 +161,24 @@ export default function Timesheets() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.auth) {
+      console.warn('[Timesheets] Base44 SDK not available');
+      setAuthChecked(true);
+      return;
+    }
+    
     base44.auth.me().then(u => { setUser(u); setAuthChecked(true); }).catch(() => setAuthChecked(true));
   }, []);
 
   const load = async (currentUser) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[Timesheets] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     let data;
     if (currentUser?.role === 'admin') {
@@ -193,6 +207,12 @@ export default function Timesheets() {
   const totalOT = filtered.reduce((s, e) => s + (e.overtimeHours || 0), 0);
 
   const handleSave = async (data) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Operation not available in preview mode');
+      return;
+    }
+    
     setSaving(true);
     if (editEntry?.id) {
       await base44.entities.Timesheet.update(editEntry.id, data);
@@ -206,6 +226,12 @@ export default function Timesheets() {
   };
 
   const handleApprove = async (entry) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Operation not available in preview mode');
+      return;
+    }
+    
     await base44.entities.Timesheet.update(entry.id, {
       status: 'approved',
       approvedAt: new Date().toISOString(),
@@ -214,11 +240,23 @@ export default function Timesheets() {
   };
 
   const handleReject = async (entry) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Operation not available in preview mode');
+      return;
+    }
+    
     await base44.entities.Timesheet.update(entry.id, { status: 'rejected' });
     load(user);
   };
 
   const handleMarkPaid = async (entry) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Operation not available in preview mode');
+      return;
+    }
+    
     await base44.entities.Timesheet.update(entry.id, { status: 'paid' });
     load(user);
   };
