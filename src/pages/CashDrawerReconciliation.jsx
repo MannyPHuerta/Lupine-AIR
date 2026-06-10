@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,9 +53,9 @@ function OpenDrawerModal({ branches, branchSettingsMap, user, onCreated, onClose
     // Save as new default for this branch if it changed
     const bs = branchSettingsMap[branch];
     if (bs && bs.defaultStartingFloat !== floatAmt) {
-      await base44.entities.BranchSettings.update(bs.id, { defaultStartingFloat: floatAmt });
+      await supabaseData.BranchSettings.update(bs.id, { defaultStartingFloat: floatAmt });
     }
-    const drawer = await base44.entities.CashDrawer.create({
+    const drawer = await supabaseData.CashDrawer.create({
       branch,
       shiftDate: new Date().toISOString().slice(0, 10),
       shiftLabel,
@@ -130,7 +130,7 @@ function PettyCashModal({ drawer, user, onClose, onSaved }) {
       recordedAt: new Date().toISOString(),
     };
     const updated = [...(drawer.pettyCashTransactions || []), txn];
-    await base44.entities.CashDrawer.update(drawer.id, { pettyCashTransactions: updated });
+    await supabaseData.CashDrawer.update(drawer.id, { pettyCashTransactions: updated });
     toast({ title: `Petty cash ${type} recorded`, description: `$${amt.toFixed(2)} — ${description}` });
     setSaving(false);
     onSaved();
@@ -191,7 +191,7 @@ function CloseDrawerModal({ drawer, user, onClose, onSaved }) {
 
   const handleClose = async () => {
     setSaving(true);
-    await base44.entities.CashDrawer.update(drawer.id, {
+    await supabaseData.CashDrawer.update(drawer.id, {
       cashCollected: parseFloat(cashCollected) || 0,
       cardCollected: parseFloat(cardCollected) || 0,
       checkCollected: parseFloat(checkCollected) || 0,
@@ -272,7 +272,7 @@ function DrawerCard({ drawer, user, isAdmin, onRefresh }) {
 
   const handleReconcile = async () => {
     const notes = prompt('Manager reconciliation notes (optional):') ?? '';
-    await base44.entities.CashDrawer.update(drawer.id, {
+    await supabaseData.CashDrawer.update(drawer.id, {
       status: 'reconciled',
       reconciledBy: user?.email || '',
       reconciledAt: new Date().toISOString(),
@@ -411,15 +411,19 @@ export default function CashDrawerReconciliation() {
   const isAdmin = user?.role === 'admin' || user?.role === 'manager';
 
   const load = async () => {
-    const [drawersData, branchData] = await Promise.all([
-      base44.entities.CashDrawer.list('-shiftDate', 200),
-      base44.entities.BranchSettings.list(),
-    ]);
-    setDrawers(drawersData);
-    setBranches(branchData.map(b => b.branch).filter(Boolean));
-    const bsMap = {};
-    branchData.forEach(b => { if (b.branch) bsMap[b.branch] = b; });
-    setBranchSettingsMap(bsMap);
+    try {
+      const [drawersData, branchData] = await Promise.all([
+        supabaseData.CashDrawer.list('-shift_date', 200),
+        supabaseData.BranchSettings.list(),
+      ]);
+      setDrawers(drawersData);
+      setBranches(branchData.map(b => b.branch).filter(Boolean));
+      const bsMap = {};
+      branchData.forEach(b => { if (b.branch) bsMap[b.branch] = b; });
+      setBranchSettingsMap(bsMap);
+    } catch (err) {
+      console.error('[CashDrawer] Failed to load:', err);
+    }
     setLoading(false);
   };
 
