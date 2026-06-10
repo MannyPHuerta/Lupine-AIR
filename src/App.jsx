@@ -11,8 +11,8 @@ import { base44 } from '@/api/base44Client';
 import { supabase } from '@/api/supabaseClient';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
-// Detect whether we're running on Vercel (no Base44 platform injection)
-const IS_VERCEL = !import.meta.env.VITE_BASE44_APP_ID;
+// Use Supabase auth when Supabase env vars are present (works on both Vercel and Base44 preview)
+const IS_VERCEL = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 // Add page imports here
 import Store from "./pages/Store";
 import EventStore from "./pages/EventStore";
