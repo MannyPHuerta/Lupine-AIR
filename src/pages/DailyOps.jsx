@@ -161,6 +161,14 @@ export default function DailyOps() {
   const [showTextCrew, setShowTextCrew] = useState(false);
 
   const load = async () => {
+    // Wait up to 3s for the platform SDK to be injected
+    let attempts = 0;
+    while (!window.base44 && attempts < 30) {
+      await new Promise(r => setTimeout(r, 100));
+      attempts++;
+    }
+    if (!window.base44) { setLoading(false); return; }
+
     setLoading(true);
     const [me, r, eq, dels, rtoPays] = await Promise.all([
       base44.auth.me(),
