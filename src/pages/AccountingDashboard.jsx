@@ -265,9 +265,11 @@ function DepreciationInline({ equipment }) {
   );
 }
 
+import { useAuth } from '@/lib/AuthContext';
+
 export default function AccountingDashboard() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [rentals, setRentals] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -313,7 +315,7 @@ export default function AccountingDashboard() {
 
   useEffect(() => { load(); }, []);
 
-  const hasAccess = user?.role === 'admin' || user?.role === 'accountant' || user?.role === 'manager';
+  const hasAccess = user?.role === 'admin' || user?.role === 'accountant' || user?.role === 'manager' || user?.role === 'owner';
 
   const filtered = useMemo(() => rentals.filter(r => {
     const d = r.startDate || '';

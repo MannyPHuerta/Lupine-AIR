@@ -401,19 +401,19 @@ Provide a strategic recovery action plan for the operations manager.`,
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
-        {/* Intelligence Panels — Security+ gated */}
+        {/* Intelligence Panels — Pro gated */}
         {mainTab === 'theft_intel' && (
-          <PremiumGate requiredTier="security_plus" featureName="Theft Intelligence" returnPath="/airecovery">
+          <PremiumGate requiredTier="pro" featureName="Theft Intelligence" returnPath="/airecovery">
             <TheftIntelPanel rentals={rentals} customers={[]} recoveries={recoveries} />
           </PremiumGate>
         )}
         {mainTab === 'boundary' && (
-          <PremiumGate requiredTier="security_plus" featureName="Boundary Vigilance" returnPath="/airecovery">
+          <PremiumGate requiredTier="pro" featureName="Boundary Vigilance" returnPath="/airecovery">
             <BoundaryVigilancePanel rentals={rentals} recoveries={recoveries} />
           </PremiumGate>
         )}
         {mainTab === 'threatwatch' && (
-          <PremiumGate requiredTier="security_plus" featureName="ThreatWatch" returnPath="/airecovery">
+          <PremiumGate requiredTier="pro" featureName="ThreatWatch" returnPath="/airecovery">
             <ThreatWatchPanel rentals={rentals} customers={[]} recoveries={recoveries} />
           </PremiumGate>
         )}
