@@ -18,6 +18,13 @@ export default function PaymentSettingsPanel() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      console.warn('[PaymentSettingsPanel] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     base44.entities.PaymentSettings.list().then(records => {
       if (records.length > 0) {
         setSettings(records[0]);
@@ -31,6 +38,12 @@ export default function PaymentSettingsPanel() {
   };
 
   const handleSave = async () => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Save not available in preview mode');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
