@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, Package, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,12 @@ export default function InspectionQueue() {
 
   const load = async () => {
     setLoading(true);
-    const eq = await base44.entities.Equipment.filter({ unitStatus: 'under_inspection' });
-    setEquipment(eq);
+    try {
+      const eq = await supabaseData.Equipment.filter({ unit_status: 'under_inspection' });
+      setEquipment(eq);
+    } catch (err) {
+      console.error('[InspectionQueue] Failed to load:', err);
+    }
     setLoading(false);
   };
 
@@ -37,26 +41,26 @@ export default function InspectionQueue() {
     try {
       // Update equipment status
       const newStatus = needsRepair ? 'awaiting_parts' : 'available';
-      await base44.entities.Equipment.update(inspecting.id, {
-        unitStatus: newStatus,
+      await supabaseData.Equipment.update(inspecting.id, {
+        unit_status: newStatus,
         condition: conditionBefore,
-        statusNote: inspectionNotes,
-        statusUpdatedAt: new Date().toISOString(),
-        statusUpdatedBy: 'inspection_queue',
+        status_note: inspectionNotes,
+        status_updated_at: new Date().toISOString(),
+        status_updated_by: 'inspection_queue',
       });
 
       // If repair needed, create a WorkOrder
       if (needsRepair) {
-        await base44.entities.WorkOrder.create({
-          equipmentId: inspecting.id,
-          equipmentName: inspecting.name,
+        await supabaseData.WorkOrder.create({
+          equipment_id: inspecting.id,
+          equipment_name: inspecting.name,
           type: 'repair',
           status: 'scheduled',
-          branch: '01 McAllen', // TODO: get from equipment metadata or session
+          branch: '01 McAllen',
           description: `Return inspection flagged this unit for repair`,
           notes: inspectionNotes,
-          conditionBefore,
-          canStartWithoutParts: false,
+          condition_before: conditionBefore,
+          can_start_without_parts: false,
         });
       }
 
