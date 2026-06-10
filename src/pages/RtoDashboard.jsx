@@ -37,6 +37,13 @@ export default function RtoDashboard() {
 
   const load = async () => {
     setLoading(true);
+    // Defensive check for preview mode
+    if (!base44 || !base44.auth || !base44.entities) {
+      console.warn('[RtoDashboard] Base44 SDK not available');
+      setLoading(false);
+      return;
+    }
+    
     const [me, pays, rents] = await Promise.all([
       base44.auth.me(),
       base44.entities.RtoPayment.list('dueDate', 500),
@@ -51,6 +58,12 @@ export default function RtoDashboard() {
   useEffect(() => { load(); }, []);
 
   const handleMarkPaid = async (payment) => {
+    // Defensive check for preview mode
+    if (!base44 || !base44.entities) {
+      alert('Payment operations not available in preview mode');
+      return;
+    }
+    
     if (!confirm(`Mark $${payment.amountDue.toFixed(2)} from ${payment.customerName} as paid?`)) return;
     setMarkingPaid(payment.id);
     const now = new Date().toISOString();
