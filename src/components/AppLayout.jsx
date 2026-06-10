@@ -195,7 +195,8 @@ function NavGroup({ group, location, onNavigate, allGroupRefs, user }) {
   });
 
   // Hide admin-only group from non-admins (after all hooks)
-  if (group.adminOnly && user?.role !== 'admin') return null;
+  // Only hide if user is loaded and confirmed not admin
+  if (group.adminOnly && user && user.role !== 'admin') return null;
   const handleHeaderKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
