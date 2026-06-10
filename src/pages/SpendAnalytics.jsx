@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Loader2, AlertTriangle, TrendingUp, ShieldAlert } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -20,7 +20,7 @@ export default function SpendAnalytics() {
   const [sortDate, setSortDate] = useState('desc');
 
   useEffect(() => {
-    base44.entities.PurchaseOrder.list('-created_date', 1000).then(orders => {
+    supabaseData.PurchaseOrder.list('-created_at', 1000).then(orders => {
       setPos(orders.filter(o => ['received', 'closed', 'submitted', 'ordered', 'partially_received'].includes(o.status)));
       setLoading(false);
     });
