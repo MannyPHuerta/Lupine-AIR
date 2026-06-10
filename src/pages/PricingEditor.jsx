@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Loader2, ExternalLink, Sparkles, CheckCircle2, ShoppingBag } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -17,7 +17,7 @@ export default function PricingEditor() {
   const [websiteUrl, setWebsiteUrl] = useState('');
 
   useEffect(() => {
-    base44.entities.CompanySettings.list().then(rows => {
+    supabaseData.CompanySettings.list().then(rows => {
       if (rows[0]?.websiteUrl) setWebsiteUrl(rows[0].websiteUrl);
     });
   }, []);
@@ -27,8 +27,13 @@ export default function PricingEditor() {
     setEnriching(true);
     setEnrichResult(null);
     try {
-      const res = await base44.functions.invoke('enrichEquipmentImages', { websiteUrl });
-      setEnrichResult(res.data);
+      const res = await fetch('/api/functions/enrichEquipmentImages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteUrl }),
+      });
+      const data = await res.json();
+      setEnrichResult(data);
     } catch (err) {
       alert(`Enrichment failed: ${err.message}`);
     } finally {
@@ -37,7 +42,7 @@ export default function PricingEditor() {
   };
 
   useEffect(() => {
-    base44.entities.Equipment.list('-created_date', 1000).then(eq => {
+    supabaseData.Equipment.list('created_at', 1000).then(eq => {
       setEquipment(eq);
       setLoading(false);
     });
@@ -67,13 +72,12 @@ export default function PricingEditor() {
   const saveEquipment = async (id) => {
     setSaving(prev => ({ ...prev, [id]: true }));
     try {
-      const me = await base44.auth.me();
       const updates = {
         ...edited[id],
-        priceChangedAt: new Date().toISOString(),
-        priceChangedBy: me?.email || 'manager',
+        price_changed_at: new Date().toISOString(),
+        price_changed_by: 'manager',
       };
-      await base44.entities.Equipment.update(id, updates);
+      await supabaseData.Equipment.update(id, updates);
       setEdited(prev => {
         const next = { ...prev };
         delete next[id];
