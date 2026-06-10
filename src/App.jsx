@@ -1,20 +1,12 @@
-import React from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider } from '@/lib/AuthContext';
-import { SupabaseAuthProvider, useSupabaseAuth } from '@/lib/SupabaseAuthContext';
+import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { WorkingBranchProvider } from '@/lib/WorkingBranchContext';
 import { base44 } from '@/api/base44Client';
-import { supabase } from '@/api/supabaseClient';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-
-// Use Supabase auth on Vercel; fall back to no-auth passthrough in Base44 preview
-const IS_VERCEL = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
-// Base44 preview injects window.base44 — if present, skip all auth gating
-const IS_BASE44_PREVIEW = typeof window !== 'undefined' && !!window.base44;
 // Add page imports here
 import Store from "./pages/Store";
 import EventStore from "./pages/EventStore";
@@ -116,45 +108,10 @@ import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
 
 const AuthenticatedApp = () => {
-  const supabaseAuth = useSupabaseAuth();
-  // 'checking' | 'preview' | 'supabase'
-  const [authMode, setAuthMode] = React.useState(window.base44 ? 'preview' : 'checking');
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
 
-  React.useEffect(() => {
-    if (authMode !== 'checking') return;
-    let tries = 0;
-    const interval = setInterval(() => {
-      tries++;
-      if (window.base44) {
-        setAuthMode('preview');
-        clearInterval(interval);
-      } else if (tries >= 30) {
-        // 3s elapsed, no preview injection — use Supabase
-        setAuthMode('supabase');
-        clearInterval(interval);
-      }
-    }, 100);
-    return () => clearInterval(interval);
-  }, [authMode]);
-
-  // Still waiting to detect environment
-  if (authMode === 'checking') {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  // Base44 preview — no auth needed
-  if (authMode === 'preview') {
-    return <AuthenticatedRoutes />;
-  }
-
-  // Supabase auth (Vercel production)
-  const { isLoadingAuth, isAuthenticated, authError } = supabaseAuth;
-
-  if (isLoadingAuth) {
+  // Show loading spinner while checking app public settings or auth
+  if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -166,16 +123,13 @@ const AuthenticatedApp = () => {
     return <UserNotRegisteredError />;
   }
 
-  if (!isAuthenticated) {
+  if (!isLoadingAuth && !isAuthenticated) {
     const next = window.location.pathname + window.location.search;
     window.location.replace(`/signin?next=${encodeURIComponent(next)}`);
     return null;
   }
 
-  return <AuthenticatedRoutes />;
-};
-
-const AuthenticatedRoutes = () => {
+  // Render the main app
   return (
     <Routes>
       {/* All internal routes wrapped in sidebar layout */}
@@ -277,38 +231,37 @@ const AuthenticatedRoutes = () => {
   );
 };
 
+
 function App() {
 
   return (
-    <SupabaseAuthProvider>
-      <AuthProvider>
-        <WorkingBranchProvider>
-          <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <Routes>
-              {/* Public routes - no auth required */}
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/store" element={<Store />} />
-              <Route path="/store/events" element={<EventStore />} />
-              <Route path="/air" element={<AIRWebsite />} />
-              <Route path="/airental" element={<AIRental />} />
-              <Route path="/airevents" element={<AIREvents />} />
-              <Route path="/airfq" element={<AIRfq />} />
-              <Route path="/report/:id" element={<ReportView />} />
-              <Route path="/clockin" element={<ClockIn />} />
-              {/* Public marketing website */}
-              <Route path="/" element={<AIRWebsite />} />
-              {/* Onboarding — requires auth but no tenant */}
-              <Route path="/onboarding" element={<Onboarding />} />
-              {/* All other routes require authentication */}
-              <Route path="/*" element={<AuthenticatedApp />} />
-            </Routes>
-          </Router>
-          <Toaster />
-        </QueryClientProvider>
-        </WorkingBranchProvider>
-      </AuthProvider>
-    </SupabaseAuthProvider>
+    <AuthProvider>
+      <WorkingBranchProvider>
+        <QueryClientProvider client={queryClientInstance}>
+        <Router>
+          <Routes>
+            {/* Public routes - no auth required */}
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/store" element={<Store />} />
+            <Route path="/store/events" element={<EventStore />} />
+            <Route path="/air" element={<AIRWebsite />} />
+            <Route path="/airental" element={<AIRental />} />
+            <Route path="/airevents" element={<AIREvents />} />
+            <Route path="/airfq" element={<AIRfq />} />
+            <Route path="/report/:id" element={<ReportView />} />
+            <Route path="/clockin" element={<ClockIn />} />
+            {/* Public marketing website */}
+            <Route path="/" element={<AIRWebsite />} />
+            {/* Onboarding — requires auth but no tenant */}
+            <Route path="/onboarding" element={<Onboarding />} />
+            {/* All other routes require authentication */}
+            <Route path="/*" element={<AuthenticatedApp />} />
+          </Routes>
+        </Router>
+        <Toaster />
+      </QueryClientProvider>
+      </WorkingBranchProvider>
+    </AuthProvider>
   )
 }
 

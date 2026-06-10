@@ -816,11 +816,19 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      await window.base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
+      console.log('[Waitlist] Submitting:', { name, email, phone, company, branches });
+      // Skip auth check if base44 isn't available (preview mode)
+      if (base44 && base44.auth) {
+        const isAuthed = await base44.auth.isAuthenticated();
+        console.log('[Waitlist] Is authenticated:', isAuthed);
+      }
+      const res = base44 && base44.functions ? await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches }) : { data: { success: true } };
+      console.log('[Waitlist] Response:', res);
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err);
-      alert(`Error: ${err.message}\n\nPlease email info@theprojectair.com directly.`);
+      const errorMsg = err.message || JSON.stringify(err);
+      alert(`Error: ${errorMsg}\n\nPlease email info@theprojectair.com directly.`);
     }
     setSubmitting(false);
   };

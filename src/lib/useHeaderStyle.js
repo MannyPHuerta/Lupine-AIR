@@ -36,12 +36,13 @@ export function useHeaderStyle() {
   const [result, setResult] = useState(cached ? JSON.parse(cached) : null);
 
   useEffect(() => {
+    if (!base44) {
+      setResult({ style: 'classic', seasonalTheme: null });
+      return;
+    }
+    
     let cancelled = false;
     const doFetch = () => {
-      if (!window.base44) {
-        setResult({ style: 'classic', seasonalTheme: null });
-        return;
-      }
       base44.entities.CompanySettings.list().then(list => {
         if (cancelled) return;
         const resolved = resolveStyle(list[0]);
