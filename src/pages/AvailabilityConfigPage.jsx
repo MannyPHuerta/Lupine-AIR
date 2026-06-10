@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { Save, Loader2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -15,8 +15,8 @@ export default function AvailabilityConfigPage() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.BranchSettings.list(),
-      base44.entities.AvailabilityConfig.list('-created_date', 100),
+      supabaseData.BranchSettings.list(),
+      supabaseData.AvailabilityConfig.list('-created_at', 100),
     ]).then(([branchSettings, configs]) => {
       const map = {};
       branchSettings.forEach(b => {
@@ -44,9 +44,9 @@ export default function AvailabilityConfigPage() {
         };
 
         if (config.id) {
-          await base44.entities.AvailabilityConfig.update(config.id, payload);
+          await supabaseData.AvailabilityConfig.update(config.id, payload);
         } else {
-          await base44.entities.AvailabilityConfig.create(payload);
+          await supabaseData.AvailabilityConfig.create(payload);
         }
       }
       setSaving(false);
