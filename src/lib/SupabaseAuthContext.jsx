@@ -26,6 +26,12 @@ export const SupabaseAuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
+    // Guard: supabase client is null when env vars are missing (Base44 preview)
+    if (!supabase) {
+      setIsLoadingAuth(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(buildUser(session.user));
