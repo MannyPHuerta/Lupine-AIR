@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Clock, User, Zap, Plus, Loader2, Check, Send, Package, Wrench } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -30,19 +30,22 @@ export default function ShopFloor() {
 
   const load = async () => {
     setLoading(true);
-    const [wo, mech, pt, bs] = await Promise.all([
-      base44.entities.WorkOrder.list('-createdAt', 500),
-      base44.entities.MechanicProfile.filter({ isActive: true }),
-      base44.entities.PartRequirement.list('-created_date', 500),
-      base44.entities.BranchSettings.filter({ branch: '01 McAllen' }),
-    ]);
-    setWorkOrders(wo);
-    setMechanics(mech);
-    setParts(pt);
-    setBranchSettings(bs[0] || null);
-    // Auto-populate buyer email from branch settings if available
-    if (bs[0]?.partsBuyerEmail) {
-      setBuyerEmail(bs[0].partsBuyerEmail);
+    try {
+      const [wo, mech, pt, bs] = await Promise.all([
+        supabaseData.WorkOrder.list('-created_at', 500),
+        supabaseData.MechanicProfile.filter({ is_active: true }),
+        supabaseData.PartRequirement.list('-created_at', 500),
+        supabaseData.BranchSettings.filter({ branch: '01 McAllen' }),
+      ]);
+      setWorkOrders(wo);
+      setMechanics(mech);
+      setParts(pt);
+      setBranchSettings(bs[0] || null);
+      if (bs[0]?.parts_buyer_email) {
+        setBuyerEmail(bs[0].parts_buyer_email);
+      }
+    } catch (err) {
+      console.error('[ShopFloor] Failed to load:', err);
     }
     setLoading(false);
   };
@@ -84,12 +87,12 @@ export default function ShopFloor() {
   const handleCompleteWO = async (wo) => {
     const needsLaundry = confirm(`Is "${wo.equipmentName}" clean and ready to rent, or does it still need laundry/washing?\n\nOK = Send to Laundry\nCancel = Mark Available Now`);
     try {
-      await base44.entities.WorkOrder.update(wo.id, {
+      await supabaseData.WorkOrder.update(wo.id, {
         status: 'completed',
-        completedDate: new Date().toISOString().split('T')[0],
+        completed_date: new Date().toISOString().split('T')[0],
       });
-      await base44.entities.Equipment.update(wo.equipmentId, {
-        unitStatus: needsLaundry ? 'in_laundry' : 'available',
+      await supabaseData.Equipment.update(wo.equipmentId, {
+        unit_status: needsLaundry ? 'in_laundry' : 'available',
       });
       alert(needsLaundry ? '✓ Work order complete — equipment sent to laundry' : '✓ Work order complete — equipment marked available');
       load();
@@ -101,21 +104,28 @@ export default function ShopFloor() {
   const handleAssign = async (woId, mechanicEmail) => {
     setAssignmentLoading(true);
     try {
-      const result = await base44.functions.invoke('assignWorkOrder', {
-        workOrderId: woId,
-        mechanicEmail,
-        overridePartCheck: false,
-      });
+      const result = await fetch('/api/functions/assignWorkOrder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workOrderId: woId,
+          mechanicEmail,
+          overridePartCheck: false,
+        }),
+      }).then(r => r.json());
 
-      if (result.data.error && result.data.canOverride) {
-        // Parts missing but can override
-        const override = confirm(`Critical parts missing:\n${result.data.missingParts.map(p => `- ${p.name} (${p.status})`).join('\n')}\n\nStart job anyway?`);
+      if (result.error && result.canOverride) {
+        const override = confirm(`Critical parts missing:\n${result.missingParts.map(p => `- ${p.name} (${p.status})`).join('\n')}\n\nStart job anyway?`);
         if (override) {
-          await base44.functions.invoke('assignWorkOrder', {
-            workOrderId: woId,
-            mechanicEmail,
-            overridePartCheck: true,
-          });
+          await fetch('/api/functions/assignWorkOrder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              workOrderId: woId,
+              mechanicEmail,
+              overridePartCheck: true,
+            }),
+          }).then(r => r.json());
         }
       }
 
@@ -232,10 +242,14 @@ export default function ShopFloor() {
                                 if (!email) { alert('No buyer email configured'); return; }
                                 setSendingRequest(null);
                                 try {
-                                  await base44.functions.invoke('sendPartsRequest', {
-                                    workOrderId: wo.id,
-                                    buyerEmail: email,
-                                  });
+                                  await fetch('/api/functions/sendPartsRequest', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      workOrderId: wo.id,
+                                      buyerEmail: email,
+                                    }),
+                                  }).then(r => r.json());
                                   alert('✓ Parts request sent');
                                   load();
                                 } catch (err) {
