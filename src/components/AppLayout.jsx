@@ -364,8 +364,8 @@ export default function AppLayout() {
   const seasonalTheme = headerStyleResult?.seasonalTheme ?? null;
 
   useEffect(() => {
-    if (!base44) return;
-    
+    if (!window.base44) return;
+
     base44.auth.me().then(u => {
       setUser(u);
       if (!workingBranch && !loading) {
