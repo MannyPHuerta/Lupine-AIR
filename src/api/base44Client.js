@@ -1,8 +1,6 @@
-import { createClient } from "@base44/sdk";
+// Base44 SDK client for frontend usage
+// In Base44 apps, the platform injects window.base44 automatically
 
-// Platform injects window.base44 in production/editor; use it if available
-const base44Client = typeof window !== 'undefined' && window.base44
-  ? window.base44
-  : createClient({ appId: import.meta.env.VITE_BASE44_APP_ID });
-
-export const base44 = base44Client;
+export const base44 = typeof window !== 'undefined' && window.base44 
+  ? window.base44 
+  : null;
