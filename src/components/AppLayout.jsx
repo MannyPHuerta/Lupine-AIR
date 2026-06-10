@@ -3,8 +3,6 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useWorkingBranch } from '@/lib/WorkingBranchContext';
 import { useHeaderStyle } from '@/lib/useHeaderStyle';
 import WorkingBranchModal from '@/components/WorkingBranchModal';
-import DemoBanner from '@/components/DemoBanner';
-import DeprecationBanner from '@/components/DeprecationBanner';
 import { base44 } from '@/api/base44Client';
 import AIAssistant from '@/components/AIAssistant';
 import {
@@ -486,8 +484,6 @@ export default function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <DeprecationBanner />
-          <DemoBanner />
           <Outlet />
         </main>
 
