@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Loader2, Wrench, Clock, CheckCircle2, AlertTriangle, Package, Zap, TrendingUp, Download } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -34,14 +34,18 @@ export default function AIRepair() {
 
   const load = async () => {
     setLoading(true);
-    const [wo, eq, logs] = await Promise.all([
-      base44.entities.WorkOrder.list('-createdAt', 500),
-      base44.entities.Equipment.list('name', 2000),
-      base44.entities.MaintenanceLog.list('-completedDate', 200),
-    ]);
-    setWorkOrders(wo);
-    setEquipment(eq);
-    setMaintenanceLogs(logs);
+    try {
+      const [wo, eq, logs] = await Promise.all([
+        supabaseData.WorkOrder.list('-created_at', 500),
+        supabaseData.Equipment.list('name', 2000),
+        supabaseData.MaintenanceLog.list('-completed_date', 200),
+      ]);
+      setWorkOrders(wo);
+      setEquipment(eq);
+      setMaintenanceLogs(logs);
+    } catch (err) {
+      console.error('[AIRepair] Failed to load:', err);
+    }
     setLoading(false);
   };
 
@@ -88,7 +92,7 @@ export default function AIRepair() {
   };
 
   const handleUpdate = async (id, updates) => {
-    await base44.entities.WorkOrder.update(id, updates);
+    await supabaseData.WorkOrder.update(id, updates);
     setWorkOrders(prev => prev.map(wo => wo.id === id ? { ...wo, ...updates } : wo));
     setEditingId(null);
   };
@@ -229,17 +233,21 @@ export default function AIRepair() {
                               if (!hasAI) {
                                 const rentals = [];
                                 try {
-                                  const result = await base44.functions.invoke('analyzeRepairIntel', {
-                                    equipmentId: log.equipmentId,
-                                    equipmentName: log.equipmentName || eq?.name || 'Unknown',
-                                    equipmentCategory: eq?.category || '',
-                                    purchaseCost: eq?.purchaseCost || 0,
-                                    dailyRate: eq?.dailyRate || 0,
-                                    currentCondition: log.conditionAfter || 'Good',
-                                    maintenanceType: log.type,
-                                    rentalHistory: rentals,
-                                  });
-                                  setAiResults(prev => ({ ...prev, [log.id]: result }));
+                                  const result = await fetch('/api/functions/analyzeRepairIntel', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      equipmentId: log.equipmentId,
+                                      equipmentName: log.equipmentName || eq?.name || 'Unknown',
+                                      equipmentCategory: eq?.category || '',
+                                      purchaseCost: eq?.purchaseCost || 0,
+                                      dailyRate: eq?.dailyRate || 0,
+                                      currentCondition: log.conditionAfter || 'Good',
+                                      maintenanceType: log.type,
+                                      rentalHistory: rentals,
+                                    }),
+                                  }).then(r => r.json());
+                                setAiResults(prev => ({ ...prev, [log.id]: result }));
                                 } catch (err) {
                                   setAiResults(prev => ({ ...prev, [log.id]: { error: err.message } }));
                                 }

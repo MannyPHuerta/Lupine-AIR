@@ -9,8 +9,12 @@ export default function SmartSchedulePanel() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('smartScheduleWorkOrders', {});
-      setSchedule(res.data);
+      const res = await fetch('/api/functions/smartScheduleWorkOrders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).then(r => r.json());
+      setSchedule(res);
     } catch (err) {
       console.error('Failed to load smart schedule:', err);
     } finally {

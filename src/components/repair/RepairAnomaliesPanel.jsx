@@ -21,8 +21,12 @@ export default function RepairAnomaliesPanel() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('detectRepairAnomalies', {});
-      setAnomalies(res.data.anomalies || []);
+      const res = await fetch('/api/functions/detectRepairAnomalies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).then(r => r.json());
+      setAnomalies(res.anomalies || []);
     } catch (err) {
       console.error('Failed to load anomalies:', err);
     } finally {
