@@ -41,6 +41,9 @@ const newLine = () => ({
   deposit: 0,
 });
 
+// Helper to check if base44 SDK is available
+const isBase44Available = () => typeof base44 !== 'undefined' && base44 !== null;
+
 export default function AvailabilityManager() {
   const navigate = useNavigate();
   const [equipment, setEquipment] = useState([]);
@@ -123,7 +126,7 @@ export default function AvailabilityManager() {
 
   // Fetch catalog and rental data
   useEffect(() => {
-    if (!base44) {
+    if (!isBase44Available()) {
       setLoading(false);
       return;
     }
@@ -297,7 +300,7 @@ export default function AvailabilityManager() {
     if (validLines.some(l => !l.startDate || !l.endDate)) { alert('Please set dates for all equipment lines.'); return false; }
     
     // Check customer status if we have a customer ID
-    if (customer.id && customer.id !== 'walkin') {
+    if (customer.id && customer.id !== 'walkin' && isBase44Available()) {
       const custList = await base44.entities.Customer.filter({ id: customer.id });
       const cust = custList[0];
       if (cust) {
@@ -350,6 +353,7 @@ export default function AvailabilityManager() {
 
     // Always auto-assign invoice number from branch sequence on first save
     let invoiceNumber = '';
+    if (!isBase44Available()) return [];
     const branchSettingsList = await base44.entities.BranchSettings.filter({ branch: customer.branch });
     const bs = branchSettingsList[0];
     if (bs) {
@@ -363,7 +367,7 @@ export default function AvailabilityManager() {
     try {
       // Auto-sync customer record on all saves (quote or confirmed)
       let customerId = null;
-      if (customer.name) {
+      if (customer.name && base44 && base44.functions) {
         try {
           const res = await base44.functions.invoke('upsertCustomer', {
             fullName: customer.name,
