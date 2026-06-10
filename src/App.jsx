@@ -11,8 +11,10 @@ import { base44 } from '@/api/base44Client';
 import { supabase } from '@/api/supabaseClient';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
-// Use Supabase auth when Supabase env vars are present (works on both Vercel and Base44 preview)
+// Use Supabase auth on Vercel; fall back to no-auth passthrough in Base44 preview
 const IS_VERCEL = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+// Base44 preview injects window.base44 — if present, skip all auth gating
+const IS_BASE44_PREVIEW = typeof window !== 'undefined' && !!window.base44;
 // Add page imports here
 import Store from "./pages/Store";
 import EventStore from "./pages/EventStore";
@@ -142,7 +144,11 @@ const AuthenticatedApp = () => {
     check();
   }, []);
 
-  const { isLoadingAuth, isAuthenticated, authError } = IS_VERCEL ? supabaseAuth : base44Auth;
+  // In Base44 preview, window.base44 is injected — skip auth gating entirely
+  const isBase44Preview = typeof window !== 'undefined' && !!window.base44;
+  const { isLoadingAuth, isAuthenticated, authError } = isBase44Preview
+    ? { isLoadingAuth: false, isAuthenticated: true, authError: null }
+    : IS_VERCEL ? supabaseAuth : base44Auth;
 
   // Show loading spinner while checking auth
   if (isLoadingAuth) {
