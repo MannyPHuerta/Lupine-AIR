@@ -1,12 +1,18 @@
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { AuthProvider } from '@/lib/AuthContext';
+import { SupabaseAuthProvider, useSupabaseAuth } from '@/lib/SupabaseAuthContext';
 import { WorkingBranchProvider } from '@/lib/WorkingBranchContext';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+
+// Detect whether we're running on Vercel (no Base44 platform injection)
+const IS_VERCEL = !import.meta.env.VITE_BASE44_APP_ID;
 // Add page imports here
 import Store from "./pages/Store";
 import EventStore from "./pages/EventStore";
@@ -108,10 +114,38 @@ import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
+  // On Vercel: use Supabase session directly. On Base44: use Base44 auth context.
+  const supabaseAuth = IS_VERCEL ? useSupabaseAuth() : null;
+  const [base44Auth, setBase44Auth] = React.useState({ isLoadingAuth: true, isAuthenticated: false, authError: null });
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  React.useEffect(() => {
+    if (IS_VERCEL) return; // Supabase handles it
+    // Base44 environment — poll for auth
+    const check = async () => {
+      let attempts = 0;
+      while (!window.base44 && attempts < 30) {
+        await new Promise(r => setTimeout(r, 100));
+        attempts++;
+      }
+      if (!window.base44) {
+        setBase44Auth({ isLoadingAuth: false, isAuthenticated: false, authError: null });
+        return;
+      }
+      try {
+        await base44.auth.me();
+        setBase44Auth({ isLoadingAuth: false, isAuthenticated: true, authError: null });
+      } catch (e) {
+        const authError = e?.status === 403 ? { type: 'user_not_registered' } : null;
+        setBase44Auth({ isLoadingAuth: false, isAuthenticated: false, authError });
+      }
+    };
+    check();
+  }, []);
+
+  const { isLoadingAuth, isAuthenticated, authError } = IS_VERCEL ? supabaseAuth : base44Auth;
+
+  // Show loading spinner while checking auth
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -128,6 +162,8 @@ const AuthenticatedApp = () => {
     window.location.replace(`/signin?next=${encodeURIComponent(next)}`);
     return null;
   }
+
+  // Loading spinner while checking auth
 
   // Render the main app
   return (
@@ -235,33 +271,35 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <AuthProvider>
-      <WorkingBranchProvider>
-        <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <Routes>
-            {/* Public routes - no auth required */}
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/store" element={<Store />} />
-            <Route path="/store/events" element={<EventStore />} />
-            <Route path="/air" element={<AIRWebsite />} />
-            <Route path="/airental" element={<AIRental />} />
-            <Route path="/airevents" element={<AIREvents />} />
-            <Route path="/airfq" element={<AIRfq />} />
-            <Route path="/report/:id" element={<ReportView />} />
-            <Route path="/clockin" element={<ClockIn />} />
-            {/* Public marketing website */}
-            <Route path="/" element={<AIRWebsite />} />
-            {/* Onboarding — requires auth but no tenant */}
-            <Route path="/onboarding" element={<Onboarding />} />
-            {/* All other routes require authentication */}
-            <Route path="/*" element={<AuthenticatedApp />} />
-          </Routes>
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-      </WorkingBranchProvider>
-    </AuthProvider>
+    <SupabaseAuthProvider>
+      <AuthProvider>
+        <WorkingBranchProvider>
+          <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <Routes>
+              {/* Public routes - no auth required */}
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/store" element={<Store />} />
+              <Route path="/store/events" element={<EventStore />} />
+              <Route path="/air" element={<AIRWebsite />} />
+              <Route path="/airental" element={<AIRental />} />
+              <Route path="/airevents" element={<AIREvents />} />
+              <Route path="/airfq" element={<AIRfq />} />
+              <Route path="/report/:id" element={<ReportView />} />
+              <Route path="/clockin" element={<ClockIn />} />
+              {/* Public marketing website */}
+              <Route path="/" element={<AIRWebsite />} />
+              {/* Onboarding — requires auth but no tenant */}
+              <Route path="/onboarding" element={<Onboarding />} />
+              {/* All other routes require authentication */}
+              <Route path="/*" element={<AuthenticatedApp />} />
+            </Routes>
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+        </WorkingBranchProvider>
+      </AuthProvider>
+    </SupabaseAuthProvider>
   )
 }
 
