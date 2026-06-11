@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabaseData } from '@/lib/supabaseData';
+import { base44 } from '@/api/base44Client';
 import { useSearchParams } from 'react-router-dom';
 import { Truck, Scale, Loader2, Plus, Printer, Save } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -169,7 +170,7 @@ export default function AIRoads() {
   useEffect(() => {
     (async () => {
       const [eq, plans] = await Promise.all([
-        supabaseData.Equipment.list('name', 2000),
+        base44.entities.Equipment.list('name', 2000),
         supabaseData.EventPlan.list('-created_at', 100),
       ]);
       setAllEquipment(eq);
