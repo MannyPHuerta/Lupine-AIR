@@ -25,16 +25,19 @@ export default async function handler(req, res) {
 
   // Store in Supabase
   console.log('[Waitlist] Inserting into Supabase...');
+  console.log('[Waitlist] Supabase URL:', process.env.SUPABASE_URL ? 'configured' : 'MISSING');
+  console.log('[Waitlist] Supabase Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'configured' : 'MISSING');
+  
   const { data: insertData, error: dbError } = await supabase
     .from('waitlist_entries')
     .insert({ name, email, phone, company, branches, status: 'pending' })
     .select();
 
   if (dbError) {
-    console.error('[Waitlist] DB insert failed:', JSON.stringify(dbError));
+    console.error('[Waitlist] DB insert failed:', JSON.stringify(dbError, null, 2));
     return res.status(500).json({ error: dbError.message, details: dbError });
   }
-  console.log('[Waitlist] DB insert success:', insertData);
+  console.log('[Waitlist] DB insert success:', JSON.stringify(insertData, null, 2));
 
   const apiKey = process.env.RESEND_API_KEY;
   console.log('[Waitlist] RESEND_API_KEY exists:', !!apiKey);
