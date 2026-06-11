@@ -816,7 +816,7 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/functions/waitlistSubmit', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, phone, company, branches }),
