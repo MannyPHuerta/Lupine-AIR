@@ -34,12 +34,13 @@ export default function WaitlistManager() {
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [waitlist, trialList] = await Promise.all([
-      base44.entities.WaitlistEntry.list('-created_date', 200),
-      base44.entities.SubscriberTrial.list('-created_date', 200),
-    ]);
-    setEntries(waitlist || []);
-    setTrials(trialList || []);
+    try {
+      const res = await base44.functions.invoke('waitlistManager', { action: 'list' });
+      setEntries(res.data?.waitlist || []);
+      setTrials(res.data?.trials || []);
+    } catch (err) {
+      setError(err.message);
+    }
     setLoading(false);
   }, []);
 
@@ -49,13 +50,9 @@ export default function WaitlistManager() {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      const res = await base44.functions.invoke('approveWaitlistEntry', {
+      const res = await base44.functions.invoke('waitlistManager', {
+        action: 'approve',
         entryId: approveEntry.id,
-        name: approveEntry.name,
-        email: approveEntry.email,
-        company: approveEntry.company,
-        phone: approveEntry.phone,
-        branches: approveEntry.branches,
         notes,
       });
       if (res.data?.error) throw new Error(res.data.error);
@@ -70,7 +67,7 @@ export default function WaitlistManager() {
 
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
-    await base44.entities.WaitlistEntry.update(entry.id, { status: 'rejected' });
+    await base44.functions.invoke('waitlistManager', { action: 'reject', entryId: entry.id });
     await loadData();
   };
 
@@ -153,7 +150,7 @@ export default function WaitlistManager() {
                     <td className="px-4 py-3 text-slate-700 font-medium">{entry.company || '—'}</td>
                     <td className="px-4 py-3 text-slate-600">{entry.branches || '—'}</td>
                     <td className="px-4 py-3 text-slate-500 text-xs">
-                      {entry.created_date ? format(new Date(entry.created_date), 'MMM d, yyyy') : '—'}
+                      {entry.created_at ? format(new Date(entry.created_at), 'MMM d, yyyy') : '—'}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-1 rounded-full font-semibold ${STATUS_STYLE[entry.status] || 'bg-gray-100 text-gray-600'}`}>
@@ -174,7 +171,7 @@ export default function WaitlistManager() {
                         </div>
                       ) : (
                         <span className="text-xs text-slate-400">
-                          {entry.approvedAt ? format(new Date(entry.approvedAt), 'MMM d') : '—'}
+                          {entry.approved_at ? format(new Date(entry.approved_at), 'MMM d') : '—'}
                         </span>
                       )}
                     </td>
@@ -202,23 +199,23 @@ export default function WaitlistManager() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {trials.map(trial => {
-                  const daysLeft = trial.trialEndsAt
-                    ? Math.ceil((new Date(trial.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24))
+                  const daysLeft = trial.trial_ends_at
+                    ? Math.ceil((new Date(trial.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24))
                     : null;
                   return (
                     <tr key={trial.id} className="hover:bg-slate-50 transition">
                       <td className="px-4 py-3">
-                        <div className="font-semibold text-slate-900">{trial.contactName || '—'}</div>
+                        <div className="font-semibold text-slate-900">{trial.contact_name || '—'}</div>
                         <div className="text-slate-500 text-xs">{trial.email}</div>
-                        <div className="text-slate-400 text-xs">{trial.companyName}</div>
+                        <div className="text-slate-400 text-xs">{trial.company_name}</div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
-                          {(trial.planTier || 'pro').toUpperCase()}
+                          {(trial.plan_tier || 'pro').toUpperCase()}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-slate-700">{trial.trialEndsAt || '—'}</div>
+                        <div className="text-slate-700">{trial.trial_ends_at || '—'}</div>
                         {daysLeft !== null && daysLeft > 0 ? (
                           <div className={`text-xs font-medium ${daysLeft <= 2 ? 'text-red-500' : daysLeft <= 5 ? 'text-amber-500' : 'text-slate-400'}`}>
                             {daysLeft <= 2 && <AlertTriangle className="w-3 h-3 inline mr-0.5" />}
@@ -226,13 +223,13 @@ export default function WaitlistManager() {
                           </div>
                         ) : daysLeft !== null ? <div className="text-xs text-red-500 font-medium">Expired</div> : null}
                       </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.lockoutDate || '—'}</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.lockout_date || '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-1 rounded-full font-semibold ${TRIAL_STATUS_STYLE[trial.status] || 'bg-gray-100 text-gray-600'}`}>
                           {trial.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.approvedBy || '—'}</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.approved_by || '—'}</td>
                     </tr>
                   );
                 })}
