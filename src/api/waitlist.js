@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
   if (dbError) {
     console.error('[Waitlist] DB insert failed:', dbError.message);
-    // non-fatal — still send emails
+    return res.status(500).json({ error: dbError.message });
   }
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
             <tr><td style="padding:8px;font-weight:bold;color:#555">Branches</td><td style="padding:8px">${branches || '—'}</td></tr>
             <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold;color:#555">Submitted</td><td style="padding:8px">${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} CST</td></tr>
           </table>
-          <p style="color:#888;font-size:12px;margin-top:16px">Reply to reach ${name || 'submitter'} at ${email}. Approve at /waitlist-manager.</p>
+          <p style="color:#888;font-size:12px;margin-top:16px">Reply to reach ${name || 'submitter'} at ${email}.</p>
         </div>
       `,
     }),
