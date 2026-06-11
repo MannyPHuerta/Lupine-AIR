@@ -49,8 +49,6 @@ async function geocode(address, city, state, zip) {
   return null;
 }
 
-const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
-
 export default function DispatchBoard() {
   const navigate = useNavigate();
   const [deliveries, setDeliveries] = useState([]);
@@ -196,7 +194,7 @@ export default function DispatchBoard() {
             <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
               className="h-8 text-xs px-2 rounded bg-white/10 text-white border-0 backdrop-blur-sm">
               <option value="" className="text-black">All Branches</option>
-              {BRANCHES.map(b => <option key={b} value={b} className="text-black">{b}</option>)}
+              {branchSettings.map(b => <option key={b.branch} value={b.branch} className="text-black">{b.branch}</option>)}
             </select>
             <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)}
               className="h-8 text-xs px-2 rounded bg-white/10 text-white border-0 backdrop-blur-sm" />
