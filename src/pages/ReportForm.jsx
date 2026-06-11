@@ -148,7 +148,7 @@ export default function ReportForm() {
 
       {/* Nav buttons */}
       <div className="max-w-2xl mx-auto px-4 pt-4 flex items-center justify-between">
-        <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/history")}>
+        <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/report-history")}>
           <History className="w-5 h-5" />
           <span className="text-sm">History</span>
         </button>
