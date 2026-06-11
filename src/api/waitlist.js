@@ -3,12 +3,20 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
+  console.log('[api/waitlist] Received request:', req.method, req.body);
+  
   if (req.method !== 'POST') {
+    console.error('[api/waitlist] Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { email, company, branches, name, phone } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email is required' });
+  console.log('[api/waitlist] Payload:', { email, company, branches, name, phone });
+  
+  if (!email) {
+    console.error('[api/waitlist] Email is required');
+    return res.status(400).json({ error: 'Email is required' });
+  }
 
   const supabase = createClient(
     process.env.SUPABASE_URL,
