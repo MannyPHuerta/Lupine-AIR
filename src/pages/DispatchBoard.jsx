@@ -7,6 +7,7 @@ import DispatchMap from '@/components/dispatch/DispatchMap';
 import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
 import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
 import { getCached, setCached } from '@/lib/geocodeCache';
+import { BRANCH_INFO } from '@/lib/branchInfo';
 
 const DELIVERY_STATUS_COLORS = {
   scheduled: 'bg-blue-100 text-blue-800',
@@ -197,6 +198,7 @@ export default function DispatchBoard() {
           driverLocations={driverLocations}
           onSelectDelivery={(id) => navigate(`/delivery/${id}`)}
           onSelectRecovery={(id) => navigate(`/recovery/${id}`)}
+          defaultCenter={branchFilter && BRANCH_INFO[branchFilter]?.coords ? BRANCH_INFO[branchFilter].coords : [26.2034, -98.2300]}
         />
       )}
 
