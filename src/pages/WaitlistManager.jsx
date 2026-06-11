@@ -3,12 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format, addDays } from 'date-fns';
-import { Users, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = SUPA_URL && SUPA_KEY ? createClient(SUPA_URL, SUPA_KEY) : null;
+import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -36,14 +32,12 @@ export default function WaitlistManager() {
   const [approving, setApproving] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!supabase) { setError('Supabase not configured — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'); setLoading(false); return; }
     setLoading(true);
     setError(null);
-    const [{ data: waitlist, error: e1 }, { data: trialList, error: e2 }] = await Promise.all([
-      supabase.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-      supabase.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
+    const [waitlist, trialList] = await Promise.all([
+      base44.entities.WaitlistEntry.list('-created_date', 200),
+      base44.entities.SubscriberTrial.list('-created_date', 200),
     ]);
-    if (e1 || e2) setError((e1 || e2).message);
     setEntries(waitlist || []);
     setTrials(trialList || []);
     setLoading(false);
@@ -52,43 +46,31 @@ export default function WaitlistManager() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleApprove = async () => {
-    if (!approveEntry || !supabase) return;
+    if (!approveEntry) return;
     setApproving(true);
-    const today = new Date();
-    const trialEndsAt = addDays(today, 14);
-    const lockoutDate = addDays(today, 30);
-
-    const { error: insertErr } = await supabase.from('subscriber_trials').insert({
-      email: approveEntry.email,
-      company_name: approveEntry.company,
-      contact_name: approveEntry.name,
-      phone: approveEntry.phone,
-      branches: approveEntry.branches,
-      status: 'invited',
-      plan_tier: 'pro',
-      trial_start_date: today.toISOString().split('T')[0],
-      trial_ends_at: trialEndsAt.toISOString().split('T')[0],
-      lockout_date: lockoutDate.toISOString().split('T')[0],
-      notes,
-    });
-
-    if (insertErr) { alert(insertErr.message); setApproving(false); return; }
-
-    await supabase.from('waitlist_entries').update({
-      status: 'approved',
-      approved_at: new Date().toISOString(),
-      notes,
-    }).eq('id', approveEntry.id);
-
-    await loadData();
-    setApproveEntry(null);
-    setNotes('');
+    try {
+      const res = await base44.functions.invoke('approveWaitlistEntry', {
+        entryId: approveEntry.id,
+        name: approveEntry.name,
+        email: approveEntry.email,
+        company: approveEntry.company,
+        phone: approveEntry.phone,
+        branches: approveEntry.branches,
+        notes,
+      });
+      if (res.data?.error) throw new Error(res.data.error);
+      await loadData();
+      setApproveEntry(null);
+      setNotes('');
+    } catch (err) {
+      alert('Approval failed: ' + err.message);
+    }
     setApproving(false);
   };
 
   const handleReject = async (entry) => {
-    if (!supabase || !confirm(`Reject ${entry.name || entry.email}?`)) return;
-    await supabase.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entry.id);
+    if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
+    await base44.entities.WaitlistEntry.update(entry.id, { status: 'rejected' });
     await loadData();
   };
 
@@ -98,15 +80,18 @@ export default function WaitlistManager() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900">Waitlist & Trial Manager</h1>
-        <p className="text-slate-500 text-sm mt-1">Review early access requests and monitor subscriber trial status</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Waitlist & Trial Manager</h1>
+          <p className="text-slate-500 text-sm mt-1">Review early access requests and monitor subscriber trial status</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-2">
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+        </Button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-          {error}
-        </div>
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{error}</div>
       )}
 
       {/* Stats */}
@@ -168,7 +153,7 @@ export default function WaitlistManager() {
                     <td className="px-4 py-3 text-slate-700 font-medium">{entry.company || '—'}</td>
                     <td className="px-4 py-3 text-slate-600">{entry.branches || '—'}</td>
                     <td className="px-4 py-3 text-slate-500 text-xs">
-                      {entry.created_at ? format(new Date(entry.created_at), 'MMM d, yyyy') : '—'}
+                      {entry.created_date ? format(new Date(entry.created_date), 'MMM d, yyyy') : '—'}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-1 rounded-full font-semibold ${STATUS_STYLE[entry.status] || 'bg-gray-100 text-gray-600'}`}>
@@ -189,7 +174,7 @@ export default function WaitlistManager() {
                         </div>
                       ) : (
                         <span className="text-xs text-slate-400">
-                          {entry.approved_at ? format(new Date(entry.approved_at), 'MMM d') : '—'}
+                          {entry.approvedAt ? format(new Date(entry.approvedAt), 'MMM d') : '—'}
                         </span>
                       )}
                     </td>
@@ -217,23 +202,23 @@ export default function WaitlistManager() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {trials.map(trial => {
-                  const daysLeft = trial.trial_ends_at
-                    ? Math.ceil((new Date(trial.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24))
+                  const daysLeft = trial.trialEndsAt
+                    ? Math.ceil((new Date(trial.trialEndsAt) - new Date()) / (1000 * 60 * 60 * 24))
                     : null;
                   return (
                     <tr key={trial.id} className="hover:bg-slate-50 transition">
                       <td className="px-4 py-3">
-                        <div className="font-semibold text-slate-900">{trial.contact_name || '—'}</div>
+                        <div className="font-semibold text-slate-900">{trial.contactName || '—'}</div>
                         <div className="text-slate-500 text-xs">{trial.email}</div>
-                        <div className="text-slate-400 text-xs">{trial.company_name}</div>
+                        <div className="text-slate-400 text-xs">{trial.companyName}</div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
-                          {(trial.plan_tier || 'pro').toUpperCase()}
+                          {(trial.planTier || 'pro').toUpperCase()}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-slate-700">{trial.trial_ends_at || '—'}</div>
+                        <div className="text-slate-700">{trial.trialEndsAt || '—'}</div>
                         {daysLeft !== null && daysLeft > 0 ? (
                           <div className={`text-xs font-medium ${daysLeft <= 2 ? 'text-red-500' : daysLeft <= 5 ? 'text-amber-500' : 'text-slate-400'}`}>
                             {daysLeft <= 2 && <AlertTriangle className="w-3 h-3 inline mr-0.5" />}
@@ -241,13 +226,13 @@ export default function WaitlistManager() {
                           </div>
                         ) : daysLeft !== null ? <div className="text-xs text-red-500 font-medium">Expired</div> : null}
                       </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.lockout_date || '—'}</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.lockoutDate || '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-1 rounded-full font-semibold ${TRIAL_STATUS_STYLE[trial.status] || 'bg-gray-100 text-gray-600'}`}>
                           {trial.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.approved_by || '—'}</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.approvedBy || '—'}</td>
                     </tr>
                   );
                 })}
@@ -275,7 +260,7 @@ export default function WaitlistManager() {
                   placeholder="e.g. Strong Pro candidate…" className="h-20 text-sm" />
               </div>
               <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 text-xs text-cyan-800">
-                <strong>What happens:</strong> A <code>subscriber_trials</code> row is created in Supabase with a 14-day trial clock.
+                <strong>What happens:</strong> A <code>SubscriberTrial</code> record is created, a platform invite is sent, and a welcome email is delivered via Resend.
               </div>
             </div>
           )}
