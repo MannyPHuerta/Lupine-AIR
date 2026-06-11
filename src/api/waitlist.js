@@ -28,6 +28,20 @@ export default async function handler(req, res) {
     return r.json();
   };
 
+  // Store in Base44 WaitlistEntry entity via REST
+  try {
+    const appId = process.env.VITE_BASE44_APP_ID || process.env.BASE44_APP_ID;
+    if (appId) {
+      await fetch(`https://api.base44.com/api/apps/${appId}/entities/WaitlistEntry/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, company, branches, status: 'pending' }),
+      });
+    }
+  } catch (dbErr) {
+    console.warn('[Waitlist] DB store failed (non-fatal):', dbErr.message);
+  }
+
   const [adminResult, confirmResult] = await Promise.all([
     send({
       from: 'AIR Waitlist <info@theprojectair.com>',

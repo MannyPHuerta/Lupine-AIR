@@ -107,6 +107,7 @@ import FraudIntelligencePage from "./pages/FraudIntelligencePage";
 import FraudDigestPage from "./pages/FraudDigestPage";
 import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
+import WaitlistManager from "./pages/WaitlistManager";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -227,6 +228,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/fraud/digest" element={<AdminReauthGate title="AI Fraud Digest"><FraudDigestPage /></AdminReauthGate>} />
         <Route path="/admin/fraud/recovery" element={<AdminReauthGate title="Recovery Intelligence"><AIRecovery /></AdminReauthGate>} />
         <Route path="/supabase-test" element={<SupabaseTest />} />
+        <Route path="/waitlist-manager" element={<WaitlistManager />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

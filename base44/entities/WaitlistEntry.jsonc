@@ -1,0 +1,51 @@
+{
+  "name": "WaitlistEntry",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Contact name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "company": {
+      "type": "string",
+      "description": "Company name"
+    },
+    "branches": {
+      "type": "string",
+      "description": "Number of branches"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Admin review status"
+    },
+    "approvedBy": {
+      "type": "string",
+      "description": "Admin email who approved/rejected"
+    },
+    "approvedAt": {
+      "type": "string",
+      "description": "ISO timestamp of decision"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes from admin"
+    }
+  },
+  "required": [
+    "email"
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "name": "SubscriberTrial",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Subscriber email"
+    },
+    "companyName": {
+      "type": "string",
+      "description": "Company name"
+    },
+    "contactName": {
+      "type": "string",
+      "description": "Primary contact name"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "branches": {
+      "type": "string",
+      "description": "Number of branches requested"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "invited",
+        "trial",
+        "core",
+        "active",
+        "suspended",
+        "cancelled"
+      ],
+      "default": "invited",
+      "description": "Trial lifecycle status"
+    },
+    "planTier": {
+      "type": "string",
+      "enum": [
+        "core",
+        "pro",
+        "custom"
+      ],
+      "default": "pro",
+      "description": "Current plan tier"
+    },
+    "trialStartDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Date trial started (approval date)"
+    },
+    "trialEndsAt": {
+      "type": "string",
+      "format": "date",
+      "description": "Day 14 \u2014 full access expires"
+    },
+    "lockoutDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Day 30 \u2014 account pauses"
+    },
+    "reminderDay12Sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Day-12 reminder sent"
+    },
+    "reminderDay14Sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Day-14 downgrade notice sent"
+    },
+    "lockoutNoticeSent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Day-30 lockout notice sent"
+    },
+    "approvedBy": {
+      "type": "string",
+      "description": "Admin email who approved"
+    },
+    "approvedAt": {
+      "type": "string",
+      "description": "ISO timestamp of approval"
+    },
+    "userId": {
+      "type": "string",
+      "description": "Base44 user ID once registered"
+    },
+    "stripeCustomerId": {
+      "type": "string",
+      "description": "Stripe customer ID on upgrade"
+    },
+    "stripeSubscriptionId": {
+      "type": "string",
+      "description": "Stripe subscription ID on upgrade"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    }
+  },
+  "required": [
+    "email"
+  ]
+}
