@@ -276,7 +276,7 @@ export default function FleetReview() {
       <AppPageHeader
         title="Fleet Review"
         subtitle={`${filtered.length} item${filtered.length !== 1 ? 's' : ''} · ${reviewedCount} reviewed`}
-        backTo="/pending"
+        backTo="/report-form"
         action={
           <div className="flex items-center gap-2 flex-wrap no-print">
             <select value={branch} onChange={e => setBranch(e.target.value)} className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs">
