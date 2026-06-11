@@ -58,7 +58,7 @@ export default function StaffPhoneManager() {
       {/* Header */}
       <div className="bg-blue-700 text-white shadow-md sticky top-0 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="px-2 py-2 flex items-center justify-between">
-          <button className="text-white p-3 rounded-lg hover:bg-blue-600 flex items-center gap-1" onClick={() => navigate(-1)}>
+          <button className="text-white p-3 rounded-lg hover:bg-blue-600 flex items-center gap-1" onClick={() => navigate("/report-form")}>
             <ArrowLeft className="w-6 h-6" />
             <span className="text-sm font-medium">Back</span>
           </button>
