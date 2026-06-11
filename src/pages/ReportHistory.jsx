@@ -71,6 +71,7 @@ export default function ReportHistory() {
   };
 
   useEffect(() => {
+    if (!base44 || !base44.auth) return;
     base44.auth.me().then(user => {
       if (user) {
         const emailLower = user.email.toLowerCase().trim();
