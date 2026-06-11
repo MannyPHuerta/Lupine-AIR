@@ -22,7 +22,7 @@ const TRIAL_STATUS_STYLE = {
 };
 
 async function apiFetch(path, options = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const session = supabase ? (await supabase.auth.getSession()).data?.session : null;
   const token = session?.access_token;
   const res = await fetch(path, {
     ...options,
