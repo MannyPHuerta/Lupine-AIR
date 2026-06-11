@@ -3,11 +3,6 @@ import { base44 } from '@/api/base44Client';
 
 const AuthContext = createContext();
 
-// Pages that don't need a Tenant record
-const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/signin', '/store', '/air', '/airental', '/airevents', '/airfq', '/clockin', '/report/'];
-
-const needsTenantCheck = (path) =>
-  !ONBOARDING_EXEMPT_PATHS.some(p => path.startsWith(p));
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -28,14 +23,6 @@ export const AuthProvider = ({ children }) => {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
         setIsAuthenticated(true);
-
-        // Check tenant provisioning — redirect to onboarding if missing
-        if (needsTenantCheck(window.location.pathname)) {
-          const tenants = await base44.entities.Tenant.filter({ admin_user_id: currentUser.id });
-          if (!tenants || tenants.length === 0) {
-            window.location.replace('/onboarding');
-          }
-        }
         setIsLoadingAuth(false);
       } catch (error) {
         if (error?.status === 403 && error?.data?.extra_data?.reason === 'user_not_registered') {
