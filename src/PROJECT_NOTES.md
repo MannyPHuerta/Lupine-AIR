@@ -1,5 +1,12 @@
 # AIR Platform — Project Notes
-*Last updated: 2026-06-04*
+*Last updated: 2026-06-11*
+
+---
+## 🚨 ARCHITECTURE CONSTRAINT — AI ASSISTANT MUST READ THIS FIRST 🚨
+**Backend = Vercel `/api/` (Node.js) | Database = Supabase | Auth = Supabase Auth**
+**NEVER use Base44 entities, functions, automations, or integrations for production features.**
+**See `CLAUDE.md` for full rules.**
+---
 
 ## 🎯 Goal: Live on theprojectair.com by June 15, 2026
 
