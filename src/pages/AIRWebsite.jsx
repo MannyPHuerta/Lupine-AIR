@@ -816,7 +816,13 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, company, branches }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Submission failed');
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err.message);
