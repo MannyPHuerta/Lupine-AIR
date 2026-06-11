@@ -24,17 +24,24 @@ export default async function handler(req, res) {
   );
 
   // Store in Supabase
-  const { error: dbError } = await supabase
+  console.log('[Waitlist] Inserting into Supabase...');
+  const { data: insertData, error: dbError } = await supabase
     .from('waitlist_entries')
-    .insert({ name, email, phone, company, branches, status: 'pending' });
+    .insert({ name, email, phone, company, branches, status: 'pending' })
+    .select();
 
   if (dbError) {
-    console.error('[Waitlist] DB insert failed:', dbError.message);
-    return res.status(500).json({ error: dbError.message });
+    console.error('[Waitlist] DB insert failed:', JSON.stringify(dbError));
+    return res.status(500).json({ error: dbError.message, details: dbError });
   }
+  console.log('[Waitlist] DB insert success:', insertData);
 
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
+  console.log('[Waitlist] RESEND_API_KEY exists:', !!apiKey);
+  if (!apiKey) {
+    console.error('[Waitlist] RESEND_API_KEY not configured');
+    return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
+  }
 
   const send = async (payload) => {
     const r = await fetch('https://api.resend.com/emails', {
@@ -87,10 +94,15 @@ export default async function handler(req, res) {
     }),
   ]);
 
+  console.log('[Waitlist] Admin email result:', adminResult);
+  console.log('[Waitlist] Confirmation email result:', confirmResult);
+  
   if (adminResult.error || confirmResult.error) {
     const err = adminResult.error || confirmResult.error;
-    return res.status(500).json({ error: err.message || 'Email send failed' });
+    console.error('[Waitlist] Email send failed:', err);
+    return res.status(500).json({ error: err.message || 'Email send failed', details: err });
   }
 
-  return res.status(200).json({ success: true });
+  console.log('[Waitlist] Success!');
+  return res.status(200).json({ success: true, entryId: insertData?.[0]?.id });
 }
