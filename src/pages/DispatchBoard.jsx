@@ -7,7 +7,7 @@ import DispatchMap from '@/components/dispatch/DispatchMap';
 import RouteOptimizer from '@/components/dispatch/RouteOptimizer';
 import DeliveryRescheduleModal from '@/components/delivery/DeliveryRescheduleModal';
 import { getCached, setCached } from '@/lib/geocodeCache';
-import { BRANCH_INFO } from '@/lib/branchInfo';
+import { supabaseData } from '@/lib/supabaseData';
 
 const DELIVERY_STATUS_COLORS = {
   scheduled: 'bg-blue-100 text-blue-800',
@@ -61,6 +61,8 @@ export default function DispatchBoard() {
   const [tab, setTab] = useState('map');
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [branchFilter, setBranchFilter] = useState('');
+  const [branchCoords, setBranchCoords] = useState(null);
+  const [branchSettings, setBranchSettings] = useState([]);
 
   // Geocoded pins shared between map and list
   const [pins, setPins] = useState([]);
@@ -80,16 +82,43 @@ export default function DispatchBoard() {
       base44.entities.Recovery.list('-scheduledDate', 200),
       base44.entities.User.list(),
       base44.entities.DriverLocation.list('-updatedAt', 50),
-    ]).then(([dels, recs, usrs, locs]) => {
+      supabaseData.BranchSettings.list('branch', 50).catch(() => []),
+    ]).then(([dels, recs, usrs, locs, bSettings]) => {
       setDeliveries(dels);
       setRecoveries(recs);
       setUsers(usrs);
       setDriverLocations(locs);
+      setBranchSettings(bSettings || []);
       setLoading(false);
     });
   };
 
   useEffect(() => { load(); }, []);
+
+  // Geocode the selected branch address for map centering
+  useEffect(() => {
+    if (!branchFilter) { setBranchCoords(null); return; }
+    const setting = branchSettings.find(b => b.branch === branchFilter);
+    if (!setting?.address) { setBranchCoords(null); return; }
+
+    const cacheKey = setting.address;
+    const cached = getCached(cacheKey, '', '', '');
+    if (cached) { setBranchCoords([cached.lat, cached.lng]); return; }
+
+    fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(setting.address)}&format=json&limit=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    )
+      .then(r => r.json())
+      .then(data => {
+        if (data[0]) {
+          const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+          setCached(cacheKey, '', '', '', coords);
+          setBranchCoords([coords.lat, coords.lng]);
+        }
+      })
+      .catch(() => {});
+  }, [branchFilter, branchSettings]);
 
   const filteredDeliveries = deliveries.filter(d =>
     (!dateFilter || d.scheduledDate === dateFilter) &&
@@ -198,7 +227,7 @@ export default function DispatchBoard() {
           driverLocations={driverLocations}
           onSelectDelivery={(id) => navigate(`/delivery/${id}`)}
           onSelectRecovery={(id) => navigate(`/recovery/${id}`)}
-          defaultCenter={branchFilter && BRANCH_INFO[branchFilter]?.coords ? BRANCH_INFO[branchFilter].coords : [26.2034, -98.2300]}
+          defaultCenter={branchCoords || [39.5, -98.35]}
         />
       )}
 

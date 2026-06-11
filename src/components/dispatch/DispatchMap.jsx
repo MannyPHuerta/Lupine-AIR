@@ -84,7 +84,7 @@ function FitBounds({ positions }) {
  * DispatchMap now receives pre-geocoded pins (items with lat/lng already set).
  * Geocoding is owned by DispatchBoard so coords can be shared with route optimizer.
  */
-export default function DispatchMap({ pins = [], geocoding = false, driverLocations = [], onSelectDelivery, onSelectRecovery, defaultCenter = [26.2034, -98.2300] }) {
+export default function DispatchMap({ pins = [], geocoding = false, driverLocations = [], onSelectDelivery, onSelectRecovery, defaultCenter = [39.5, -98.35] }) {
   const allPositions = [
     ...pins,
     ...driverLocations.filter(d => d.latitude && d.longitude).map(d => ({ lat: d.latitude, lng: d.longitude })),
