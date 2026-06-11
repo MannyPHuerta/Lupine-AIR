@@ -811,20 +811,13 @@ function WaitlistSection() {
     return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
   };
 
-  // NOTE: This is a public page deployed on Vercel — NO Base44 calls here.
-  // Waitlist submissions go to /api/waitlist (Vercel serverless function).
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, company, branches }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Submission failed');
+      const res = await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
+      if (res.data?.error) throw new Error(res.data.error);
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err);
