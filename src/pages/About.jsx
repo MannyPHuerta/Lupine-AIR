@@ -9,7 +9,7 @@ export default function About() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-blue-700 text-white px-4 py-3 flex items-center gap-2 shadow-md">
-        <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate("/")}>
+        <Button variant="ghost" size="icon" className="text-white hover:bg-blue-600" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <span className="text-xl font-bold">About Asset Wolf</span>

@@ -231,7 +231,7 @@ export default function ReportHistory() {
 
       {/* Nav buttons */}
       <div className="max-w-2xl mx-auto px-4 pt-4 flex items-center justify-between">
-        <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate("/")}>
+        <button className="flex items-center gap-1 text-blue-700 font-medium hover:underline" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
           <span className="text-sm">Back</span>
         </button>
