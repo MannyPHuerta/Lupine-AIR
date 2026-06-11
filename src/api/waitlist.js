@@ -1,46 +1,41 @@
-// Vercel serverless function — NO Base44, pure Node.js + fetch
+// Vercel serverless function — Node.js + Supabase + Resend
+/* global process */
+import { createClient } from '@supabase/supabase-js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { email, company, branches, name, phone } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
 
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+
+  // Store in Supabase
+  const { error: dbError } = await supabase
+    .from('waitlist_entries')
+    .insert({ name, email, phone, company, branches, status: 'pending' });
+
+  if (dbError) {
+    console.error('[Waitlist] DB insert failed:', dbError.message);
+    // non-fatal — still send emails
   }
 
-  /* global process */
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
-  }
+  if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
 
   const send = async (payload) => {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     return r.json();
   };
-
-  // Store in Base44 WaitlistEntry entity via REST
-  try {
-    const appId = process.env.VITE_BASE44_APP_ID || process.env.BASE44_APP_ID;
-    if (appId) {
-      await fetch(`https://api.base44.com/api/apps/${appId}/entities/WaitlistEntry/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, company, branches, status: 'pending' }),
-      });
-    }
-  } catch (dbErr) {
-    console.warn('[Waitlist] DB store failed (non-fatal):', dbErr.message);
-  }
 
   const [adminResult, confirmResult] = await Promise.all([
     send({
@@ -59,7 +54,7 @@ export default async function handler(req, res) {
             <tr><td style="padding:8px;font-weight:bold;color:#555">Branches</td><td style="padding:8px">${branches || '—'}</td></tr>
             <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold;color:#555">Submitted</td><td style="padding:8px">${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} CST</td></tr>
           </table>
-          <p style="color:#888;font-size:12px;margin-top:16px">Reply to reach ${name || 'submitter'} at ${email}.</p>
+          <p style="color:#888;font-size:12px;margin-top:16px">Reply to reach ${name || 'submitter'} at ${email}. Approve at /waitlist-manager.</p>
         </div>
       `,
     }),

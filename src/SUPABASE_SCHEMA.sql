@@ -1367,6 +1367,61 @@ CREATE POLICY "Admins can read all profiles"
 --   USING (created_by_id = auth.uid());
 
 -- ============================================================
+-- WAITLIST & SUBSCRIBER TRIALS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.waitlist_entries (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name          TEXT,
+  email         TEXT NOT NULL,
+  phone         TEXT,
+  company       TEXT,
+  branches      TEXT,
+  status        TEXT DEFAULT 'pending',  -- pending | approved | rejected
+  approved_by   TEXT,
+  approved_at   TIMESTAMPTZ,
+  notes         TEXT,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.waitlist_entries ENABLE ROW LEVEL SECURITY;
+-- Only service role (backend) can access — no frontend RLS policy needed
+DROP TRIGGER IF EXISTS set_updated_at ON public.waitlist_entries;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.waitlist_entries
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+
+CREATE TABLE IF NOT EXISTS public.subscriber_trials (
+  id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email                   TEXT NOT NULL,
+  company_name            TEXT,
+  contact_name            TEXT,
+  phone                   TEXT,
+  branches                TEXT,
+  status                  TEXT DEFAULT 'invited',  -- invited | trial | core | active | suspended | cancelled
+  plan_tier               TEXT DEFAULT 'pro',       -- core | pro | custom
+  trial_start_date        DATE,
+  trial_ends_at           DATE,
+  lockout_date            DATE,
+  reminder_day12_sent     BOOLEAN DEFAULT false,
+  reminder_day14_sent     BOOLEAN DEFAULT false,
+  lockout_notice_sent     BOOLEAN DEFAULT false,
+  approved_by             TEXT,
+  approved_at             TIMESTAMPTZ,
+  stripe_customer_id      TEXT,
+  stripe_subscription_id  TEXT,
+  notes                   TEXT,
+  created_at              TIMESTAMPTZ DEFAULT now(),
+  updated_at              TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.subscriber_trials ENABLE ROW LEVEL SECURITY;
+-- Only service role (backend) can access
+DROP TRIGGER IF EXISTS set_updated_at ON public.subscriber_trials;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.subscriber_trials
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+
+-- ============================================================
 -- USEFUL INDEXES
 -- ============================================================
 
