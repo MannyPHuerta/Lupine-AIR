@@ -67,22 +67,31 @@ Deno.serve(async (req) => {
         notes: notes || null,
       }).eq('id', entryId);
 
-      // Invite via Base44 platform
+      // Generate a Supabase magic link (invite) so the user can set up their account
+      let signInLink = 'https://theprojectair.com/signin';
       try {
-        await base44.users.inviteUser(entry.email, 'user');
-        console.log(`[waitlistManager] Platform invite sent to ${entry.email}`);
+        const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+          type: 'magiclink',
+          email: entry.email,
+          options: { redirectTo: 'https://theprojectair.com/ops' },
+        });
+        if (linkErr) {
+          console.warn('[waitlistManager] generateLink failed:', linkErr.message);
+        } else {
+          signInLink = linkData?.properties?.action_link || signInLink;
+        }
       } catch (e) {
-        console.warn(`[waitlistManager] Platform invite failed:`, e.message);
+        console.warn('[waitlistManager] generateLink exception:', e.message);
       }
 
-      // Send welcome email
+      // Send welcome email with the sign-in link embedded
       const apiKey = Deno.env.get('RESEND_API_KEY');
       if (apiKey) {
         const resend = new Resend(apiKey);
         await resend.emails.send({
           from: 'AIR by Lupine <info@theprojectair.com>',
           to: [entry.email],
-          subject: `🎉 Your AIR trial is approved — here's how to get started`,
+          subject: `🎉 Your AIR trial is approved — sign in to get started`,
           html: `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
               <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
@@ -93,8 +102,15 @@ Deno.serve(async (req) => {
                 <p style="color:#94a3b8;line-height:1.7">Hi ${entry.name || 'there'},</p>
                 <p style="color:#cbd5e1;line-height:1.7">
                   Your early access request for <strong style="color:#0ea5e9">AIR by Lupine</strong> has been approved.
-                  Here's what your 30-day window looks like:
+                  Click the button below to sign in — no password needed.
                 </p>
+                <div style="text-align:center;margin:28px 0">
+                  <a href="${signInLink}"
+                     style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
+                    Sign In to AIR →
+                  </a>
+                  <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
+                </div>
                 <div style="background:#1e293b;border-radius:10px;padding:20px;margin:20px 0">
                   <div style="margin-bottom:14px">
                     <strong style="color:#f1f5f9">Days 1–14: Full Pro Access</strong>
@@ -109,17 +125,6 @@ Deno.serve(async (req) => {
                     <p style="color:#64748b;margin:4px 0 0 0;font-size:13px">We'll send reminders. Your data is never deleted.</p>
                   </div>
                 </div>
-                <div style="background:#0c2240;border:1px solid #0ea5e9;border-radius:8px;padding:16px;margin:20px 0;font-size:14px;color:#93c5fd">
-                  <strong>📧 Next step:</strong> Check your inbox for a separate invitation email from the AIR platform.
-                  Click that link to create your account, then sign in at
-                  <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>.
-                </div>
-                <div style="text-align:center;margin:28px 0">
-                  <a href="https://theprojectair.com/onboarding"
-                     style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
-                    Complete Setup →
-                  </a>
-                </div>
                 <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
                   <strong style="color:#94a3b8">Your trial summary:</strong><br/>
                   Company: ${entry.company || 'N/A'}<br/>
@@ -127,11 +132,15 @@ Deno.serve(async (req) => {
                   Full Pro access until: ${toDate(trialEndsAt)}<br/>
                   Account pauses on: ${toDate(lockoutDate)}
                 </div>
+                <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
+                  Questions? Reply to this email — we're here.<br/>
+                  <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
+                </p>
               </div>
             </div>
           `,
         });
-        console.log(`[waitlistManager] Welcome email sent to ${entry.email}`);
+        console.log(`[waitlistManager] Welcome email with sign-in link sent to ${entry.email}`);
       }
 
       return Response.json({ success: true });
