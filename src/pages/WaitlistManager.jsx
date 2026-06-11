@@ -4,12 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format, addDays } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '@/api/supabaseClient';
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -37,6 +32,7 @@ export default function WaitlistManager() {
   const [approving, setApproving] = useState(false);
 
   const loadData = useCallback(async () => {
+    if (!supabase) { setError('Supabase not configured — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'); setLoading(false); return; }
     setLoading(true);
     setError(null);
     const [{ data: waitlist, error: e1 }, { data: trialList, error: e2 }] = await Promise.all([
@@ -52,7 +48,7 @@ export default function WaitlistManager() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleApprove = async () => {
-    if (!approveEntry) return;
+    if (!approveEntry || !supabase) return;
     setApproving(true);
     const today = new Date();
     const trialEndsAt = addDays(today, 14);
@@ -87,7 +83,7 @@ export default function WaitlistManager() {
   };
 
   const handleReject = async (entry) => {
-    if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
+    if (!supabase || !confirm(`Reject ${entry.name || entry.email}?`)) return;
     await supabase.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entry.id);
     await loadData();
   };
