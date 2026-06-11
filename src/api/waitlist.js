@@ -25,8 +25,8 @@ export default async function handler(req, res) {
 
   // Store in Supabase
   console.log('[Waitlist] Inserting into Supabase...');
-  console.log('[Waitlist] Supabase URL:', process.env.SUPABASE_URL ? 'configured' : 'MISSING');
-  console.log('[Waitlist] Supabase Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'configured' : 'MISSING');
+  console.log('[Waitlist] Supabase URL:', process.env.SUPABASE_URL);
+  console.log('[Waitlist] Supabase Key present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
   
   const { data: insertData, error: dbError } = await supabase
     .from('waitlist_entries')
@@ -35,9 +35,11 @@ export default async function handler(req, res) {
 
   if (dbError) {
     console.error('[Waitlist] DB insert failed:', JSON.stringify(dbError, null, 2));
-    return res.status(500).json({ error: dbError.message, details: dbError });
+    console.error('[Waitlist] Full error:', dbError);
+    return res.status(500).json({ error: dbError.message, details: dbError, hint: 'Check Supabase table schema and RLS policies' });
   }
   console.log('[Waitlist] DB insert success:', JSON.stringify(insertData, null, 2));
+  console.log('[Waitlist] Inserted ID:', insertData?.[0]?.id);
 
   const apiKey = process.env.RESEND_API_KEY;
   console.log('[Waitlist] RESEND_API_KEY exists:', !!apiKey);
