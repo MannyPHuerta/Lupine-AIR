@@ -816,19 +816,17 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      console.log('[Waitlist] Submitting:', { name, email, phone, company, branches });
-      // Skip auth check if base44 isn't available (preview mode)
-      if (base44 && base44.auth) {
-        const isAuthed = await base44.auth.isAuthenticated();
-        console.log('[Waitlist] Is authenticated:', isAuthed);
-      }
-      const res = base44 && base44.functions ? await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches }) : { data: { success: true } };
-      console.log('[Waitlist] Response:', res);
+      const res = await fetch('/functions/waitlistSubmit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, company, branches }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Submission failed');
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err);
-      const errorMsg = err.message || JSON.stringify(err);
-      alert(`Error: ${errorMsg}\n\nPlease email info@theprojectair.com directly.`);
+      alert(`Something went wrong. Please email info@theprojectair.com directly.`);
     }
     setSubmitting(false);
   };
