@@ -4,7 +4,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format, addDays } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/api/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabase = SUPA_URL && SUPA_KEY ? createClient(SUPA_URL, SUPA_KEY) : null;
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
