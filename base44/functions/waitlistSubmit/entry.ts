@@ -1,4 +1,10 @@
 import { Resend } from 'npm:resend@2.0.0';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL'),
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+);
 
 Deno.serve(async (req) => {
   try {
@@ -8,6 +14,24 @@ Deno.serve(async (req) => {
     if (!email) {
       return Response.json({ error: 'Email is required' }, { status: 400 });
     }
+
+    // Insert into Supabase waitlist_entries table
+    const { error: dbError } = await supabaseAdmin
+      .from('waitlist_entries')
+      .insert({
+        name: name || null,
+        email,
+        phone: phone || null,
+        company: company || null,
+        branches: branches || '1',
+        status: 'pending',
+      });
+
+    if (dbError) {
+      console.error('[WaitlistBackend] DB insert failed:', dbError.message);
+      return Response.json({ error: dbError.message }, { status: 500 });
+    }
+    console.log('[WaitlistBackend] Saved to waitlist_entries successfully');
 
     const apiKey = Deno.env.get('RESEND_API_KEY');
     console.log('[WaitlistBackend] RESEND_API_KEY exists:', !!apiKey);
