@@ -1,4 +1,6 @@
-// Base44 SDK client - uses window.base44 injected by the platform
-// The SDK is available via window.base44 at runtime
+// Base44 SDK client
+import { createClient } from '@base44/sdk';
 
-export const base44 = typeof window !== 'undefined' ? window.base44 : null;
+export const base44 = createClient({
+  appId: typeof window !== 'undefined' ? (import.meta.env.VITE_BASE44_APP_ID || window?.base44?.appId) : undefined,
+});
