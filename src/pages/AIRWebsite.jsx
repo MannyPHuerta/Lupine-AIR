@@ -816,14 +816,9 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const appId = import.meta.env.VITE_BASE44_APP_ID || '69deb9b2f06f1355a056f8e0';
-      const res = await fetch(`https://api.base44.com/api/apps/${appId}/functions/waitlistSubmit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, company, branches }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Submission failed');
+      const { base44 } = await import('@/api/base44Client');
+      const res = await base44.functions.invoke('waitlistSubmit', { name, email, phone, company, branches });
+      if (!res.data?.success) throw new Error(res.data?.error || 'Submission failed');
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err);
