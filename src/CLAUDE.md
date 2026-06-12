@@ -1,63 +1,49 @@
-# ⚠️ MANDATORY ARCHITECTURE RULES — READ BEFORE EVERY RESPONSE ⚠️
+# CRITICAL ARCHITECTURE NOTE — READ THIS FIRST
 
-## THIS PROJECT RUNS ON VERCEL + SUPABASE. NOT BASE44.
+## ⚠️ STOP DEVELOPING FOR BASE44 ⚠️
 
----
+**THIS APP IS MIGRATING TO VERCEL + SUPABASE.**
 
-### ❌ NEVER DO THESE — EVER:
-- NEVER use `base44.entities.*` for data storage
-- NEVER use `base44.functions.invoke(...)` to call backend logic
-- NEVER create files in `functions/` (those are Base44 backend functions — they do NOT run on Vercel)
-- NEVER create files in `entities/` (those are Base44 entity schemas — they are NOT used in production)
-- NEVER use `base44.integrations.*` for email, AI, or file uploads
-- NEVER use `base44.auth.*` for authentication
-- NEVER create automations via Base44 automation tools
+Every time code is written using Base44 SDK, Base44 entities, or Base44 backend functions for production features — it fails and has to be redone. DO NOT DO THIS.
 
 ---
 
-### ✅ ALWAYS DO THESE:
+## The Stack
 
-| Need | Use This |
-|------|----------|
-| Database read/write | `supabase.from('table_name')` via `api/supabaseClient.js` |
-| Authentication | Supabase Auth (`supabase.auth.signUp`, `signInWithPassword`, etc.) |
-| Backend logic | Vercel serverless functions in `/api/*.js` (Node.js, not Deno) |
-| Email sending | Resend API called directly inside `/api/*.js` |
-| Scheduled jobs | Supabase `pg_cron` extension OR Vercel Cron Jobs in `vercel.json` |
-| AI calls | Direct OpenAI/Anthropic API calls inside `/api/*.js` |
-| File uploads | Supabase Storage |
-| Environment secrets | Vercel dashboard → Settings → Environment Variables |
+- **Frontend**: React (Vite), deployed on Vercel
+- **Backend**: Vercel Serverless Functions (`/api/*.js`)
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth
+- **Email**: Resend API
+- **Payments**: Stripe
 
 ---
 
-### Project Structure:
-```
-/api/          ← ALL backend logic lives here (Vercel serverless, Node.js)
-/src/          ← React frontend (Vite)
-/src/pages/    ← Page components
-/src/components/ ← Reusable components
-/api/supabaseClient.js ← Supabase client (already exists, use it)
-```
+## Rules
 
-### Database:
-- All tables are in **Supabase Postgres**
-- Schema is defined in `SUPABASE_SCHEMA.sql`
-- Use `api/supabaseClient.js` for all DB access in `/api/` functions
-- Use `src/lib/supabaseData.js` for frontend DB access
-
-### Auth:
-- **Supabase Auth** only — email/password
-- NO magic links, NO Base44 invite system
-- Sign up: `supabase.auth.signUp({ email, password })`
-- Sign in: `supabase.auth.signInWithPassword({ email, password })`
-
-### Deployment:
-- **Production**: Vercel → theprojectair.com
-- **Secrets**: Set in Vercel dashboard, NOT Base44 secrets panel
-- `/api/waitlist.js` already works in production — it is the model to follow
+1. **ALL new backend logic goes in `/api/*.js`** — Vercel serverless functions.
+2. **ALL data persistence goes to Supabase** — use `@supabase/supabase-js` with `VITE_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+3. **DO NOT use `base44.entities.*`** for any production data.
+4. **DO NOT use `base44.functions.invoke()`** for any production features.
+5. **DO NOT create new Base44 backend functions** for production features.
+6. **Frontend API calls use `fetch('/api/...')`** — not the Base44 SDK.
+7. **Supabase URL env var is `VITE_SUPABASE_URL`** (not `SUPABASE_URL` — that one may not be set correctly).
 
 ---
 
-### The Golden Rule:
-> If it can't run as a plain Node.js file in `/api/`, it doesn't belong in the backend.
-> If it can't query Supabase directly, it doesn't belong in the frontend data layer.
+## Environment Variables (Vercel)
+
+- `VITE_SUPABASE_URL` — Supabase project URL (base URL, no `/rest/v1/` suffix)
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (for server-side inserts)
+- `RESEND_API_KEY` — Resend email API key
+- `STRIPE_SECRET_KEY` — Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` — Stripe webhook signing secret
+
+---
+
+## What Base44 Is Still Used For (Temporarily)
+
+- The app shell / routing (App.jsx, pages/) — being migrated
+- Internal admin tools that don't need to scale
+
+Base44 is NOT the production platform. Vercel + Supabase IS.
