@@ -18,10 +18,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Email is required' });
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  // Fall back to VITE_ prefixed vars since those are what's set in the environment
+  const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  console.log('[Waitlist] Supabase URL resolved:', supabaseUrl.slice(0, 40));
+  console.log('[Waitlist] Supabase Key present:', !!supabaseKey);
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   // Store in Supabase
   console.log('[Waitlist] Inserting into Supabase...');
