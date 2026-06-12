@@ -1,10 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format, addDays } from 'date-fns';
-import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Mail } from 'lucide-react';
+
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -21,54 +43,184 @@ const TRIAL_STATUS_STYLE = {
   cancelled: 'bg-gray-100 text-gray-600',
 };
 
+const EMPTY_LEAD = { name: '', email: '', phone: '', company: '', branches: '' };
+const EMPTY_TRIAL = { contact_name: '', email: '', phone: '', company_name: '', branches: '', plan_tier: 'pro', notes: '' };
+
 export default function WaitlistManager() {
   const [activeTab, setActiveTab] = useState('waitlist');
   const [entries, setEntries] = useState([]);
   const [trials, setTrials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Approve flow
   const [approveEntry, setApproveEntry] = useState(null);
-  const [notes, setNotes] = useState('');
+  const [approveNotes, setApproveNotes] = useState('');
   const [approving, setApproving] = useState(false);
+
+  // Manual add lead
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [newLead, setNewLead] = useState(EMPTY_LEAD);
+  const [savingLead, setSavingLead] = useState(false);
+
+  // Manual add trial
+  const [showAddTrial, setShowAddTrial] = useState(false);
+  const [newTrial, setNewTrial] = useState(EMPTY_TRIAL);
+  const [savingTrial, setSavingTrial] = useState(false);
+
+  // Send welcome email
+  const [sendingEmail, setSendingEmail] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await base44.functions.invoke('waitlistManager', { action: 'list' });
-      setEntries(res.data?.waitlist || []);
-      setTrials(res.data?.trials || []);
+      const [w, t] = await Promise.all([
+        sbFetch('waitlist_entries?order=created_at.desc'),
+        sbFetch('subscriber_trials?order=created_at.desc'),
+      ]);
+      setEntries(w);
+      setTrials(t);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to load: ' + err.message);
     }
     setLoading(false);
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // ─── Approve waitlist entry ───────────────────────────────────────────────
   const handleApprove = async () => {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      const res = await base44.functions.invoke('waitlistManager', {
-        action: 'approve',
-        entryId: approveEntry.id,
-        notes,
+      const today = new Date();
+      // Create subscriber trial in Supabase
+      await sbFetch('subscriber_trials', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: approveEntry.email,
+          contact_name: approveEntry.name,
+          company_name: approveEntry.company,
+          phone: approveEntry.phone,
+          branches: approveEntry.branches,
+          status: 'invited',
+          plan_tier: 'pro',
+          trial_start_date: format(today, 'yyyy-MM-dd'),
+          trial_ends_at: format(addDays(today, 14), 'yyyy-MM-dd'),
+          lockout_date: format(addDays(today, 30), 'yyyy-MM-dd'),
+          approved_by: 'admin',
+          approved_at: today.toISOString(),
+          notes: approveNotes || null,
+        }),
       });
-      if (res.data?.error) throw new Error(res.data.error);
+      // Update waitlist entry status
+      await sbFetch(`waitlist_entries?id=eq.${approveEntry.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'approved', approved_at: new Date().toISOString() }),
+      });
+      // Send welcome email via Resend
+      await sendWelcomeEmail(approveEntry.email, approveEntry.name, approveEntry.company);
       await loadData();
       setApproveEntry(null);
-      setNotes('');
+      setApproveNotes('');
     } catch (err) {
       alert('Approval failed: ' + err.message);
     }
     setApproving(false);
   };
 
+  // ─── Reject ───────────────────────────────────────────────────────────────
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
-    await base44.functions.invoke('waitlistManager', { action: 'reject', entryId: entry.id });
+    await sbFetch(`waitlist_entries?id=eq.${entry.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'rejected' }),
+    });
     await loadData();
+  };
+
+  // ─── Add lead manually ────────────────────────────────────────────────────
+  const handleAddLead = async () => {
+    if (!newLead.email) return alert('Email is required');
+    setSavingLead(true);
+    try {
+      await sbFetch('waitlist_entries', {
+        method: 'POST',
+        body: JSON.stringify({ ...newLead, status: 'pending' }),
+      });
+      setShowAddLead(false);
+      setNewLead(EMPTY_LEAD);
+      await loadData();
+    } catch (err) {
+      alert('Failed to add: ' + err.message);
+    }
+    setSavingLead(false);
+  };
+
+  // ─── Add trial manually ───────────────────────────────────────────────────
+  const handleAddTrial = async () => {
+    if (!newTrial.email) return alert('Email is required');
+    setSavingTrial(true);
+    try {
+      const today = new Date();
+      await sbFetch('subscriber_trials', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...newTrial,
+          status: 'invited',
+          trial_start_date: format(today, 'yyyy-MM-dd'),
+          trial_ends_at: format(addDays(today, 14), 'yyyy-MM-dd'),
+          lockout_date: format(addDays(today, 30), 'yyyy-MM-dd'),
+          approved_by: 'admin',
+          approved_at: today.toISOString(),
+        }),
+      });
+      // Send welcome email
+      await sendWelcomeEmail(newTrial.email, newTrial.contact_name, newTrial.company_name);
+      setShowAddTrial(false);
+      setNewTrial(EMPTY_TRIAL);
+      await loadData();
+    } catch (err) {
+      alert('Failed to add trial: ' + err.message);
+    }
+    setSavingTrial(false);
+  };
+
+  // ─── Send welcome email via Resend ────────────────────────────────────────
+  const sendWelcomeEmail = async (email, name, company) => {
+    const apiKey = import.meta.env.VITE_RESEND_API_KEY;
+    if (!apiKey) { console.warn('No VITE_RESEND_API_KEY — skipping email'); return; }
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'AIR <info@theprojectair.com>',
+        to: [email],
+        subject: `Welcome to AIR Early Access! 🎉`,
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+            <h2 style="color:#0ea5e9">Welcome to AIR Early Access!</h2>
+            <p>Hi ${name || 'there'},</p>
+            <p>Your early access account for <strong>${company || 'your company'}</strong> has been approved. You have <strong>14 days of full Pro access</strong> starting today.</p>
+            <p>To get started, visit: <a href="https://theprojectair.com/signin" style="color:#0ea5e9">theprojectair.com/signin</a></p>
+            <p>Sign in with this email address. If you haven't set a password yet, use the magic link option.</p>
+            <p style="color:#888;font-size:12px;margin-top:24px">Questions? Reply to this email.</p>
+          </div>
+        `,
+      }),
+    });
+  };
+
+  const handleResendEmail = async (trial) => {
+    setSendingEmail(trial.id);
+    try {
+      await sendWelcomeEmail(trial.email, trial.contact_name, trial.company_name);
+      alert(`Welcome email sent to ${trial.email}`);
+    } catch (err) {
+      alert('Failed: ' + err.message);
+    }
+    setSendingEmail(null);
   };
 
   const pendingCount = entries.filter(e => e.status === 'pending').length;
@@ -82,9 +234,17 @@ export default function WaitlistManager() {
           <h1 className="text-2xl font-black text-slate-900">Waitlist & Trial Manager</h1>
           <p className="text-slate-500 text-sm mt-1">Review early access requests and monitor subscriber trial status</p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-2">
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAddLead(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Add Lead
+          </Button>
+          <Button size="sm" onClick={() => setShowAddTrial(true)} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+            <Plus className="w-4 h-4" /> Add Trial
+          </Button>
+          <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-2">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -129,7 +289,13 @@ export default function WaitlistManager() {
       {!loading && activeTab === 'waitlist' && (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {entries.length === 0 ? (
-            <div className="p-10 text-center"><Clock className="w-10 h-10 text-slate-300 mx-auto mb-3" /><p className="text-slate-400">No waitlist entries yet.</p></div>
+            <div className="p-10 text-center">
+              <Clock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-400 mb-4">No waitlist entries yet.</p>
+              <Button size="sm" variant="outline" onClick={() => setShowAddLead(true)} className="gap-2">
+                <Plus className="w-4 h-4" /> Add Lead Manually
+              </Button>
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -161,7 +327,7 @@ export default function WaitlistManager() {
                       {entry.status === 'pending' ? (
                         <div className="flex gap-2 justify-end">
                           <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50 gap-1"
-                            onClick={() => { setApproveEntry(entry); setNotes(''); }}>
+                            onClick={() => { setApproveEntry(entry); setApproveNotes(''); }}>
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </Button>
                           <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50 gap-1"
@@ -187,12 +353,18 @@ export default function WaitlistManager() {
       {!loading && activeTab === 'trials' && (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {trials.length === 0 ? (
-            <div className="p-10 text-center"><Users className="w-10 h-10 text-slate-300 mx-auto mb-3" /><p className="text-slate-400">No trials yet.</p></div>
+            <div className="p-10 text-center">
+              <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-400 mb-4">No trials yet.</p>
+              <Button size="sm" onClick={() => setShowAddTrial(true)} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="w-4 h-4" /> Add Trial Manually
+              </Button>
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  {['Subscriber', 'Plan', 'Pro Expires', 'Lockout', 'Status', 'Approved By'].map(h => (
+                  {['Subscriber', 'Plan', 'Pro Expires', 'Lockout', 'Status', 'Actions'].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-semibold text-slate-600">{h}</th>
                   ))}
                 </tr>
@@ -229,7 +401,14 @@ export default function WaitlistManager() {
                           {trial.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">{trial.approved_by || '—'}</td>
+                      <td className="px-4 py-3">
+                        <Button size="sm" variant="outline" className="gap-1 text-xs"
+                          disabled={sendingEmail === trial.id}
+                          onClick={() => handleResendEmail(trial)}>
+                          <Mail className="w-3 h-3" />
+                          {sendingEmail === trial.id ? 'Sending…' : 'Send Welcome'}
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -239,7 +418,7 @@ export default function WaitlistManager() {
         </div>
       )}
 
-      {/* Approve Modal */}
+      {/* ── Approve Modal ─────────────────────────────────────────────────── */}
       <Dialog open={!!approveEntry} onOpenChange={() => setApproveEntry(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Approve Early Access</DialogTitle></DialogHeader>
@@ -253,11 +432,11 @@ export default function WaitlistManager() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Internal Notes (optional)</label>
-                <Textarea value={notes} onChange={e => setNotes(e.target.value)}
+                <Textarea value={approveNotes} onChange={e => setApproveNotes(e.target.value)}
                   placeholder="e.g. Strong Pro candidate…" className="h-20 text-sm" />
               </div>
               <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 text-xs text-cyan-800">
-                <strong>What happens:</strong> A <code>SubscriberTrial</code> record is created, a platform invite is sent, and a welcome email is delivered via Resend.
+                <strong>What happens:</strong> A SubscriberTrial record is created in Supabase, status set to "invited", and a welcome email is sent via Resend.
               </div>
             </div>
           )}
@@ -265,7 +444,66 @@ export default function WaitlistManager() {
             <Button variant="outline" onClick={() => setApproveEntry(null)} disabled={approving}>Cancel</Button>
             <Button className="bg-green-600 hover:bg-green-700 text-white gap-2" onClick={handleApprove} disabled={approving}>
               <CheckCircle className="w-4 h-4" />
-              {approving ? 'Approving…' : 'Approve & Start Trial'}
+              {approving ? 'Approving…' : 'Approve & Send Welcome'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Lead Modal ────────────────────────────────────────────────── */}
+      <Dialog open={showAddLead} onOpenChange={setShowAddLead}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Add Lead Manually</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {[
+              { key: 'name', label: 'Full Name', placeholder: 'Jane Smith' },
+              { key: 'email', label: 'Email *', placeholder: 'jane@acme.com' },
+              { key: 'phone', label: 'Phone', placeholder: '(956) 555-1234' },
+              { key: 'company', label: 'Company', placeholder: 'Acme Rentals' },
+              { key: 'branches', label: 'Branches', placeholder: '3' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">{f.label}</label>
+                <Input value={newLead[f.key]} onChange={e => setNewLead(p => ({ ...p, [f.key]: e.target.value }))}
+                  placeholder={f.placeholder} />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddLead(false)}>Cancel</Button>
+            <Button onClick={handleAddLead} disabled={savingLead}>
+              {savingLead ? 'Saving…' : 'Add to Waitlist'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Trial Modal ───────────────────────────────────────────────── */}
+      <Dialog open={showAddTrial} onOpenChange={setShowAddTrial}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Add Subscriber Trial</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {[
+              { key: 'contact_name', label: 'Contact Name', placeholder: 'Jane Smith' },
+              { key: 'email', label: 'Email *', placeholder: 'jane@acme.com' },
+              { key: 'phone', label: 'Phone', placeholder: '(956) 555-1234' },
+              { key: 'company_name', label: 'Company Name', placeholder: 'Acme Rentals' },
+              { key: 'branches', label: 'Branches', placeholder: '3' },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">{f.label}</label>
+                <Input value={newTrial[f.key]} onChange={e => setNewTrial(p => ({ ...p, [f.key]: e.target.value }))}
+                  placeholder={f.placeholder} />
+              </div>
+            ))}
+            <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 text-xs text-cyan-800">
+              Trial starts today. Pro access: 14 days. Lockout: day 30. Welcome email sent automatically.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddTrial(false)}>Cancel</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAddTrial} disabled={savingTrial}>
+              {savingTrial ? 'Creating…' : 'Create Trial & Send Welcome'}
             </Button>
           </DialogFooter>
         </DialogContent>
