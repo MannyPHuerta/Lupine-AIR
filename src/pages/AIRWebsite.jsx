@@ -816,41 +816,13 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      // Write directly to Supabase
-      const res = await fetch(`${supabaseUrl}/rest/v1/waitlist_entries`, {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({ name, email, phone, company, branches, status: 'pending' }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, company, branches }),
       });
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
-      }
-
-      // Send notification email via Resend (best-effort)
-      const resendKey = import.meta.env.VITE_RESEND_API_KEY;
-      if (resendKey) {
-        fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'AIR Waitlist <info@theprojectair.com>',
-            to: ['info@theprojectair.com'],
-            reply_to: email,
-            subject: `🚀 New Early Access Request — ${company || email}`,
-            html: `<p><b>Name:</b> ${name || '—'}<br/><b>Email:</b> ${email}<br/><b>Phone:</b> ${phone || '—'}<br/><b>Company:</b> ${company || '—'}<br/><b>Branches:</b> ${branches}</p>`,
-          }),
-        }).catch(() => {});
-      }
-
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Submission failed');
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err.message);
