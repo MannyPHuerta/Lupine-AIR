@@ -42,9 +42,7 @@ export default async function handler(req, res) {
   console.log('[Waitlist] Inserted ID:', insertData?.[0]?.id);
 
   const apiKey = process.env.RESEND_API_KEY;
-  console.log('[Waitlist] RESEND_API_KEY exists:', !!apiKey);
   if (!apiKey) {
-    console.error('[Waitlist] RESEND_API_KEY not configured');
     return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
   }
 
