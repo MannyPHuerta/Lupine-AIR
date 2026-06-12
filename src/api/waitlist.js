@@ -91,19 +91,28 @@ export default async function handler(req, res) {
     send({
       from: 'AIR Waitlist <info@theprojectair.com>',
       to: [email],
-      subject: 'Thanks for your interest in AIR! 🎉',
+      subject: '🚀 You\'re in — AIR early access confirmed',
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-          <h2 style="color:#0ea5e9">Thanks for requesting early access!</h2>
+          <h2 style="color:#0ea5e9">Welcome to the AIR early access list! 🎉</h2>
           <p style="color:#555;line-height:1.6">Hi ${name || 'there'},</p>
-          <p style="color:#555;line-height:1.6">We've received your request and will reach out within 2 business days to schedule your demo.</p>
-          <div style="background:#f9f9f9;padding:16px;border-radius:8px;margin:20px 0">
-            <p style="color:#555;margin:0"><strong>Your submission:</strong></p>
-            <p style="color:#555;margin:8px 0 0 0">Company: ${company || 'N/A'}</p>
-            <p style="color:#555;margin:4px 0 0 0">Branches: ${branches}</p>
-            <p style="color:#555;margin:4px 0 0 0">Phone: ${phone || 'N/A'}</p>
+          <p style="color:#555;line-height:1.6">You're in — and you picked the right time. Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed. No surprise bills, no per-user seats, just one price per branch.</p>
+          <div style="background:#0ea5e9;color:white;padding:20px;border-radius:8px;margin:24px 0;text-align:center">
+            <p style="margin:0;font-size:14px"><strong>What you're getting:</strong></p>
+            <p style="margin:12px 0 0 0;font-weight:bold;font-size:18px">AIRental + AIREvents + AIReports + more</p>
+            <p style="margin:8px 0 0 0;font-size:13px;opacity:0.9">14-day free trial. Full Pro access. No credit card required.</p>
           </div>
-          <p style="color:#888;font-size:12px;margin-top:24px">Questions? Reply to this email.</p>
+          <p style="color:#555;line-height:1.6"><strong>Here's what happens next:</strong></p>
+          <ol style="color:#555;line-height:1.8">
+            <li>We'll reach out within 2 business days to schedule a personalized 30-min demo</li>
+            <li>See your rental operation on the AIR platform — with YOUR data</li>
+            <li>Ask any questions; we'll handle setup</li>
+          </ol>
+          <div style="background:#f9f9f9;padding:16px;border-radius:8px;margin:20px 0">
+            <p style="color:#555;margin:0;font-size:13px"><strong>We have your info:</strong></p>
+            <p style="color:#888;margin:8px 0 0 0;font-size:13px">Company: <strong>${company || 'N/A'}</strong> · Branches: <strong>${branches || 'N/A'}</strong></p>
+          </div>
+          <p style="color:#888;font-size:12px;margin-top:24px;border-top:1px solid #ddd;padding-top:16px">Questions or want to move faster? Hit reply — we'll get back to you within a few hours.</p>
         </div>
       `,
     }),
