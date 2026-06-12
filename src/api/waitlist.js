@@ -22,8 +22,10 @@ export default async function handler(req, res) {
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  console.log('[Waitlist] Supabase URL resolved:', supabaseUrl.slice(0, 40));
+  console.log('[Waitlist] Supabase URL resolved:', supabaseUrl);
   console.log('[Waitlist] Supabase Key present:', !!supabaseKey);
+  console.log('[Waitlist] SUPABASE_URL env:', process.env.SUPABASE_URL?.slice(0, 40));
+  console.log('[Waitlist] VITE_SUPABASE_URL env:', process.env.VITE_SUPABASE_URL?.slice(0, 40));
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
