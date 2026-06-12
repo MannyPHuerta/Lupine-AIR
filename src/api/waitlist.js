@@ -52,9 +52,10 @@ export default async function handler(req, res) {
   console.log('[Waitlist] DB insert success:', JSON.stringify(insertData, null, 2));
   console.log('[Waitlist] Inserted ID:', insertData?.[0]?.id);
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
+    console.error('[Waitlist] RESEND_API_KEY not configured — skipping email, returning success anyway');
+    return res.status(200).json({ success: true, entryId: insertData?.[0]?.id, warning: 'Email not sent: RESEND_API_KEY missing' });
   }
 
   const send = async (payload) => {
