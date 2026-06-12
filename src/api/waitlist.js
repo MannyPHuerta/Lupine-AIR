@@ -1,6 +1,11 @@
+// @ts-check
 // Vercel serverless function — Node.js + Supabase + Resend
 /* global process */
 import { createClient } from '@supabase/supabase-js';
+
+export const config = {
+  runtime: 'nodejs',
+};
 
 export default async function handler(req, res) {
   console.log('[api/waitlist] Received request:', req.method, req.body);
