@@ -11,7 +11,7 @@ const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_URL = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -59,6 +59,11 @@ export default function WaitlistManager() {
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    if (!supabase) {
+      setError('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+      setLoading(false);
+      return;
+    }
     try {
       const [{ data: w, error: e1 }, { data: t, error: e2 }] = await Promise.all([
         supabase.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
