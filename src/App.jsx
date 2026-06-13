@@ -108,6 +108,7 @@ import FraudDigestPage from "./pages/FraudDigestPage";
 import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
 import WaitlistManager from "./pages/WaitlistManager";
+import AuthCallback from "./pages/AuthCallback";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -258,6 +259,7 @@ function App() {
             <Route path="/" element={<AIRWebsite />} />
             {/* Onboarding — requires auth but no tenant */}
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>
