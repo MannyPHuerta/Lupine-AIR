@@ -816,17 +816,25 @@ function WaitlistSection() {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, phone, company, branches }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err.message);
-      alert(`Something went wrong. Please email info@theprojectair.com directly.\n\n${err.message}`);
+      if (err.name === 'AbortError') {
+        alert('Request timed out. Please email info@theprojectair.com directly.');
+      } else {
+        alert(`Something went wrong. Please email info@theprojectair.com directly.\n\n${err.message}`);
+      }
     }
     setSubmitting(false);
   };
