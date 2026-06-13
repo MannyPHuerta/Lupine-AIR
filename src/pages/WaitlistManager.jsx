@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/api/supabaseClient';
+import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
@@ -40,28 +40,18 @@ export default function WaitlistManager() {
   const [savingLead, setSavingLead] = useState(false);
 
   const callApi = async (action, extra = {}) => {
-    const res = await fetch('/api/waitlist-manager', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...extra }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Request failed');
-    return data;
+    const res = await base44.functions.invoke('waitlistManager', { action, ...extra });
+    if (res.data?.error) throw new Error(res.data.error);
+    return res.data;
   };
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
-        supabase.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-        supabase.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
-      ]);
-      if (wErr) throw new Error(wErr.message);
-      if (tErr) throw new Error(tErr.message);
-      setEntries(waitlist || []);
-      setTrials(trials || []);
+      const res = await base44.functions.invoke('waitlistManager', { action: 'list' });
+      setEntries(res.data?.waitlist || []);
+      setTrials(res.data?.trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
