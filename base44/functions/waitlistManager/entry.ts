@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (user?.role !== 'admin') return Response.json({ error: 'Admin only' }, { status: 403 });
 
-    const { action, entryId, notes } = await req.json();
+    const { action, entryId, notes, lead } = await req.json();
     const sb = supabaseAdmin();
 
     // LIST: return both tables
@@ -143,6 +143,13 @@ Deno.serve(async (req) => {
         console.log(`[waitlistManager] Welcome email with sign-in link sent to ${entry.email}`);
       }
 
+      return Response.json({ success: true });
+    }
+
+    // ADD LEAD
+    if (action === 'addLead') {
+      const { error } = await sb.from('waitlist_entries').insert({ ...(lead || {}), status: 'pending' });
+      if (error) return Response.json({ error: error.message }, { status: 500 });
       return Response.json({ success: true });
     }
 
