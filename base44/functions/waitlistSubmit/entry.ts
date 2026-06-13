@@ -53,30 +53,49 @@ Deno.serve(async (req) => {
         `,
       }),
       resend.emails.send({
-        from: 'AIR Waitlist <info@theprojectair.com>',
+        from: 'AIR by Lupine <info@theprojectair.com>',
         to: [email],
-        subject: "🚀 You're in — AIR early access confirmed",
+        subject: "🚀 You're on the list — AIR early access confirmed",
         html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-            <h2 style="color:#0ea5e9">Welcome to the AIR early access list! 🎉</h2>
-            <p style="color:#555;line-height:1.6">Hi ${name || 'there'},</p>
-            <p style="color:#555;line-height:1.6">You're in — and you picked the right time. Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed. No surprise bills, no per-user seats, just one price per branch.</p>
-            <div style="background:#0ea5e9;color:white;padding:20px;border-radius:8px;margin:24px 0;text-align:center">
-              <p style="margin:0;font-size:14px"><strong>What you're getting:</strong></p>
-              <p style="margin:12px 0 0 0;font-weight:bold;font-size:18px">AIRental + AIREvents + AIReports + more</p>
-              <p style="margin:8px 0 0 0;font-size:13px;opacity:0.9">14-day free trial. Full Pro access. No credit card required.</p>
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+              <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're on the list! 🎉</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">AIR early access confirmed</p>
             </div>
-            <p style="color:#555;line-height:1.6"><strong>Here's what happens next:</strong></p>
-            <ol style="color:#555;line-height:1.8">
-              <li>We'll reach out within 2 business days to schedule a personalized 30-min demo</li>
-              <li>See your rental operation on the AIR platform — with YOUR data</li>
-              <li>Ask any questions; we'll handle setup</li>
-            </ol>
-            <div style="background:#f9f9f9;padding:16px;border-radius:8px;margin:20px 0">
-              <p style="color:#555;margin:0;font-size:13px"><strong>We have your info:</strong></p>
-              <p style="color:#888;margin:8px 0 0 0;font-size:13px">Company: <strong>${company || 'N/A'}</strong> · Branches: <strong>${branches || 'N/A'}</strong></p>
+            <div style="padding:32px">
+              <p style="color:#94a3b8;line-height:1.7">Hi ${name || 'there'},</p>
+              <p style="color:#cbd5e1;line-height:1.7">
+                You picked the right time. Early subscribers lock in <strong style="color:#0ea5e9">founding pricing for 24 months</strong>, guaranteed. No surprise bills, no per-user seats, just one price per branch.
+              </p>
+              <div style="background:linear-gradient(135deg,#0ea5e920,#6366f120);border:1px solid #0ea5e940;border-radius:12px;padding:24px;margin:24px 0;text-align:center">
+                <p style="margin:0;font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">What you're getting</p>
+                <p style="margin:12px 0 4px;font-weight:900;font-size:20px;color:#fff">AIRental + AIREvents + AIReports + more</p>
+                <p style="margin:0;font-size:13px;color:#64748b">14-day free trial. Full Pro access. No credit card required.</p>
+              </div>
+              <p style="color:#94a3b8;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">What happens next</p>
+              <div style="space-y:12px">
+                <div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start">
+                  <div style="background:#0ea5e9;color:#000;font-weight:900;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">1</div>
+                  <p style="color:#cbd5e1;margin:0;line-height:1.6">We'll reach out within 2 business days to schedule a personalized 30-min demo</p>
+                </div>
+                <div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start">
+                  <div style="background:#0ea5e9;color:#000;font-weight:900;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">2</div>
+                  <p style="color:#cbd5e1;margin:0;line-height:1.6">See your rental operation on the AIR platform — with YOUR data</p>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                  <div style="background:#0ea5e9;color:#000;font-weight:900;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">3</div>
+                  <p style="color:#cbd5e1;margin:0;line-height:1.6">Ask any questions — we handle setup, migration, and onboarding</p>
+                </div>
+              </div>
+              <div style="background:#1e293b;border-radius:10px;padding:16px;margin:24px 0;font-size:13px;color:#475569">
+                <strong style="color:#94a3b8">We have your info:</strong><br/>
+                Company: <strong style="color:#cbd5e1">${company || 'N/A'}</strong> &nbsp;·&nbsp; Branches: <strong style="color:#cbd5e1">${branches || 'N/A'}</strong>
+              </div>
+              <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
+                Questions? Just reply to this email — we're here.<br/>
+                <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
+              </p>
             </div>
-            <p style="color:#888;font-size:12px;margin-top:24px;border-top:1px solid #ddd;padding-top:16px">Questions or want to move faster? Hit reply — we'll get back to you within a few hours.</p>
           </div>
         `,
       }),
