@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/api/supabaseClient';
+import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -24,19 +24,6 @@ const TRIAL_STATUS_STYLE = {
 
 const EMPTY_LEAD = { name: '', email: '', phone: '', company: '', branches: '' };
 
-async function authHeader() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
-}
-
-async function apiFetch(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json', ...(await authHeader()), ...options.headers };
-  const res = await fetch(path, { ...options, headers });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || res.statusText);
-  return json;
-}
-
 export default function WaitlistManager() {
   const [activeTab, setActiveTab] = useState('waitlist');
   const [entries, setEntries] = useState([]);
@@ -44,26 +31,24 @@ export default function WaitlistManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Approve flow
   const [approveEntry, setApproveEntry] = useState(null);
   const [approveNotes, setApproveNotes] = useState('');
   const [approving, setApproving] = useState(false);
 
-  // Manual add lead
   const [showAddLead, setShowAddLead] = useState(false);
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
+
+  const invoke = (action, extra = {}) =>
+    base44.functions.invoke('waitlistManager', { action, ...extra });
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [waitlistRes, trialsRes] = await Promise.all([
-        apiFetch('/api/waitlistEntries?type=waitlist'),
-        apiFetch('/api/waitlistEntries?type=trials'),
-      ]);
-      setEntries(waitlistRes.data || []);
-      setTrials(trialsRes.data || []);
+      const res = await invoke('list');
+      setEntries(res.data?.waitlist || []);
+      setTrials(res.data?.trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -76,10 +61,7 @@ export default function WaitlistManager() {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      await apiFetch('/api/approveWaitlist', {
-        method: 'POST',
-        body: JSON.stringify({ entryId: approveEntry.id, notes: approveNotes }),
-      });
+      await invoke('approve', { entryId: approveEntry.id, notes: approveNotes });
       await loadData();
       setApproveEntry(null);
       setApproveNotes('');
@@ -92,10 +74,7 @@ export default function WaitlistManager() {
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
     try {
-      await apiFetch('/api/rejectWaitlist', {
-        method: 'POST',
-        body: JSON.stringify({ entryId: entry.id }),
-      });
+      await invoke('reject', { entryId: entry.id });
       await loadData();
     } catch (err) {
       alert('Failed: ' + err.message);
@@ -106,10 +85,7 @@ export default function WaitlistManager() {
     if (!newLead.email) return alert('Email is required');
     setSavingLead(true);
     try {
-      await apiFetch('/api/waitlist', {
-        method: 'POST',
-        body: JSON.stringify(newLead),
-      });
+      await invoke('addLead', { lead: newLead });
       setShowAddLead(false);
       setNewLead(EMPTY_LEAD);
       await loadData();
@@ -318,7 +294,7 @@ export default function WaitlistManager() {
                   placeholder="e.g. Strong Pro candidate…" className="h-20 text-sm" />
               </div>
               <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 text-xs text-cyan-800">
-                <strong>What happens:</strong> A SubscriberTrial record is created and a welcome email is sent.
+                <strong>What happens:</strong> A SubscriberTrial record is created and a welcome email with magic sign-in link is sent.
               </div>
             </div>
           )}
