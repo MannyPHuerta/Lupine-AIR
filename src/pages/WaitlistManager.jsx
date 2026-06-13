@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
