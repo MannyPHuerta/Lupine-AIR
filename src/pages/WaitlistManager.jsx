@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -38,7 +44,7 @@ export default function WaitlistManager() {
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
 
-  const invoke = async (action, extra = {}) => {
+  const callApi = async (action, extra = {}) => {
     const res = await fetch('/api/waitlist-manager', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -46,16 +52,21 @@ export default function WaitlistManager() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
-    return { data };
+    return data;
   };
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await invoke('list');
-      setEntries(res.data?.waitlist || []);
-      setTrials(res.data?.trials || []);
+      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
+        supabase.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
+        supabase.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
+      ]);
+      if (wErr) throw new Error(wErr.message);
+      if (tErr) throw new Error(tErr.message);
+      setEntries(waitlist || []);
+      setTrials(trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -68,7 +79,7 @@ export default function WaitlistManager() {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      await invoke('approve', { entryId: approveEntry.id, notes: approveNotes });
+      await callApi('approve', { entryId: approveEntry.id, notes: approveNotes });
       await loadData();
       setApproveEntry(null);
       setApproveNotes('');
@@ -81,7 +92,7 @@ export default function WaitlistManager() {
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
     try {
-      await invoke('reject', { entryId: entry.id });
+      await callApi('reject', { entryId: entry.id });
       await loadData();
     } catch (err) {
       alert('Failed: ' + err.message);
@@ -92,7 +103,7 @@ export default function WaitlistManager() {
     if (!newLead.email) return alert('Email is required');
     setSavingLead(true);
     try {
-      await invoke('addLead', { lead: newLead });
+      await callApi('addLead', { lead: newLead });
       setShowAddLead(false);
       setNewLead(EMPTY_LEAD);
       await loadData();
