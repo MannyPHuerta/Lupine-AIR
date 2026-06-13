@@ -45,8 +45,12 @@ export default async function handler(req, res) {
     .select();
 
   if (dbError) {
+    // Unique constraint violation — email already on waitlist, treat as success
+    if (dbError.code === '23505') {
+      console.log('[Waitlist] Duplicate email, treating as success:', email);
+      return res.status(200).json({ success: true, duplicate: true });
+    }
     console.error('[Waitlist] DB insert failed:', JSON.stringify(dbError, null, 2));
-    console.error('[Waitlist] Full error:', dbError);
     return res.status(500).json({ error: dbError.message, details: dbError, hint: 'Check Supabase table schema and RLS policies' });
   }
   console.log('[Waitlist] DB insert success:', JSON.stringify(insertData, null, 2));
@@ -122,9 +126,7 @@ export default async function handler(req, res) {
   console.log('[Waitlist] Confirmation email result:', confirmResult);
   
   if (adminResult.error || confirmResult.error) {
-    const err = adminResult.error || confirmResult.error;
-    console.error('[Waitlist] Email send failed:', err);
-    return res.status(500).json({ error: err.message || 'Email send failed', details: err });
+    console.error('[Waitlist] Email send failed (non-fatal):', adminResult.error || confirmResult.error);
   }
 
   console.log('[Waitlist] Success!');
