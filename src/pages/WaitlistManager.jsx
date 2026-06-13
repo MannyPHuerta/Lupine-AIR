@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { format, addDays } from 'date-fns';
-import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Mail } from 'lucide-react';
+import { format } from 'date-fns';
+import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -23,6 +24,19 @@ const TRIAL_STATUS_STYLE = {
 
 const EMPTY_LEAD = { name: '', email: '', phone: '', company: '', branches: '' };
 
+async function authHeader() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
+
+async function apiFetch(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(await authHeader()), ...options.headers };
+  const res = await fetch(path, { ...options, headers });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || res.statusText);
+  return json;
+}
+
 export default function WaitlistManager() {
   const [activeTab, setActiveTab] = useState('waitlist');
   const [entries, setEntries] = useState([]);
@@ -40,24 +54,16 @@ export default function WaitlistManager() {
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
 
-  const invoke = async (action, extra = {}) => {
-    const res = await fetch('/api/waitlist-manager', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...extra }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Request failed');
-    return data;
-  };
-
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await invoke('list');
-      setEntries(data.waitlist || []);
-      setTrials(data.trials || []);
+      const [waitlistRes, trialsRes] = await Promise.all([
+        apiFetch('/api/waitlistEntries?type=waitlist'),
+        apiFetch('/api/waitlistEntries?type=trials'),
+      ]);
+      setEntries(waitlistRes.data || []);
+      setTrials(trialsRes.data || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -66,12 +72,14 @@ export default function WaitlistManager() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // ─── Approve ─────────────────────────────────────────────────────────────
   const handleApprove = async () => {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      await invoke('approve', { entryId: approveEntry.id, notes: approveNotes });
+      await apiFetch('/api/approveWaitlist', {
+        method: 'POST',
+        body: JSON.stringify({ entryId: approveEntry.id, notes: approveNotes }),
+      });
       await loadData();
       setApproveEntry(null);
       setApproveNotes('');
@@ -81,19 +89,27 @@ export default function WaitlistManager() {
     setApproving(false);
   };
 
-  // ─── Reject ───────────────────────────────────────────────────────────────
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
-    await invoke('reject', { entryId: entry.id });
-    await loadData();
+    try {
+      await apiFetch('/api/rejectWaitlist', {
+        method: 'POST',
+        body: JSON.stringify({ entryId: entry.id }),
+      });
+      await loadData();
+    } catch (err) {
+      alert('Failed: ' + err.message);
+    }
   };
 
-  // ─── Add lead manually ────────────────────────────────────────────────────
   const handleAddLead = async () => {
     if (!newLead.email) return alert('Email is required');
     setSavingLead(true);
     try {
-      await invoke('addLead', { lead: newLead });
+      await apiFetch('/api/waitlist', {
+        method: 'POST',
+        body: JSON.stringify(newLead),
+      });
       setShowAddLead(false);
       setNewLead(EMPTY_LEAD);
       await loadData();
@@ -284,7 +300,7 @@ export default function WaitlistManager() {
         </div>
       )}
 
-      {/* ── Approve Modal ─────────────────────────────────────────────────── */}
+      {/* Approve Modal */}
       <Dialog open={!!approveEntry} onOpenChange={() => setApproveEntry(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Approve Early Access</DialogTitle></DialogHeader>
@@ -302,7 +318,7 @@ export default function WaitlistManager() {
                   placeholder="e.g. Strong Pro candidate…" className="h-20 text-sm" />
               </div>
               <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 text-xs text-cyan-800">
-                <strong>What happens:</strong> A SubscriberTrial record is created, status set to "invited", and a welcome email with magic sign-in link is sent.
+                <strong>What happens:</strong> A SubscriberTrial record is created and a welcome email is sent.
               </div>
             </div>
           )}
@@ -316,7 +332,7 @@ export default function WaitlistManager() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Add Lead Modal ────────────────────────────────────────────────── */}
+      {/* Add Lead Modal */}
       <Dialog open={showAddLead} onOpenChange={setShowAddLead}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Add Lead Manually</DialogTitle></DialogHeader>
