@@ -10,7 +10,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Store in Supabase waitlist_entries (same table waitlistManager reads from)
     const sb = createClient(
       Deno.env.get('SUPABASE_URL'),
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -26,7 +25,6 @@ Deno.serve(async (req) => {
     }
     console.log('[waitlistSubmit] Saved to Supabase:', entry?.id);
 
-    // Send emails
     const apiKey = Deno.env.get('RESEND_API_KEY');
     if (!apiKey) {
       console.error('[waitlistSubmit] RESEND_API_KEY not configured');
@@ -69,28 +67,8 @@ Deno.serve(async (req) => {
             <div style="padding:32px">
               <p style="color:#94a3b8;line-height:1.7">Hi ${name || 'there'},</p>
               <p style="color:#cbd5e1;line-height:1.7">
-                You picked the right time. Early subscribers lock in <strong style="color:#0ea5e9">founding pricing for 24 months</strong>, guaranteed. No surprise bills, no per-user seats, just one price per branch.
+                You picked the right time. Early subscribers lock in <strong style="color:#0ea5e9">founding pricing for 24 months</strong>, guaranteed.
               </p>
-              <div style="background:linear-gradient(135deg,#0ea5e920,#6366f120);border:1px solid #0ea5e940;border-radius:12px;padding:24px;margin:24px 0;text-align:center">
-                <p style="margin:0;font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">What you're getting</p>
-                <p style="margin:12px 0 4px;font-weight:900;font-size:20px;color:#fff">AIRental + AIREvents + AIReports + more</p>
-                <p style="margin:0;font-size:13px;color:#64748b">14-day free trial. Full Pro access. No credit card required.</p>
-              </div>
-              <p style="color:#94a3b8;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">What happens next</p>
-              <div style="space-y:12px">
-                <div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start">
-                  <div style="background:#0ea5e9;color:#000;font-weight:900;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">1</div>
-                  <p style="color:#cbd5e1;margin:0;line-height:1.6">We'll reach out within 2 business days to schedule a personalized 30-min demo</p>
-                </div>
-                <div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start">
-                  <div style="background:#0ea5e9;color:#000;font-weight:900;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">2</div>
-                  <p style="color:#cbd5e1;margin:0;line-height:1.6">See your rental operation on the AIR platform — with YOUR data</p>
-                </div>
-                <div style="display:flex;gap:12px;align-items:flex-start">
-                  <div style="background:#0ea5e9;color:#000;font-weight:900;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">3</div>
-                  <p style="color:#cbd5e1;margin:0;line-height:1.6">Ask any questions — we handle setup, migration, and onboarding</p>
-                </div>
-              </div>
               <div style="background:#1e293b;border-radius:10px;padding:16px;margin:24px 0;font-size:13px;color:#475569">
                 <strong style="color:#94a3b8">We have your info:</strong><br/>
                 Company: <strong style="color:#cbd5e1">${company || 'N/A'}</strong> &nbsp;·&nbsp; Branches: <strong style="color:#cbd5e1">${branches || 'N/A'}</strong>
@@ -106,7 +84,7 @@ Deno.serve(async (req) => {
     ]);
 
     console.log('[waitlistSubmit] Emails sent successfully');
-    return Response.json({ success: true, entryId: entry?.id, warning: entry ? undefined : 'Entry saved but no ID returned' });
+    return Response.json({ success: true, entryId: entry?.id });
 
   } catch (error) {
     console.error('[waitlistSubmit] Error:', error.message);
