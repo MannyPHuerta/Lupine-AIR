@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -41,16 +40,24 @@ export default function WaitlistManager() {
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
 
-  const invoke = (action, extra = {}) =>
-    base44.functions.invoke('waitlistManager', { action, ...extra });
+  const invoke = async (action, extra = {}) => {
+    const res = await fetch('/api/waitlist-manager', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await invoke('list');
-      setEntries(res.data?.waitlist || []);
-      setTrials(res.data?.trials || []);
+      const data = await invoke('list');
+      setEntries(data.waitlist || []);
+      setTrials(data.trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
