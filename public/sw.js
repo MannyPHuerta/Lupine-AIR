@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-wolf-v4";
+const CACHE_NAME = "asset-wolf-v5";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -18,7 +18,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Always go network-first, fall back to cache
+  // Only handle GET requests — pass everything else (POST, etc.) straight through
+  if (event.request.method !== "GET") return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
