@@ -5,28 +5,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format, addDays } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Mail } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_URL = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-async function sbFetch(path, options = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...(options.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -75,12 +60,14 @@ export default function WaitlistManager() {
     setLoading(true);
     setError(null);
     try {
-      const [w, t] = await Promise.all([
-        sbFetch('waitlist_entries?order=created_at.desc'),
-        sbFetch('subscriber_trials?order=created_at.desc'),
+      const [{ data: w, error: e1 }, { data: t, error: e2 }] = await Promise.all([
+        supabase.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
+        supabase.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
       ]);
-      setEntries(w);
-      setTrials(t);
+      if (e1) throw new Error(e1.message);
+      if (e2) throw new Error(e2.message);
+      setEntries(w || []);
+      setTrials(t || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -95,30 +82,26 @@ export default function WaitlistManager() {
     setApproving(true);
     try {
       const today = new Date();
-      // Create subscriber trial in Supabase
-      await sbFetch('subscriber_trials', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: approveEntry.email,
-          contact_name: approveEntry.name,
-          company_name: approveEntry.company,
-          phone: approveEntry.phone,
-          branches: approveEntry.branches,
-          status: 'invited',
-          plan_tier: 'pro',
-          trial_start_date: format(today, 'yyyy-MM-dd'),
-          trial_ends_at: format(addDays(today, 14), 'yyyy-MM-dd'),
-          lockout_date: format(addDays(today, 30), 'yyyy-MM-dd'),
-          approved_by: 'admin',
-          approved_at: today.toISOString(),
-          notes: approveNotes || null,
-        }),
+      const { error: e1 } = await supabase.from('subscriber_trials').insert({
+        email: approveEntry.email,
+        contact_name: approveEntry.name,
+        company_name: approveEntry.company,
+        phone: approveEntry.phone,
+        branches: approveEntry.branches,
+        status: 'invited',
+        plan_tier: 'pro',
+        trial_start_date: format(today, 'yyyy-MM-dd'),
+        trial_ends_at: format(addDays(today, 14), 'yyyy-MM-dd'),
+        lockout_date: format(addDays(today, 30), 'yyyy-MM-dd'),
+        approved_by: 'admin',
+        approved_at: today.toISOString(),
+        notes: approveNotes || null,
       });
-      // Update waitlist entry status
-      await sbFetch(`waitlist_entries?id=eq.${approveEntry.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'approved', approved_at: new Date().toISOString() }),
-      });
+      if (e1) throw new Error(e1.message);
+      const { error: e2 } = await supabase.from('waitlist_entries')
+        .update({ status: 'approved', approved_at: new Date().toISOString() })
+        .eq('id', approveEntry.id);
+      if (e2) throw new Error(e2.message);
       // Send welcome email via Resend
       await sendWelcomeEmail(approveEntry.email, approveEntry.name, approveEntry.company);
       await loadData();
@@ -133,10 +116,7 @@ export default function WaitlistManager() {
   // ─── Reject ───────────────────────────────────────────────────────────────
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
-    await sbFetch(`waitlist_entries?id=eq.${entry.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'rejected' }),
-    });
+    await supabase.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entry.id);
     await loadData();
   };
 
@@ -145,10 +125,8 @@ export default function WaitlistManager() {
     if (!newLead.email) return alert('Email is required');
     setSavingLead(true);
     try {
-      await sbFetch('waitlist_entries', {
-        method: 'POST',
-        body: JSON.stringify({ ...newLead, status: 'pending' }),
-      });
+      const { error } = await supabase.from('waitlist_entries').insert({ ...newLead, status: 'pending' });
+      if (error) throw new Error(error.message);
       setShowAddLead(false);
       setNewLead(EMPTY_LEAD);
       await loadData();
@@ -164,18 +142,16 @@ export default function WaitlistManager() {
     setSavingTrial(true);
     try {
       const today = new Date();
-      await sbFetch('subscriber_trials', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...newTrial,
-          status: 'invited',
-          trial_start_date: format(today, 'yyyy-MM-dd'),
-          trial_ends_at: format(addDays(today, 14), 'yyyy-MM-dd'),
-          lockout_date: format(addDays(today, 30), 'yyyy-MM-dd'),
-          approved_by: 'admin',
-          approved_at: today.toISOString(),
-        }),
+      const { error } = await supabase.from('subscriber_trials').insert({
+        ...newTrial,
+        status: 'invited',
+        trial_start_date: format(today, 'yyyy-MM-dd'),
+        trial_ends_at: format(addDays(today, 14), 'yyyy-MM-dd'),
+        lockout_date: format(addDays(today, 30), 'yyyy-MM-dd'),
+        approved_by: 'admin',
+        approved_at: today.toISOString(),
       });
+      if (error) throw new Error(error.message);
       // Send welcome email
       await sendWelcomeEmail(newTrial.email, newTrial.contact_name, newTrial.company_name);
       setShowAddTrial(false);
