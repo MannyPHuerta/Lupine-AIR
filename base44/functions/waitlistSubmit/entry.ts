@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { Resend } from 'npm:resend@2.0.0';
 
 Deno.serve(async (req) => {
@@ -10,17 +10,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Store in Base44 WaitlistEntry entity
-    const base44 = createClientFromRequest(req);
-    const entry = await base44.asServiceRole.entities.WaitlistEntry.create({
-      name: name || '',
-      email,
-      phone: phone || '',
-      company: company || '',
-      branches: branches || '1',
-      status: 'pending',
-    });
-    console.log('[waitlistSubmit] Saved WaitlistEntry:', entry?.id);
+    // Store in Supabase waitlist_entries (same table waitlistManager reads from)
+    const sb = createClient(
+      Deno.env.get('SUPABASE_URL'),
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    );
+    const { data: entry, error: dbError } = await sb
+      .from('waitlist_entries')
+      .insert({ name: name || '', email, phone: phone || '', company: company || '', branches: branches || '1', status: 'pending' })
+      .select()
+      .single();
+    if (dbError) {
+      console.error('[waitlistSubmit] DB error:', dbError.message);
+      return Response.json({ error: dbError.message }, { status: 500 });
+    }
+    console.log('[waitlistSubmit] Saved to Supabase:', entry?.id);
 
     // Send emails
     const apiKey = Deno.env.get('RESEND_API_KEY');
@@ -102,7 +106,7 @@ Deno.serve(async (req) => {
     ]);
 
     console.log('[waitlistSubmit] Emails sent successfully');
-    return Response.json({ success: true, entryId: entry?.id });
+    return Response.json({ success: true, entryId: entry?.id, warning: entry ? undefined : 'Entry saved but no ID returned' });
 
   } catch (error) {
     console.error('[waitlistSubmit] Error:', error.message);
