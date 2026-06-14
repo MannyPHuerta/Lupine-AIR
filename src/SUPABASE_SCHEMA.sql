@@ -1,7 +1,7 @@
 -- =============================================================================
 -- AIR PLATFORM — COMPLETE SUPABASE SCHEMA
 -- Multi-tenant, multi-branch equipment rental SaaS
--- Generated: 2026-06-14  |  Safe to re-run: uses IF NOT EXISTS throughout
+-- Generated: 2026-06-14  |  Safe to re-run: DROP + recreate at top
 -- =============================================================================
 -- USAGE: Run this entire file in Supabase SQL Editor.
 -- All tables use tenant_id for RLS isolation.
@@ -9,6 +9,54 @@
 -- =============================================================================
 
 create extension if not exists "pgcrypto";
+
+-- =============================================================================
+-- SECTION 0: CLEAN SLATE — Drop all tenant tables in reverse dependency order
+-- Safe to re-run. Drops only AIR app tables, not Supabase system tables.
+-- =============================================================================
+
+drop table if exists parts_procurement       cascade;
+drop table if exists part_requirements       cascade;
+drop table if exists predictive_alerts       cascade;
+drop table if exists mechanic_profiles       cascade;
+drop table if exists work_orders             cascade;
+drop table if exists maintenance_logs        cascade;
+drop table if exists equipment_gps_links     cascade;
+drop table if exists gps_providers           cascade;
+drop table if exists driver_locations        cascade;
+drop table if exists rto_payments            cascade;
+drop table if exists recurring_rentals       cascade;
+drop table if exists discount_logs           cascade;
+drop table if exists volume_discount_rules   cascade;
+drop table if exists promo_codes             cascade;
+drop table if exists rfq_records             cascade;
+drop table if exists event_plans             cascade;
+drop table if exists timesheets              cascade;
+drop table if exists staff_phones            cascade;
+drop table if exists audit_logs              cascade;
+drop table if exists rental_agreements       cascade;
+drop table if exists availability_configs    cascade;
+drop table if exists availability_config     cascade;
+drop table if exists delivery_matrix         cascade;
+drop table if exists reports                 cascade;
+drop table if exists recoveries              cascade;
+drop table if exists deliveries              cascade;
+drop table if exists rentals                 cascade;
+drop table if exists expenses                cascade;
+drop table if exists purchase_orders         cascade;
+drop table if exists supply_items            cascade;
+drop table if exists vendors                 cascade;
+drop table if exists cash_drawers            cascade;
+drop table if exists customers               cascade;
+drop table if exists equipment               cascade;
+drop table if exists equipment_categories    cascade;
+drop table if exists payment_settings        cascade;
+drop table if exists company_settings        cascade;
+drop table if exists profiles                cascade;
+drop table if exists branches                cascade;
+drop table if exists subscriber_trials       cascade;
+drop table if exists waitlist_entries        cascade;
+drop table if exists tenants                 cascade;
 
 -- =============================================================================
 -- SECTION 1: CORE STRUCTURE — Tenants, Branches, Profiles
@@ -1097,13 +1145,6 @@ create table if not exists subscriber_trials (
   notes                  text,
   created_at             timestamptz default now()
 );
-
--- =============================================================================
--- SECTION 14b: BACKFILL MISSING COLUMNS (safe on re-runs)
--- Adds columns that were missing in earlier schema versions
--- =============================================================================
-
-alter table part_requirements add column if not exists tenant_id uuid references tenants(id) on delete cascade;
 
 -- =============================================================================
 -- SECTION 15: ROW LEVEL SECURITY
