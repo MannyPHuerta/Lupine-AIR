@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { Resend } from 'npm:resend@2.0.0';
 
 Deno.serve(async (req) => {
   try {
@@ -8,49 +9,51 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid email' }, { status: 400 });
     }
 
-    // Generate magic link token (6 character alphanumeric)
-    const token = crypto.getRandomValues(new Uint8Array(4))
-      .reduce((acc, val) => acc + val.toString(16).padStart(2, '0'), '')
-      .substring(0, 8)
-      .toUpperCase();
-
-    // Store token + expiry (10 min)
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    
-    // Create/update login session record (using User entity's custom field capability)
+    // Generate Supabase magic link
     const base44 = createClientFromRequest(req);
+    const supabase = createClientFromRequest(req).asServiceRole;
     
-    // Store in a simple LoginSession that we'll check on verify
-    // For now, we'll pass this via email and verify on click
-    
-    const magicLink = `${Deno.env.get('BASE44_APP_URL')}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
-    
-    // Send email via Sendgrid/Twilio SendGrid
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SENDGRID_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email }] }],
-        from: { email: 'noreply@lupine.rental', name: 'Lupine' },
-        subject: '🔑 Your Magic Login Link',
-        html: `
-          <h2>Welcome to Lupine</h2>
-          <p>Click the link below to log in (valid for 10 minutes):</p>
-          <p><a href="${magicLink}" style="display:inline-block;padding:12px 24px;background:#1E40AF;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Sign In</a></p>
-          <p style="color:#666;font-size:12px;">Or copy this code: <code>${token}</code></p>
-          <p style="color:#999;font-size:11px;">If you didn't request this, you can safely ignore this email.</p>
-        `,
-      }),
+    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: email,
+      options: { redirectTo: 'https://theprojectair.com/auth/callback' },
     });
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error('SendGrid error:', err);
-      return Response.json({ error: 'Failed to send email' }, { status: 500 });
+    
+    const magicLink = linkData?.properties?.action_link || 'https://theprojectair.com/signin';
+    if (linkErr) console.warn('[sendMagicLink] generateLink failed:', linkErr.message);
+    
+    // Send email via Resend
+    const apiKey = Deno.env.get('RESEND_API_KEY');
+    if (!apiKey) {
+      return Response.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
     }
+    
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from: 'AIR by Lupine <info@theprojectair.com>',
+      to: [email],
+      subject: '🔑 Your Magic Login Link',
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+            <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">Your Login Link</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Click below to sign in — no password needed</p>
+          </div>
+          <div style="padding:32px">
+            <div style="text-align:center;margin:28px 0">
+              <a href="${magicLink}"
+                 style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
+                Sign In →
+              </a>
+              <p style="color:#475569;font-size:12px;margin-top:10px">Link expires in 24 hours.</p>
+            </div>
+            <p style="color:#475569;font-size:12px;text-align:center">
+              If you didn't request this, you can safely ignore this email.
+            </p>
+          </div>
+        </div>
+      `,
+    });
 
     return Response.json({ success: true, message: `Magic link sent to ${email}` });
   } catch (error) {
