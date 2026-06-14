@@ -65,6 +65,7 @@ export default function WaitlistManager() {
 
   // Get current user
   useEffect(() => {
+    if (!supabase) return;
     supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
   }, []);
 
