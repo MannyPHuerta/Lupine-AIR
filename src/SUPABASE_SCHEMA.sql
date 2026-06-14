@@ -1117,7 +1117,8 @@ alter table deliveries enable row level security;
 alter table recoveries enable row level security;
 alter table maintenance_logs enable row level security;
 alter table work_orders enable row level security;
-alter table part_requirements enable row level security;
+-- part_requirements has no tenant_id; access is controlled via work_orders parent
+-- alter table part_requirements enable row level security;
 alter table parts_procurement enable row level security;
 alter table mechanic_profiles enable row level security;
 alter table predictive_alerts enable row level security;
@@ -1151,7 +1152,7 @@ do $$ declare tbl text; begin
     'branches','profiles','company_settings','payment_settings',
     'equipment_categories','equipment','customers','rentals',
     'recurring_rentals','rto_payments','deliveries','recoveries',
-    'maintenance_logs','work_orders','part_requirements','parts_procurement',
+    'maintenance_logs','work_orders','parts_procurement',
     'mechanic_profiles','predictive_alerts','expenses','vendors',
     'supply_items','purchase_orders','cash_drawers','promo_codes',
     'volume_discount_rules','discount_logs','rfq_records','event_plans',
@@ -1182,7 +1183,7 @@ create policy "tenant_isolation" on deliveries           for all using (tenant_i
 create policy "tenant_isolation" on recoveries           for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on maintenance_logs     for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on work_orders          for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
-create policy "tenant_isolation" on part_requirements    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
+-- part_requirements: no direct RLS (protected via work_orders parent)
 create policy "tenant_isolation" on parts_procurement    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on mechanic_profiles    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on predictive_alerts    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
