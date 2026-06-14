@@ -1,7 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Vite environment variables are exposed via import.meta.env
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY;
+
+// Debug logging
+if (typeof window !== 'undefined') {
+  console.log('[SupabaseClient] Env check:', {
+    VITE_SUPABASE_URL: SUPABASE_URL ? '[SET]' : '[MISSING]',
+    VITE_SUPABASE_ANON_KEY: SUPABASE_ANON_KEY ? '[SET]' : '[MISSING]'
+  });
+}
 
 // Validate Supabase URL before creating client
 const isValidUrl = (url) => {
