@@ -537,7 +537,7 @@ create table if not exists work_orders (
 
 create table if not exists part_requirements (
   id            uuid primary key default gen_random_uuid(),
-  tenant_id     uuid not null references tenants(id) on delete cascade,
+  tenant_id     uuid references tenants(id) on delete cascade,
   work_order_id uuid not null references work_orders(id) on delete cascade,
   part_name     text not null,
   quantity      integer default 1,
