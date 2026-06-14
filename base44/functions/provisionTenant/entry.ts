@@ -2,10 +2,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 Deno.serve(async (req) => {
   try {
-    // Use service role to bypass RLS for provisioning
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL'),
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY'),
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
       { auth: { persistSession: false } }
     );
 
@@ -28,6 +27,9 @@ Deno.serve(async (req) => {
       phone,
       branchName,
       branchAddress,
+      branchCity,
+      branchState,
+      branchZip,
       branchPhone,
       branchEmail,
       invoicePrefix,
@@ -38,28 +40,35 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'companyName and branchName are required' }, { status: 400 });
     }
 
-    // Check if tenant already exists for this user
-    const { data: existing } = await supabaseAdmin
-      .from('tenant')
-      .select('id')
-      .eq('admin_user_id', user.id)
+    // Check if profile already exists for this user (already provisioned)
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
       .maybeSingle();
 
-    if (existing) {
-      return Response.json({ error: 'Tenant already provisioned' }, { status: 409 });
+    if (existingProfile?.tenant_id) {
+      return Response.json({ error: 'Tenant already provisioned', tenantId: existingProfile.tenant_id }, { status: 409 });
     }
 
     const now = new Date();
     const trialEndsAt = new Date(now);
     trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
+    // Generate a slug from company name
+    const slug = companyName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 50) + '-' + Date.now().toString(36);
+
     // 1. Create Tenant
     const { data: tenant, error: tenantError } = await supabaseAdmin
-      .from('tenant')
+      .from('tenants')
       .insert({
         company_name: companyName,
+        slug,
         admin_email: user.email,
-        admin_user_id: user.id,
         status: 'trial',
         trial_start_date: now.toISOString().split('T')[0],
         trial_ends_at: trialEndsAt.toISOString().split('T')[0],
@@ -74,12 +83,35 @@ Deno.serve(async (req) => {
 
     if (tenantError) throw tenantError;
 
-    // 2. Create CompanySettings
+    // 2. Create Branch
+    const prefix = invoicePrefix || branchName.slice(0, 3).toUpperCase();
+    const { data: branch, error: branchError } = await supabaseAdmin
+      .from('branches')
+      .insert({
+        tenant_id: tenant.id,
+        name: branchName,
+        code: prefix,
+        address: branchAddress || null,
+        city: branchCity || null,
+        state: branchState || null,
+        zip: branchZip || null,
+        phone: branchPhone || null,
+        email: branchEmail || user.email,
+        next_invoice_number: 1000,
+        default_starting_float: 0,
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (branchError) throw branchError;
+
+    // 3. Create CompanySettings
     const { error: companyError } = await supabaseAdmin
       .from('company_settings')
       .insert({
-        company_name: companyName,
-        invoice_number_prefix: invoicePrefix || branchName.slice(0, 3).toUpperCase(),
+        tenant_id: tenant.id,
+        invoice_number_prefix: prefix,
         auto_assign_invoice_numbers: true,
         invoice_number_start: 1001,
         rental_day_mode: 'clock_hour',
@@ -91,28 +123,33 @@ Deno.serve(async (req) => {
 
     if (companyError) throw companyError;
 
-    // 3. Create BranchSettings
-    const { error: branchError } = await supabaseAdmin
-      .from('branch_settings')
-      .insert({
-        branch: branchName,
-        invoice_prefix: invoicePrefix || branchName.slice(0, 3).toUpperCase(),
-        next_invoice_number: 1000,
-        address: branchAddress || null,
-        phone: branchPhone || null,
-        email: branchEmail || user.email,
-        default_starting_float: 0,
+    // 4. Create Profile for the provisioning user
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        tenant_id: tenant.id,
+        home_branch_id: branch.id,
+        current_branch_id: branch.id,
+        full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+        role: 'owner',
+        is_active: true,
       });
 
-    if (branchError) throw branchError;
+    if (profileError) throw profileError;
 
-    // 4. Mark onboarding complete on tenant
+    // 5. Mark onboarding complete
     await supabaseAdmin
-      .from('tenant')
+      .from('tenants')
       .update({ onboarding_completed: true, onboarding_step: 4 })
       .eq('id', tenant.id);
 
-    return Response.json({ success: true, tenantId: tenant.id });
+    return Response.json({
+      success: true,
+      tenantId: tenant.id,
+      branchId: branch.id,
+    });
+
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
