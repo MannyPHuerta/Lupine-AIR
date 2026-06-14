@@ -1,16 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Vite environment variables are exposed via import.meta.env
-const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY;
-
-// Debug logging
-if (typeof window !== 'undefined') {
-  console.log('[SupabaseClient] Env check:', {
-    VITE_SUPABASE_URL: SUPABASE_URL ? '[SET]' : '[MISSING]',
-    VITE_SUPABASE_ANON_KEY: SUPABASE_ANON_KEY ? '[SET]' : '[MISSING]'
-  });
-}
+// For Base44 preview: hardcoded values (Supabase anon key is safe - it's client-side)
+// For Vercel production: replace with import.meta.env?.VITE_SUPABASE_URL
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key-here';
 
 // Validate Supabase URL before creating client
 const isValidUrl = (url) => {
