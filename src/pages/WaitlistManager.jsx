@@ -41,6 +41,7 @@ export default function WaitlistManager() {
   const [savingLead, setSavingLead] = useState(false);
 
   const callApi = async (action, extra = {}) => {
+    if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase.functions.invoke('waitlistManager', { body: { action, ...extra } });
     if (error) throw new Error(error.message || 'API call failed');
     if (data?.error) throw new Error(data.error);
@@ -50,6 +51,11 @@ export default function WaitlistManager() {
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    if (!supabase) {
+      setError('Supabase not configured');
+      setLoading(false);
+      return;
+    }
     try {
       const res = await supabase.functions.invoke('waitlistManager', { body: { action: 'list' } });
       if (res.error) throw res.error;
@@ -95,6 +101,10 @@ export default function WaitlistManager() {
 
   const handleGrantDemo = async (entry) => {
     if (!confirm(`Send demo access link to ${entry.name || entry.email}?`)) return;
+    if (!supabase) {
+      alert('Supabase not configured');
+      return;
+    }
     try {
       const { data, error } = await supabase.functions.invoke('grantDemoAccess', { 
         body: { entryId: entry.id, adminEmail: user?.email } 
