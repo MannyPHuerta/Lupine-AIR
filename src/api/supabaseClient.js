@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // For Base44 preview: hardcoded values (Supabase anon key is safe - it's client-side)
 // For Vercel production: replace with import.meta.env?.VITE_SUPABASE_URL
-const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_URL = 'https://esckfcvxmbuhimmseqtb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzY2tmY3Z4bWJ1aGltbXNlcXRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NDQ0NzAsImV4cCI6MjA5NjAyMDQ3MH0.NXE9IViDMlCPUT_9ybFdaeV3AVqkAhUeRCWpmcf5WUY';
 
 // Validate Supabase URL before creating client
