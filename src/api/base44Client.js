@@ -1,10 +1,24 @@
-// Base44 SDK client — gracefully handles missing appId (preview/Vercel mode)
-import { createClient } from '@base44/sdk';
+// Vercel/Supabase mode - Base44 SDK stub (no Base44 backend features used)
+// This project uses Supabase for all data and auth - Base44 is only for hosting
 
-const appId = typeof window !== 'undefined' 
-  ? (import.meta.env.VITE_BASE44_APP_ID || window?.base44?.appId) 
-  : undefined;
-
-// In preview/Vercel mode, appId may be undefined — SDK still works for functions/integrations
-// but auth methods will be bypassed in favor of Supabase auth
-export const base44 = appId ? createClient({ appId }) : createClient({ appId: 'preview' });
+export const base44 = {
+  auth: {
+    me: async () => null,
+    logout: () => {},
+    redirectToLogin: () => {},
+    isAuthenticated: async () => false,
+    updateMe: async () => {}
+  },
+  entities: {},
+  functions: {
+    invoke: async () => ({ data: null })
+  },
+  integrations: {},
+  analytics: {
+    track: async () => {}
+  },
+  users: {
+    inviteUser: async () => {}
+  },
+  agents: {}
+};
