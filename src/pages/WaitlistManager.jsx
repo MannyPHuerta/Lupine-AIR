@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
@@ -40,16 +40,18 @@ export default function WaitlistManager() {
   const [savingLead, setSavingLead] = useState(false);
 
   const callApi = async (action, extra = {}) => {
-    const res = await base44.functions.invoke('waitlistManager', { action, ...extra });
-    if (res.data?.error) throw new Error(res.data.error);
-    return res.data;
+    const { data, error } = await supabase.functions.invoke('waitlistManager', { body: { action, ...extra } });
+    if (error) throw new Error(error.message || 'API call failed');
+    if (data?.error) throw new Error(data.error);
+    return data;
   };
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await base44.functions.invoke('waitlistManager', { action: 'list' });
+      const res = await supabase.functions.invoke('waitlistManager', { body: { action: 'list' } });
+      if (res.error) throw res.error;
       setEntries(res.data?.waitlist || []);
       setTrials(res.data?.trials || []);
     } catch (err) {

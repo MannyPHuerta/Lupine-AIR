@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { getActiveSeasonalTheme, SEASONAL_THEMES } from '@/lib/seasonalThemes';
 
 const _listeners = new Set();
@@ -36,19 +36,24 @@ export function useHeaderStyle() {
   const [result, setResult] = useState(cached ? JSON.parse(cached) : null);
 
   useEffect(() => {
-    if (!base44 || !base44.entities) {
+    if (!supabase) {
       setResult({ style: 'classic', seasonalTheme: null });
       return;
     }
     
     let cancelled = false;
-    const doFetch = () => {
-      base44.entities.CompanySettings.list().then(list => {
+    const doFetch = async () => {
+      try {
+        const { data, error } = await supabase.from('CompanySettings').select('*').limit(1);
         if (cancelled) return;
-        const resolved = resolveStyle(list[0]);
+        if (error) throw error;
+        const resolved = resolveStyle(data?.[0] || {});
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(resolved));
         setResult(resolved);
-      }).catch(err => console.error('[useHeaderStyle] fetch error:', err));
+      } catch (err) {
+        console.error('[useHeaderStyle] fetch error:', err);
+        setResult({ style: 'classic', seasonalTheme: null });
+      }
     };
 
     doFetch();
