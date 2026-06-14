@@ -33,10 +33,8 @@ export default function SignIn() {
     if (!supabase) { setError('Not available in preview mode.'); return; }
     setLoading(true);
     setError('');
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`;
     const { error: mlError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: redirectTo }
+      email
     });
     if (mlError) {
       setError(mlError.message);
