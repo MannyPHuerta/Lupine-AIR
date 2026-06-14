@@ -537,7 +537,7 @@ create table if not exists work_orders (
 
 create table if not exists part_requirements (
   id            uuid primary key default gen_random_uuid(),
-  tenant_id     uuid references tenants(id) on delete cascade,
+  tenant_id     uuid not null references tenants(id) on delete cascade,
   work_order_id uuid not null references work_orders(id) on delete cascade,
   part_name     text not null,
   quantity      integer default 1,
@@ -1099,6 +1099,13 @@ create table if not exists subscriber_trials (
 );
 
 -- =============================================================================
+-- SECTION 14b: BACKFILL MISSING COLUMNS (safe on re-runs)
+-- Adds columns that were missing in earlier schema versions
+-- =============================================================================
+
+alter table part_requirements add column if not exists tenant_id uuid references tenants(id) on delete cascade;
+
+-- =============================================================================
 -- SECTION 15: ROW LEVEL SECURITY
 -- Uses DROP POLICY IF EXISTS before each CREATE POLICY so re-runs don't fail
 -- =============================================================================
@@ -1117,8 +1124,7 @@ alter table deliveries enable row level security;
 alter table recoveries enable row level security;
 alter table maintenance_logs enable row level security;
 alter table work_orders enable row level security;
--- part_requirements has no tenant_id; access is controlled via work_orders parent
--- alter table part_requirements enable row level security;
+alter table part_requirements enable row level security;
 alter table parts_procurement enable row level security;
 alter table mechanic_profiles enable row level security;
 alter table predictive_alerts enable row level security;
@@ -1152,7 +1158,7 @@ do $$ declare tbl text; begin
     'branches','profiles','company_settings','payment_settings',
     'equipment_categories','equipment','customers','rentals',
     'recurring_rentals','rto_payments','deliveries','recoveries',
-    'maintenance_logs','work_orders','parts_procurement',
+    'maintenance_logs','work_orders','part_requirements','parts_procurement',
     'mechanic_profiles','predictive_alerts','expenses','vendors',
     'supply_items','purchase_orders','cash_drawers','promo_codes',
     'volume_discount_rules','discount_logs','rfq_records','event_plans',
@@ -1183,7 +1189,7 @@ create policy "tenant_isolation" on deliveries           for all using (tenant_i
 create policy "tenant_isolation" on recoveries           for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on maintenance_logs     for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on work_orders          for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
--- part_requirements: no direct RLS (protected via work_orders parent)
+create policy "tenant_isolation" on part_requirements    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on parts_procurement    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on mechanic_profiles    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
 create policy "tenant_isolation" on predictive_alerts    for all using (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
