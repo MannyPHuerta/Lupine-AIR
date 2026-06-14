@@ -1,12 +1,5 @@
-// Supabase client for data and auth
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+// Import the actual Supabase client
+import { supabase } from './supabaseClient';
 
 // Mock Base44 SDK for platform compatibility (AuthContext.jsx requires this)
 // All actual functionality uses Supabase directly
@@ -44,6 +37,20 @@ export const base44 = {
     }
   },
   entities: {},
-  functions: {},
+  functions: {
+    invoke: async (functionName, params) => {
+      // For Vercel deployment - call via API routes
+      const response = await fetch(`/api/${functionName}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Function invocation failed');
+      }
+      return await response.json();
+    }
+  },
   integrations: {}
 };
