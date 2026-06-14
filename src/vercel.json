@@ -1,13 +1,13 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "vite build",
   "outputDirectory": "dist",
-  "crons": [
-    {
-      "path": "/api/trialLifecycle",
-      "schedule": "0 14 * * *"
-    }
-  ],
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  "devCommand": "vite",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "env": {
+    "VITE_SUPABASE_URL": "@VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY": "@VITE_SUPABASE_ANON_KEY",
+    "VITE_RESEND_API_KEY": "@VITE_RESEND_API_KEY",
+    "VITE_BASE44_APP_ID": "@VITE_BASE44_APP_ID"
+  }
 }
