@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { Loader2, Building2, MapPin, CheckCircle, ChevronRight, ChevronLeft, Zap } from 'lucide-react';
 
 const STEPS = ['Company', 'Branch', 'Plan', 'Done'];
@@ -68,19 +68,30 @@ export default function Onboarding() {
     setLoading(true);
     setError('');
     try {
-      const res = await base44.functions.invoke('provisionTenant', {
-        companyName: companyName.trim(),
-        industry,
-        phone: phone.trim(),
-        branchName: branchName.trim(),
-        invoicePrefix: invoicePrefix.trim().toUpperCase(),
-        branchAddress: branchAddress.trim(),
-        branchPhone: branchPhone.trim(),
-        branchEmail: branchEmail.trim(),
-        planTier,
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not signed in. Please sign in first.');
+
+      const res = await fetch('/api/provisionTenant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          companyName: companyName.trim(),
+          industry,
+          phone: phone.trim(),
+          branchName: branchName.trim(),
+          invoicePrefix: invoicePrefix.trim().toUpperCase(),
+          branchAddress: branchAddress.trim(),
+          branchPhone: branchPhone.trim(),
+          branchEmail: branchEmail.trim(),
+          planTier,
+        }),
       });
 
-      if (res.data?.error) throw new Error(res.data.error);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Provisioning failed');
 
       setStep(3); // Done
     } catch (err) {
