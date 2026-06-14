@@ -17,8 +17,8 @@ export default function AuthCallback() {
         setStatus('Sign-in failed. The link may have expired. Please request a new one.');
         return;
       }
-      // Redirect to ops after successful auth
-      window.location.replace('/ops');
+      const next = new URLSearchParams(window.location.search).get('next') || '/ops';
+      window.location.replace(next);
     });
   }, []);
 
