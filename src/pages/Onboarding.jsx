@@ -93,6 +93,16 @@ export default function Onboarding() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Provisioning failed');
 
+      // If this is a demo signup, seed demo data
+      const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true';
+      if (isDemo) {
+        try {
+          await supabase.functions.invoke('seedDemoData', { body: { branchName: branchName.trim() } });
+        } catch (seedErr) {
+          console.warn('Demo seeding failed:', seedErr);
+        }
+      }
+
       setStep(3); // Done
     } catch (err) {
       setError(err.message);

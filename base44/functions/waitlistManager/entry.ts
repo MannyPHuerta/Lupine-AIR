@@ -153,6 +153,81 @@ Deno.serve(async (req) => {
       return Response.json({ success: true });
     }
 
+    // SEND DEMO LINK — immediate magic link for demo access (before full approval)
+    if (action === 'sendDemoLink') {
+      const { data: entry } = await sb.from('waitlist_entries').select('*').eq('id', entryId).single();
+      if (!entry) return Response.json({ error: 'Entry not found' }, { status: 404 });
+
+      // Generate Supabase magic link
+      let demoLink = 'https://theprojectair.com/signin';
+      try {
+        const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+          type: 'magiclink',
+          email: entry.email,
+          options: { redirectTo: 'https://theprojectair.com/onboarding' },
+        });
+        if (linkErr) console.warn('[waitlistManager] generateLink failed:', linkErr.message);
+        else demoLink = linkData?.properties?.action_link || demoLink;
+      } catch (e) {
+        console.warn('[waitlistManager] generateLink exception:', e.message);
+      }
+
+      // Send demo access email
+      const apiKey = Deno.env.get('RESEND_API_KEY');
+      if (apiKey) {
+        const resend = new Resend(apiKey);
+        await resend.emails.send({
+          from: 'AIR by Lupine <info@theprojectair.com>',
+          to: [entry.email],
+          subject: `🎯 Your AIR demo is ready — start exploring now`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
+              <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+                <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">Your Demo is Ready! 🚀</h1>
+                <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Explore AIR with pre-loaded demo data</p>
+              </div>
+              <div style="padding:32px">
+                <p style="color:#94a3b8;line-height:1.7">Hi ${entry.name || 'there'},</p>
+                <p style="color:#cbd5e1;line-height:1.7">
+                  Your interactive demo of <strong style="color:#0ea5e9">AIR by Lupine</strong> is ready. 
+                  We've pre-loaded sample equipment, customers, and rentals so you can explore immediately.
+                </p>
+                <div style="text-align:center;margin:28px 0">
+                  <a href="${demoLink}"
+                     style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
+                    Start Your Demo →
+                  </a>
+                  <p style="color:#475569;font-size:12px;margin-top:10px">No credit card required. Demo lasts 24 hours.</p>
+                </div>
+                <div style="background:#1e293b;border-radius:10px;padding:20px;margin:20px 0">
+                  <strong style="color:#f1f5f9;display:block;margin-bottom:12px">What you can explore:</strong>
+                  <ul style="color:#94a3b8;margin:0;padding-left:20px;line-height:1.8">
+                    <li>Counter operations & rental creation</li>
+                    <li>Equipment availability calendar</li>
+                    <li>Event planning canvas</li>
+                    <li>AI-powered reports & insights</li>
+                    <li>Delivery dispatch board</li>
+                  </ul>
+                </div>
+                <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
+                  Questions? Reply to this email — we're here.<br/>
+                  <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
+                </p>
+              </div>
+            </div>
+          `,
+        });
+        console.log(`[waitlistManager] Demo link sent to ${entry.email}`);
+      }
+
+      // Mark entry as demo-granted
+      await sb.from('waitlist_entries').update({
+        notes: notes ? `${entry.notes || ''}\n\nDemo link sent: ${new Date().toISOString()}` : `Demo link sent: ${new Date().toISOString()}`,
+      }).eq('id', entryId);
+
+      return Response.json({ success: true });
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
 
   } catch (err) {

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus } from 'lucide-react';
+import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Zap } from 'lucide-react';
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -30,6 +30,7 @@ export default function WaitlistManager() {
   const [trials, setTrials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
 
   const [approveEntry, setApproveEntry] = useState(null);
   const [approveNotes, setApproveNotes] = useState('');
@@ -62,6 +63,11 @@ export default function WaitlistManager() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
+  }, []);
+
   const handleApprove = async () => {
     if (!approveEntry) return;
     setApproving(true);
@@ -81,6 +87,20 @@ export default function WaitlistManager() {
     try {
       await callApi('reject', { entryId: entry.id });
       await loadData();
+    } catch (err) {
+      alert('Failed: ' + err.message);
+    }
+  };
+
+  const handleGrantDemo = async (entry) => {
+    if (!confirm(`Send demo access link to ${entry.name || entry.email}?`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('grantDemoAccess', { 
+        body: { entryId: entry.id, adminEmail: user?.email } 
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      alert('✓ Demo access link sent!');
     } catch (err) {
       alert('Failed: ' + err.message);
     }
@@ -200,6 +220,10 @@ export default function WaitlistManager() {
                     <td className="px-4 py-3 text-right">
                       {entry.status === 'pending' ? (
                         <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="outline" className="text-cyan-700 border-cyan-300 hover:bg-cyan-50 gap-1"
+                            onClick={() => handleGrantDemo(entry)}>
+                            <Zap className="w-3.5 h-3.5" /> Demo
+                          </Button>
                           <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50 gap-1"
                             onClick={() => { setApproveEntry(entry); setApproveNotes(''); }}>
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
