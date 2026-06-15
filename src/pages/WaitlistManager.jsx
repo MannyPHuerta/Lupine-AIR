@@ -46,7 +46,9 @@ export default function WaitlistManager() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...extra }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    if (!text) throw new Error('API returned empty response — this only works on Vercel, not in Base44 preview.');
+    const data = JSON.parse(text);
     if (!res.ok || data?.error) throw new Error(data?.error || 'API call failed');
     return data;
   };
