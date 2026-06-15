@@ -41,26 +41,23 @@ export default function WaitlistManager() {
   const [savingLead, setSavingLead] = useState(false);
 
   const callApi = async (action, extra = {}) => {
-    if (!supabase) throw new Error('Supabase not configured');
-    const { data, error } = await supabase.functions.invoke('waitlistManager', { body: { action, ...extra } });
-    if (error) throw new Error(error.message || 'API call failed');
-    if (data?.error) throw new Error(data.error);
+    const res = await fetch('/api/waitlist-manager', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    const data = await res.json();
+    if (!res.ok || data?.error) throw new Error(data?.error || 'API call failed');
     return data;
   };
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    if (!supabase) {
-      setError('Supabase not configured');
-      setLoading(false);
-      return;
-    }
     try {
-      const res = await supabase.functions.invoke('waitlistManager', { body: { action: 'list' } });
-      if (res.error) throw res.error;
-      setEntries(res.data?.waitlist || []);
-      setTrials(res.data?.trials || []);
+      const data = await callApi('list');
+      setEntries(data?.waitlist || []);
+      setTrials(data?.trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -106,11 +103,13 @@ export default function WaitlistManager() {
       return;
     }
     try {
-      const { data, error } = await supabase.functions.invoke('grantDemoAccess', { 
-        body: { entryId: entry.id, adminEmail: user?.email } 
+      const res = await fetch('/api/grant-demo-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId: entry.id, adminEmail: user?.email }),
       });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+      const data = await res.json();
+      if (!res.ok || data?.error) throw new Error(data?.error || 'Failed');
       alert('✓ Demo access link sent!');
     } catch (err) {
       alert('Failed: ' + err.message);
