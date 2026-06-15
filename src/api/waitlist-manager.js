@@ -6,16 +6,24 @@ import { Resend } from 'resend';
 
 export const config = { runtime: 'nodejs' };
 
-const supabase = () => createClient(
-  (process.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, ''),
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = () => {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  return createClient(url.replace(/\/rest\/v1\/?$/, ''), key);
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  let sb;
+  try {
+    sb = supabase();
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+
   const { action, entryId, notes, lead } = req.body;
-  const sb = supabase();
 
   // LIST
   if (action === 'list') {
