@@ -260,6 +260,7 @@ function App() {
             {/* Onboarding — requires auth but no tenant */}
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/waitlist-public" element={<WaitlistManager />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>
