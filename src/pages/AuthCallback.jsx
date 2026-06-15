@@ -11,15 +11,34 @@ export default function AuthCallback() {
       return;
     }
 
-    // Supabase puts tokens in the URL hash — getSession() picks them up automatically
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error || !session) {
-        setStatus('Sign-in failed. The link may have expired. Please request a new one.');
-        return;
-      }
-      const next = new URLSearchParams(window.location.search).get('next') || '/ops';
-      window.location.replace(next);
-    });
+    // Magic links put tokens in the URL hash fragment.
+    // exchangeCodeForSession handles both PKCE code params and hash tokens.
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    if (accessToken) {
+      // Hash-based magic link — set session directly
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
+        .then(({ error }) => {
+          if (error) {
+            setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+            return;
+          }
+          const next = new URLSearchParams(window.location.search).get('next') || '/ops';
+          window.location.replace(next);
+        });
+    } else {
+      // PKCE / OTP code flow fallback
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error || !session) {
+          setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+          return;
+        }
+        const next = new URLSearchParams(window.location.search).get('next') || '/ops';
+        window.location.replace(next);
+      });
+    }
   }, []);
 
   return (

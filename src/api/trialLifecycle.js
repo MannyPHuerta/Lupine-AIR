@@ -5,11 +5,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+export const config = { runtime: 'nodejs' };
+
 export default async function handler(req, res) {
-  // Vercel cron jobs send a secret header for security
-  const cronSecret = req.headers['x-cron-secret'] || req.headers.authorization;
-  if (process.env.CRON_SECRET && cronSecret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  // Vercel cron jobs inject Authorization: Bearer <CRON_SECRET>
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const auth = req.headers.authorization;
+    if (auth !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
   }
 
   const supabase = createClient(

@@ -4,6 +4,12 @@
   "devCommand": "vite",
   "installCommand": "npm install",
   "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/trialLifecycle",
+      "schedule": "0 14 * * *"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -22,6 +28,7 @@
     "SUPABASE_URL": "@SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY": "@SUPABASE_SERVICE_ROLE_KEY",
     "RESEND_API_KEY": "@RESEND_API_KEY",
+    "CRON_SECRET": "@CRON_SECRET",
     "BASE_URL": "https://theprojectair.com"
   }
 }
