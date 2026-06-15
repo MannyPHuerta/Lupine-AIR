@@ -112,9 +112,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({ 
       success: true, 
-      message: 'Magic link sent successfully',
-      // In production, don't return the link - only for debugging
-      debugLink: process.env.NODE_ENV === 'development' ? magicLink : undefined
+      message: 'Magic link sent successfully'
     });
   } catch (error) {
     console.error('[sendMagicLink] Error:', error);
