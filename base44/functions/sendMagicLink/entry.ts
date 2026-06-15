@@ -13,13 +13,14 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const supabase = createClientFromRequest(req).asServiceRole;
     
+    const redirectUrl = Deno.env.get('BASE_URL') || 'https://theprojectair.com';
     const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
-      options: { redirectTo: 'https://theprojectair.com/auth/callback' },
+      options: { redirectTo: `${redirectUrl}/auth/callback` },
     });
     
-    const magicLink = linkData?.properties?.action_link || 'https://theprojectair.com/signin';
+    const magicLink = linkData?.properties?.action_link || `${redirectUrl}/signin`;
     if (linkErr) console.warn('[sendMagicLink] generateLink failed:', linkErr.message);
     
     // Send email via Resend
