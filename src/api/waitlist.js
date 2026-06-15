@@ -23,21 +23,22 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Email is required' });
   }
 
-  // Fall back to VITE_ prefixed vars since those are what's set in the environment
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-  console.log('[Waitlist] Supabase URL resolved:', supabaseUrl);
-  console.log('[Waitlist] Supabase Key present:', !!supabaseKey);
-  console.log('[Waitlist] SUPABASE_URL env:', process.env.SUPABASE_URL?.slice(0, 40));
-  console.log('[Waitlist] VITE_SUPABASE_URL env:', process.env.VITE_SUPABASE_URL?.slice(0, 40));
+  console.log('[Waitlist] SUPABASE_URL:', supabaseUrl?.slice(0, 40) || 'MISSING');
+  console.log('[Waitlist] Service key present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+  console.log('[Waitlist] Anon key fallback:', !process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.SUPABASE_ANON_KEY);
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[Waitlist] Missing Supabase config — URL:', supabaseUrl, 'Key:', !!supabaseKey);
+    return res.status(500).json({ error: 'Server misconfiguration: missing Supabase credentials' });
+  }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   // Store in Supabase
   console.log('[Waitlist] Inserting into Supabase...');
-  console.log('[Waitlist] Supabase URL:', process.env.SUPABASE_URL);
-  console.log('[Waitlist] Supabase Key present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
   
   const { data: insertData, error: dbError } = await supabase
     .from('waitlist_entries')
