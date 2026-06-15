@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 import { createClient } from '@supabase/supabase-js';
 
 export const config = {
@@ -13,50 +12,33 @@ export default async function handler(req, res) {
   
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
   
   // Only allow POST
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Parse body manually for Vercel compatibility
-    let body = '';
-    for await (const chunk of req) {
-      body += chunk;
-    }
-    
-    let data;
-    try {
-      data = JSON.parse(body);
-    } catch (e) {
-      res.status(400).json({ error: 'Invalid JSON' });
-      return;
-    }
-    
-    const { email } = data;
+    // Vercel automatically parses JSON body for Node.js runtime
+    const { email } = req.body;
     
     if (!email || typeof email !== 'string' || !email.includes('@')) {
-      res.status(400).json({ error: 'Invalid email address' });
-      return;
+      return res.status(400).json({ error: 'Invalid email address' });
     }
 
     console.log('[sendMagicLink] Processing request for:', email);
     
     // Initialize Supabase client with service role key
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const baseUrl = process.env.BASE_URL || 'https://theprojectair.com';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    const baseUrl = Deno.env.get('BASE_URL') || 'https://theprojectair.com';
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('[sendMagicLink] Missing Supabase credentials');
-      res.status(500).json({ error: 'Server configuration error' });
-      return;
+      return res.status(500).json({ error: 'Server configuration error' });
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -72,8 +54,7 @@ export default async function handler(req, res) {
     
     if (linkError) {
       console.error('[sendMagicLink] Supabase error:', linkError);
-      res.status(500).json({ error: linkError.message });
-      return;
+      return res.status(500).json({ error: linkError.message });
     }
     
     const magicLink = linkData.properties?.action_link;
@@ -124,12 +105,12 @@ export default async function handler(req, res) {
       console.warn('[sendMagicLink] Resend API key not configured, skipping email');
     }
 
-    res.status(200).json({ 
+    return res.status(200).json({ 
       success: true, 
       message: 'Magic link sent successfully'
     });
   } catch (error) {
     console.error('[sendMagicLink] Error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
