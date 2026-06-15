@@ -3,7 +3,21 @@
   "outputDirectory": "dist",
   "devCommand": "vite",
   "installCommand": "npm install",
-  "framework": "vite",
+  "functions": {
+    "src/api/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/src/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "crons": [
     {
       "path": "/api/trialLifecycle",
