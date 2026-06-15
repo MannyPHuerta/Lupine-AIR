@@ -33,13 +33,17 @@ export default function SignIn() {
     if (!supabase) { setError('Not available in preview mode.'); return; }
     setLoading(true);
     setError('');
-    const { error: mlError } = await supabase.auth.signInWithOtp({
-      email
-    });
-    if (mlError) {
-      setError(mlError.message);
-    } else {
+    try {
+      const response = await fetch('/api/sendMagicLink', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
       setMagicSent(true);
+    } catch (err) {
+      setError(err.message || 'Failed to send magic link');
     }
     setLoading(false);
   };
