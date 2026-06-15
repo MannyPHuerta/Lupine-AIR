@@ -1,76 +1,85 @@
 // @ts-check
-// Vercel serverless function — Node.js + Supabase + Resend
+// Vercel serverless function — Node.js, uses raw fetch (no SDK dependency issues)
 /* global process */
-import { createClient } from '@supabase/supabase-js';
 
 export const config = {
   runtime: 'nodejs',
 };
 
 export default async function handler(req, res) {
-  console.log('[api/waitlist] Received request:', req.method, req.body);
-  
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   if (req.method !== 'POST') {
-    console.error('[api/waitlist] Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, company, branches, name, phone } = req.body;
-  console.log('[api/waitlist] Payload:', { email, company, branches, name, phone });
-  
+  const { email, company, branches, name, phone } = req.body || {};
+  console.log('[waitlist] payload:', { name, email, phone, company, branches });
+
   if (!email) {
-    console.error('[api/waitlist] Email is required');
     return res.status(400).json({ error: 'Email is required' });
   }
 
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-  console.log('[Waitlist] SUPABASE_URL:', supabaseUrl?.slice(0, 40) || 'MISSING');
-  console.log('[Waitlist] Service key present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-  console.log('[Waitlist] Anon key fallback:', !process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.SUPABASE_ANON_KEY);
+  console.log('[waitlist] supabaseUrl:', supabaseUrl?.slice(0, 50) || 'MISSING');
+  console.log('[waitlist] serviceKey present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('[Waitlist] Missing Supabase config — URL:', supabaseUrl, 'Key:', !!supabaseKey);
+    console.error('[waitlist] Missing Supabase config');
     return res.status(500).json({ error: 'Server misconfiguration: missing Supabase credentials' });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  // Use raw fetch to avoid any package resolution issues
+  console.log('[waitlist] Inserting into Supabase via REST...');
+  const insertRes = await fetch(`${supabaseUrl}/rest/v1/waitlist_entries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Prefer': 'return=representation',
+    },
+    body: JSON.stringify({ name, email, phone, company, branches, status: 'pending' }),
+  });
 
-  // Store in Supabase
-  console.log('[Waitlist] Inserting into Supabase...');
-  
-  const { data: insertData, error: dbError } = await supabase
-    .from('waitlist_entries')
-    .insert({ name, email, phone, company, branches, status: 'pending' })
-    .select();
+  const insertText = await insertRes.text();
+  console.log('[waitlist] Supabase insert status:', insertRes.status);
+  console.log('[waitlist] Supabase insert body:', insertText);
 
-  if (dbError) {
-    // Unique constraint violation — email already on waitlist, treat as success
-    if (dbError.code === '23505') {
-      console.log('[Waitlist] Duplicate email, treating as success:', email);
+  let insertData = null;
+  try { insertData = JSON.parse(insertText); } catch (_) { /* raw error */ }
+
+  if (!insertRes.ok) {
+    // Unique constraint violation (409 or code 23505) — treat as success
+    const isConflict = insertRes.status === 409 || (insertData?.code === '23505') || insertText.includes('23505');
+    if (isConflict) {
+      console.log('[waitlist] Duplicate email, treating as success:', email);
       return res.status(200).json({ success: true, duplicate: true });
     }
-    console.error('[Waitlist] DB insert failed:', JSON.stringify(dbError, null, 2));
-    return res.status(500).json({ error: dbError.message, details: dbError, hint: 'Check Supabase table schema and RLS policies' });
+    console.error('[waitlist] DB insert failed:', insertText);
+    return res.status(500).json({ error: 'Database insert failed', details: insertText });
   }
-  console.log('[Waitlist] DB insert success:', JSON.stringify(insertData, null, 2));
-  console.log('[Waitlist] Inserted ID:', insertData?.[0]?.id);
 
+  const entryId = Array.isArray(insertData) ? insertData[0]?.id : insertData?.id;
+  console.log('[waitlist] Insert success, entryId:', entryId);
+
+  // Send emails via Resend
   const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
   if (!apiKey) {
-    console.error('[Waitlist] RESEND_API_KEY not configured — skipping email, returning success anyway');
-    return res.status(200).json({ success: true, entryId: insertData?.[0]?.id, warning: 'Email not sent: RESEND_API_KEY missing' });
+    console.warn('[waitlist] No RESEND_API_KEY — skipping emails');
+    return res.status(200).json({ success: true, entryId });
   }
 
-  const send = async (payload) => {
-    const r = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    return r.json();
-  };
+  const send = (payload) => fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(r => r.json());
 
   const [adminResult, confirmResult] = await Promise.all([
     send({
@@ -89,47 +98,37 @@ export default async function handler(req, res) {
             <tr><td style="padding:8px;font-weight:bold;color:#555">Branches</td><td style="padding:8px">${branches || '—'}</td></tr>
             <tr style="background:#f9f9f9"><td style="padding:8px;font-weight:bold;color:#555">Submitted</td><td style="padding:8px">${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} CST</td></tr>
           </table>
-          <p style="color:#888;font-size:12px;margin-top:16px">Reply to reach ${name || 'submitter'} at ${email}.</p>
         </div>
       `,
     }),
     send({
       from: 'AIR Waitlist <info@theprojectair.com>',
       to: [email],
-      subject: '🚀 You\'re in — AIR early access confirmed',
+      subject: "🚀 You're in — AIR early access confirmed",
       html: `
         <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
           <h2 style="color:#0ea5e9">Welcome to the AIR early access list! 🎉</h2>
           <p style="color:#555;line-height:1.6">Hi ${name || 'there'},</p>
-          <p style="color:#555;line-height:1.6">You're in — and you picked the right time. Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed. No surprise bills, no per-user seats, just one price per branch.</p>
+          <p style="color:#555;line-height:1.6">You're in. Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed.</p>
           <div style="background:#0ea5e9;color:white;padding:20px;border-radius:8px;margin:24px 0;text-align:center">
             <p style="margin:0;font-size:14px"><strong>What you're getting:</strong></p>
             <p style="margin:12px 0 0 0;font-weight:bold;font-size:18px">AIRental + AIREvents + AIReports + more</p>
             <p style="margin:8px 0 0 0;font-size:13px;opacity:0.9">14-day free trial. Full Pro access. No credit card required.</p>
           </div>
-          <p style="color:#555;line-height:1.6"><strong>Here's what happens next:</strong></p>
+          <p style="color:#555;line-height:1.6"><strong>What happens next:</strong></p>
           <ol style="color:#555;line-height:1.8">
-            <li>We'll reach out within 2 business days to schedule a personalized 30-min demo</li>
-            <li>See your rental operation on the AIR platform — with YOUR data</li>
+            <li>We'll reach out within 2 business days to schedule a personalized demo</li>
+            <li>See your rental operation on AIR — with YOUR data</li>
             <li>Ask any questions; we'll handle setup</li>
           </ol>
-          <div style="background:#f9f9f9;padding:16px;border-radius:8px;margin:20px 0">
-            <p style="color:#555;margin:0;font-size:13px"><strong>We have your info:</strong></p>
-            <p style="color:#888;margin:8px 0 0 0;font-size:13px">Company: <strong>${company || 'N/A'}</strong> · Branches: <strong>${branches || 'N/A'}</strong></p>
-          </div>
-          <p style="color:#888;font-size:12px;margin-top:24px;border-top:1px solid #ddd;padding-top:16px">Questions or want to move faster? Hit reply — we'll get back to you within a few hours.</p>
+          <p style="color:#888;font-size:12px;margin-top:24px;border-top:1px solid #ddd;padding-top:16px">Questions? Hit reply — we'll get back to you within a few hours.</p>
         </div>
       `,
     }),
   ]);
 
-  console.log('[Waitlist] Admin email result:', adminResult);
-  console.log('[Waitlist] Confirmation email result:', confirmResult);
-  
-  if (adminResult.error || confirmResult.error) {
-    console.error('[Waitlist] Email send failed (non-fatal):', adminResult.error || confirmResult.error);
-  }
+  console.log('[waitlist] Admin email:', adminResult?.id || adminResult?.error);
+  console.log('[waitlist] Confirm email:', confirmResult?.id || confirmResult?.error);
 
-  console.log('[Waitlist] Success!');
-  return res.status(200).json({ success: true, entryId: insertData?.[0]?.id });
+  return res.status(200).json({ success: true, entryId });
 }
