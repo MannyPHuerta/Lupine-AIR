@@ -11,13 +11,25 @@ export default function AuthCallback() {
       return;
     }
 
-    // Magic links put tokens in the URL hash fragment.
-    // exchangeCodeForSession handles both PKCE code params and hash tokens.
+    const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+
+    const code = searchParams.get('code');
     const accessToken = hashParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token');
+    const next = searchParams.get('next') || '/ops';
 
-    if (accessToken) {
+    if (code) {
+      // PKCE code flow — exchange code for session
+      supabase.auth.exchangeCodeForSession(code)
+        .then(({ error }) => {
+          if (error) {
+            setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+            return;
+          }
+          window.location.replace(next);
+        });
+    } else if (accessToken) {
       // Hash-based magic link — set session directly
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
         .then(({ error }) => {
@@ -25,19 +37,10 @@ export default function AuthCallback() {
             setStatus('Sign-in failed. The link may have expired. Please request a new one.');
             return;
           }
-          const next = new URLSearchParams(window.location.search).get('next') || '/ops';
           window.location.replace(next);
         });
     } else {
-      // PKCE / OTP code flow fallback
-      supabase.auth.getSession().then(({ data: { session }, error }) => {
-        if (error || !session) {
-          setStatus('Sign-in failed. The link may have expired. Please request a new one.');
-          return;
-        }
-        const next = new URLSearchParams(window.location.search).get('next') || '/ops';
-        window.location.replace(next);
-      });
+      setStatus('Sign-in failed. The link may have expired. Please request a new one.');
     }
   }, []);
 
