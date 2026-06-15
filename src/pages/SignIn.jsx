@@ -30,17 +30,32 @@ export default function SignIn() {
 
   const handleMagicLink = async () => {
     if (!email) { setError('Enter your email first.'); return; }
-    if (!supabase) { setError('Not available in preview mode.'); return; }
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/sendMagicLink', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const result = await response.json();
-      if (result.error) throw new Error(result.error);
+      // Determine if we're in Vercel production or Base44 preview
+      const isVercel = window.location.hostname === 'theprojectair.com';
+      
+      if (isVercel) {
+        // Vercel production - use API route
+        const response = await fetch('/api/sendMagicLink', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+      } else {
+        // Base44 preview - call backend function directly
+        const appId = import.meta.env.VITE_BASE44_APP_ID || 'preview';
+        const response = await fetch(`https://dev.base44.com/api/apps/${appId}/functions/sendMagicLink`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+      }
       setMagicSent(true);
     } catch (err) {
       setError(err.message || 'Failed to send magic link');
