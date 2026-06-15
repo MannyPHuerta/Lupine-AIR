@@ -4,6 +4,16 @@
   "devCommand": "vite",
   "installCommand": "npm install",
   "framework": "vite",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
   "env": {
     "VITE_SUPABASE_URL": "@VITE_SUPABASE_URL",
     "VITE_SUPABASE_ANON_KEY": "@VITE_SUPABASE_ANON_KEY",
