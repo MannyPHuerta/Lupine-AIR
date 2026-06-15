@@ -24,7 +24,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email } = req.body;
+    // Parse body manually for Vercel compatibility
+    let body = '';
+    for await (const chunk of req) {
+      body += chunk;
+    }
+    
+    let data;
+    try {
+      data = JSON.parse(body);
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid JSON' });
+      return;
+    }
+    
+    const { email } = data;
     
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       res.status(400).json({ error: 'Invalid email address' });
