@@ -2,10 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/api/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Zap } from 'lucide-react';
+
+// Use anon key client-side — RLS must allow admin reads, or use service role via API for mutations
+const SUPABASE_URL = 'https://esckfcvxmbuhimmseqtb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzY2tmY3Z4bWJ1aGltbXNlcXRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NDQ0NzAsImV4cCI6MjA5NjAyMDQ3MH0.NXE9IViDMlCPUT_9ybFdaeV3AVqkAhUeRCWpmcf5WUY';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -30,7 +35,7 @@ export default function WaitlistManager() {
   const [trials, setTrials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
+
 
   const [approveEntry, setApproveEntry] = useState(null);
   const [approveNotes, setApproveNotes] = useState('');
@@ -47,7 +52,7 @@ export default function WaitlistManager() {
       body: JSON.stringify({ action, ...extra }),
     });
     const text = await res.text();
-    if (!text) throw new Error('API returned empty response — this only works on Vercel, not in Base44 preview.');
+    if (!text) throw new Error('API returned empty response — check Vercel function logs.');
     const data = JSON.parse(text);
     if (!res.ok || data?.error) throw new Error(data?.error || 'API call failed');
     return data;
@@ -57,9 +62,14 @@ export default function WaitlistManager() {
     setLoading(true);
     setError(null);
     try {
-      const data = await callApi('list');
-      setEntries(data?.waitlist || []);
-      setTrials(data?.trials || []);
+      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
+        sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
+        sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
+      ]);
+      if (wErr) throw new Error(wErr.message);
+      if (tErr) throw new Error(tErr.message);
+      setEntries(waitlist || []);
+      setTrials(trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -68,11 +78,7 @@ export default function WaitlistManager() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Get current user
-  useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
-  }, []);
+
 
   const handleApprove = async () => {
     if (!approveEntry) return;
@@ -100,15 +106,11 @@ export default function WaitlistManager() {
 
   const handleGrantDemo = async (entry) => {
     if (!confirm(`Send demo access link to ${entry.name || entry.email}?`)) return;
-    if (!supabase) {
-      alert('Supabase not configured');
-      return;
-    }
     try {
       const res = await fetch('/api/grant-demo-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entryId: entry.id, adminEmail: user?.email }),
+        body: JSON.stringify({ entryId: entry.id }),
       });
       const data = await res.json();
       if (!res.ok || data?.error) throw new Error(data?.error || 'Failed');
