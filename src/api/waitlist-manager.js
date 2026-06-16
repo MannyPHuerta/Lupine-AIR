@@ -2,142 +2,181 @@
 // Vercel serverless function — Waitlist admin operations
 /* global process */
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
 
-export const config = { runtime: 'nodejs' };
-
-const supabase = () => {
+const getSupabase = () => {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  return createClient(url.replace(/\/rest\/v1\/?$/, ''), key);
+  return createClient(url.replace(/\/rest\/v1\/?$/, ''), key, { auth: { persistSession: false } });
 };
 
+const sendEmail = (apiKey, payload) =>
+  fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(r => r.json()).catch(e => console.warn('[waitlist-manager] email fetch error:', e.message));
+
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  let sb;
   try {
-    sb = supabase();
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
+    const sb = getSupabase();
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const { action, entryId, notes, lead } = body;
 
-  const { action, entryId, notes, lead } = req.body;
+    // LIST
+    if (action === 'list') {
+      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
+        sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
+        sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
+      ]);
+      if (wErr) return res.status(500).json({ error: wErr.message });
+      if (tErr) return res.status(500).json({ error: tErr.message });
+      return res.status(200).json({ waitlist: waitlist || [], trials: trials || [] });
+    }
 
-  // LIST
-  if (action === 'list') {
-    const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
-      sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-      sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
-    ]);
-    if (wErr) return res.status(500).json({ error: wErr.message });
-    if (tErr) return res.status(500).json({ error: tErr.message });
-    return res.status(200).json({ waitlist: waitlist || [], trials: trials || [] });
-  }
+    // REJECT
+    if (action === 'reject') {
+      const { error } = await sb.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entryId);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
+    }
 
-  // REJECT
-  if (action === 'reject') {
-    const { error } = await sb.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entryId);
-    if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ success: true });
-  }
+    // APPROVE
+    if (action === 'approve') {
+      const { data: entry, error: fetchErr } = await sb
+        .from('waitlist_entries').select('*').eq('id', entryId).single();
+      if (fetchErr || !entry) return res.status(404).json({ error: 'Entry not found', details: fetchErr?.message });
 
-  // APPROVE
-  if (action === 'approve') {
-    const { data: entry, error: fetchErr } = await sb.from('waitlist_entries').select('*').eq('id', entryId).single();
-    if (fetchErr || !entry) return res.status(404).json({ error: 'Entry not found' });
+      const now = new Date();
+      const toDate = (d) => d.toISOString().split('T')[0];
+      const trialEndsAt = new Date(now); trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+      const lockoutDate = new Date(now); lockoutDate.setDate(lockoutDate.getDate() + 30);
 
-    const now = new Date();
-    const toDate = (d) => d.toISOString().split('T')[0];
-    const trialEndsAt = new Date(now); trialEndsAt.setDate(trialEndsAt.getDate() + 14);
-    const lockoutDate = new Date(now); lockoutDate.setDate(lockoutDate.getDate() + 30);
-
-    const { error: trialErr } = await sb.from('subscriber_trials').insert({
-      email: entry.email,
-      company_name: entry.company,
-      contact_name: entry.name,
-      phone: entry.phone,
-      branches: entry.branches,
-      status: 'invited',
-      plan_tier: 'pro',
-      trial_start_date: toDate(now),
-      trial_ends_at: toDate(trialEndsAt),
-      lockout_date: toDate(lockoutDate),
-      notes: notes || null,
-    });
-    if (trialErr) return res.status(500).json({ error: trialErr.message });
-
-    await sb.from('waitlist_entries').update({
-      status: 'approved',
-      approved_at: now.toISOString(),
-      notes: notes || null,
-    }).eq('id', entryId);
-
-    // Generate magic link
-    let signInLink = 'https://theprojectair.com/signin';
-    try {
-      const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
-        type: 'magiclink',
+      const { error: trialErr } = await sb.from('subscriber_trials').insert({
         email: entry.email,
-        options: { redirectTo: 'https://theprojectair.com/ops' },
+        company_name: entry.company,
+        contact_name: entry.name,
+        phone: entry.phone,
+        branches: entry.branches,
+        status: 'invited',
+        plan_tier: 'pro',
+        trial_start_date: toDate(now),
+        trial_ends_at: toDate(trialEndsAt),
+        lockout_date: toDate(lockoutDate),
+        notes: notes || null,
       });
-      if (!linkErr) signInLink = linkData?.properties?.action_link || signInLink;
-    } catch (e) {
-      console.warn('[waitlist-manager] generateLink failed:', e.message);
+      if (trialErr) return res.status(500).json({
+        error: 'subscriber_trials insert failed: ' + trialErr.message,
+        code: trialErr.code,
+        details: trialErr.details,
+      });
+
+      await sb.from('waitlist_entries').update({
+        status: 'approved',
+        approved_at: now.toISOString(),
+        notes: notes || null,
+      }).eq('id', entryId);
+
+      // Ensure user exists in auth.users, then generate a magic link
+      let signInLink = 'https://theprojectair.com/signin';
+      try {
+        // createUser is idempotent — safe to call even if user already exists
+        const createResult = await sb.auth.admin.createUser({ email: entry.email, email_confirm: true });
+        console.log('[waitlist-manager] createUser result:', JSON.stringify(createResult?.error || 'ok'));
+
+        const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+          type: 'magiclink',
+          email: entry.email,
+          options: { redirectTo: 'https://theprojectair.com/ops' },
+        });
+        console.log('[waitlist-manager] generateLink result:', JSON.stringify({ linkData, linkErr }));
+        const actionLink = linkData?.properties?.action_link;
+        if (!linkErr && actionLink) {
+          signInLink = actionLink;
+        } else {
+          console.warn('[waitlist-manager] no action_link — linkErr:', JSON.stringify(linkErr));
+        }
+      } catch (e) {
+        console.warn('[waitlist-manager] generateLink exception:', e.message);
+      }
+
+      console.log('[waitlist-manager] final signInLink:', signInLink);
+
+      // Send welcome email via Resend fetch (no npm package needed)
+      const apiKey = process.env.RESEND_API_KEY;
+      console.log('[waitlist-manager] RESEND_API_KEY present:', !!apiKey);
+
+      let emailResult = null;
+      if (!apiKey) {
+        console.warn('[waitlist-manager] RESEND_API_KEY not set — skipping email');
+      } else {
+        emailResult = await sendEmail(apiKey, {
+          from: 'AIR by Lupine <info@theprojectair.com>',
+          to: [entry.email],
+          subject: `🎉 Your AIR trial is approved — sign in to get started`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
+              <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+                <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in! 🚀</h1>
+                <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Your AIR early access has been approved</p>
+              </div>
+              <div style="padding:32px">
+                <p style="color:#94a3b8;line-height:1.7">Hi ${entry.name || 'there'},</p>
+                <p style="color:#cbd5e1;line-height:1.7">
+                  Your early access request for <strong style="color:#0ea5e9">AIR by Lupine</strong> has been approved.
+                  Click the button below to sign in — no password needed.
+                </p>
+                <div style="text-align:center;margin:28px 0">
+                  <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
+                    Sign In to AIR →
+                  </a>
+                  <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
+                  <p style="color:#475569;font-size:10px;margin-top:6px;word-break:break-all">Debug link: ${signInLink}</p>
+                </div>
+                <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
+                  <strong style="color:#94a3b8">Your trial summary:</strong><br/>
+                  Company: ${entry.company || 'N/A'}<br/>
+                  Full Pro access until: ${toDate(trialEndsAt)}<br/>
+                  Account pauses on: ${toDate(lockoutDate)}
+                </div>
+                <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
+                  Questions? Reply to this email — we're here.<br/>
+                  <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
+                </p>
+              </div>
+            </div>
+          `,
+        });
+        console.log('[waitlist-manager] Resend response:', JSON.stringify(emailResult));
+      }
+
+      return res.status(200).json({
+        success: true,
+        emailSent: !!emailResult?.id,
+        emailResult,
+        signInLink,
+        hasApiKey: !!apiKey,
+      });
     }
 
-    // Send welcome email
-    const apiKey = process.env.RESEND_API_KEY;
-    if (apiKey) {
-      const resend = new Resend(apiKey);
-      await resend.emails.send({
-        from: 'AIR by Lupine <info@theprojectair.com>',
-        to: [entry.email],
-        subject: `🎉 Your AIR trial is approved — sign in to get started`,
-        html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
-            <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
-              <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in! 🚀</h1>
-              <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Your AIR early access has been approved</p>
-            </div>
-            <div style="padding:32px">
-              <p style="color:#94a3b8;line-height:1.7">Hi ${entry.name || 'there'},</p>
-              <p style="color:#cbd5e1;line-height:1.7">
-                Your early access request for <strong style="color:#0ea5e9">AIR by Lupine</strong> has been approved.
-                Click the button below to sign in — no password needed.
-              </p>
-              <div style="text-align:center;margin:28px 0">
-                <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
-                  Sign In to AIR →
-                </a>
-                <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
-              </div>
-              <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
-                <strong style="color:#94a3b8">Your trial summary:</strong><br/>
-                Company: ${entry.company || 'N/A'}<br/>
-                Full Pro access until: ${toDate(trialEndsAt)}<br/>
-                Account pauses on: ${toDate(lockoutDate)}
-              </div>
-              <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
-                Questions? Reply to this email — we're here.<br/>
-                <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
-              </p>
-            </div>
-          </div>
-        `,
-      });
+    // ADD LEAD
+    if (action === 'addLead') {
+      const { error } = await sb.from('waitlist_entries').insert({ ...(lead || {}), status: 'pending' });
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
     }
 
-    return res.status(200).json({ success: true });
-  }
+    return res.status(400).json({ error: 'Unknown action: ' + action });
 
-  // ADD LEAD
-  if (action === 'addLead') {
-    const { error } = await sb.from('waitlist_entries').insert({ ...(lead || {}), status: 'pending' });
-    if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ success: true });
+  } catch (e) {
+    console.error('[waitlist-manager] unhandled:', e);
+    return res.status(500).json({ error: e.message || 'Unhandled server error' });
   }
-
-  return res.status(400).json({ error: 'Unknown action' });
 }
