@@ -2,15 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { createClient } from '@supabase/supabase-js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Zap } from 'lucide-react';
-
-// Use anon key client-side — RLS must allow admin reads, or use service role via API for mutations
-const SUPABASE_URL = 'https://esckfcvxmbuhimmseqtb.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzY2tmY3Z4bWJ1aGltbXNlcXRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NDQ0NzAsImV4cCI6MjA5NjAyMDQ3MH0.NXE9IViDMlCPUT_9ybFdaeV3AVqkAhUeRCWpmcf5WUY';
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -62,14 +56,9 @@ export default function WaitlistManager() {
     setLoading(true);
     setError(null);
     try {
-      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
-        sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-        sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
-      ]);
-      if (wErr) throw new Error(wErr.message);
-      if (tErr) throw new Error(tErr.message);
-      setEntries(waitlist || []);
-      setTrials(trials || []);
+      const data = await callApi('list');
+      setEntries(data.waitlist || []);
+      setTrials(data.trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
