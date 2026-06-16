@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase as sb } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -42,18 +41,24 @@ export default function WaitlistManager() {
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
 
+  const apiPost = async (action, body = {}) => {
+    const res = await fetch('/api/waitlist-manager', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...body }),
+    });
+    const data = await res.json();
+    if (!res.ok || data?.error) throw new Error(data?.error || `Request failed (${res.status})`);
+    return data;
+  };
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
-        sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-        sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
-      ]);
-      if (wErr) throw new Error(wErr.message);
-      if (tErr) throw new Error(tErr.message);
-      setEntries(waitlist || []);
-      setTrials(trials || []);
+      const data = await apiPost('list');
+      setEntries(data.waitlist || []);
+      setTrials(data.trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -87,8 +92,7 @@ export default function WaitlistManager() {
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
     try {
-      const { error } = await sb.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entry.id);
-      if (error) throw new Error(error.message);
+      await apiPost('reject', { entryId: entry.id });
       await loadData();
     } catch (err) {
       alert('Failed: ' + err.message);
@@ -115,8 +119,7 @@ export default function WaitlistManager() {
     if (!newLead.email) return alert('Email is required');
     setSavingLead(true);
     try {
-      const { error } = await sb.from('waitlist_entries').insert({ ...newLead, status: 'pending' });
-      if (error) throw new Error(error.message);
+      await apiPost('addLead', { lead: newLead });
       setShowAddLead(false);
       setNewLead(EMPTY_LEAD);
       await loadData();
