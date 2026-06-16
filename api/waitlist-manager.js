@@ -92,7 +92,16 @@ export default async function handler(req, res) {
           email: entry.email,
           options: { redirectTo: 'https://theprojectair.com/ops' },
         });
-        if (!linkErr) signInLink = linkData?.properties?.action_link || signInLink;
+        console.log('[waitlist-manager] generateLink result:', JSON.stringify({ linkData, linkErr }));
+        const actionLink = linkData?.properties?.action_link
+          || linkData?.action_link
+          || linkData?.hashed_token;
+        if (!linkErr && actionLink) {
+          // If it's just a token, build the full URL
+          signInLink = actionLink.startsWith('http')
+            ? actionLink
+            : `https://theprojectair.com/auth/confirm?token_hash=${actionLink}&type=magiclink&next=/ops`;
+        }
       } catch (e) {
         console.warn('[waitlist-manager] generateLink failed:', e.message);
       }
