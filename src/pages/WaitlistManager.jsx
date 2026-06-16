@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { format } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Zap } from 'lucide-react';
 
-
+const API_BASE = 'https://theprojectair.com';
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -32,7 +32,6 @@ export default function WaitlistManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
   const [approveEntry, setApproveEntry] = useState(null);
   const [approveNotes, setApproveNotes] = useState('');
   const [approving, setApproving] = useState(false);
@@ -40,8 +39,6 @@ export default function WaitlistManager() {
   const [showAddLead, setShowAddLead] = useState(false);
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
-
-  const API_BASE = 'https://theprojectair.com';
 
   const apiPost = async (action, body = {}) => {
     const res = await fetch(`${API_BASE}/api/waitlist-manager`, {
@@ -69,19 +66,11 @@ export default function WaitlistManager() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-
-
   const handleApprove = async () => {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/approve-entry`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entryId: approveEntry.id, notes: approveNotes }),
-      });
-      const data = await res.json();
-      if (!res.ok || data?.error) throw new Error(data?.error || 'Approval failed');
+      await apiPost('approve', { entryId: approveEntry.id, notes: approveNotes });
       await loadData();
       setApproveEntry(null);
       setApproveNotes('');
