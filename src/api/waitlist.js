@@ -2,23 +2,6 @@
 /* global process */
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-console.log('[waitlist] Supabase config:', {
-  url_length: supabaseUrl?.length,
-  key_length: supabaseKey?.length,
-  url_starts: supabaseUrl?.slice(0, 8)
-});
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('[waitlist] MISSING SUPABASE CREDENTIALS');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false }
-});
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -27,12 +10,21 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Debug: log env var presence (not values)
-  console.log('[waitlist] ENV check:', {
-    has_SUPABASE_URL: !!process.env.SUPABASE_URL,
-    has_SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    has_RESEND_API_KEY: !!process.env.RESEND_API_KEY,
-    url_preview: process.env.SUPABASE_URL?.slice(0, 20) + '...'
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  // Return env diagnostics if creds missing — helps debug deployment
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({
+      error: 'Missing Supabase credentials',
+      has_url: !!supabaseUrl,
+      has_key: !!supabaseKey,
+      build_timestamp: '2026-06-16-v2',
+    });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
   });
 
   try {
@@ -48,49 +40,32 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid email required' });
     }
 
-    console.log('[waitlist] Attempting insert for:', email);
-    
-    const insertPayload = {
-      email,
-      name:     name     || null,
-      company:  company  || null,
-      phone:    phone    || null,
-      branches: branches || null,
-      notes:    notes    || null,
-      status: 'pending',
-    };
-    console.log('[waitlist] Insert payload:', JSON.stringify(insertPayload));
-    
-    const result = await supabase
+    const { data, error } = await supabase
       .from('waitlist_entries')
-      .insert(insertPayload)
+      .insert({
+        email,
+        name:     name     || null,
+        company:  company  || null,
+        phone:    phone    || null,
+        branches: branches || null,
+        notes:    notes    || null,
+        status: 'pending',
+      })
       .select()
       .single();
-    
-    console.log('[waitlist] Supabase result:', JSON.stringify({
-      has_data: !!result.data,
-      has_error: !!result.error,
-      error_details: result.error ? {
-        code: result.error.code,
-        message: result.error.message,
-        details: result.error.details,
-        hint: result.error.hint
-      } : null
-    }));
-
-    const { data, error } = result;
 
     if (error) {
       if (error.code === '23505') {
-        console.log('[waitlist] duplicate email:', email);
+        // duplicate — still send confirmation but flag it
         return res.status(200).json({ ok: true, duplicate: true });
       }
-      return res.status(500).json({ error: 'Could not save request', details: error.message });
+      console.error('[waitlist] insert error:', error);
+      return res.status(500).json({ error: 'Could not save request', details: error.message, code: error.code });
     }
 
-    console.log('[waitlist] ✓ Inserted successfully:', data.id, email);
+    console.log('[waitlist] inserted:', data.id, email);
 
-    // Send notification emails via Resend (fire-and-forget, don't fail on email error)
+    // Send notification emails via Resend
     const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
     if (apiKey) {
       const send = (payload) => fetch('https://api.resend.com/emails', {
@@ -128,6 +103,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, id: data.id });
   } catch (e) {
     console.error('[waitlist] unhandled error:', e);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error', message: e.message });
   }
 }
