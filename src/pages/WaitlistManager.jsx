@@ -251,7 +251,10 @@ export default function WaitlistManager() {
     setLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { 
+    console.log('[WaitlistManager] Component mounted, loading data...');
+    loadData(); 
+  }, []);
 
   const handleApprove = async (entryId, notes) => {
     setProcessing(entryId);
