@@ -1,34 +1,75 @@
+// @ts-check
+/* global process */
+import { createClient } from '@supabase/supabase-js';
+
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { email, company, branches, name, phone } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email is required' });
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({ error: 'Missing Supabase credentials', has_url: !!supabaseUrl, has_key: !!supabaseKey });
+  }
 
-  const send = (payload) => fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).then(r => r.json());
+  const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 
-  const [admin, confirm] = await Promise.all([
-    send({
-      from: 'AIR Waitlist <info@theprojectair.com>',
-      to: ['info@theprojectair.com'],
-      reply_to: email,
-      subject: `🚀 New Early Access Request — ${company || email}`,
-      html: `<p><b>Name:</b> ${name || '—'}</p><p><b>Email:</b> ${email}</p><p><b>Phone:</b> ${phone || '—'}</p><p><b>Company:</b> ${company || '—'}</p><p><b>Branches:</b> ${branches || '—'}</p>`,
-    }),
-    send({
-      from: 'AIR Waitlist <info@theprojectair.com>',
-      to: [email],
-      subject: 'Thanks for your interest in AIR! 🎉',
-      html: `<p>Hi ${name || 'there'},</p><p>We'll reach out within 2 business days to schedule your demo.</p>`,
-    }),
-  ]);
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const email    = String(body.email    || '').trim().toLowerCase();
+    const name     = String(body.name     || '').trim();
+    const company  = String(body.company  || '').trim();
+    const phone    = String(body.phone    || '').trim();
+    const branches = String(body.branches || '').trim();
+    const notes    = String(body.notes    || '').trim();
 
-  if (admin.error || confirm.error) return res.status(500).json({ error: (admin.error || confirm.error).message });
-  return res.status(200).json({ success: true });
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+
+    const { data, error } = await supabase
+      .from('waitlist_entries')
+      .insert({ email, name: name || null, company: company || null, phone: phone || null, branches: branches || null, notes: notes || null, status: 'pending' })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') return res.status(200).json({ ok: true, duplicate: true });
+      return res.status(500).json({ error: 'Could not save request', details: error.message });
+    }
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (apiKey) {
+      const send = (payload) => fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(e => console.warn('[waitlist] email error:', e.message));
+
+      await Promise.all([
+        send({
+          from: 'AIR Waitlist <info@theprojectair.com>',
+          to: ['info@theprojectair.com'],
+          reply_to: email,
+          subject: `🚀 New Early Access Request — ${company || email}`,
+          html: `<div style="font-family:sans-serif"><h2>New Early Access Request</h2><p><b>Name:</b> ${name || '—'}</p><p><b>Email:</b> ${email}</p><p><b>Phone:</b> ${phone || '—'}</p><p><b>Company:</b> ${company || '—'}</p><p><b>Branches:</b> ${branches || '—'}</p></div>`,
+        }),
+        send({
+          from: 'AIR Waitlist <info@theprojectair.com>',
+          to: [email],
+          subject: "🚀 You're on the list — AIR early access confirmed",
+          html: `<div style="font-family:sans-serif"><h2>Welcome to the AIR early access list! 🎉</h2><p>Hi ${name || 'there'},</p><p>You're in. We'll reach out within 2 business days to schedule your personalized demo.</p><p>Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed.</p></div>`,
+        }),
+      ]);
+    }
+
+    return res.status(200).json({ ok: true, id: data.id });
+  } catch (e) {
+    return res.status(500).json({ error: 'Server error', message: e.message });
+  }
 }
