@@ -32,12 +32,20 @@ export default async function handler(req, res) {
 
     // LIST
     if (action === 'list') {
+      console.log('[waitlist-manager] LIST action called');
       const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
         sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
         sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
       ]);
-      if (wErr) return res.status(500).json({ error: wErr.message });
-      if (tErr) return res.status(500).json({ error: tErr.message });
+      if (wErr) {
+        console.error('[waitlist-manager] waitlist query error:', wErr);
+        return res.status(500).json({ error: wErr.message });
+      }
+      if (tErr) {
+        console.error('[waitlist-manager] trials query error:', tErr);
+        return res.status(500).json({ error: tErr.message });
+      }
+      console.log('[waitlist-manager] Found', waitlist?.length || 0, 'waitlist entries,', trials?.length || 0, 'trials');
       return res.status(200).json({ waitlist: waitlist || [], trials: trials || [] });
     }
 
