@@ -99,8 +99,11 @@ export default async function handler(req, res) {
 
       // Send welcome email
       const apiKey = process.env.RESEND_API_KEY;
-      if (apiKey) {
-        await sendEmail(apiKey, {
+      let emailResult = null;
+      if (!apiKey) {
+        console.warn('[waitlist-manager] RESEND_API_KEY not set — skipping email');
+      } else {
+        emailResult = await sendEmail(apiKey, {
           from: 'AIR by Lupine <info@theprojectair.com>',
           to: [entry.email],
           subject: `🎉 Your AIR trial is approved — sign in to get started`,
@@ -136,9 +139,16 @@ export default async function handler(req, res) {
             </div>
           `,
         });
+        console.log('[waitlist-manager] Resend response:', JSON.stringify(emailResult));
       }
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({
+        success: true,
+        emailSent: !!emailResult?.id,
+        emailResult,
+        signInLink,
+        hasApiKey: !!apiKey,
+      });
     }
 
     // ADD LEAD
