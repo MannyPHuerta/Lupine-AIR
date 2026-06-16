@@ -2,6 +2,7 @@
 // Vercel serverless function — Waitlist admin operations
 /* global process */
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 export const config = { runtime: 'nodejs' };
 
@@ -26,16 +27,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: e.message });
   }
 
-  const { action, entryId, notes, lead } = req.body;
+  const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+  const { action, entryId, notes, lead } = body;
 
   // LIST
   if (action === 'list') {
-    const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
-      sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-      sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
-    ]);
+    const { data: waitlist, error: wErr } = await sb
+      .from('waitlist_entries')
+      .select('*')
+      .order('created_at', { ascending: false });
     if (wErr) return res.status(500).json({ error: wErr.message });
-    if (tErr) return res.status(500).json({ error: tErr.message });
+
+    // subscriber_trials may not exist yet — don't fail if it doesn't
+    const { data: trials } = await sb
+      .from('subscriber_trials')
+      .select('*')
+      .order('created_at', { ascending: false });
+
     return res.status(200).json({ waitlist: waitlist || [], trials: trials || [] });
   }
 
@@ -93,7 +101,6 @@ export default async function handler(req, res) {
     // Send welcome email
     const apiKey = process.env.RESEND_API_KEY;
     if (apiKey) {
-      const { Resend } = await import('resend');
       const resend = new Resend(apiKey);
       await resend.emails.send({
         from: 'AIR by Lupine <info@theprojectair.com>',
