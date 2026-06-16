@@ -97,11 +97,14 @@ export default async function handler(req, res) {
           options: { redirectTo: 'https://theprojectair.com/ops' },
         });
         console.log('[waitlist-manager] generateLink result:', JSON.stringify({ linkData, linkErr }));
-        const actionLink = linkData?.properties?.action_link;
+        
+        // Try multiple possible link properties — Supabase may return different structures
+        const actionLink = linkData?.properties?.action_link || linkData?.action_link || linkData?.link;
         if (!linkErr && actionLink) {
           signInLink = actionLink;
+          console.log('[waitlist-manager] Magic link generated successfully:', signInLink);
         } else {
-          console.warn('[waitlist-manager] no action_link — linkErr:', JSON.stringify(linkErr));
+          console.warn('[waitlist-manager] Magic link generation issue — using fallback. linkErr:', JSON.stringify(linkErr), 'linkData:', JSON.stringify(linkData));
         }
       } catch (e) {
         console.warn('[waitlist-manager] generateLink exception:', e.message);
@@ -112,49 +115,53 @@ export default async function handler(req, res) {
       // Send welcome email via Resend fetch (no npm package needed)
       const apiKey = process.env.RESEND_API_KEY;
       console.log('[waitlist-manager] RESEND_API_KEY present:', !!apiKey);
+      console.log('[waitlist-manager] signInLink to be sent:', signInLink);
 
       let emailResult = null;
       if (!apiKey) {
-        console.warn('[waitlist-manager] RESEND_API_KEY not set — skipping email');
+        console.error('[waitlist-manager] RESEND_API_KEY not set — skipping email');
       } else {
-        emailResult = await sendEmail(apiKey, {
-          from: 'AIR by Lupine <info@theprojectair.com>',
-          to: [entry.email],
-          subject: `🎉 Your AIR trial is approved — sign in to get started`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
-              <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
-                <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in! 🚀</h1>
-                <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Your AIR early access has been approved</p>
-              </div>
-              <div style="padding:32px">
-                <p style="color:#94a3b8;line-height:1.7">Hi ${entry.name || 'there'},</p>
-                <p style="color:#cbd5e1;line-height:1.7">
-                  Your early access request for <strong style="color:#0ea5e9">AIR by Lupine</strong> has been approved.
-                  Click the button below to sign in — no password needed.
-                </p>
-                <div style="text-align:center;margin:28px 0">
-                  <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
-                    Sign In to AIR →
-                  </a>
-                  <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
-                  <p style="color:#475569;font-size:10px;margin-top:6px;word-break:break-all">Debug link: ${signInLink}</p>
+        try {
+          emailResult = await sendEmail(apiKey, {
+            from: 'AIR by Lupine <info@theprojectair.com>',
+            to: [entry.email],
+            subject: `🎉 Your AIR trial is approved — sign in to get started`,
+            html: `
+              <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
+                <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+                  <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in! 🚀</h1>
+                  <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Your AIR early access has been approved</p>
                 </div>
-                <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
-                  <strong style="color:#94a3b8">Your trial summary:</strong><br/>
-                  Company: ${entry.company || 'N/A'}<br/>
-                  Full Pro access until: ${toDate(trialEndsAt)}<br/>
-                  Account pauses on: ${toDate(lockoutDate)}
+                <div style="padding:32px">
+                  <p style="color:#94a3b8;line-height:1.7">Hi ${entry.name || 'there'},</p>
+                  <p style="color:#cbd5e1;line-height:1.7">
+                    Your early access request for <strong style="color:#0ea5e9">AIR by Lupine</strong> has been approved.
+                    Click the button below to sign in — no password needed.
+                  </p>
+                  <div style="text-align:center;margin:28px 0">
+                    <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
+                      Sign In to AIR →
+                    </a>
+                    <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
+                  </div>
+                  <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
+                    <strong style="color:#94a3b8">Your trial summary:</strong><br/>
+                    Company: ${entry.company || 'N/A'}<br/>
+                    Full Pro access until: ${toDate(trialEndsAt)}<br/>
+                    Account pauses on: ${toDate(lockoutDate)}
+                  </div>
+                  <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
+                    Questions? Reply to this email — we're here.<br/>
+                    <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
+                  </p>
                 </div>
-                <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
-                  Questions? Reply to this email — we're here.<br/>
-                  <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
-                </p>
               </div>
-            </div>
-          `,
-        });
-        console.log('[waitlist-manager] Resend response:', JSON.stringify(emailResult));
+            `,
+          });
+          console.log('[waitlist-manager] Resend response:', JSON.stringify(emailResult));
+        } catch (emailError) {
+          console.error('[waitlist-manager] Email send failed:', emailError.message);
+        }
       }
 
       return res.status(200).json({
