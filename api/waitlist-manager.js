@@ -32,12 +32,18 @@ export default async function handler(req, res) {
 
   // LIST
   if (action === 'list') {
-    const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
-      sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-      sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
-    ]);
+    const { data: waitlist, error: wErr } = await sb
+      .from('waitlist_entries')
+      .select('*')
+      .order('created_at', { ascending: false });
     if (wErr) return res.status(500).json({ error: wErr.message });
-    if (tErr) return res.status(500).json({ error: tErr.message });
+
+    // subscriber_trials may not exist yet — don't fail if it doesn't
+    const { data: trials } = await sb
+      .from('subscriber_trials')
+      .select('*')
+      .order('created_at', { ascending: false });
+
     return res.status(200).json({ waitlist: waitlist || [], trials: trials || [] });
   }
 
