@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,10 +8,7 @@ import {
   GitBranch, Calendar, RefreshCw, Plus, Search, ExternalLink
 } from 'lucide-react';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Supabase client not needed here — all data comes from the API endpoint
 
 const API_BASE = 'https://theprojectair.com/api/waitlist-manager';
 
