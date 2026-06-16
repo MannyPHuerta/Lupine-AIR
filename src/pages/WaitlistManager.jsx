@@ -239,10 +239,13 @@ export default function WaitlistManager() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAddLead, setShowAddLead] = useState(false);
   const [lastResult, setLastResult] = useState(null);
+  const [debugData, setDebugData] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
     const data = await callApi({ action: 'list' });
+    console.log('[WaitlistManager] Raw API response:', data);
+    setDebugData(data);
     if (data.waitlist) setWaitlist(data.waitlist);
     if (data.trials) setTrials(data.trials);
     setLoading(false);
@@ -420,6 +423,17 @@ export default function WaitlistManager() {
 
       {showAddLead && (
         <AddLeadModal onClose={() => setShowAddLead(false)} onAdd={handleAddLead} />
+      )}
+
+      {/* Debug panel */}
+      {debugData && (
+        <div className="fixed bottom-4 right-4 bg-slate-900 text-white p-4 rounded-lg text-xs max-w-md max-h-64 overflow-auto shadow-lg z-50">
+          <div className="font-bold mb-2">Debug: API Response</div>
+          <pre className="whitespace-pre-wrap">
+            {JSON.stringify(debugData, null, 2)}
+          </pre>
+          <button onClick={() => setDebugData(null)} className="mt-2 text-slate-400 hover:text-white underline">Close</button>
+        </div>
       )}
     </div>
   );
