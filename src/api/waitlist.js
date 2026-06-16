@@ -16,6 +16,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Debug: log env var presence (not values)
+  console.log('[waitlist] ENV check:', {
+    has_SUPABASE_URL: !!process.env.SUPABASE_URL,
+    has_SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    has_RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+    url_preview: process.env.SUPABASE_URL?.slice(0, 20) + '...'
+  });
+
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const email    = String(body.email    || '').trim().toLowerCase();
@@ -29,6 +37,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid email required' });
     }
 
+    console.log('[waitlist] Attempting insert for:', email);
+    
     const { data, error } = await supabase
       .from('waitlist_entries')
       .insert({
@@ -44,15 +54,20 @@ export default async function handler(req, res) {
       .single();
 
     if (error) {
+      console.error('[waitlist] Supabase error:', JSON.stringify({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      }));
       if (error.code === '23505') {
         console.log('[waitlist] duplicate email:', email);
         return res.status(200).json({ ok: true, duplicate: true });
       }
-      console.error('[waitlist] insert failed:', error.code, error.message, error.details, error.hint);
       return res.status(500).json({ error: 'Could not save request', details: error.message });
     }
 
-    console.log('[waitlist] inserted', data.id, email);
+    console.log('[waitlist] ✓ Inserted successfully:', data.id, email);
 
     // Send notification emails via Resend (fire-and-forget, don't fail on email error)
     const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
