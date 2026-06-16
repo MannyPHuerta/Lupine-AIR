@@ -14,10 +14,16 @@ export default async function handler(req, res) {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: 'Missing Supabase credentials', has_url: !!supabaseUrl, has_key: !!supabaseKey });
+    return res.status(500).json({
+      error: 'Missing Supabase credentials',
+      has_url: !!supabaseUrl,
+      has_key: !!supabaseKey,
+    });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+  });
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
@@ -34,14 +40,27 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from('waitlist_entries')
-      .insert({ email, name: name || null, company: company || null, phone: phone || null, branches: branches || null, notes: notes || null, status: 'pending' })
+      .insert({
+        email,
+        name:     name     || null,
+        company:  company  || null,
+        phone:    phone    || null,
+        branches: branches || null,
+        notes:    notes    || null,
+        status: 'pending',
+      })
       .select()
       .single();
 
     if (error) {
-      if (error.code === '23505') return res.status(200).json({ ok: true, duplicate: true });
-      return res.status(500).json({ error: 'Could not save request', details: error.message });
+      if (error.code === '23505') {
+        return res.status(200).json({ ok: true, duplicate: true });
+      }
+      console.error('[waitlist] insert error:', error);
+      return res.status(500).json({ error: 'Could not save request', details: error.message, code: error.code });
     }
+
+    console.log('[waitlist] inserted:', data.id, email);
 
     const apiKey = process.env.RESEND_API_KEY;
     if (apiKey) {
@@ -49,7 +68,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch(e => console.warn('[waitlist] email error:', e.message));
+      }).then(r => r.json()).catch(e => console.warn('[waitlist] email error:', e.message));
 
       await Promise.all([
         send({
@@ -57,19 +76,29 @@ export default async function handler(req, res) {
           to: ['info@theprojectair.com'],
           reply_to: email,
           subject: `🚀 New Early Access Request — ${company || email}`,
-          html: `<div style="font-family:sans-serif"><h2>New Early Access Request</h2><p><b>Name:</b> ${name || '—'}</p><p><b>Email:</b> ${email}</p><p><b>Phone:</b> ${phone || '—'}</p><p><b>Company:</b> ${company || '—'}</p><p><b>Branches:</b> ${branches || '—'}</p></div>`,
+          html: `<div style="font-family:sans-serif"><h2>New Early Access Request</h2>
+            <p><b>Name:</b> ${name || '—'}</p>
+            <p><b>Email:</b> ${email}</p>
+            <p><b>Phone:</b> ${phone || '—'}</p>
+            <p><b>Company:</b> ${company || '—'}</p>
+            <p><b>Branches:</b> ${branches || '—'}</p></div>`,
         }),
         send({
           from: 'AIR Waitlist <info@theprojectair.com>',
           to: [email],
           subject: "🚀 You're on the list — AIR early access confirmed",
-          html: `<div style="font-family:sans-serif"><h2>Welcome to the AIR early access list! 🎉</h2><p>Hi ${name || 'there'},</p><p>You're in. We'll reach out within 2 business days to schedule your personalized demo.</p><p>Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed.</p></div>`,
+          html: `<div style="font-family:sans-serif"><h2>Welcome to the AIR early access list! 🎉</h2>
+            <p>Hi ${name || 'there'},</p>
+            <p>You're in. We'll reach out within 2 business days to schedule your personalized demo.</p>
+            <p>Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed.</p>
+            <p style="color:#888;font-size:12px">Questions? Reply to this email.</p></div>`,
         }),
       ]);
     }
 
     return res.status(200).json({ ok: true, id: data.id });
   } catch (e) {
+    console.error('[waitlist] unhandled error:', e);
     return res.status(500).json({ error: 'Server error', message: e.message });
   }
 }
