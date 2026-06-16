@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { Users, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, Plus, Zap } from 'lucide-react';
+
+const sb = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 const STATUS_STYLE = {
   pending:  'bg-amber-100 text-amber-800',
@@ -39,26 +45,18 @@ export default function WaitlistManager() {
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
 
-  const callApi = async (action, extra = {}) => {
-    const res = await fetch('/api/waitlist-manager', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...extra }),
-    });
-    const text = await res.text();
-    if (!text) throw new Error('API returned empty response — check Vercel function logs.');
-    const data = JSON.parse(text);
-    if (!res.ok || data?.error) throw new Error(data?.error || 'API call failed');
-    return data;
-  };
-
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await callApi('list');
-      setEntries(data.waitlist || []);
-      setTrials(data.trials || []);
+      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
+        sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
+        sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
+      ]);
+      if (wErr) throw new Error(wErr.message);
+      if (tErr) throw new Error(tErr.message);
+      setEntries(waitlist || []);
+      setTrials(trials || []);
     } catch (err) {
       setError('Failed to load: ' + err.message);
     }
@@ -73,7 +71,13 @@ export default function WaitlistManager() {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      await callApi('approve', { entryId: approveEntry.id, notes: approveNotes });
+      const res = await fetch('/api/approve-entry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId: approveEntry.id, notes: approveNotes }),
+      });
+      const data = await res.json();
+      if (!res.ok || data?.error) throw new Error(data?.error || 'Approval failed');
       await loadData();
       setApproveEntry(null);
       setApproveNotes('');
@@ -86,7 +90,8 @@ export default function WaitlistManager() {
   const handleReject = async (entry) => {
     if (!confirm(`Reject ${entry.name || entry.email}?`)) return;
     try {
-      await callApi('reject', { entryId: entry.id });
+      const { error } = await sb.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entry.id);
+      if (error) throw new Error(error.message);
       await loadData();
     } catch (err) {
       alert('Failed: ' + err.message);
@@ -113,7 +118,8 @@ export default function WaitlistManager() {
     if (!newLead.email) return alert('Email is required');
     setSavingLead(true);
     try {
-      await callApi('addLead', { lead: newLead });
+      const { error } = await sb.from('waitlist_entries').insert({ ...newLead, status: 'pending' });
+      if (error) throw new Error(error.message);
       setShowAddLead(false);
       setNewLead(EMPTY_LEAD);
       await loadData();
