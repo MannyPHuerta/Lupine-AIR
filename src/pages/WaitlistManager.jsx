@@ -241,6 +241,11 @@ export default function WaitlistManager() {
   const [lastResult, setLastResult] = useState(null);
   const [debugData, setDebugData] = useState(null);
 
+  // Debug: log state on render
+  useEffect(() => {
+    console.log('[WaitlistManager] State:', { waitlist: waitlist.length, trials: trials.length, statusFilter, tab });
+  }, [waitlist, trials, statusFilter, tab]);
+
   const loadData = async () => {
     setLoading(true);
     console.log('[WaitlistManager] Calling API...');
