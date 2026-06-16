@@ -41,8 +41,10 @@ export default function WaitlistManager() {
   const [newLead, setNewLead] = useState(EMPTY_LEAD);
   const [savingLead, setSavingLead] = useState(false);
 
+  const API_BASE = 'https://theprojectair.com';
+
   const apiPost = async (action, body = {}) => {
-    const res = await fetch('/api/waitlist-manager', {
+    const res = await fetch(`${API_BASE}/api/waitlist-manager`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...body }),
@@ -73,7 +75,7 @@ export default function WaitlistManager() {
     if (!approveEntry) return;
     setApproving(true);
     try {
-      const res = await fetch('/api/approve-entry', {
+      const res = await fetch(`${API_BASE}/api/approve-entry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entryId: approveEntry.id, notes: approveNotes }),
@@ -102,7 +104,7 @@ export default function WaitlistManager() {
   const handleGrantDemo = async (entry) => {
     if (!confirm(`Send demo access link to ${entry.name || entry.email}?`)) return;
     try {
-      const res = await fetch('/api/grant-demo-access', {
+      const res = await fetch(`${API_BASE}/api/grant-demo-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entryId: entry.id }),
