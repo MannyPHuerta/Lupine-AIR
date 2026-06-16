@@ -1,5 +1,5 @@
 {
-  "buildCommand": "vite build && cp -r api dist/api",
+  "buildCommand": "vite build",
   "outputDirectory": "dist",
   "devCommand": "vite",
   "installCommand": "npm install",

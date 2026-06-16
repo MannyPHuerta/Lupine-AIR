@@ -1,7 +1,11 @@
 // @ts-check
 // Debug endpoint to trace waitlist submission
-/* global process */
+/* eslint-disable no-undef */
 import { createClient } from '@supabase/supabase-js';
+
+export const config = {
+  runtime: 'nodejs20.x',
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
