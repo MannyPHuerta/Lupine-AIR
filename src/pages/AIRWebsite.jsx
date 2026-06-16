@@ -827,6 +827,7 @@ function WaitlistSection() {
       clearTimeout(timeout);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
+      if (!data.ok) throw new Error('Unexpected response from server');
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err.message);
