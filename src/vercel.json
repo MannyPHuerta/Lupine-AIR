@@ -4,15 +4,11 @@
   "devCommand": "vite",
   "installCommand": "npm install",
   "functions": {
-    "src/api/*.js": {
+    "api/*.js": {
       "runtime": "nodejs20.x"
     }
   },
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/src/api/:path*"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
@@ -30,6 +26,7 @@
     "VITE_RESEND_API_KEY": "@VITE_RESEND_API_KEY",
     "VITE_BASE44_APP_ID": "@VITE_BASE44_APP_ID",
     "SUPABASE_URL": "@SUPABASE_URL",
+    "SUPABASE_ANON_KEY": "@SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY": "@SUPABASE_SERVICE_ROLE_KEY",
     "RESEND_API_KEY": "@RESEND_API_KEY",
     "CRON_SECRET": "@CRON_SECRET",
