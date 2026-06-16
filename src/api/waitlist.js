@@ -2,11 +2,22 @@
 /* global process */
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } }
-);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+console.log('[waitlist] Supabase config:', {
+  url_length: supabaseUrl?.length,
+  key_length: supabaseKey?.length,
+  url_starts: supabaseUrl?.slice(0, 8)
+});
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('[waitlist] MISSING SUPABASE CREDENTIALS');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: { persistSession: false }
+});
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,27 +50,37 @@ export default async function handler(req, res) {
 
     console.log('[waitlist] Attempting insert for:', email);
     
-    const { data, error } = await supabase
+    const insertPayload = {
+      email,
+      name:     name     || null,
+      company:  company  || null,
+      phone:    phone    || null,
+      branches: branches || null,
+      notes:    notes    || null,
+      status: 'pending',
+    };
+    console.log('[waitlist] Insert payload:', JSON.stringify(insertPayload));
+    
+    const result = await supabase
       .from('waitlist_entries')
-      .insert({
-        email,
-        name:     name     || null,
-        company:  company  || null,
-        phone:    phone    || null,
-        branches: branches || null,
-        notes:    notes    || null,
-        status: 'pending',
-      })
+      .insert(insertPayload)
       .select()
       .single();
+    
+    console.log('[waitlist] Supabase result:', JSON.stringify({
+      has_data: !!result.data,
+      has_error: !!result.error,
+      error_details: result.error ? {
+        code: result.error.code,
+        message: result.error.message,
+        details: result.error.details,
+        hint: result.error.hint
+      } : null
+    }));
+
+    const { data, error } = result;
 
     if (error) {
-      console.error('[waitlist] Supabase error:', JSON.stringify({
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      }));
       if (error.code === '23505') {
         console.log('[waitlist] duplicate email:', email);
         return res.status(200).json({ ok: true, duplicate: true });
