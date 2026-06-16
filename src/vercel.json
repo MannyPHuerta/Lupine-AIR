@@ -1,7 +1,31 @@
 {
   "buildCommand": "vite build && cp -r api dist/api",
+  "outputDirectory": "dist",
+  "devCommand": "vite",
+  "installCommand": "npm install",
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "env": {
+    "VITE_SUPABASE_URL": "@VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY": "@VITE_SUPABASE_ANON_KEY",
+    "VITE_RESEND_API_KEY": "@VITE_RESEND_API_KEY",
+    "VITE_BASE44_APP_ID": "@VITE_BASE44_APP_ID",
+    "SUPABASE_URL": "@SUPABASE_URL",
+    "SUPABASE_ANON_KEY": "@SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY": "@SUPABASE_SERVICE_ROLE_KEY",
+    "RESEND_API_KEY": "@RESEND_API_KEY",
+    "STRIPE_SECRET_KEY": "@STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET": "@STRIPE_WEBHOOK_SECRET",
+    "TWILIO_ACCOUNT_SID": "@TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN": "@TWILIO_AUTH_TOKEN",
+    "TWILIO_PHONE_NUMBER": "@TWILIO_PHONE_NUMBER",
+    "BASE_URL": "https://theprojectair.com"
+  }
 }
