@@ -84,23 +84,22 @@ export default async function handler(req, res) {
         notes: notes || null,
       }).eq('id', entryId);
 
-      // Generate magic link
+      // Ensure the user exists in auth.users, then generate a magic link
       let signInLink = 'https://theprojectair.com/signin';
       try {
+        // Upsert user so they exist in auth.users (createUser fails gracefully if already exists)
+        await sb.auth.admin.createUser({ email: entry.email, email_confirm: true }).catch(() => {});
+
+        // Now generate a magiclink — user is guaranteed to exist
         const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
           type: 'magiclink',
           email: entry.email,
           options: { redirectTo: 'https://theprojectair.com/ops' },
         });
         console.log('[waitlist-manager] generateLink result:', JSON.stringify({ linkData, linkErr }));
-        const actionLink = linkData?.properties?.action_link
-          || linkData?.action_link
-          || linkData?.hashed_token;
+        const actionLink = linkData?.properties?.action_link;
         if (!linkErr && actionLink) {
-          // If it's just a token, build the full URL
-          signInLink = actionLink.startsWith('http')
-            ? actionLink
-            : `https://theprojectair.com/auth/confirm?token_hash=${actionLink}&type=magiclink&next=/ops`;
+          signInLink = actionLink;
         }
       } catch (e) {
         console.warn('[waitlist-manager] generateLink failed:', e.message);
@@ -133,6 +132,7 @@ export default async function handler(req, res) {
                     Sign In to AIR →
                   </a>
                   <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
+                  <p style="color:#475569;font-size:10px;margin-top:6px;word-break:break-all">Debug: ${signInLink}</p>
                 </div>
                 <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
                   <strong style="color:#94a3b8">Your trial summary:</strong><br/>
