@@ -15,7 +15,7 @@ const sendEmail = (apiKey, payload) =>
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-  }).then(r => r.json()).catch(e => console.warn('[waitlist-manager] email error:', e.message));
+  }).then(r => r.json()).catch(e => console.warn('[waitlist-manager] email fetch error:', e.message));
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -84,13 +84,12 @@ export default async function handler(req, res) {
         notes: notes || null,
       }).eq('id', entryId);
 
-      // Ensure the user exists in auth.users, then generate a magic link
+      // Ensure user exists in auth.users, then generate a magic link
       let signInLink = 'https://theprojectair.com/signin';
       try {
-        // Upsert user so they exist in auth.users (createUser fails gracefully if already exists)
-        await sb.auth.admin.createUser({ email: entry.email, email_confirm: true }).catch(() => {});
+        const createResult = await sb.auth.admin.createUser({ email: entry.email, email_confirm: true });
+        console.log('[waitlist-manager] createUser result:', JSON.stringify(createResult?.error || 'ok'));
 
-        // Now generate a magiclink — user is guaranteed to exist
         const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
           type: 'magiclink',
           email: entry.email,
@@ -100,13 +99,18 @@ export default async function handler(req, res) {
         const actionLink = linkData?.properties?.action_link;
         if (!linkErr && actionLink) {
           signInLink = actionLink;
+        } else {
+          console.warn('[waitlist-manager] no action_link — linkErr:', JSON.stringify(linkErr));
         }
       } catch (e) {
-        console.warn('[waitlist-manager] generateLink failed:', e.message);
+        console.warn('[waitlist-manager] generateLink exception:', e.message);
       }
 
-      // Send welcome email
+      console.log('[waitlist-manager] final signInLink:', signInLink);
+
       const apiKey = process.env.RESEND_API_KEY;
+      console.log('[waitlist-manager] RESEND_API_KEY present:', !!apiKey);
+
       let emailResult = null;
       if (!apiKey) {
         console.warn('[waitlist-manager] RESEND_API_KEY not set — skipping email');
@@ -132,7 +136,7 @@ export default async function handler(req, res) {
                     Sign In to AIR →
                   </a>
                   <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
-                  <p style="color:#475569;font-size:10px;margin-top:6px;word-break:break-all">Debug: ${signInLink}</p>
+                  <p style="color:#475569;font-size:10px;margin-top:6px;word-break:break-all">Debug link: ${signInLink}</p>
                 </div>
                 <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
                   <strong style="color:#94a3b8">Your trial summary:</strong><br/>
