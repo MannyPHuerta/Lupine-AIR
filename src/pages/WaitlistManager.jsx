@@ -243,11 +243,23 @@ export default function WaitlistManager() {
 
   const loadData = async () => {
     setLoading(true);
-    const data = await callApi({ action: 'list' });
-    console.log('[WaitlistManager] Raw API response:', data);
-    setDebugData(data);
-    if (data.waitlist) setWaitlist(data.waitlist);
-    if (data.trials) setTrials(data.trials);
+    console.log('[WaitlistManager] Calling API...');
+    try {
+      const data = await callApi({ action: 'list' });
+      console.log('[WaitlistManager] Raw API response:', data);
+      setDebugData(data);
+      if (data.waitlist) {
+        console.log('[WaitlistManager] Setting waitlist with', data.waitlist.length, 'entries');
+        setWaitlist(data.waitlist);
+      }
+      if (data.trials) {
+        console.log('[WaitlistManager] Setting trials with', data.trials.length, 'entries');
+        setTrials(data.trials);
+      }
+    } catch (e) {
+      console.error('[WaitlistManager] Load error:', e);
+      setDebugData({ error: e.message });
+    }
     setLoading(false);
   };
 
