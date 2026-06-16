@@ -818,7 +818,7 @@ function WaitlistSection() {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch('/api/waitlist', {
+      const res = await fetch('https://theprojectair.com/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, phone, company, branches }),
