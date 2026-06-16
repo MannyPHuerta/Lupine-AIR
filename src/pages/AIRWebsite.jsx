@@ -826,8 +826,10 @@ function WaitlistSection() {
       });
       clearTimeout(timeout);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Submission failed');
-      if (!data.ok) throw new Error('Unexpected response from server');
+      console.log('[Waitlist] Response:', res.status, data);
+      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
+      // Accept both {ok: true} and {success: true} since different code paths return different shapes
+      if (!data.ok && !data.success) throw new Error(data.error || 'Unexpected response from server');
       setSubmitted(true);
     } catch (err) {
       console.error('[Waitlist] Error:', err.message);
