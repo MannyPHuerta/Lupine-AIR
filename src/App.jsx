@@ -109,6 +109,7 @@ import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
 import WaitlistManager from "./pages/WaitlistManager";
 import AuthCallback from "./pages/AuthCallback";
+import ApproveEntryTest from "./pages/ApproveEntryTest";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -230,6 +231,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/fraud/recovery" element={<AdminReauthGate title="Recovery Intelligence"><AIRecovery /></AdminReauthGate>} />
         <Route path="/supabase-test" element={<SupabaseTest />} />
         <Route path="/waitlist-manager" element={<WaitlistManager />} />
+        <Route path="/test-approve" element={<ApproveEntryTest />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
