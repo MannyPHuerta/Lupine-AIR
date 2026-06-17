@@ -23,17 +23,25 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '')
-    .replace(/\/rest\/v1\/?$/, '');
+  const supabaseUrl = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  if (!supabaseUrl || !serviceKey) {
-    return res.status(500).json({ error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' });
-  }
+  const resendKey = process.env.RESEND_API_KEY || '';
+  if (!supabaseUrl || !serviceKey) return res.status(500).json({ error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' });
+  if (!resendKey) return res.status(500).json({ error: 'Missing RESEND_API_KEY' });
 
-  const sb = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const sb = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
+  // 1. Admin gate via user_roles (NOT profiles.role)
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await sb.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: isAdmin, error: roleErr } = await sb.rpc('has_role', { _user_id: user.id, _role: 'admin' });
+  if (roleErr) return res.status(500).json({ error: 'Role check failed: ' + roleErr.message });
+  if (!isAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+  // 2. Body
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
@@ -56,7 +64,7 @@ export default async function handler(req, res) {
   const trialEndsAt = new Date(now); trialEndsAt.setDate(trialEndsAt.getDate() + 14);
   const lockoutDate = new Date(now); lockoutDate.setDate(lockoutDate.getDate() + 30);
 
-  // Create subscriber trial record
+  // 4. Trial row
   const { error: trialErr } = await sb.from('subscriber_trials').insert({
     email: entry.email,
     company_name: entry.company || null,
@@ -68,24 +76,16 @@ export default async function handler(req, res) {
     trial_start_date: toDate(now),
     trial_ends_at: toDate(trialEndsAt),
     lockout_date: toDate(lockoutDate),
+    approved_by: user.email,
+    approved_at: now.toISOString(),
     notes: notes || null,
   });
-  if (trialErr) {
-    return res.status(500).json({ error: 'Failed to create trial: ' + trialErr.message });
-  }
+  if (trialErr) return res.status(500).json({ error: 'Failed to create trial: ' + trialErr.message });
 
-  // Update waitlist entry status
-  const { error: updateErr } = await sb
-    .from('waitlist_entries')
-    .update({
-      status: 'approved',
-      approved_at: now.toISOString(),
-      notes: notes || null,
-    })
+  // 5. Mark approved
+  await sb.from('waitlist_entries')
+    .update({ status: 'approved', approved_by: user.email, approved_at: now.toISOString(), notes: notes || null })
     .eq('id', entryId);
-  if (updateErr) {
-    console.warn('[approve-entry] waitlist update failed:', updateErr.message);
-  }
 
   // Ensure auth user exists (idempotent — ignore "already registered")
   let createUserMsg = null;
@@ -124,69 +124,45 @@ export default async function handler(req, res) {
     linkErrorMsg = e.message;
   }
 
-  // Send welcome email
-  let emailId = null;
-  let emailError = null;
-  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
-  if (!apiKey) {
-    emailError = 'RESEND_API_KEY not configured';
-  } else {
-    try {
-      const resend = new Resend(apiKey);
-      // NOTE: switch `from` to "AIR by Lupine <info@theprojectair.com>"
-      // ONLY after theprojectair.com is verified in this Resend account.
-      const result = await withTimeout(
-        resend.emails.send({
-          from: 'AIR <onboarding@resend.dev>',
-          to: [entry.email],
-          subject: '🎉 Your AIR trial is approved — sign in to get started',
-          html: `
-            <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0f172a">
-              <h1 style="font-size:22px;margin:0 0 8px">You're in! 🚀</h1>
-              <p style="margin:0 0 16px;color:#475569">Your AIR early access has been approved.</p>
-              <p>Hi ${entry.name || 'there'},</p>
-              <p>Click the button below to sign in — no password needed.</p>
-              <p style="margin:24px 0">
-                <a href="${signInLink}"
-                   style="background:#0f172a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block">
-                  Sign In to AIR →
-                </a>
-              </p>
-              <p style="font-size:12px;color:#64748b">This link expires in 24 hours.</p>
-              <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
-              <p style="font-size:14px;line-height:1.6">
-                <strong>Your trial summary</strong><br/>
-                Company: ${entry.company || 'N/A'}<br/>
-                Full Pro access until: ${toDate(trialEndsAt)}<br/>
-                Account pauses on: ${toDate(lockoutDate)}
-              </p>
-              <p style="font-size:12px;color:#64748b;margin-top:24px">
-                Questions? Reply to this email — we're here.<br/>
-                theprojectair.com
-              </p>
-            </div>
-          `,
-        }),
-        10000,
-        'resend.send'
-      );
-      if (result?.error) {
-        emailError = result.error.message || JSON.stringify(result.error);
-      } else {
-        emailId = result?.data?.id || null;
-      }
-    } catch (e) {
-      emailError = e.message;
-    }
+  // 7. Send welcome email — DO NOT swallow errors silently
+  const resend = new Resend(resendKey);
+  const linkBlock = signInLink
+    ? `<p style="margin:24px 0"><a href="${signInLink}" style="background:#0f172a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Sign In to AIR →</a></p><p style="font-size:12px;color:#64748b">This link expires in 24 hours.</p>`
+    : `<p>Sign in here: <a href="https://theprojectair.com/signin">https://theprojectair.com/signin</a></p>`;
+
+  let emailResult;
+  try {
+    emailResult = await resend.emails.send({
+      from: 'AIR by Lupine <info@theprojectair.com>',
+      to: [entry.email],
+      subject: `🎉 Your AIR trial is approved — sign in to get started`,
+      html: `
+        <div style="font-family:system-ui,sans-serif;max-width:560px;margin:auto;padding:24px">
+          <h1 style="margin:0 0 8px">You're in! 🚀</h1>
+          <p>Hi ${entry.name || 'there'}, your early access for AIR by Lupine has been approved.</p>
+          ${linkBlock}
+          <p style="font-size:14px;color:#475569">
+            Company: ${entry.company || 'N/A'}<br/>
+            Full Pro access until: ${toDate(trialEndsAt)}<br/>
+            Account pauses on: ${toDate(lockoutDate)}
+          </p>
+          <p style="font-size:12px;color:#94a3b8">Questions? Reply to this email — we're here.</p>
+        </div>`,
+    });
+  } catch (e) {
+    console.error('[approve-entry] resend threw:', e.message);
+    return res.status(500).json({ error: 'Email send failed: ' + e.message, signInLink, linkErrorMsg });
+  }
+
+  if (emailResult?.error) {
+    console.error('[approve-entry] resend error:', emailResult.error);
+    return res.status(500).json({ error: 'Resend rejected: ' + JSON.stringify(emailResult.error), linkErrorMsg });
   }
 
   return res.status(200).json({
     success: true,
-    entryId,
-    emailId,
-    emailError,
-    linkGenerated: !linkErrorMsg,
+    emailId: emailResult?.data?.id || null,
+    linkGenerated: !!signInLink,
     linkErrorMsg,
-    createUserMsg,
   });
 }
