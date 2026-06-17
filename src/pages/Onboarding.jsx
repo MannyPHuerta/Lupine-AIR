@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/api/supabaseClient';
+import { base44 } from '@/api/base44Client';
 import { Loader2, Building2, MapPin, CheckCircle, ChevronRight, ChevronLeft, Zap } from 'lucide-react';
 
 const STEPS = ['Company', 'Branch', 'Plan', 'Done'];
@@ -71,36 +72,20 @@ export default function Onboarding() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not signed in. Please sign in first.');
 
-      const res = await fetch('/api/provisionTenant', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          companyName: companyName.trim(),
-          industry,
-          phone: phone.trim(),
-          branchName: branchName.trim(),
-          invoicePrefix: invoicePrefix.trim().toUpperCase(),
-          branchAddress: branchAddress.trim(),
-          branchPhone: branchPhone.trim(),
-          branchEmail: branchEmail.trim(),
-          planTier,
-        }),
+      const response = await base44.functions.invoke('provisionTenant', {
+        companyName: companyName.trim(),
+        industry,
+        phone: phone.trim(),
+        branchName: branchName.trim(),
+        invoicePrefix: invoicePrefix.trim().toUpperCase(),
+        branchAddress: branchAddress.trim(),
+        branchPhone: branchPhone.trim(),
+        branchEmail: branchEmail.trim(),
+        planTier,
       });
-
-      const text = await res.text();
-      console.log('Raw response:', res.status, text);
       
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error(`Server returned invalid JSON (${res.status}): ${text.slice(0, 300)}`);
-      }
-      
-      if (!res.ok) throw new Error(data.error || 'Provisioning failed');
+      const data = response.data;
+      if (!data.success) throw new Error(data.error || 'Provisioning failed');
 
       // If this is a demo signup, seed demo data
       const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true';
