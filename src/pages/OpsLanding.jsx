@@ -14,14 +14,16 @@ const PLANS = {
 const ENTERPRISE_BYPASS = ['rental-world'];
 
 async function resolveSession(s, setPhase, setSession) {
+  console.log('[OpsLanding] resolveSession — email:', s.user.email);
   setSession(s);
   window.history.replaceState({}, '', '/ops');
 
-  const { data: tenant } = await supabase
+  const { data: tenant, error: tenantErr } = await supabase
     .from('tenants')
     .select('slug, status, admin_email')
     .eq('admin_email', s.user.email)
     .maybeSingle();
+  console.log('[OpsLanding] tenant lookup:', tenant, tenantErr);
 
   const isBypassed = tenant && ENTERPRISE_BYPASS.includes(tenant.slug);
   const isActive = tenant?.status === 'active';
@@ -64,15 +66,23 @@ export default function OpsLanding() {
 
   useEffect(() => {
     if (!supabase) {
+      console.warn('[OpsLanding] Supabase client is null');
       setPhase('signin');
       return;
     }
 
+    const url = window.location.href;
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    console.log('[OpsLanding] mount — url:', url);
+    console.log('[OpsLanding] search params:', Object.fromEntries(params.entries()));
+    console.log('[OpsLanding] hash:', hash);
+    console.log('[OpsLanding] has ?code:', params.has('code'));
+
     let settled = false;
 
-    // onAuthStateChange fires when Supabase processes the #access_token hash
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
-      console.log('[OpsLanding] auth event:', event);
+      console.log('[OpsLanding] auth event:', event, '| session:', s ? `user=${s.user?.email}` : 'null');
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s && !settled) {
         settled = true;
         subscription.unsubscribe();
@@ -80,16 +90,33 @@ export default function OpsLanding() {
       } else if (event === 'INITIAL_SESSION' && !s && !settled) {
         settled = true;
         subscription.unsubscribe();
-        const params = new URLSearchParams(window.location.search);
+        console.log('[OpsLanding] INITIAL_SESSION with no session — checkout?', params.get('checkout'));
         if (params.get('checkout') === 'success') {
           setPhase('demo');
         } else {
           setPhase('signin');
         }
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('[OpsLanding] token refreshed');
+      } else if (event === 'SIGNED_OUT') {
+        console.log('[OpsLanding] signed out');
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Safety timeout — if nothing fires in 5s, go to signin
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        console.warn('[OpsLanding] timeout — no auth event fired in 5s, going to signin');
+        settled = true;
+        subscription.unsubscribe();
+        setPhase('signin');
+      }
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubscribe = async (tier) => {
