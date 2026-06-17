@@ -1,5 +1,6 @@
-// App client — wraps Supabase auth + Vercel API function calls
-// All auth and data goes through Supabase directly.
+// Compatibility shim — re-exports supabase and provides the same
+// interface shape that App.jsx / pages expect (functions.invoke, etc.)
+// All actual auth and data work goes through Supabase directly.
 import { supabase } from './supabaseClient';
 
 export { supabase };
