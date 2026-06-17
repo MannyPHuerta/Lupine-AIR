@@ -30,15 +30,25 @@ export default function OpsLanding() {
       // Small delay to let Supabase parse the URL hash
       await new Promise(r => setTimeout(r, 500));
 
-      const { data: { session: s }, error } = await supabase.auth.getSession();
+      if (!supabase) {
+        setPhase('signin');
+        return;
+      }
 
-      if (error || !s) {
+      let s = null;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!error) s = data?.session;
+      } catch (e) {
+        console.warn('[OpsLanding] getSession error:', e);
+      }
+
+      if (!s) {
         const params = new URLSearchParams(window.location.search);
         if (params.get('checkout') === 'success') {
           setPhase('demo');
           return;
         }
-        // No session — show sign-in form
         setPhase('signin');
         return;
       }
