@@ -12,7 +12,13 @@ const isValidUrl = (url) => {
 };
 
 export const supabase = isValidUrl(SUPABASE_URL) && SUPABASE_ANON_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
   : null;
 
 // Log warning if Supabase is not configured (for debugging)

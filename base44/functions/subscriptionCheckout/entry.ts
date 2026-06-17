@@ -1,5 +1,5 @@
 import Stripe from 'npm:stripe@14';
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 const APP_DOMAIN = 'https://theprojectair.com';
@@ -24,31 +24,58 @@ const PLANS = {
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL'),
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 
-    const body = await req.json();
-    const { tier, returnPath } = body;
+    // Auth via Bearer token from Supabase session
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+    let userId, userEmail;
+
+    if (token) {
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (error || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      userId = user.id;
+      userEmail = user.email;
+    } else {
+      // Fallback: accept from body (called from frontend via base44 functions.invoke)
+      const body = await req.json();
+      userId = body.supabaseUserId;
+      userEmail = body.email;
+      if (!userId || !userEmail) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = token ? await req.json() : undefined;
+    const { tier, successUrl, cancelUrl } = body || {};
 
     if (!PLANS[tier]) {
-      return Response.json({ error: 'Invalid tier. Must be pro or security_plus.' }, { status: 400 });
+      return Response.json({ error: 'Invalid tier. Must be core, pro, or custom.' }, { status: 400 });
     }
 
     const plan = PLANS[tier];
-    const successUrl = `${APP_DOMAIN}${returnPath || '/aireports'}?subscribed=${tier}`;
-    const cancelUrl = `${APP_DOMAIN}${returnPath || '/aireports'}`;
+    const resolvedSuccessUrl = successUrl || `${APP_DOMAIN}/ops?checkout=success`;
+    const resolvedCancelUrl  = cancelUrl  || `${APP_DOMAIN}/ops?checkout=cancelled`;
 
-    // Create or reuse Stripe customer
-    let customerId = user.stripeCustomerId;
+    // Look up or create Stripe customer keyed to Supabase user
+    const { data: trial } = await supabase
+      .from('subscriber_trials')
+      .select('stripe_customer_id')
+      .eq('email', userEmail)
+      .maybeSingle();
+
+    let customerId = trial?.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.full_name,
-        metadata: { base44_user_id: user.id, base44_app_id: Deno.env.get('BASE44_APP_ID') },
+        email: userEmail,
+        metadata: { supabase_user_id: userId },
       });
       customerId = customer.id;
-      await base44.auth.updateMe({ stripeCustomerId: customerId });
+      await supabase
+        .from('subscriber_trials')
+        .update({ stripe_customer_id: customerId })
+        .eq('email', userEmail);
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -58,32 +85,26 @@ Deno.serve(async (req) => {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: {
-            name: plan.name,
-            description: plan.description,
-          },
+          product_data: { name: plan.name, description: plan.description },
           unit_amount: plan.amount,
           recurring: { interval: 'month' },
         },
         quantity: 1,
       }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      success_url: resolvedSuccessUrl,
+      cancel_url: resolvedCancelUrl,
+      client_reference_id: userId,
+      customer_email: customerId ? undefined : userEmail,
       metadata: {
-        base44_app_id: Deno.env.get('BASE44_APP_ID'),
-        base44_user_id: user.id,
+        supabase_user_id: userId,
         tier,
       },
       subscription_data: {
-        trial_period_days: 14,
-        metadata: {
-          base44_user_id: user.id,
-          tier,
-        },
+        metadata: { supabase_user_id: userId, tier },
       },
     });
 
-    console.log(`[subscriptionCheckout] Created ${tier} session ${session.id} for ${user.email}`);
+    console.log(`[subscriptionCheckout] Created ${tier} session ${session.id} for ${userEmail}`);
     return Response.json({ url: session.url });
 
   } catch (error) {

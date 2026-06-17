@@ -110,6 +110,7 @@ import Onboarding from "./pages/Onboarding";
 import WaitlistManager from "./pages/WaitlistManager";
 import AuthCallback from "./pages/AuthCallback";
 import ApproveEntryTest from "./pages/ApproveEntryTest";
+import OpsLanding from "./pages/OpsLanding";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -138,7 +139,6 @@ const AuthenticatedApp = () => {
     <Routes>
       {/* All internal routes wrapped in sidebar layout */}
       <Route element={<AppLayout />}>
-        <Route path="/ops" element={<DailyOps />} />
         <Route path="/" element={<DailyOps />} />
         <Route path="/about" element={<About />} />
         <Route path="/accounting" element={<AccountingDashboard />} />
@@ -263,6 +263,8 @@ function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/waitlist-public" element={<WaitlistManager />} />
+            {/* Magic-link landing — must be public, Supabase reads the hash here */}
+            <Route path="/ops" element={<OpsLanding />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>
