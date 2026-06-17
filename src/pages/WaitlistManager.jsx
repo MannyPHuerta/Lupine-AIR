@@ -8,21 +8,11 @@ import {
 } from 'lucide-react';
 
 const API_BASE = 'https://theprojectair.com/api/waitlist-manager';
-const APPROVE_API = 'https://theprojectair.com/api/approve-entry';
 
 const callApi = async (body) => {
   const res = await fetch(API_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
-};
-
-const callApproveApi = async (body, token) => {
-  const res = await fetch(APPROVE_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   });
   return res.json();
@@ -250,26 +240,11 @@ export default function WaitlistManager() {
   const [showAddLead, setShowAddLead] = useState(false);
   const [lastResult, setLastResult] = useState(null);
   const [debugData, setDebugData] = useState(null);
-  const [userToken, setUserToken] = useState(null);
-
-  // Get auth token on mount
-  useEffect(() => {
-    const getToken = async () => {
-      try {
-        const { supabase } = await import('@/api/supabaseClient');
-        const { data: { session } } = await supabase.auth.getSession();
-        setUserToken(session?.access_token || null);
-      } catch (e) {
-        console.warn('[WaitlistManager] Could not get auth token:', e.message);
-      }
-    };
-    getToken();
-  }, []);
 
   // Debug: log state on render
   useEffect(() => {
-    console.log('[WaitlistManager] State:', { waitlist: waitlist.length, trials: trials.length, statusFilter, tab, hasToken: !!userToken });
-  }, [waitlist, trials, statusFilter, tab, userToken]);
+    console.log('[WaitlistManager] State:', { waitlist: waitlist.length, trials: trials.length, statusFilter, tab });
+  }, [waitlist, trials, statusFilter, tab]);
 
   const loadData = async () => {
     setLoading(true);
@@ -300,7 +275,12 @@ export default function WaitlistManager() {
 
   const handleApprove = async (entryId, notes) => {
     setProcessing(entryId);
-    const result = await callApproveApi({ entryId, notes }, userToken);
+    const res = await fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', entryId, notes: notes || null }),
+    });
+    const result = await res.json().catch(() => ({}));
     setLastResult(result);
     await loadData();
     setProcessing(null);
