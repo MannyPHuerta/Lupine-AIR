@@ -12,12 +12,12 @@ const PLANS = {
   },
   pro: {
     name: 'AIR Pro',
-    description: 'Multi-location operations with shop management, GPS tracking, and advanced analytics. Up to 3 branches.',
+    description: 'Multi-location operations with shop management, GPS tracking, and advanced analytics. Up to 5 branches.',
     amount: 79900, // $799/mo
   },
-  custom: {
-    name: 'AIR Custom',
-    description: 'Regional operations with government bidding, advanced load planning, and dedicated support. Up to 10 branches.',
+  enterprise: {
+    name: 'AIR Enterprise',
+    description: 'Unlimited branches, dedicated support, government bidding, and advanced load planning.',
     amount: 149900, // $1,499/mo
   },
 };
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const { tier, successUrl, cancelUrl } = body || {};
 
     if (!PLANS[tier]) {
-      return Response.json({ error: 'Invalid tier. Must be core, pro, or custom.' }, { status: 400 });
+      return Response.json({ error: 'Invalid tier. Must be core, pro, or enterprise.' }, { status: 400 });
     }
 
     const plan = PLANS[tier];

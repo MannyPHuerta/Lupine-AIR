@@ -6,8 +6,12 @@ import { Loader2, CheckCircle, AlertCircle, Zap } from 'lucide-react';
 
 const PLANS = {
   core: { name: 'AIR Core', price: '$299/mo', description: '1 branch, unlimited users, full AI suite.' },
-  pro:  { name: 'AIR Pro',  price: '$799/mo', description: 'Up to 3 branches, shop management, GPS tracking.' },
+  pro:  { name: 'AIR Pro',  price: '$799/mo', description: 'Up to 5 branches, shop management, GPS tracking.' },
+  enterprise: { name: 'AIR Enterprise', price: '$1,499/mo', description: 'Unlimited branches, dedicated support, government bidding.' },
 };
+
+// Tenants with permanent enterprise access — skip billing, redirect straight to workspace
+const ENTERPRISE_BYPASS = ['rental-world'];
 
 export default function OpsLanding() {
   const [phase, setPhase] = useState('loading'); // loading | demo | redirecting | error
@@ -41,25 +45,42 @@ export default function OpsLanding() {
       // Clean the hash/tokens out of the URL
       window.history.replaceState({}, '', '/ops');
 
-      // Check if this user already has an active subscription with a provisioned URL
+      // Check tenant record for this user's email
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('slug, status, plan_tier, admin_email')
+        .eq('admin_email', s.user.email)
+        .maybeSingle();
+
+      // Enterprise bypass OR active subscription → redirect immediately
+      const isBypassed = tenant && ENTERPRISE_BYPASS.includes(tenant.slug);
+      const isActive = tenant?.status === 'active';
+
+      if (tenant && (isBypassed || isActive)) {
+        setPhase('redirecting');
+        setTimeout(() => {
+          window.location.replace(`https://${tenant.slug}.theprojectair.com`);
+        }, 1500);
+        return;
+      }
+
+      // Also check subscriber_trials for Stripe-based subscriptions
       const { data: trial } = await supabase
         .from('subscriber_trials')
-        .select('status, tenant_id, stripe_subscription_id')
+        .select('status, tenant_id')
         .eq('email', s.user.email)
         .maybeSingle();
 
       if (trial?.status === 'active' && trial?.tenant_id) {
-        // Look up provisioned URL on the tenant record
-        const { data: tenant } = await supabase
+        const { data: trialTenant } = await supabase
           .from('tenants')
-          .select('slug, status')
+          .select('slug')
           .eq('id', trial.tenant_id)
           .maybeSingle();
-
-        if (tenant) {
+        if (trialTenant) {
           setPhase('redirecting');
           setTimeout(() => {
-            window.location.replace(`https://${tenant.slug}.theprojectair.com`);
+            window.location.replace(`https://${trialTenant.slug}.theprojectair.com`);
           }, 1500);
           return;
         }
