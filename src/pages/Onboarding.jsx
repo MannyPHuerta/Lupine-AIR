@@ -90,7 +90,16 @@ export default function Onboarding() {
         }),
       });
 
-      const data = await res.json();
+      // Handle non-JSON responses
+      const contentType = res.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Server returned ${res.status}: ${text.slice(0, 200)}`);
+      }
+      
       if (!res.ok) throw new Error(data.error || 'Provisioning failed');
 
       // If this is a demo signup, seed demo data

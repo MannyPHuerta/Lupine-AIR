@@ -6,6 +6,13 @@ import { createClient } from '@supabase/supabase-js';
 export const config = { runtime: 'nodejs' };
 
 export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const authHeader = req.headers.authorization;
@@ -13,19 +20,29 @@ export default async function handler(req, res) {
 
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !serviceKey) {
+    console.error('Missing Supabase env vars:', { supabaseUrl: !!supabaseUrl, serviceKey: !!serviceKey });
+    return res.status(500).json({ error: 'Server configuration error: Missing Supabase credentials' });
+  }
 
   const supabaseAdmin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   // Verify the caller's Supabase JWT
   const token = authHeader.replace('Bearer ', '');
   const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-  if (userError || !user) return res.status(401).json({ error: 'Unauthorized' });
+  if (userError || !user) {
+    console.error('Auth error:', userError);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const {
     companyName, industry, phone,
     branchName, branchAddress, branchCity, branchState, branchZip,
     branchPhone, branchEmail, invoicePrefix, planTier = 'starter',
   } = req.body;
+
+  console.log('Provisioning tenant:', { companyName, branchName, planTier, user: user.email });
 
   if (!companyName || !branchName) {
     return res.status(400).json({ error: 'companyName and branchName are required' });

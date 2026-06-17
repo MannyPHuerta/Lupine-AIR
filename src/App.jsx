@@ -111,6 +111,7 @@ import WaitlistManager from "./pages/WaitlistManager";
 import AuthCallback from "./pages/AuthCallback";
 import ApproveEntryTest from "./pages/ApproveEntryTest";
 import OpsLanding from "./pages/OpsLanding";
+import TestProvisionTenant from "./pages/TestProvisionTenant";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
@@ -232,6 +233,7 @@ const AuthenticatedApp = () => {
         <Route path="/supabase-test" element={<SupabaseTest />} />
         <Route path="/waitlist-manager" element={<WaitlistManager />} />
         <Route path="/test-approve" element={<ApproveEntryTest />} />
+        <Route path="/test-provision" element={<TestProvisionTenant />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
