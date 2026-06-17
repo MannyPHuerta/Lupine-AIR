@@ -301,14 +301,4 @@ export default function OpsLanding() {
                 )}
               </Button>
             </div>
-          ))}
-
-          <p className="text-slate-500 text-xs text-center">
-            No credit card required for your current 14-day trial.
-            Subscribe before your trial ends to keep full Pro access.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+ 
