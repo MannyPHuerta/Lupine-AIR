@@ -1,25 +1,26 @@
-// Import the actual Supabase client
+// Compatibility shim — re-exports supabase and provides the same
+// interface shape that App.jsx / pages expect (functions.invoke, etc.)
+// All actual auth and data work goes through Supabase directly.
 import { supabase } from './supabaseClient';
 
-// Mock Base44 SDK for platform compatibility (AuthContext.jsx requires this)
-// All actual functionality uses Supabase directly
+export { supabase };
+
 export const base44 = {
   auth: {
     me: async () => {
-      if (!supabase) return null;
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         return {
           id: session.user.id,
           email: session.user.email,
           full_name: session.user.user_metadata?.full_name || session.user.email,
-          role: session.user.user_metadata?.role || 'user'
+          role: session.user.user_metadata?.role || 'user',
         };
       }
-      throw new Error('Not authenticated');
+      return null;
     },
     logout: (redirectUrl) => {
-      if (supabase) supabase.auth.signOut();
+      supabase.auth.signOut();
       window.location.href = redirectUrl || '/signin';
     },
     redirectToLogin: (nextUrl) => {
@@ -27,30 +28,43 @@ export const base44 = {
       window.location.href = `/signin?next=${encodeURIComponent(next)}`;
     },
     isAuthenticated: async () => {
-      if (!supabase) return false;
       const { data: { session } } = await supabase.auth.getSession();
       return !!session;
     },
     updateMe: async (data) => {
-      if (!supabase) return;
       await supabase.auth.updateUser({ data });
-    }
+    },
   },
   entities: {},
   functions: {
     invoke: async (functionName, params) => {
-      // For Vercel deployment - call via API routes
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       const response = await fetch(`/api/${functionName}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(params),
       });
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
         throw new Error(error.message || 'Function invocation failed');
       }
-      return await response.json();
-    }
+      return response;
+    },
   },
-  integrations: {}
+  integrations: {},
+  agents: {
+    getWhatsAppConnectURL: () => '#',
+    getTelegramConnectURL: () => '#',
+    createConversation: () => {},
+    listConversations: () => [],
+    getConversation: () => null,
+    addMessage: () => {},
+    subscribeToConversation: () => () => {},
+  },
+  analytics: { track: () => {} },
+  users: {
+    inviteUser: async () => {},
+  },
 };
