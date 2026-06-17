@@ -21,14 +21,16 @@ export const AuthProvider = ({ children }) => {
       }
       try {
         const currentUser = await base44.auth.me();
-        setUser(currentUser);
-        setIsAuthenticated(true);
-        setIsLoadingAuth(false);
-      } catch (error) {
-        if (error?.status === 403 && error?.data?.extra_data?.reason === 'user_not_registered') {
-          setAuthError({ type: 'user_not_registered' });
+        if (currentUser) {
+          setUser(currentUser);
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
         }
+      } catch (error) {
+        // 'Not authenticated' is normal — user just isn't logged in
         setIsAuthenticated(false);
+      } finally {
         setIsLoadingAuth(false);
       }
     };
