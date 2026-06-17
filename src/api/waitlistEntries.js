@@ -1,7 +1,5 @@
-// Vercel serverless function — GET waitlist entries + subscriber trials (admin only)
+// @ts-check
 /* global process */
-// GET /api/waitlistEntries?type=waitlist|trials
-
 import { createClient } from '@supabase/supabase-js';
 
 export const config = { runtime: 'nodejs' };
@@ -20,13 +18,16 @@ export default async function handler(req, res) {
   const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
   if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
+  // Roles live in public.user_roles, NOT on profiles
+  const { data: roleRow, error: roleErr } = await supabaseAdmin
+    .from('user_roles')
     .select('role')
-    .eq('id', user.id)
-    .single();
+    .eq('user_id', user.id)
+    .in('role', ['admin', 'owner'])
+    .maybeSingle();
 
-  if (profile?.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+  if (roleErr) return res.status(500).json({ error: roleErr.message });
+  if (!roleRow) return res.status(403).json({ error: 'Admin access required' });
 
   const type = req.query.type || 'waitlist';
 
