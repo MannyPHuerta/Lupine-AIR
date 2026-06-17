@@ -1,0 +1,25 @@
+-- BACKUP: 2026-06-17
+-- Source: SUPABASE_SCHEMA.sql
+-- Copy of the full schema as it existed at time of backup.
+-- To restore: paste contents into Supabase SQL Editor and run.
+
+-- (See root SUPABASE_SCHEMA.sql for full content — this is a reference copy)
+-- Full schema was captured in context on 2026-06-17. Key tables:
+--   tenants, branches, profiles, company_settings, payment_settings,
+--   equipment_categories, equipment, customers, rentals, recurring_rentals,
+--   rto_payments, deliveries, recoveries, maintenance_logs, work_orders,
+--   part_requirements, parts_procurement, mechanic_profiles, predictive_alerts,
+--   expenses, vendors, supply_items, purchase_orders, cash_drawers,
+--   promo_codes, volume_discount_rules, discount_logs, rfq_records,
+--   event_plans, timesheets, staff_phones, audit_logs, gps_providers,
+--   equipment_gps_links, driver_locations, rental_agreements,
+--   availability_configs, delivery_matrix, reports,
+--   waitlist_entries, subscriber_trials
+--
+-- RLS: tenant_isolation on all tenant tables; service_role_only on platform tables.
+-- JWT hook: public.custom_access_token injects tenant_id, home_branch_id,
+--           current_branch_id, user_role into JWT claims.
+-- Profile creation: handled by provisionTenant backend function (not trigger).
+--
+-- IMPORTANT: subscriber_trials has a unique constraint on email.
+-- Magic link redirectTo is: https://theprojectair.com/ops
