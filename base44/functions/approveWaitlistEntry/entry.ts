@@ -1,134 +1,111 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { Resend } from 'npm:resend@2.0.0';
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL'),
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
+    // Auth check — must be an admin
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const { data: { user: adminUser }, error: authErr } = await supabase.auth.getUser(token);
+    if (authErr || !adminUser) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: adminUser.id, _role: 'admin' });
+    if (!isAdmin) return Response.json({ error: 'Admin access required' }, { status: 403 });
 
     const { entryId, name, email, company, phone, branches, notes } = await req.json();
     if (!email) return Response.json({ error: 'Email is required' }, { status: 400 });
 
-    const toDate = (d) => d.toISOString().split('T')[0];
     const now = new Date();
-    const trialEndsAt = new Date(now);
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
-    const lockoutDate = new Date(now);
-    lockoutDate.setDate(lockoutDate.getDate() + 30);
+    const toDate = (d) => d.toISOString().split('T')[0];
+    const trialEndsAt = new Date(now); trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    const lockoutDate = new Date(now); lockoutDate.setDate(lockoutDate.getDate() + 30);
 
-    // Create SubscriberTrial record
-    const trial = await base44.asServiceRole.entities.SubscriberTrial.create({
+    // Ensure Supabase auth user exists (idempotent)
+    await supabase.auth.admin.createUser({ email, email_confirm: true }).catch(() => {});
+
+    // Generate magic link to /ops
+    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
       email,
-      companyName: company || '',
-      contactName: name || '',
-      phone: phone || '',
-      branches: branches || '1',
-      status: 'invited',
-      planTier: 'pro',
-      trialStartDate: toDate(now),
-      trialEndsAt: toDate(trialEndsAt),
-      lockoutDate: toDate(lockoutDate),
-      approvedBy: user.email,
-      approvedAt: now.toISOString(),
-      notes: notes || '',
+      options: { redirectTo: 'https://theprojectair.com/ops' },
     });
+    if (linkErr) {
+      console.error('[approveWaitlistEntry] generateLink error:', linkErr.message);
+    }
+    const magicLink = linkData?.properties?.action_link || 'https://theprojectair.com/ops';
 
-    // Invite user via Base44 (they'll get a platform invite to set their password)
-    try {
-      await base44.users.inviteUser(email, 'user');
-      console.log(`[approveWaitlistEntry] Invited ${email} via Base44`);
-    } catch (inviteErr) {
-      console.warn(`[approveWaitlistEntry] Platform invite failed for ${email}:`, inviteErr.message);
-      // Continue — our welcome email still goes out
+    // Upsert subscriber_trials row
+    const { error: trialErr } = await supabase.from('subscriber_trials').upsert({
+      email,
+      company_name: company || null,
+      contact_name: name || null,
+      phone: phone || null,
+      branches: branches || null,
+      status: 'invited',
+      plan_tier: 'pro',
+      trial_start_date: toDate(now),
+      trial_ends_at: toDate(trialEndsAt),
+      lockout_date: toDate(lockoutDate),
+      approved_by: adminUser.email,
+      approved_at: now.toISOString(),
+      notes: notes || null,
+    }, { onConflict: 'email' });
+    if (trialErr) console.error('[approveWaitlistEntry] trial upsert error:', trialErr.message);
+
+    // Mark waitlist entry approved
+    if (entryId) {
+      await supabase.from('waitlist_entries').update({
+        status: 'approved',
+        approved_by: adminUser.email,
+        approved_at: now.toISOString(),
+        notes: notes || null,
+      }).eq('id', entryId);
     }
 
-    // Send approval + welcome email
-    const apiKey = Deno.env.get('RESEND_API_KEY');
-    if (apiKey) {
-      const resend = new Resend(apiKey);
-      await resend.emails.send({
+    // Send approval email with magic link
+    const resendKey = Deno.env.get('RESEND_API_KEY');
+    let emailSent = false;
+    if (resendKey) {
+      const resend = new Resend(resendKey);
+      const { error: emailErr } = await resend.emails.send({
         from: 'AIR by Lupine <info@theprojectair.com>',
         to: [email],
-        subject: `🎉 Your AIR trial is approved — here's how to get started`,
+        subject: `🎉 Your AIR trial is approved — sign in to get started`,
         html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
-            <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
-              <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in! 🚀</h1>
-              <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Your AIR early access has been approved</p>
+          <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+            <h1 style="margin:0 0 8px">You're in! 🚀</h1>
+            <p>Hi ${name || 'there'}, your early access for <strong>AIR by Lupine</strong> has been approved.</p>
+
+            <p style="margin:24px 0">
+              <a href="${magicLink}"
+                 style="background:#0f172a;color:#fff;padding:14px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
+                Sign In to AIR →
+              </a>
+            </p>
+            <p style="font-size:12px;color:#64748b">This link expires in 24 hours. After that, visit <a href="https://theprojectair.com/ops">theprojectair.com/ops</a> to request a new one.</p>
+
+            <div style="background:#f8fafc;border-radius:8px;padding:16px;margin:20px 0;font-size:13px;color:#475569">
+              Company: ${company || 'N/A'}<br/>
+              Full Pro access until: ${toDate(trialEndsAt)}<br/>
+              Account pauses on: ${toDate(lockoutDate)}
             </div>
-            <div style="padding:32px">
-              <p style="color:#94a3b8;line-height:1.7">Hi ${name || 'there'},</p>
-              <p style="color:#cbd5e1;line-height:1.7">
-                Your early access request for <strong style="color:#0ea5e9">AIR by Lupine</strong> has been approved.
-                Here's what your 30-day window looks like:
-              </p>
 
-              <div style="background:#1e293b;border-radius:10px;padding:20px;margin:20px 0">
-                <div style="margin-bottom:14px">
-                  <span style="background:#0ea5e9;color:#000;border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;vertical-align:middle;margin-right:10px">1</span>
-                  <strong style="color:#f1f5f9">Days 1–14: Full Pro Access</strong>
-                  <p style="color:#64748b;margin:4px 0 0 36px;font-size:13px">All features unlocked — AIRental, AIREvents, AIRepair, AIRoads, GPS tracking, and more.</p>
-                </div>
-                <div style="margin-bottom:14px">
-                  <span style="background:#f59e0b;color:#000;border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;vertical-align:middle;margin-right:10px">2</span>
-                  <strong style="color:#f1f5f9">Days 15–30: Core Tier</strong>
-                  <p style="color:#64748b;margin:4px 0 0 36px;font-size:13px">Essential rental features stay active. Upgrade to keep full Pro access.</p>
-                </div>
-                <div>
-                  <span style="background:#ef4444;color:#fff;border-radius:50%;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;vertical-align:middle;margin-right:10px">3</span>
-                  <strong style="color:#f1f5f9">Day 30: Account Pauses</strong>
-                  <p style="color:#64748b;margin:4px 0 0 36px;font-size:13px">We'll send reminders. Your data is never deleted.</p>
-                </div>
-              </div>
-
-              <div style="background:#0c2240;border:1px solid #0ea5e9;border-radius:8px;padding:16px;margin:20px 0;font-size:14px;color:#93c5fd">
-                <strong>📧 Next step:</strong> Check your inbox for a separate invitation email from the AIR platform.
-                Click the link in that email to create your account and set your password.
-                Then sign in at <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a> to complete setup.
-              </div>
-
-              <div style="text-align:center;margin:28px 0">
-                <a href="https://theprojectair.com/onboarding"
-                   style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
-                  Complete Setup →
-                </a>
-              </div>
-
-              <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
-                <strong style="color:#94a3b8">Your trial summary:</strong><br/>
-                Company: ${company || 'N/A'}<br/>
-                Trial start: ${toDate(now)}<br/>
-                Full Pro access until: ${toDate(trialEndsAt)}<br/>
-                Account pauses on: ${toDate(lockoutDate)}
-              </div>
-
-              <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
-                Questions? Reply to this email — we're here.<br/>
-                <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
-              </p>
-            </div>
+            <p style="font-size:12px;color:#94a3b8">Questions? Reply to this email — we're here.</p>
           </div>
         `,
       });
-      console.log(`[approveWaitlistEntry] Welcome email sent to ${email}`);
+      if (emailErr) console.error('[approveWaitlistEntry] email error:', emailErr);
+      else emailSent = true;
     }
 
-    // Update WaitlistEntry status
-    if (entryId) {
-      await base44.asServiceRole.entities.WaitlistEntry.update(entryId, {
-        status: 'approved',
-        approvedBy: user.email,
-        approvedAt: now.toISOString(),
-        notes: notes || '',
-      });
-    }
-
-    console.log(`[approveWaitlistEntry] Approved ${email} — Trial ID: ${trial.id}`);
-    return Response.json({ success: true, trialId: trial.id });
+    console.log(`[approveWaitlistEntry] Approved ${email}, emailSent=${emailSent}`);
+    return Response.json({ success: true, emailSent, magicLink });
 
   } catch (error) {
     console.error('[approveWaitlistEntry] Error:', error.message);
