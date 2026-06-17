@@ -243,7 +243,15 @@ export default function OpsLanding() {
           </span>
         </div>
         {session && (
-          <span className="text-slate-400 text-sm">{session.user.email}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-slate-400 text-sm">{session.user.email}</span>
+            <button
+              onClick={async () => { await supabase.auth.signOut(); setSession(null); setPhase('signin'); }}
+              className="text-xs text-slate-500 hover:text-slate-300 underline transition"
+            >
+              Sign out
+            </button>
+          </div>
         )}
       </div>
 
