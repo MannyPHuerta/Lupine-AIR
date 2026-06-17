@@ -90,14 +90,14 @@ export default function Onboarding() {
         }),
       });
 
-      // Handle non-JSON responses
-      const contentType = res.headers.get('content-type');
+      const text = await res.text();
+      console.log('Raw response:', res.status, text);
+      
       let data;
-      if (contentType && contentType.includes('application/json')) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        throw new Error(`Server returned ${res.status}: ${text.slice(0, 200)}`);
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Server returned invalid JSON (${res.status}): ${text.slice(0, 300)}`);
       }
       
       if (!res.ok) throw new Error(data.error || 'Provisioning failed');
