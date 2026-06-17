@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       type: 'magiclink',
       email: email,
       options: { 
-        redirectTo: `${baseUrl}/auth/callback` 
+        redirectTo: `${baseUrl}/ops` 
       },
     });
     
