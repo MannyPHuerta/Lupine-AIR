@@ -157,7 +157,10 @@ export default function OpsLanding() {
     setSigninLoading(true);
     const { error } = await supabase.auth.signInWithOtp({
       email: signinEmail,
-      options: { emailRedirectTo: 'https://theprojectair.com/ops' },
+      options: {
+        emailRedirectTo: 'https://theprojectair.com/ops',
+        shouldCreateUser: false,
+      },
     });
     setSigninLoading(false);
     if (!error) setSigninSent(true);
