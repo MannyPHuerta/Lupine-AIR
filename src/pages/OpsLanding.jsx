@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, CheckCircle, AlertCircle, Zap, Mail } from 'lucide-react';
 
 const PLANS = {
   core: { name: 'AIR Core', price: '$299/mo', description: '1 branch, unlimited users, full AI suite.' },
@@ -14,10 +15,13 @@ const PLANS = {
 const ENTERPRISE_BYPASS = ['rental-world'];
 
 export default function OpsLanding() {
-  const [phase, setPhase] = useState('loading'); // loading | demo | redirecting | error
+  const [phase, setPhase] = useState('loading'); // loading | signin | demo | redirecting | error
   const [session, setSession] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(null);
+  const [signinEmail, setSigninEmail] = useState('');
+  const [signinLoading, setSigninLoading] = useState(false);
+  const [signinSent, setSigninSent] = useState(false);
 
   useEffect(() => {
     // Supabase auto-consumes the #access_token hash on mount because
@@ -31,12 +35,11 @@ export default function OpsLanding() {
       if (error || !s) {
         const params = new URLSearchParams(window.location.search);
         if (params.get('checkout') === 'success') {
-          // Came back from Stripe — re-check session
           setPhase('demo');
           return;
         }
-        setErrorMsg('Your sign-in link has expired or is invalid. Please request a new one.');
-        setPhase('error');
+        // No session — show sign-in form
+        setPhase('signin');
         return;
       }
 
@@ -138,19 +141,77 @@ export default function OpsLanding() {
     );
   }
 
+  const handleSignin = async (e) => {
+    e.preventDefault();
+    if (!signinEmail) return;
+    setSigninLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: signinEmail,
+      options: { emailRedirectTo: 'https://theprojectair.com/ops' },
+    });
+    setSigninLoading(false);
+    if (!error) setSigninSent(true);
+  };
+
+  if (phase === 'signin') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mx-auto">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-white font-bold text-2xl">Sign in to AIR</h1>
+            <p className="text-slate-400 text-sm">We'll send a magic link to your email.</p>
+          </div>
+
+          {signinSent ? (
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 text-center space-y-2">
+              <Mail className="w-8 h-8 text-green-400 mx-auto" />
+              <p className="text-green-300 font-semibold">Check your inbox</p>
+              <p className="text-slate-400 text-sm">A sign-in link was sent to <span className="text-white">{signinEmail}</span></p>
+            </div>
+          ) : (
+            <form onSubmit={handleSignin} className="space-y-3">
+              <Input
+                type="email"
+                required
+                placeholder="your@email.com"
+                value={signinEmail}
+                onChange={e => setSigninEmail(e.target.value)}
+                className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+              />
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={signinLoading}
+              >
+                {signinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Magic Link'}
+              </Button>
+            </form>
+          )}
+
+          <p className="text-center text-slate-600 text-xs">
+            <a href="/" className="hover:text-slate-400 transition">← Back to home</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'error') {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
-          <p className="text-white font-semibold text-lg">Access link invalid</p>
+          <p className="text-white font-semibold text-lg">Something went wrong</p>
           <p className="text-slate-400 text-sm">{errorMsg}</p>
           <Button
             variant="outline"
             className="border-slate-600 text-slate-300 hover:bg-slate-800"
-            onClick={() => window.location.replace('/')}
+            onClick={() => setPhase('signin')}
           >
-            Back to home
+            Try signing in
           </Button>
         </div>
       </div>
