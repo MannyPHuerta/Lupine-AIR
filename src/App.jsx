@@ -265,6 +265,8 @@ function App() {
             <Route path="/waitlist-public" element={<WaitlistManager />} />
             {/* Magic-link landing — must be public, Supabase reads the hash here */}
             <Route path="/ops" element={<OpsLanding />} />
+            {/* Catch-all for /ops with hash/query params (magic link callbacks) */}
+            <Route path="/ops/*" element={<OpsLanding />} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>
