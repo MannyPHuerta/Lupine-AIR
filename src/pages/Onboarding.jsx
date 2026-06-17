@@ -71,7 +71,7 @@ export default function Onboarding() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not signed in. Please sign in first.');
 
-      const response = await fetch('/api/provisionTenant', {
+      const res = await fetch('/api/provisionTenant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,9 +89,18 @@ export default function Onboarding() {
           planTier,
         }),
       });
+
+      const text = await res.text();
+      console.log('Raw response:', res.status, text);
       
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Provisioning failed');
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Server returned invalid JSON (${res.status}): ${text.slice(0, 300)}`);
+      }
+      
+      if (!res.ok) throw new Error(data.error || 'Provisioning failed');
 
       // If this is a demo signup, seed demo data
       const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true';
