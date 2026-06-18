@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   try {
     const sb = getSupabase();
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const { action, entryId, notes, lead } = body;
+    const { action, entryId, notes, lead, email } = body;
 
     // LIST
     if (action === 'list') {
@@ -169,6 +169,65 @@ export default async function handler(req, res) {
       const { error } = await sb.from('waitlist_entries').insert({ ...(lead || {}), status: 'pending' });
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ success: true });
+    }
+
+    // DELETE ENTRY
+    if (action === 'deleteEntry') {
+      const { error } = await sb.from('waitlist_entries').delete().eq('id', entryId);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
+    }
+
+    // DELETE TRIAL
+    if (action === 'deleteTrial') {
+      const { error } = await sb.from('subscriber_trials').delete().eq('id', entryId);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
+    }
+
+    // RESEND MAGIC LINK
+    if (action === 'resendMagicLink') {
+      const { email } = body;
+      if (!email) return res.status(400).json({ error: 'email required' });
+
+      // Ensure user exists
+      await sb.auth.admin.createUser({ email, email_confirm: true });
+
+      const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+        options: { redirectTo: 'https://theprojectair.com/ops' },
+      });
+
+      const actionLink = linkData?.properties?.action_link;
+      if (linkErr || !actionLink) {
+        return res.status(500).json({ error: 'Failed to generate magic link', details: linkErr?.message });
+      }
+
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY not set' });
+
+      const emailResult = await sendEmail(apiKey, {
+        from: 'AIR by Lupine <info@theprojectair.com>',
+        to: [email],
+        subject: 'Your AIR Sign-In Link',
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+              <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">Sign in to AIR</h1>
+            </div>
+            <div style="padding:32px;text-align:center">
+              <p style="color:#94a3b8;margin:0 0 24px">Click the button below to sign in. This link expires in 1 hour.</p>
+              <a href="${actionLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">
+                Sign In to AIR →
+              </a>
+              <p style="color:#475569;font-size:11px;margin-top:16px;word-break:break-all">${actionLink}</p>
+            </div>
+          </div>
+        `,
+      });
+
+      return res.status(200).json({ success: true, emailSent: !!emailResult?.id, emailResult });
     }
 
     return res.status(400).json({ error: 'Unknown action: ' + action });
