@@ -43,7 +43,8 @@ export default async function handler(req, res) {
       type: 'magiclink',
       email: email,
       options: { 
-        redirectTo: `${baseUrl}/ops` 
+        redirectTo: `${baseUrl}/ops`,
+        shouldSendEmail: false,
       },
     });
     
@@ -54,10 +55,6 @@ export default async function handler(req, res) {
     const magicLink = linkData?.properties?.action_link
       || linkData?.properties?.email_otp_link
       || linkData?.action_link;
-    
-    console.log('linkData keys:', JSON.stringify(Object.keys(linkData || {})));
-    console.log('properties keys:', JSON.stringify(Object.keys(linkData?.properties || {})));
-    console.log('magicLink resolved:', magicLink);
     
     if (!magicLink) {
       return res.status(500).json({ error: 'Failed to generate magic link — action_link was empty', debug: linkData });
