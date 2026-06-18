@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import {
   CheckCircle, XCircle, Clock, Users, Building2, Phone, Mail,
-  GitBranch, Calendar, RefreshCw, Plus, Search, ExternalLink
+  GitBranch, Calendar, RefreshCw, Plus, Search, ExternalLink, Send, Trash2
 } from 'lucide-react';
 
 const API_BASE = 'https://theprojectair.com/api/waitlist-manager';
@@ -33,9 +33,11 @@ const trialStatusColors = {
   cancelled: 'bg-red-100 text-red-800 border-red-200',
 };
 
-function WaitlistCard({ entry, onApprove, onReject, processing }) {
+function WaitlistCard({ entry, onApprove, onReject, onResend, onDelete, processing }) {
   const [notes, setNotes] = useState('');
   const [expanded, setExpanded] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendDone, setResendDone] = useState(false);
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3 shadow-sm">
@@ -122,16 +124,41 @@ function WaitlistCard({ entry, onApprove, onReject, processing }) {
       )}
 
       {entry.status === 'approved' && entry.approved_at && (
-        <div className="text-xs text-green-600 flex items-center gap-1">
-          <CheckCircle className="w-3.5 h-3.5" />
-          Approved {new Date(entry.approved_at).toLocaleDateString()}
+        <div className="space-y-2">
+          <div className="text-xs text-green-600 flex items-center gap-1">
+            <CheckCircle className="w-3.5 h-3.5" />
+            Approved {new Date(entry.approved_at).toLocaleDateString()}
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={resending}
+              onClick={async () => { setResending(true); await onResend(entry.email); setResending(false); setResendDone(true); setTimeout(() => setResendDone(false), 3000); }}
+              className="flex-1 gap-1 text-blue-600 border-blue-200 hover:bg-blue-50">
+              <Send className="w-3.5 h-3.5" />
+              {resending ? 'Sending…' : resendDone ? '✓ Sent!' : 'Resend Magic Link'}
+            </Button>
+            <Button size="sm" variant="outline"
+              onClick={() => { if (confirm('Delete this entry?')) onDelete(entry.id, 'entry'); }}
+              className="text-red-500 border-red-200 hover:bg-red-50">
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
+      )}
+
+      {entry.status === 'rejected' && (
+        <Button size="sm" variant="outline"
+          onClick={() => { if (confirm('Delete this entry?')) onDelete(entry.id, 'entry'); }}
+          className="w-full gap-1 text-red-500 border-red-200 hover:bg-red-50">
+          <Trash2 className="w-3.5 h-3.5" /> Delete
+        </Button>
       )}
     </div>
   );
 }
 
-function TrialCard({ trial }) {
+function TrialCard({ trial, onResend, onDelete }) {
+  const [resending, setResending] = useState(false);
+  const [resendDone, setResendDone] = useState(false);
   const daysLeft = trial.trial_ends_at
     ? Math.ceil((new Date(trial.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24))
     : null;
@@ -193,6 +220,20 @@ function TrialCard({ trial }) {
           {trial.notes}
         </div>
       )}
+
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" variant="outline" disabled={resending}
+          onClick={async () => { setResending(true); await onResend(trial.email); setResending(false); setResendDone(true); setTimeout(() => setResendDone(false), 3000); }}
+          className="flex-1 gap-1 text-blue-600 border-blue-200 hover:bg-blue-50">
+          <Send className="w-3.5 h-3.5" />
+          {resending ? 'Sending…' : resendDone ? '✓ Sent!' : 'Resend Magic Link'}
+        </Button>
+        <Button size="sm" variant="outline"
+          onClick={() => { if (confirm('Delete this trial?')) onDelete(trial.id, 'trial'); }}
+          className="text-red-500 border-red-200 hover:bg-red-50">
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -243,30 +284,18 @@ export default function WaitlistManager() {
 
   const loadData = async () => {
     setLoading(true);
-    console.log('[WaitlistManager] Calling API...');
     try {
       const data = await callApi({ action: 'list' });
-      console.log('[WaitlistManager] Raw API response:', data);
       setDebugData(data);
-      if (data.waitlist) {
-        console.log('[WaitlistManager] Setting waitlist with', data.waitlist.length, 'entries');
-        setWaitlist(data.waitlist);
-      }
-      if (data.trials) {
-        console.log('[WaitlistManager] Setting trials with', data.trials.length, 'entries');
-        setTrials(data.trials);
-      }
+      if (data.waitlist) setWaitlist(data.waitlist);
+      if (data.trials) setTrials(data.trials);
     } catch (e) {
-      console.error('[WaitlistManager] Load error:', e);
       setDebugData({ error: e.message });
     }
     setLoading(false);
   };
 
-  useEffect(() => { 
-    console.log('[WaitlistManager] Component mounted, loading data...');
-    loadData(); 
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const handleApprove = async (entryId, notes) => {
     setProcessing(entryId);
@@ -285,6 +314,15 @@ export default function WaitlistManager() {
 
   const handleAddLead = async (lead) => {
     await callApi({ action: 'addLead', lead });
+    await loadData();
+  };
+
+  const handleResend = async (email) => {
+    await callApi({ action: 'resendMagicLink', email });
+  };
+
+  const handleDelete = async (entryId, type) => {
+    await callApi({ action: type === 'trial' ? 'deleteTrial' : 'deleteEntry', entryId });
     await loadData();
   };
 
@@ -418,6 +456,8 @@ export default function WaitlistManager() {
                   entry={entry}
                   onApprove={handleApprove}
                   onReject={handleReject}
+                  onResend={handleResend}
+                  onDelete={handleDelete}
                   processing={processing}
                 />
               ))}
@@ -429,7 +469,7 @@ export default function WaitlistManager() {
           ) : (
             <div className="grid gap-3">
               {filteredTrials.map(trial => (
-                <TrialCard key={trial.id} trial={trial} />
+                <TrialCard key={trial.id} trial={trial} onResend={handleResend} onDelete={handleDelete} />
               ))}
             </div>
           )
