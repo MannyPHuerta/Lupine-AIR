@@ -1,13 +1,4 @@
 {
-  "buildCommand": "vite build",
-  "outputDirectory": "dist",
-  "devCommand": "vite",
-  "installCommand": "npm install",
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
