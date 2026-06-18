@@ -5,6 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 
 export const config = { runtime: 'nodejs' };
 
+const PROVISION_VERSION = 'v2-name-fix-2026-06-18';
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -70,26 +72,29 @@ export default async function handler(req, res) {
     .slice(0, 50) + '-' + Date.now().toString(36);
 
   // 1. Create Tenant
+  const tenantPayload = {
+    name: companyName,
+    company_name: companyName,
+    slug,
+    admin_email: user.email,
+    status: 'trial',
+    trial_start_date: now.toISOString().split('T')[0],
+    trial_ends_at: trialEndsAt.toISOString().split('T')[0],
+    plan_tier: planTier,
+    industry: industry || 'both',
+    phone: phone || null,
+    onboarding_completed: false,
+    onboarding_step: 0,
+  };
+  console.log(`[${PROVISION_VERSION}] Inserting tenant payload:`, JSON.stringify(tenantPayload));
+
   const { data: tenant, error: tenantError } = await supabaseAdmin
     .from('tenants')
-    .insert({
-      name: companyName,
-      company_name: companyName,
-      slug,
-      admin_email: user.email,
-      status: 'trial',
-      trial_start_date: now.toISOString().split('T')[0],
-      trial_ends_at: trialEndsAt.toISOString().split('T')[0],
-      plan_tier: planTier,
-      industry: industry || 'both',
-      phone: phone || null,
-      onboarding_completed: false,
-      onboarding_step: 0,
-    })
+    .insert(tenantPayload)
     .select()
     .single();
 
-  if (tenantError) return res.status(500).json({ error: tenantError.message });
+  if (tenantError) return res.status(500).json({ error: tenantError.message, version: PROVISION_VERSION, payload: tenantPayload });
 
   // 2. Create Branch
   const prefix = (invoicePrefix || branchName.slice(0, 3)).toUpperCase();
@@ -152,5 +157,5 @@ export default async function handler(req, res) {
     .update({ onboarding_completed: true, onboarding_step: 4 })
     .eq('id', tenant.id);
 
-  return res.status(200).json({ success: true, tenantId: tenant.id, branchId: branch.id });
+  return res.status(200).json({ success: true, tenantId: tenant.id, branchId: branch.id, version: PROVISION_VERSION });
 }
