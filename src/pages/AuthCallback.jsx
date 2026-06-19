@@ -15,11 +15,23 @@ export default function AuthCallback() {
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
 
     const code = searchParams.get('code');
+    const token = searchParams.get('token');
+    const type = searchParams.get('type');
     const accessToken = hashParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token');
     const next = searchParams.get('next') || '/ops';
 
-    if (code) {
+    if (token && type) {
+      // Supabase-generated magic link: ?token=...&type=magiclink
+      supabase.auth.verifyOtp({ token_hash: token, type })
+        .then(({ error }) => {
+          if (error) {
+            setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+            return;
+          }
+          window.location.replace(next);
+        });
+    } else if (code) {
       // PKCE code flow — exchange code for session
       supabase.auth.exchangeCodeForSession(code)
         .then(({ error }) => {
