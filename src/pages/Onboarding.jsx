@@ -125,6 +125,25 @@ export default function Onboarding() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not signed in. Please sign in first.');
 
+      // Early check: if tenant already exists, redirect immediately
+      try {
+        const res = await fetch('/api/resolveTenant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: session.user.email }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (result.tenant && (result.tenant.status === 'active' || result.tenant.slug === 'rental-world')) {
+            console.log('[Onboarding] early redirect — tenant exists:', result.tenant.slug);
+            window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('[Onboarding] early resolveTenant check failed:', e);
+      }
+
       const res = await fetch('/api/provisionTenant', {
         method: 'POST',
         headers: {
