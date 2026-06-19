@@ -18,6 +18,13 @@ export default function AuthCallback() {
     // Temporary debug — remove once working
     setDebug(`search: ${window.location.search} | hash: ${window.location.hash}`);
 
+    // Check for error in hash first
+    const hashError = hashParams.get('error');
+    if (hashError) {
+      setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+      return;
+    }
+
     const code = searchParams.get('code');
     const token = searchParams.get('token');
     const type = searchParams.get('type');
