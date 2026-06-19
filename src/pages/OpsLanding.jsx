@@ -31,11 +31,19 @@ async function resolveSession(s, setPhase, setSession) {
   console.log('[OpsLanding] looking up tenant for email:', s.user.email);
   
   try {
+    console.log('[OpsLanding] Calling resolveTenant API for:', s.user.email);
     const response = await fetch('/api/resolveTenant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: s.user.email })
     });
+    console.log('[OpsLanding] resolveTenant response status:', response.status);
+    
+    if (!response.ok) {
+      console.error('[OpsLanding] resolveTenant failed with status:', response.status);
+      throw new Error('resolveTenant API failed: ' + response.status);
+    }
+    
     const result = await response.json();
     console.log('[OpsLanding] resolveTenant API result:', result);
     
@@ -55,9 +63,37 @@ async function resolveSession(s, setPhase, setSession) {
     console.log('[OpsLanding] no valid tenant found from API');
   } catch (err) {
     console.error('[OpsLanding] resolveTenant API error:', err);
+    console.log('[OpsLanding] Falling back to direct Supabase lookup');
   }
   
-  // Fallback: client-side lookup (may be blocked by RLS)
+  // Fallback 1: Check user's profile for existing tenant_id
+  console.log('[OpsLanding] Checking user profile for tenant_id');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id, home_branch_id')
+    .eq('id', s.user.id)
+    .maybeSingle();
+  
+  if (profile?.tenant_id) {
+    console.log('[OpsLanding] User has tenant_id in profile:', profile.tenant_id);
+    const { data: tenantFromProfile } = await supabase
+      .from('tenants')
+      .select('slug, status')
+      .eq('id', profile.tenant_id)
+      .maybeSingle();
+    
+    if (tenantFromProfile) {
+      console.log('[OpsLanding] Found tenant from profile:', tenantFromProfile.slug, '| status:', tenantFromProfile.status);
+      if (tenantFromProfile.slug === 'rental-world' || tenantFromProfile.status === 'active') {
+        setPhase('redirecting');
+        setTimeout(() => window.location.replace(`https://${tenantFromProfile.slug}.theprojectair.com`), 1500);
+        return;
+      }
+    }
+  }
+  
+  // Fallback 2: client-side lookup by admin_email (may be blocked by RLS)
+  console.log('[OpsLanding] Checking tenants table by admin_email');
   const { data: tenantByAdmin } = await supabase
     .from('tenants')
     .select('slug, status')
