@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Signing you in…');
+  const [debug, setDebug] = useState('');
 
   useEffect(() => {
     if (!supabase) {
@@ -13,6 +14,9 @@ export default function AuthCallback() {
 
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+
+    // Temporary debug — remove once working
+    setDebug(`search: ${window.location.search} | hash: ${window.location.hash}`);
 
     const code = searchParams.get('code');
     const token = searchParams.get('token');
@@ -69,6 +73,9 @@ export default function AuthCallback() {
           </>
         ) : (
           <p className="text-red-600 font-medium">{status}</p>
+        )}
+        {debug && (
+          <p className="text-xs text-slate-400 break-all mt-2">{debug}</p>
         )}
       </div>
     </div>
