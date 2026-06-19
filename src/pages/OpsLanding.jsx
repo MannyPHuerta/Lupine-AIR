@@ -72,26 +72,6 @@ async function resolveSession(s, setPhase, setSession) {
   }
 
   console.log('[OpsLanding] no tenant found — redirecting to onboarding');
-
-  // Trial lookup as final fallback
-  const { data: trial } = await supabase
-    .from('subscriber_trials')
-    .select('status, tenant_id')
-    .eq('email', s.user.email)
-    .maybeSingle();
-
-  if (trial?.status === 'active' && trial?.tenant_id) {
-    const { data: trialTenant } = await supabase
-      .from('tenants')
-      .select('slug')
-      .eq('id', trial.tenant_id)
-      .maybeSingle();
-    if (trialTenant) {
-      setPhase('redirecting');
-      setTimeout(() => window.location.replace(`https://${trialTenant.slug}.theprojectair.com`), 1500);
-      return;
-    }
-  }
   setPhase('redirecting');
   setTimeout(() => window.location.replace('/onboarding'), 1500);
 }
