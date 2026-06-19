@@ -14,11 +14,12 @@ export default function AuthCallback() {
 
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+    const next = searchParams.get('next') || '/ops';
 
-    // Temporary debug — remove once working
+    // Debug info
     setDebug(`search: ${window.location.search} | hash: ${window.location.hash}`);
 
-    // Check for error in hash first
+    // Error in hash (expired link etc.)
     const hashError = hashParams.get('error');
     if (hashError) {
       setStatus('Sign-in failed. The link may have expired. Please request a new one.');
@@ -30,41 +31,75 @@ export default function AuthCallback() {
     const type = searchParams.get('type');
     const accessToken = hashParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token');
-    const next = searchParams.get('next') || '/ops';
 
+    // Case 1: admin generateLink — ?token=...&type=magiclink
     if (token && type) {
-      // Supabase admin generateLink produces ?token=...&type=magiclink
       supabase.auth.verifyOtp({ token_hash: token, type })
         .then(({ error }) => {
           if (error) {
             setStatus('Sign-in failed. The link may have expired. Please request a new one.');
-            return;
+          } else {
+            window.location.replace(next);
           }
-          window.location.replace(next);
         });
-    } else if (code) {
-      // PKCE code flow
+      return;
+    }
+
+    // Case 2: PKCE code flow — ?code=...
+    if (code) {
       supabase.auth.exchangeCodeForSession(code)
         .then(({ error }) => {
           if (error) {
             setStatus('Sign-in failed. The link may have expired. Please request a new one.');
-            return;
+          } else {
+            window.location.replace(next);
           }
-          window.location.replace(next);
         });
-    } else if (accessToken) {
-      // Hash-based magic link
+      return;
+    }
+
+    // Case 3: Hash-based implicit flow — #access_token=...
+    if (accessToken) {
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
         .then(({ error }) => {
           if (error) {
             setStatus('Sign-in failed. The link may have expired. Please request a new one.');
-            return;
+          } else {
+            window.location.replace(next);
           }
-          window.location.replace(next);
         });
-    } else {
-      setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+      return;
     }
+
+    // Case 4: Supabase server-side verify — no params, session arrives via onAuthStateChange
+    // This happens when Supabase verifies the OTP server-side and redirects here
+    let settled = false;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AuthCallback] auth event:', event, session?.user?.email);
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !settled) {
+        settled = true;
+        subscription.unsubscribe();
+        window.location.replace(next);
+      } else if (event === 'INITIAL_SESSION' && !session && !settled) {
+        settled = true;
+        subscription.unsubscribe();
+        setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+      }
+    });
+
+    // Timeout fallback
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        subscription.unsubscribe();
+        setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+      }
+    }, 8000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   return (
