@@ -134,8 +134,8 @@ export default function Onboarding() {
         });
         if (res.ok) {
           const result = await res.json();
-          if (result.tenant && (result.tenant.status === 'active' || result.tenant.slug === 'rental-world')) {
-            console.log('[Onboarding] early redirect — tenant exists:', result.tenant.slug);
+          if (result.tenant) {
+            console.log('[Onboarding] early redirect — tenant exists:', result.tenant.slug, '| source:', result.source);
             window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
             return;
           }

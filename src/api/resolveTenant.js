@@ -67,7 +67,7 @@ export default async function(req, res) {
       console.log('[resolveTenant] Found active trial with tenant_id:', trial.tenant_id);
       const { data: trialTenant, error: trialTenantError } = await supabase
         .from('tenants')
-        .select('slug')
+        .select('slug, status')
         .eq('id', trial.tenant_id)
         .maybeSingle();
 
@@ -75,6 +75,33 @@ export default async function(req, res) {
 
       if (trialTenant) {
         return res.json({ tenant: trialTenant, source: 'trial' });
+      }
+    }
+
+    // Fallback: check profiles table for tenant_id (catches already-provisioned users)
+    console.log('[resolveTenant] Checking profiles table for user with email:', email);
+    const { data: userProfile } = await supabase.auth.admin.getUserByEmail(email);
+    if (userProfile?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userProfile.user.id)
+        .maybeSingle();
+
+      console.log('[resolveTenant] Profile lookup result:', { profile });
+
+      if (profile?.tenant_id) {
+        const { data: tenantFromProfile } = await supabase
+          .from('tenants')
+          .select('slug, status')
+          .eq('id', profile.tenant_id)
+          .maybeSingle();
+
+        console.log('[resolveTenant] Tenant from profile:', tenantFromProfile);
+
+        if (tenantFromProfile) {
+          return res.json({ tenant: tenantFromProfile, source: 'profile' });
+        }
       }
     }
 
