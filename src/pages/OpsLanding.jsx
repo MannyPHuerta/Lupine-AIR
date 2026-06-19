@@ -157,7 +157,7 @@ export default function OpsLanding() {
     const { error } = await supabase.auth.signInWithOtp({
       email: signinEmail,
       options: {
-        emailRedirectTo: 'https://theprojectair.com/auth/callback',
+        emailRedirectTo: 'https://theprojectair.com/ops',
         shouldCreateUser: false,
       },
     });
@@ -286,7 +286,7 @@ export default function OpsLanding() {
 
       <div className="flex" style={{ height: 'calc(100vh - 120px)' }}>
         <iframe
-          src="https://theprojectair.com/daily-ops-demo"
+          src="https://theprojectair.com/"
           className="flex-1 border-0"
           title="AIR Demo"
         />
