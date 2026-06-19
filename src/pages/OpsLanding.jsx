@@ -48,11 +48,11 @@ async function resolveSession(s, setPhase, setSession) {
     console.log('[OpsLanding] resolveTenant API result:', result);
     
     if (result.tenant) {
-      console.log('[OpsLanding] tenant found via API:', result.tenant.slug, '| source:', result.source);
+      console.log('[OpsLanding] tenant found via API:', result.tenant.slug, '| status:', result.tenant.status, '| source:', result.source);
       const isBypassed = result.tenant.slug === 'rental-world';
-      const isActive = result.tenant.status === 'active';
+      const hasValidStatus = ['active', 'trial'].includes(result.tenant.status);
       
-      if (isBypassed || isActive) {
+      if (isBypassed || hasValidStatus) {
         console.log('[OpsLanding] valid tenant — redirecting to:', `https://${result.tenant.slug}.theprojectair.com`);
         setPhase('redirecting');
         setTimeout(() => window.location.replace(`https://${result.tenant.slug}.theprojectair.com`), 1500);
@@ -84,7 +84,7 @@ async function resolveSession(s, setPhase, setSession) {
     
     if (tenantFromProfile) {
       console.log('[OpsLanding] Found tenant from profile:', tenantFromProfile.slug, '| status:', tenantFromProfile.status);
-      if (tenantFromProfile.slug === 'rental-world' || tenantFromProfile.status === 'active') {
+      if (tenantFromProfile.slug === 'rental-world' || ['active', 'trial'].includes(tenantFromProfile.status)) {
         setPhase('redirecting');
         setTimeout(() => window.location.replace(`https://${tenantFromProfile.slug}.theprojectair.com`), 1500);
         return;

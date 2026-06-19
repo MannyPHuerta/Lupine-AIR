@@ -40,7 +40,7 @@ export default function Onboarding() {
   const [error, setError] = useState('');
   const [existingTenant, setExistingTenant] = useState(null);
 
-  // Check if user already has a tenant on mount
+  // Check if user already has a tenant on mount — redirect immediately before showing form
   useEffect(() => {
     const checkExistingTenant = async () => {
       try {
@@ -57,8 +57,8 @@ export default function Onboarding() {
           if (res.ok) {
             const result = await res.json();
             if (result.tenant) {
-              console.log('[Onboarding] Found tenant via API:', result.tenant.slug);
-              setExistingTenant(result.tenant);
+              console.log('[Onboarding] Found tenant via API:', result.tenant.slug, '| redirecting');
+              window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
               return;
             }
           }
@@ -82,8 +82,9 @@ export default function Onboarding() {
             .maybeSingle();
           
           if (tenant) {
-            console.log('[Onboarding] Found tenant:', tenant.slug, '| status:', tenant.status);
-            setExistingTenant(tenant);
+            console.log('[Onboarding] Found tenant:', tenant.slug, '| redirecting');
+            window.location.replace(`https://${tenant.slug}.theprojectair.com`);
+            return;
           }
         }
       } catch (err) {
