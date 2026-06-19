@@ -114,7 +114,7 @@ export default async function handler(req, res) {
       const trialEndsAt = new Date(now); trialEndsAt.setDate(trialEndsAt.getDate() + 14);
       const lockoutDate = new Date(now); lockoutDate.setDate(lockoutDate.getDate() + 30);
 
-      const { error: trialErr } = await sb.from('subscriber_trials').insert({
+      const { error: trialErr } = await sb.from('subscriber_trials').upsert({
         email: entry.email,
         company_name: entry.company,
         contact_name: entry.name,
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
         trial_ends_at: toDate(trialEndsAt),
         lockout_date: toDate(lockoutDate),
         notes: notes || null,
-      });
+      }, { onConflict: 'email' });
       if (trialErr) return res.status(500).json({
         error: 'subscriber_trials insert failed: ' + trialErr.message,
         code: trialErr.code,
