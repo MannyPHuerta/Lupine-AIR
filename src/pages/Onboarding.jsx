@@ -47,17 +47,47 @@ export default function Onboarding() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
         
-        const res = await fetch('/api/resolveTenant', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: session.user.email }),
-        });
-        const result = await res.json();
-        if (result.tenant) {
-          setExistingTenant(result.tenant);
+        // Try resolveTenant API first
+        try {
+          const res = await fetch('/api/resolveTenant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: session.user.email }),
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.tenant) {
+              console.log('[Onboarding] Found tenant via API:', result.tenant.slug);
+              setExistingTenant(result.tenant);
+              return;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('[Onboarding] resolveTenant API failed, using fallback:', apiErr);
+        }
+        
+        // Fallback: check profile for tenant_id
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('tenant_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        
+        if (profile?.tenant_id) {
+          console.log('[Onboarding] Found tenant_id in profile:', profile.tenant_id);
+          const { data: tenant } = await supabase
+            .from('tenants')
+            .select('slug, name, status')
+            .eq('id', profile.tenant_id)
+            .maybeSingle();
+          
+          if (tenant) {
+            console.log('[Onboarding] Found tenant:', tenant.slug, '| status:', tenant.status);
+            setExistingTenant(tenant);
+          }
         }
       } catch (err) {
-        console.error('Error checking tenant:', err);
+        console.error('[Onboarding] Error checking tenant:', err);
       }
     };
     checkExistingTenant();
