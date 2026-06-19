@@ -80,27 +80,7 @@ export default function OpsLanding() {
       await resolveSession(s, setPhase, setSession);
     };
 
-    // Handle Supabase magic link query params: ?token=...&type=magiclink (admin generateLink format)
-    const token = params.get('token');
-    const type = params.get('type');
-    if (token && type === 'magiclink') {
-      console.log('[OpsLanding] detected magiclink token in URL — verifying OTP');
-      window.history.replaceState({}, '', '/ops');
-      supabase.auth.verifyOtp({ token_hash: token, type: 'magiclink' })
-        .then(({ data, error }) => {
-          console.log('[OpsLanding] verifyOtp result:', error?.message || 'ok', data?.session?.user?.email);
-          if (error || !data.session) {
-            console.error('[OpsLanding] verifyOtp failed:', error?.message);
-            settled = true;
-            setPhase('signin');
-          } else {
-            finish(data.session);
-          }
-        });
-      return;
-    }
-
-    // Handle hash-based tokens: #access_token=...&type=magiclink (standard Supabase OTP email)
+    // Handle hash-based tokens: #access_token=... (standard Supabase implicit flow)
     const hash = window.location.hash;
     const hashParams = new URLSearchParams(hash.replace('#', ''));
     const accessToken = hashParams.get('access_token');
@@ -122,6 +102,8 @@ export default function OpsLanding() {
       return;
     }
 
+    // For admin-generated magic links, Supabase verifies server-side and fires SIGNED_IN via onAuthStateChange.
+    // We rely on that event here — no client-side verifyOtp needed.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
       console.log('[OpsLanding] auth event:', event, '| session:', s ? `user=${s.user?.email}` : 'null');
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s && !settled) {
@@ -249,7 +231,7 @@ export default function OpsLanding() {
           )}
 
           <p className="text-center text-slate-600 text-xs">
-            <a href__="/" className="hover:text-slate-400 transition">← Back to home</a>
+            <a href="/" className="hover:text-slate-400 transition">← Back to home</a>
           </p>
         </div>
       </div>
