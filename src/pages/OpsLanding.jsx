@@ -12,11 +12,19 @@ const PLANS = {
 };
 
 const ENTERPRISE_BYPASS = ['rental-world'];
+const PLATFORM_ADMINS = ['info@theprojectair.com'];
 
 async function resolveSession(s, setPhase, setSession) {
   console.log('[OpsLanding] resolveSession — email:', s.user.email);
   setSession(s);
   window.history.replaceState({}, '', '/ops');
+
+  // Platform owner — go straight to the internal app
+  if (PLATFORM_ADMINS.includes(s.user.email)) {
+    setPhase('redirecting');
+    setTimeout(() => window.location.replace('https://rental-world.theprojectair.com'), 1500);
+    return;
+  }
 
   const { data: tenant, error: tenantErr } = await supabase
     .from('tenants')
