@@ -32,12 +32,6 @@ export default async function(req, res) {
     // eslint-disable-next-line no-undef
     console.log('[resolveTenant] SUPABASE_URL:', process.env.SUPABASE_URL?.substring(0, 20) + '...');
 
-    // Check if user is platform admin
-    if (email === 'info@theprojectair.com') {
-      console.log('[resolveTenant] Platform admin detected');
-      return res.json({ tenant: { slug: 'rental-world' }, source: 'platform_admin' });
-    }
-
     // Lookup tenant by admin_email
     console.log('[resolveTenant] Querying tenants table for admin_email:', email);
     const { data: tenant, error: tenantError } = await supabase
