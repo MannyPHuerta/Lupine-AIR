@@ -95,7 +95,7 @@ export default async function handler(req, res) {
             <div style="padding:32px;text-align:center">
               <p style="color:#94a3b8;margin:0 0 24px">Click the button below to sign in. This link expires in 1 hour.</p>
               <a href="${actionLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">
-                Sign In to AIR →
+                Sign In to AIR &rarr;
               </a>
               <p style="color:#475569;font-size:11px;margin-top:16px;word-break:break-all">${actionLink}</p>
             </div>
@@ -143,75 +143,45 @@ export default async function handler(req, res) {
         notes: notes || null,
       }).eq('id', entryId);
 
-      // Ensure user exists in auth.users, then generate a magic link
       let signInLink = 'https://theprojectair.com/signin';
       try {
-        const createResult = await sb.auth.admin.createUser({ email: entry.email, email_confirm: true });
-        console.log('[waitlist-manager] createUser result:', JSON.stringify(createResult?.error || 'ok'));
+        await sb.auth.admin.createUser({ email: entry.email, email_confirm: true });
 
         const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
           type: 'magiclink',
           email: entry.email,
           options: { redirectTo: 'https://theprojectair.com/ops' },
         });
-        console.log('[waitlist-manager] generateLink result:', JSON.stringify({ linkData, linkErr }));
         const actionLink = linkData?.properties?.action_link;
         if (!linkErr && actionLink) {
           signInLink = actionLink;
-        } else {
-          console.warn('[waitlist-manager] no action_link — linkErr:', JSON.stringify(linkErr));
         }
       } catch (e) {
         console.warn('[waitlist-manager] generateLink exception:', e.message);
       }
 
-      console.log('[waitlist-manager] final signInLink:', signInLink);
-
       const apiKey = process.env.RESEND_API_KEY;
-      console.log('[waitlist-manager] RESEND_API_KEY present:', !!apiKey);
-
       let emailResult = null;
-      if (!apiKey) {
-        console.warn('[waitlist-manager] RESEND_API_KEY not set — skipping email');
-      } else {
+      if (apiKey) {
         emailResult = await sendEmail(apiKey, {
           from: 'AIR by Lupine <info@theprojectair.com>',
           to: [entry.email],
-          subject: `🎉 Your AIR trial is approved — sign in to get started`,
+          subject: 'Your AIR trial is approved',
           html: `
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
               <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
-                <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in! 🚀</h1>
-                <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px">Your AIR early access has been approved</p>
+                <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in!</h1>
               </div>
-              <div style="padding:32px">
-                <p style="color:#94a3b8;line-height:1.7">Hi ${entry.name || 'there'},</p>
-                <p style="color:#cbd5e1;line-height:1.7">
-                  Your early access request for <strong style="color:#0ea5e9">AIR by Lupine</strong> has been approved.
-                  Click the button below to sign in — no password needed.
-                </p>
-                <div style="text-align:center;margin:28px 0">
-                  <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
-                    Sign In to AIR →
-                  </a>
-                  <p style="color:#475569;font-size:12px;margin-top:10px">This link expires in 24 hours.</p>
-                  <p style="color:#475569;font-size:10px;margin-top:6px;word-break:break-all">Debug link: ${signInLink}</p>
-                </div>
-                <div style="background:#1e293b;border-radius:8px;padding:16px;font-size:13px;color:#475569">
-                  <strong style="color:#94a3b8">Your trial summary:</strong><br/>
-                  Company: ${entry.company || 'N/A'}<br/>
-                  Full Pro access until: ${toDate(trialEndsAt)}<br/>
-                  Account pauses on: ${toDate(lockoutDate)}
-                </div>
-                <p style="color:#475569;font-size:12px;margin-top:24px;text-align:center">
-                  Questions? Reply to this email — we're here.<br/>
-                  <a href="https://theprojectair.com" style="color:#0ea5e9">theprojectair.com</a>
-                </p>
+              <div style="padding:32px;text-align:center">
+                <p style="color:#94a3b8">Hi ${entry.name || 'there'}, your AIR early access has been approved.</p>
+                <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
+                  Sign In to AIR &rarr;
+                </a>
+                <p style="color:#475569;font-size:10px;margin-top:12px;word-break:break-all">${signInLink}</p>
               </div>
             </div>
           `,
         });
-        console.log('[waitlist-manager] Resend response:', JSON.stringify(emailResult));
       }
 
       return res.status(200).json({
