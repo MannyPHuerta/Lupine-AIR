@@ -10,9 +10,10 @@ export default async function(req, res) {
     return res.status(200).end();
   }
 
-  // eslint-disable-next-line no-undef
   const supabase = createClient(
+    // eslint-disable-next-line no-undef
     process.env.SUPABASE_URL,
+    // eslint-disable-next-line no-undef
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 

@@ -183,15 +183,21 @@ export default function OpsLanding() {
     e.preventDefault();
     if (!signinEmail) return;
     setSigninLoading(true);
+    console.log('[OpsLanding] sending magic link to:', signinEmail);
     const { error } = await supabase.auth.signInWithOtp({
       email: signinEmail,
       options: {
-        emailRedirectTo: 'https://theprojectair.com/ops',
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/ops`,
         shouldCreateUser: false,
       },
     });
     setSigninLoading(false);
-    if (!error) setSigninSent(true);
+    if (!error) {
+      console.log('[OpsLanding] magic link sent successfully');
+      setSigninSent(true);
+    } else {
+      console.error('[OpsLanding] magic link error:', error);
+    }
   };
 
   if (phase === 'loading') {

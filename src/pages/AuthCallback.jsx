@@ -8,7 +8,8 @@ export default function AuthCallback() {
 
   useEffect(() => {
     if (!supabase) {
-      setStatus('Auth not available in preview mode.');
+      console.error('[AuthCallback] Supabase client is null');
+      setStatus('Auth not available.');
       return;
     }
 
@@ -16,13 +17,16 @@ export default function AuthCallback() {
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
     const next = searchParams.get('next') || '/ops';
 
-    // Debug info
-    setDebug(`search: ${window.location.search} | hash: ${window.location.hash}`);
+    console.log('[AuthCallback] URL:', window.location.href);
+    console.log('[AuthCallback] search:', window.location.search);
+    console.log('[AuthCallback] hash:', window.location.hash);
 
     // Error in hash (expired link etc.)
     const hashError = hashParams.get('error');
+    const errorCode = hashParams.get('error_code');
     if (hashError) {
-      setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+      console.error('[AuthCallback] hash error:', hashError, errorCode);
+      setStatus(`Sign-in failed: ${hashError}. The link may have expired.`);
       return;
     }
 
@@ -32,76 +36,112 @@ export default function AuthCallback() {
     const accessToken = hashParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token');
 
+    let settled = false;
+
     // Case 1: admin generateLink — ?token=...&type=magiclink
     if (token && type) {
+      console.log('[AuthCallback] Case 1: token+type flow');
       supabase.auth.verifyOtp({ token_hash: token, type })
-        .then(({ error }) => {
-          if (error) {
-            setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+        .then(({ error, data }) => {
+          if (error || !data?.session) {
+            console.error('[AuthCallback] verifyOtp failed:', error);
+            setStatus('Sign-in failed. The link may have expired.');
           } else {
+            console.log('[AuthCallback] verifyOtp success, redirecting to:', next);
             window.location.replace(next);
           }
+        })
+        .catch(err => {
+          console.error('[AuthCallback] verifyOtp exception:', err);
+          setStatus('Sign-in failed. Please request a new link.');
         });
       return;
     }
 
     // Case 2: PKCE code flow — ?code=...
     if (code) {
+      console.log('[AuthCallback] Case 2: PKCE code flow');
       supabase.auth.exchangeCodeForSession(code)
-        .then(({ error }) => {
-          if (error) {
-            setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+        .then(({ error, data }) => {
+          if (error || !data?.session) {
+            console.error('[AuthCallback] exchangeCodeForSession failed:', error);
+            setStatus('Sign-in failed. The link may have expired.');
           } else {
+            console.log('[AuthCallback] exchangeCodeForSession success, redirecting to:', next);
             window.location.replace(next);
           }
+        })
+        .catch(err => {
+          console.error('[AuthCallback] exchangeCodeForSession exception:', err);
+          setStatus('Sign-in failed. Please request a new link.');
         });
       return;
     }
 
     // Case 3: Hash-based implicit flow — #access_token=...
     if (accessToken) {
+      console.log('[AuthCallback] Case 3: hash-based flow');
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
-        .then(({ error }) => {
-          if (error) {
-            setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+        .then(({ error, data }) => {
+          if (error || !data?.session) {
+            console.error('[AuthCallback] setSession failed:', error);
+            setStatus('Sign-in failed. The link may have expired.');
           } else {
+            console.log('[AuthCallback] setSession success, redirecting to:', next);
             window.location.replace(next);
           }
+        })
+        .catch(err => {
+          console.error('[AuthCallback] setSession exception:', err);
+          setStatus('Sign-in failed. Please request a new link.');
         });
       return;
     }
 
-    // Case 4: Supabase server-side verify — no params, session arrives via onAuthStateChange
-    // This happens when Supabase verifies the OTP server-side and redirects here
-    let settled = false;
-    console.log('[AuthCallback] waiting for auth state change, next:', next);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AuthCallback] auth event:', event, '| session:', session ? `user=${session.user?.email}, tenant_id=${session.user?.user_metadata?.tenant_id}` : 'null');
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !settled) {
-        console.log('[AuthCallback] valid session — redirecting to:', next);
+    // Case 4: No params — check for existing session or wait for auth state change
+    console.log('[AuthCallback] Case 4: checking existing session');
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (settled) return;
+      if (session) {
+        console.log('[AuthCallback] existing session found:', session.user?.email);
         settled = true;
-        subscription.unsubscribe();
         window.location.replace(next);
-      } else if (event === 'INITIAL_SESSION' && !session && !settled) {
-        console.log('[AuthCallback] no session — showing error');
-        settled = true;
-        subscription.unsubscribe();
-        setStatus('Sign-in failed. The link may have expired. Please request a new one.');
+      } else {
+        console.log('[AuthCallback] no existing session, waiting for auth state change');
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+          console.log('[AuthCallback] auth event:', event, '| has session:', !!s);
+          if (settled) return;
+          
+          if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s) {
+            console.log('[AuthCallback] session established, redirecting to:', next);
+            settled = true;
+            subscription.unsubscribe();
+            window.location.replace(next);
+          } else if (event === 'INITIAL_SESSION' && !s) {
+            console.log('[AuthCallback] no session after timeout');
+            settled = true;
+            subscription.unsubscribe();
+            setStatus('Sign-in failed. Please request a new link.');
+          }
+        });
+
+        // Timeout fallback
+        setTimeout(() => {
+          if (!settled) {
+            console.warn('[AuthCallback] timeout waiting for session');
+            settled = true;
+            subscription.unsubscribe();
+            setStatus('Sign-in timed out. Please request a new link.');
+          }
+        }, 10000);
       }
+    }).catch(err => {
+      console.error('[AuthCallback] getSession exception:', err);
+      setStatus('Sign-in failed. Please request a new link.');
     });
 
-    // Timeout fallback
-    const timeout = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        subscription.unsubscribe();
-        setStatus('Sign-in failed. The link may have expired. Please request a new one.');
-      }
-    }, 8000);
-
     return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
+      // Cleanup handled in subscription
     };
   }, []);
 
