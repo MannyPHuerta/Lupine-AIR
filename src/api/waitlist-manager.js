@@ -133,18 +133,28 @@ export default async function handler(req, res) {
         from: 'AIR by Lupine <info@theprojectair.com>',
         to: [email],
         subject: 'Your AIR Sign-In Link',
-        html: [
-          '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">',
-          '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">',
-          '<h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">Sign in to AIR</h1>',
-          '</div>',
-          '<div style="padding:32px;text-align:center">',
-          '<p style="color:#94a3b8;margin:0 0 24px">Click below to sign in. This link expires in 1 hour.</p>',
-          '<a href="' + actionLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
-          '<p style="color:#475569;font-size:11px;margin-top:16px;word-break:break-all">' + actionLink + '</p>',
-          '</div>',
-          '</div>',
-        ].join(''),
+        html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Sign in to AIR</title></head>
+<body style="margin:0;padding:0;font-family:sans-serif;background:#0f172a">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:40px 0">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" style="background:#1e293b;border-radius:12px;overflow:hidden;max-width:600px;width:100%">
+<tr><td style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+<h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">Sign in to AIR</h1>
+</td></tr>
+<tr><td style="padding:32px;text-align:center">
+<p style="color:#94a3b8;margin:0 0 24px;font-size:16px">Click below to sign in. This link expires in 1 hour.</p>
+<table cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#0ea5e9">
+<a href="${actionLink}" style="display:inline-block;padding:16px 40px;color:#000;font-weight:900;font-size:16px;text-decoration:none">Sign In to AIR →</a>
+</td></tr></table>
+<p style="color:#475569;font-size:11px;margin-top:24px;word-break:break-all">${actionLink}</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
       });
 
       return res.status(200).json({ success: true, emailSent: !!emailResult?.id, emailResult });
@@ -192,7 +202,7 @@ export default async function handler(req, res) {
         const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
           type: 'magiclink',
           email: entry.email,
-          options: { redirectTo: 'https://theprojectair.com/auth/callback' },
+          options: { redirectTo: 'https://theprojectair.com/ops' },
         });
         const actionLink = linkData?.properties?.action_link;
         if (!linkErr && actionLink) signInLink = actionLink;
@@ -207,18 +217,28 @@ export default async function handler(req, res) {
           from: 'AIR by Lupine <info@theprojectair.com>',
           to: [entry.email],
           subject: 'Your AIR trial is approved',
-          html: [
-            '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">',
-            '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">',
-            '<h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You\'re in!</h1>',
-            '</div>',
-            '<div style="padding:32px;text-align:center">',
-            '<p style="color:#94a3b8">Hi ' + (entry.name || 'there') + ', your AIR early access has been approved.</p>',
-            '<a href="' + signInLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
-            '<p style="color:#475569;font-size:10px;margin-top:12px;word-break:break-all">' + signInLink + '</p>',
-            '</div>',
-            '</div>',
-          ].join(''),
+          html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Your AIR Trial is Approved</title></head>
+<body style="margin:0;padding:0;font-family:sans-serif;background:#0f172a">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:40px 0">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" style="background:#1e293b;border-radius:12px;overflow:hidden;max-width:600px;width:100%">
+<tr><td style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
+<h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in!</h1>
+</td></tr>
+<tr><td style="padding:32px;text-align:center">
+<p style="color:#94a3b8;margin:0 0 24px;font-size:16px">Hi ${entry.name || 'there'}, your AIR early access has been approved.</p>
+<table cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#0ea5e9">
+<a href="${signInLink}" style="display:inline-block;padding:14px 32px;color:#000;font-weight:900;font-size:15px;text-decoration:none">Sign In to AIR →</a>
+</td></tr></table>
+<p style="color:#475569;font-size:10px;margin-top:24px;word-break:break-all">${signInLink}</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
         });
       }
 

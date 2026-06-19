@@ -15,7 +15,7 @@ export default function AuthCallback() {
 
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-    const next = searchParams.get('next') || '/ops';
+    const next = searchParams.get('next') || '/';
 
     console.log('[AuthCallback] URL:', window.location.href);
     console.log('[AuthCallback] search:', window.location.search);
@@ -47,8 +47,9 @@ export default function AuthCallback() {
             console.error('[AuthCallback] verifyOtp failed:', error);
             setStatus('Sign-in failed. The link may have expired.');
           } else {
-            console.log('[AuthCallback] verifyOtp success, redirecting to:', next);
-            window.location.replace(next);
+            console.log('[AuthCallback] verifyOtp success, session:', data.session.user.email, '| redirecting to:', next);
+            // Give Supabase time to propagate session before redirect
+            setTimeout(() => window.location.replace(next), 500);
           }
         })
         .catch(err => {
@@ -67,8 +68,8 @@ export default function AuthCallback() {
             console.error('[AuthCallback] exchangeCodeForSession failed:', error);
             setStatus('Sign-in failed. The link may have expired.');
           } else {
-            console.log('[AuthCallback] exchangeCodeForSession success, redirecting to:', next);
-            window.location.replace(next);
+            console.log('[AuthCallback] exchangeCodeForSession success, session:', data.session.user.email, '| redirecting to:', next);
+            setTimeout(() => window.location.replace(next), 500);
           }
         })
         .catch(err => {
@@ -87,8 +88,8 @@ export default function AuthCallback() {
             console.error('[AuthCallback] setSession failed:', error);
             setStatus('Sign-in failed. The link may have expired.');
           } else {
-            console.log('[AuthCallback] setSession success, redirecting to:', next);
-            window.location.replace(next);
+            console.log('[AuthCallback] setSession success, session:', data.session.user.email, '| redirecting to:', next);
+            setTimeout(() => window.location.replace(next), 500);
           }
         })
         .catch(err => {
