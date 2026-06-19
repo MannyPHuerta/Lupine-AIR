@@ -323,23 +323,25 @@ function Waitlist() {
     e.preventDefault();
     setStatus('loading');
     try {
-      const res = await fetch('https://theprojectair.com/api/waitlist', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       const data = await res.json();
+      console.log('[Waitlist] Response:', res.status, data);
       if (data.ok) {
         setStatus('success');
         setMessage("You're on the list! We'll be in touch soon.");
         setForm({ name: '', email: '', company: '', phone: '', branches: '' });
       } else {
         setStatus('error');
-        setMessage(data.error || 'Something went wrong');
+        setMessage(data.error || data.message || 'Something went wrong');
       }
     } catch (err) {
+      console.error('[Waitlist] Error:', err);
       setStatus('error');
-      setMessage('Network error. Please try again.');
+      setMessage('Network error: ' + err.message);
     }
   };
 
@@ -388,7 +390,15 @@ function Waitlist() {
                   <input type="text" value={form.branches} onChange={e => setForm(f => ({ ...f, branches: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="e.g., 1, 2-5, 5+" />
                 </div>
                 {status === 'error' && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">{message}</div>
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
+                    <strong>Error:</strong> {message}
+                  </div>
+                )}
+                {status === 'loading' && (
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-blue-400 text-sm flex items-center gap-2">
+                    <Clock className="w-4 h-4 animate-spin" />
+                    Submitting your request...
+                  </div>
                 )}
                 <button type="submit" disabled={status === 'loading'} className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-700 text-black font-bold rounded-xl text-lg transition flex items-center justify-center gap-2">
                   {status === 'loading' ? (<><Clock className="w-5 h-5 animate-spin" /> Submitting...</>) : (<><>Request Early Access <ArrowRight className="w-5 h-5" /></></>)}
