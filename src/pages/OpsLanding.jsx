@@ -93,8 +93,9 @@ async function resolveSession(s, setPhase, setSession) {
     }
   }
 
-  console.log('[OpsLanding] no valid tenant/trial found — going to demo mode');
-  setPhase('demo');
+  console.log('[OpsLanding] no valid tenant/trial found — redirecting to onboarding');
+  setPhase('redirecting');
+  setTimeout(() => window.location.replace('/onboarding'), 1500);
 }
 
 export default function OpsLanding() {
