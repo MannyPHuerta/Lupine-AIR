@@ -104,6 +104,15 @@ export default function OpsLanding() {
 
     // For admin-generated magic links, Supabase verifies server-side and fires SIGNED_IN via onAuthStateChange.
     // We rely on that event here — no client-side verifyOtp needed.
+    // Check existing session first before waiting for onAuthStateChange
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      console.log('[OpsLanding] getSession check:', existingSession ? `user=${existingSession.user?.email}` : 'null');
+      if (existingSession && !settled) {
+        settled = true;
+        resolveSession(existingSession, setPhase, setSession);
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
       console.log('[OpsLanding] auth event:', event, '| session:', s ? `user=${s.user?.email}` : 'null');
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s && !settled) {
