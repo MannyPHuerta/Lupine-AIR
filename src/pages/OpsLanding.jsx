@@ -27,12 +27,37 @@ async function resolveSession(s, setPhase, setSession) {
     return;
   }
 
-  const { data: tenant, error: tenantErr } = await supabase
+  // Try multiple lookup strategies
+  console.log('[OpsLanding] looking up tenant for email:', s.user.email);
+  
+  // Strategy 1: Direct admin_email match
+  const { data: tenantByAdmin } = await supabase
     .from('tenants')
     .select('slug, status, admin_email')
     .eq('admin_email', s.user.email)
     .maybeSingle();
-  console.log('[OpsLanding] tenant lookup result:', tenant, '| error:', tenantErr);
+  console.log('[OpsLanding] tenant by admin_email:', tenantByAdmin);
+
+  // Strategy 2: Lookup via profiles table
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('email', s.user.email)
+    .maybeSingle();
+  console.log('[OpsLanding] profile lookup:', profile);
+
+  let tenant = tenantByAdmin;
+  if (!tenant && profile?.tenant_id) {
+    const { data: tenantByProfile } = await supabase
+      .from('tenants')
+      .select('slug, status')
+      .eq('id', profile.tenant_id)
+      .maybeSingle();
+    console.log('[OpsLanding] tenant by profile:', tenantByProfile);
+    tenant = tenantByProfile;
+  }
+
+  console.log('[OpsLanding] final tenant result:', tenant);
 
   const isBypassed = tenant && ENTERPRISE_BYPASS.includes(tenant.slug);
   const isActive = tenant?.status === 'active';
