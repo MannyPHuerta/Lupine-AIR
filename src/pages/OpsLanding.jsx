@@ -249,7 +249,7 @@ export default function OpsLanding() {
           )}
 
           <p className="text-center text-slate-600 text-xs">
-            <a href__="/" className="hover:text-slate-400 transition">← Back to home</a>
+            <a href="/" className="hover:text-slate-400 transition">← Back to home</a>
           </p>
         </div>
       </div>
