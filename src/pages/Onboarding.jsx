@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import { Loader2, Building2, MapPin, CheckCircle, ChevronRight, ChevronLeft, Zap } from 'lucide-react';
 
@@ -38,6 +38,30 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [existingTenant, setExistingTenant] = useState(null);
+
+  // Check if user already has a tenant on mount
+  useEffect(() => {
+    const checkExistingTenant = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        
+        const res = await fetch('/api/resolveTenant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: session.user.email }),
+        });
+        const result = await res.json();
+        if (result.tenant) {
+          setExistingTenant(result.tenant);
+        }
+      } catch (err) {
+        console.error('Error checking tenant:', err);
+      }
+    };
+    checkExistingTenant();
+  }, []);
 
   // Step 0 — Company
   const [companyName, setCompanyName] = useState('');
@@ -100,7 +124,12 @@ export default function Onboarding() {
         throw new Error(`Server returned invalid JSON (${res.status}): ${text.slice(0, 300)}`);
       }
       
-      if (!res.ok) throw new Error(data.error || 'Provisioning failed');
+      if (!res.ok) {
+        if (res.status === 409 && data.tenantId) {
+          throw new Error('Tenant already provisioned. Please sign in to access your workspace.');
+        }
+        throw new Error(data.error || 'Provisioning failed');
+      }
 
       // If this is a demo signup, seed demo data
       const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true';
@@ -118,6 +147,34 @@ export default function Onboarding() {
     }
     setLoading(false);
   };
+
+  // Show redirect screen if tenant already exists
+  if (existingTenant) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-10 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+              <Building2 className="w-10 h-10 text-blue-600" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-black text-gray-900">Workspace Already Active</h1>
+          <p className="text-gray-500 text-sm">
+            Your account is already set up for <strong>{existingTenant.name || existingTenant.slug}</strong>.
+          </p>
+          <button
+            onClick={() => window.location.replace(`https://${existingTenant.slug}.theprojectair.com`)}
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition"
+          >
+            Go to Your Workspace →
+          </button>
+          <p className="text-xs text-gray-400 mt-4">
+            Or <a href="/ops" className="underline hover:text-gray-600">sign in again</a> to be redirected automatically.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (step === 3) {
     return (
