@@ -87,20 +87,17 @@ export default async function handler(req, res) {
         from: 'AIR by Lupine <info@theprojectair.com>',
         to: [email],
         subject: 'Your AIR Sign-In Link',
-        html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
-            <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
-              <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">Sign in to AIR</h1>
-            </div>
-            <div style="padding:32px;text-align:center">
-              <p style="color:#94a3b8;margin:0 0 24px">Click the button below to sign in. This link expires in 1 hour.</p>
-              <a href="${actionLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">
-                Sign In to AIR &rarr;
-              </a>
-
-            </div>
-          </div>
-        `,
+        html: [
+          '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">',
+          '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">',
+          '<h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">Sign in to AIR</h1>',
+          '</div>',
+          '<div style="padding:32px;text-align:center">',
+          '<p style="color:#94a3b8;margin:0 0 24px">Click the button below to sign in. This link expires in 1 hour.</p>',
+          '<a href="' + actionLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
+          '</div>',
+          '</div>',
+        ].join(''),
       });
 
       console.log('[waitlist-manager] resendMagicLink result:', JSON.stringify(emailResult));
@@ -170,20 +167,17 @@ export default async function handler(req, res) {
           from: 'AIR by Lupine <info@theprojectair.com>',
           to: [entry.email],
           subject: 'Your AIR trial is approved',
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
-              <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">
-                <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You're in!</h1>
-              </div>
-              <div style="padding:32px;text-align:center">
-                <p style="color:#94a3b8">Hi ${entry.name || 'there'}, your AIR early access has been approved.</p>
-                <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
-                  Sign In to AIR &rarr;
-                </a>
-
-              </div>
-            </div>
-          `,
+          html: [
+            '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">',
+            '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:32px;text-align:center">',
+            '<h1 style="margin:0;font-size:28px;font-weight:900;color:#fff">You\'re in!</h1>',
+            '</div>',
+            '<div style="padding:32px;text-align:center">',
+            '<p style="color:#94a3b8">Hi ' + (entry.name || 'there') + ', your AIR early access has been approved.</p>',
+            '<a href="' + signInLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
+            '</div>',
+            '</div>',
+          ].join(''),
         });
       }
 
