@@ -157,7 +157,7 @@ export default function OpsLanding() {
     const { error } = await supabase.auth.signInWithOtp({
       email: signinEmail,
       options: {
-        emailRedirectTo: 'https://theprojectair.com/ops',
+        emailRedirectTo: 'https://theprojectair.com/auth/callback',
         shouldCreateUser: false,
       },
     });
@@ -227,7 +227,7 @@ export default function OpsLanding() {
           )}
 
           <p className="text-center text-slate-600 text-xs">
-            <a href__="/" className="hover:text-slate-400 transition">← Back to home</a>
+            <a href="/" className="hover:text-slate-400 transition">← Back to home</a>
           </p>
         </div>
       </div>
