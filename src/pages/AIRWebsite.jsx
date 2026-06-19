@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import {
   Zap, BarChart3, MapPin, Clock, Users, Calendar, FileText,
@@ -456,6 +456,13 @@ function Footer() {
 }
 
 export default function AIRWebsite() {
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('access_token=')) {
+      window.location.replace('/ops' + hash);
+    }
+  }, []);
+
   return (
     <div className="bg-black min-h-screen">
       <Nav />
