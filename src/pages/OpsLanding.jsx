@@ -27,57 +27,58 @@ async function resolveSession(s, setPhase, setSession) {
     return;
   }
 
-  // Try multiple lookup strategies
+  // Try multiple lookup strategies - use /api/resolveTenant to bypass RLS
   console.log('[OpsLanding] looking up tenant for email:', s.user.email);
   
-  // Strategy 1: Direct admin_email match
+  try {
+    const response = await fetch('/api/resolveTenant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: s.user.email })
+    });
+    const result = await response.json();
+    console.log('[OpsLanding] resolveTenant API result:', result);
+    
+    if (result.tenant) {
+      console.log('[OpsLanding] tenant found via API:', result.tenant.slug, '| source:', result.source);
+      const isBypassed = result.tenant.slug === 'rental-world';
+      const isActive = result.tenant.status === 'active';
+      
+      if (isBypassed || isActive) {
+        console.log('[OpsLanding] valid tenant — redirecting to:', `https://${result.tenant.slug}.theprojectair.com`);
+        setPhase('redirecting');
+        setTimeout(() => window.location.replace(`https://${result.tenant.slug}.theprojectair.com`), 1500);
+        return;
+      }
+    }
+    
+    console.log('[OpsLanding] no valid tenant found from API');
+  } catch (err) {
+    console.error('[OpsLanding] resolveTenant API error:', err);
+  }
+  
+  // Fallback: client-side lookup (may be blocked by RLS)
   const { data: tenantByAdmin } = await supabase
     .from('tenants')
-    .select('slug, status, admin_email')
+    .select('slug, status')
     .eq('admin_email', s.user.email)
     .maybeSingle();
-  console.log('[OpsLanding] tenant by admin_email:', tenantByAdmin);
-
-  // Strategy 2: Lookup via profiles table
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tenant_id')
-    .eq('email', s.user.email)
-    .maybeSingle();
-  console.log('[OpsLanding] profile lookup:', profile);
-
-  let tenant = tenantByAdmin;
-  if (!tenant && profile?.tenant_id) {
-    const { data: tenantByProfile } = await supabase
-      .from('tenants')
-      .select('slug, status')
-      .eq('id', profile.tenant_id)
-      .maybeSingle();
-    console.log('[OpsLanding] tenant by profile:', tenantByProfile);
-    tenant = tenantByProfile;
-  }
-
-  console.log('[OpsLanding] final tenant result:', tenant);
-
-  const isBypassed = tenant && ENTERPRISE_BYPASS.includes(tenant.slug);
-  const isActive = tenant?.status === 'active';
-
-  console.log('[OpsLanding] isBypassed:', isBypassed, '| isActive:', isActive, '| slug:', tenant?.slug);
-
-  if (tenant && (isBypassed || isActive)) {
-    console.log('[OpsLanding] valid tenant found — redirecting to:', `https://${tenant.slug}.theprojectair.com`);
+  
+  if (tenantByAdmin && tenantByAdmin.status === 'active') {
+    console.log('[OpsLanding] fallback tenant found:', tenantByAdmin.slug);
     setPhase('redirecting');
-    setTimeout(() => window.location.replace(`https://${tenant.slug}.theprojectair.com`), 1500);
+    setTimeout(() => window.location.replace(`https://${tenantByAdmin.slug}.theprojectair.com`), 1500);
     return;
   }
 
+  console.log('[OpsLanding] no tenant found — redirecting to onboarding');
+
+  // Trial lookup as final fallback
   const { data: trial } = await supabase
     .from('subscriber_trials')
     .select('status, tenant_id')
     .eq('email', s.user.email)
     .maybeSingle();
-
-  console.log('[OpsLanding] trial lookup:', trial);
 
   if (trial?.status === 'active' && trial?.tenant_id) {
     const { data: trialTenant } = await supabase
@@ -85,15 +86,12 @@ async function resolveSession(s, setPhase, setSession) {
       .select('slug')
       .eq('id', trial.tenant_id)
       .maybeSingle();
-    console.log('[OpsLanding] trial tenant lookup:', trialTenant);
     if (trialTenant) {
       setPhase('redirecting');
       setTimeout(() => window.location.replace(`https://${trialTenant.slug}.theprojectair.com`), 1500);
       return;
     }
   }
-
-  console.log('[OpsLanding] no valid tenant/trial found — redirecting to onboarding');
   setPhase('redirecting');
   setTimeout(() => window.location.replace('/onboarding'), 1500);
 }
