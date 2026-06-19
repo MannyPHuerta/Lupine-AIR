@@ -156,7 +156,7 @@ function WaitlistCard({ entry, onApprove, onReject, onResend, onDelete, processi
   );
 }
 
-function TrialCard({ trial, onResend, onDelete }) {
+function TrialCard({ trial, onResend, onDelete, onDeleteUser }) {
   const [resending, setResending] = useState(false);
   const [resendDone, setResendDone] = useState(false);
   const daysLeft = trial.trial_ends_at
@@ -232,6 +232,11 @@ function TrialCard({ trial, onResend, onDelete }) {
           onClick={() => { if (confirm('Delete this trial?')) onDelete(trial.id, 'trial'); }}
           className="text-red-500 border-red-200 hover:bg-red-50">
           <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+        <Button size="sm" variant="outline"
+          onClick={() => { if (confirm(`Delete user ${trial.email} from auth + all data? This is permanent.`)) onDeleteUser(trial.email); }}
+          className="text-red-700 border-red-300 hover:bg-red-100 font-semibold">
+          <Trash2 className="w-3.5 h-3.5" /> Delete User
         </Button>
       </div>
     </div>
@@ -323,6 +328,11 @@ export default function WaitlistManager() {
 
   const handleDelete = async (entryId, type) => {
     await callApi({ action: type === 'trial' ? 'deleteTrial' : 'deleteEntry', entryId });
+    await loadData();
+  };
+
+  const handleDeleteUser = async (email) => {
+    await callApi({ action: 'deleteUser', email });
     await loadData();
   };
 
@@ -469,7 +479,7 @@ export default function WaitlistManager() {
           ) : (
             <div className="grid gap-3">
               {filteredTrials.map(trial => (
-                <TrialCard key={trial.id} trial={trial} onResend={handleResend} onDelete={handleDelete} />
+                <TrialCard key={trial.id} trial={trial} onResend={handleResend} onDelete={handleDelete} onDeleteUser={handleDeleteUser} />
               ))}
             </div>
           )

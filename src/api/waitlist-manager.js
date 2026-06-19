@@ -55,10 +55,57 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    // DELETE USER (auth + all data)
+    if (action === 'deleteUser') {
+      const { error: authError } = await sb.auth.admin.deleteUser(email);
+      if (authError) return res.status(500).json({ error: authError.message });
+      
+      // Cascade delete from app tables
+      await Promise.all([
+        sb.from('profiles').delete().eq('id', email),
+        sb.from('waitlist_entries').delete().eq('email', email),
+        sb.from('subscriber_trials').delete().eq('email', email),
+        sb.from('tenants').delete().eq('admin_email', email),
+      ]);
+      
+      return res.status(200).json({ success: true, message: 'User deleted from auth + all data' });
+    }
+
     // DELETE TRIAL
     if (action === 'deleteTrial') {
+      const { data: trial } = await sb.from('subscriber_trials').select('email').eq('id', entryId).single();
       const { error } = await sb.from('subscriber_trials').delete().eq('id', entryId);
       if (error) return res.status(500).json({ error: error.message });
+      
+      // Also delete the auth user if exists
+      if (trial?.email) {
+        try {
+          await sb.auth.admin.deleteUser(trial.email);
+          console.log('[waitlist-manager] Deleted auth user:', trial.email);
+        } catch (e) {
+          console.warn('[waitlist-manager] Failed to delete auth user:', e.message);
+        }
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    // DELETE USER (auth + tenant data)
+    if (action === 'deleteUser') {
+      const { email } = body;
+      if (!email) return res.status(400).json({ error: 'email required' });
+      
+      // Delete auth user
+      try {
+        await sb.auth.admin.deleteUser(email);
+        console.log('[waitlist-manager] Deleted auth user:', email);
+      } catch (e) {
+        console.warn('[waitlist-manager] Failed to delete auth user:', e.message);
+      }
+      
+      // Clean up related data
+      await sb.from('subscriber_trials').delete().eq('email', email);
+      await sb.from('waitlist_entries').delete().eq('email', email);
+      
       return res.status(200).json({ success: true });
     }
 
