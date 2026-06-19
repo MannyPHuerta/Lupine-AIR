@@ -71,15 +71,35 @@ export default function OpsLanding() {
       return;
     }
 
-    const url = window.location.href;
     const params = new URLSearchParams(window.location.search);
-    const hash = window.location.hash;
-    console.log('[OpsLanding] mount — url:', url);
-    console.log('[OpsLanding] search params:', Object.fromEntries(params.entries()));
-    console.log('[OpsLanding] hash:', hash);
-    console.log('[OpsLanding] has ?code:', params.has('code'));
-
     let settled = false;
+
+    const finish = async (s) => {
+      if (settled) return;
+      settled = true;
+      await resolveSession(s, setPhase, setSession);
+    };
+
+    // Handle Supabase magic link: ?token=...&type=magiclink
+    const token = params.get('token');
+    const type = params.get('type');
+    if (token && type === 'magiclink') {
+      console.log('[OpsLanding] detected magiclink token in URL — verifying OTP');
+      // Clean URL immediately so refresh doesn't re-run
+      window.history.replaceState({}, '', '/ops');
+      supabase.auth.verifyOtp({ token_hash: token, type: 'magiclink' })
+        .then(({ data, error }) => {
+          console.log('[OpsLanding] verifyOtp result:', error?.message || 'ok', data?.session?.user?.email);
+          if (error || !data.session) {
+            console.error('[OpsLanding] verifyOtp failed:', error?.message);
+            settled = true;
+            setPhase('signin');
+          } else {
+            finish(data.session);
+          }
+        });
+      return;
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
       console.log('[OpsLanding] auth event:', event, '| session:', s ? `user=${s.user?.email}` : 'null');
@@ -90,23 +110,18 @@ export default function OpsLanding() {
       } else if (event === 'INITIAL_SESSION' && !s && !settled) {
         settled = true;
         subscription.unsubscribe();
-        console.log('[OpsLanding] INITIAL_SESSION with no session — checkout?', params.get('checkout'));
         if (params.get('checkout') === 'success') {
           setPhase('demo');
         } else {
           setPhase('signin');
         }
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('[OpsLanding] token refreshed');
-      } else if (event === 'SIGNED_OUT') {
-        console.log('[OpsLanding] signed out');
       }
     });
 
     // Safety timeout — if nothing fires in 5s, go to signin
     const timeout = setTimeout(() => {
       if (!settled) {
-        console.warn('[OpsLanding] timeout — no auth event fired in 5s, going to signin');
+        console.warn('[OpsLanding] timeout — going to signin');
         settled = true;
         subscription.unsubscribe();
         setPhase('signin');
