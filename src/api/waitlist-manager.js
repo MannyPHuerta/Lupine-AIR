@@ -143,21 +143,24 @@ export default async function handler(req, res) {
         notes: notes || null,
       }).eq('id', entryId);
 
-      let signInLink = 'https://theprojectair.com/signin';
-      try {
-        await sb.auth.admin.createUser({ email: entry.email, email_confirm: true });
+      // Ensure user exists first (ignore error if already exists)
+      const createResult = await sb.auth.admin.createUser({ email: entry.email, email_confirm: true });
+      console.log('[waitlist-manager] createUser result:', JSON.stringify(createResult));
 
-        const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
-          type: 'magiclink',
-          email: entry.email,
-          options: { redirectTo: 'https://theprojectair.com/ops' },
+      const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
+        type: 'magiclink',
+        email: entry.email,
+        options: { redirectTo: 'https://theprojectair.com/ops' },
+      });
+      console.log('[waitlist-manager] generateLink result:', JSON.stringify({ linkData, linkErr }));
+
+      const signInLink = linkData?.properties?.action_link;
+      if (linkErr || !signInLink) {
+        return res.status(500).json({
+          error: 'Failed to generate magic link for approval email',
+          details: linkErr?.message,
+          linkData,
         });
-        const actionLink = linkData?.properties?.action_link;
-        if (!linkErr && actionLink) {
-          signInLink = actionLink;
-        }
-      } catch (e) {
-        console.warn('[waitlist-manager] generateLink exception:', e.message);
       }
 
       const apiKey = process.env.RESEND_API_KEY;
