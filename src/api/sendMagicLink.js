@@ -39,11 +39,12 @@ export default async function handler(req, res) {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    const redirectUrl = `${baseUrl}/auth/callback?next=${encodeURIComponent('/ops')}`;
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
       options: { 
-        redirectTo: `${baseUrl}/auth/callback?next=/ops`,
+        redirectTo: redirectUrl,
         shouldSendEmail: false,
       },
     });
