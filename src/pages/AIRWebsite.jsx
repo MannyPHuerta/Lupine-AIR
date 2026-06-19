@@ -13,7 +13,7 @@ function AnimatedSection({ children, className = '' }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   return (
-    <motion.div ref={ref} variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'} className={className}>
+    <motion.div ref__={ref} variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'} className={className}>
       {children}
     </motion.div>
   );
@@ -429,25 +429,25 @@ function Footer() {
           <div>
             <h4 className="text-white font-bold mb-4">Company</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="/about" className="hover:text-cyan-400 transition">About</a></li>
+              <li><a href__="/about" className="hover:text-cyan-400 transition">About</a></li>
               <li><button onClick={() => document.querySelector('#pricing')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-cyan-400 transition">Pricing</button></li>
-              <li><a href="/privacy" className="hover:text-cyan-400 transition">Privacy</a></li>
-              <li><a href="/terms" className="hover:text-cyan-400 transition">Terms</a></li>
+              <li><a href__="/privacy" className="hover:text-cyan-400 transition">Privacy</a></li>
+              <li><a href__="/terms" className="hover:text-cyan-400 transition">Terms</a></li>
             </ul>
           </div>
           <div>
             <h4 className="text-white font-bold mb-4">Contact</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li className="flex items-center gap-2"><Phone className="w-4 h-4" /><a href="tel:+19565551234" className="hover:text-cyan-400 transition">(956) 555-1234</a></li>
-              <li className="flex items-center gap-2"><Mail className="w-4 h-4" /><a href="mailto:info@theprojectair.com" className="hover:text-cyan-400 transition">info@theprojectair.com</a></li>
+              <li className="flex items-center gap-2"><Phone className="w-4 h-4" /><a href__="tel:+19565551234" className="hover:text-cyan-400 transition">(956) 555-1234</a></li>
+              <li className="flex items-center gap-2"><Mail className="w-4 h-4" /><a href__="mailto:info@theprojectair.com" className="hover:text-cyan-400 transition">info@theprojectair.com</a></li>
             </ul>
           </div>
         </div>
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 text-sm">© {new Date().getFullYear()} AIR by Lupine. All rights reserved.</p>
           <div className="flex items-center gap-6 text-sm text-slate-500">
-            <a href="/privacy" className="hover:text-cyan-400 transition">Privacy Policy</a>
-            <a href="/terms" className="hover:text-cyan-400 transition">Terms of Service</a>
+            <a href__="/privacy" className="hover:text-cyan-400 transition">Privacy Policy</a>
+            <a href__="/terms" className="hover:text-cyan-400 transition">Terms of Service</a>
           </div>
         </div>
       </div>
