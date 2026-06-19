@@ -97,7 +97,7 @@ export default async function handler(req, res) {
               <a href="${actionLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">
                 Sign In to AIR &rarr;
               </a>
-              <p style="color:#475569;font-size:11px;margin-top:16px;word-break:break-all">${actionLink}</p>
+
             </div>
           </div>
         `,
@@ -177,7 +177,7 @@ export default async function handler(req, res) {
                 <a href="${signInLink}" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">
                   Sign In to AIR &rarr;
                 </a>
-                <p style="color:#475569;font-size:10px;margin-top:12px;word-break:break-all">${signInLink}</p>
+
               </div>
             </div>
           `,
