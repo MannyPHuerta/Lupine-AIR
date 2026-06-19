@@ -85,7 +85,6 @@ export default function OpsLanding() {
     const type = params.get('type');
     if (token && type === 'magiclink') {
       console.log('[OpsLanding] detected magiclink token in URL — verifying OTP');
-      // Clean URL immediately so refresh doesn't re-run
       window.history.replaceState({}, '', '/ops');
       supabase.auth.verifyOtp({ token_hash: token, type: 'magiclink' })
         .then(({ data, error }) => {
@@ -118,7 +117,6 @@ export default function OpsLanding() {
       }
     });
 
-    // Safety timeout — if nothing fires in 5s, go to signin
     const timeout = setTimeout(() => {
       if (!settled) {
         console.warn('[OpsLanding] timeout — going to signin');
@@ -166,8 +164,6 @@ export default function OpsLanding() {
     setSigninLoading(false);
     if (!error) setSigninSent(true);
   };
-
-  // ── Render states ─────────────────────────────────────────────────────────
 
   if (phase === 'loading') {
     return (
@@ -231,7 +227,7 @@ export default function OpsLanding() {
           )}
 
           <p className="text-center text-slate-600 text-xs">
-            <a href="/" className="hover:text-slate-400 transition">← Back to home</a>
+            <a href__="/" className="hover:text-slate-400 transition">← Back to home</a>
           </p>
         </div>
       </div>
