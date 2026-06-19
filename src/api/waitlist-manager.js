@@ -71,7 +71,7 @@ export default async function handler(req, res) {
       const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
         type: 'magiclink',
         email,
-        options: { redirectTo: 'https://theprojectair.com/' },
+        options: { redirectTo: 'https://theprojectair.com/auth/callback' },
       });
 
       const actionLink = linkData?.properties?.action_link;
@@ -145,7 +145,7 @@ export default async function handler(req, res) {
         const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
           type: 'magiclink',
           email: entry.email,
-          options: { redirectTo: 'https://theprojectair.com/' },
+          options: { redirectTo: 'https://theprojectair.com/auth/callback' },
         });
         const actionLink = linkData?.properties?.action_link;
         if (!linkErr && actionLink) signInLink = actionLink;
