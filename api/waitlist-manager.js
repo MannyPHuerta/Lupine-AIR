@@ -71,7 +71,7 @@ export default async function handler(req, res) {
       const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
         type: 'magiclink',
         email,
-        options: { redirectTo: 'https://theprojectair.com/ops' },
+        options: { redirectTo: 'https://theprojectair.com/auth/callback' },
       });
 
       const actionLink = linkData?.properties?.action_link;
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
           '</div>',
           '<div style="padding:32px;text-align:center">',
           '<p style="color:#94a3b8;margin:0 0 24px">Click below to sign in. This link expires in 1 hour.</p>',
-          '<a href__="' + actionLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
+          '<a href="' + actionLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:16px;padding:16px 40px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
           '<p style="color:#475569;font-size:11px;margin-top:16px;word-break:break-all">' + actionLink + '</p>',
           '</div>',
           '</div>',
@@ -145,7 +145,7 @@ export default async function handler(req, res) {
         const { data: linkData, error: linkErr } = await sb.auth.admin.generateLink({
           type: 'magiclink',
           email: entry.email,
-          options: { redirectTo: 'https://theprojectair.com/ops' },
+          options: { redirectTo: 'https://theprojectair.com/auth/callback' },
         });
         const actionLink = linkData?.properties?.action_link;
         if (!linkErr && actionLink) signInLink = actionLink;
@@ -167,7 +167,7 @@ export default async function handler(req, res) {
             '</div>',
             '<div style="padding:32px;text-align:center">',
             '<p style="color:#94a3b8">Hi ' + (entry.name || 'there') + ', your AIR early access has been approved.</p>',
-            '<a href__="' + signInLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
+            '<a href="' + signInLink + '" style="background:#0ea5e9;color:#000;font-weight:900;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;display:inline-block">Sign In to AIR &rarr;</a>',
             '<p style="color:#475569;font-size:10px;margin-top:12px;word-break:break-all">' + signInLink + '</p>',
             '</div>',
             '</div>',
