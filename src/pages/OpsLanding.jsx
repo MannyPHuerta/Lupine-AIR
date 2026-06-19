@@ -80,7 +80,7 @@ export default function OpsLanding() {
       await resolveSession(s, setPhase, setSession);
     };
 
-    // Handle Supabase magic link: ?token=...&type=magiclink
+    // Handle Supabase magic link query params: ?token=...&type=magiclink (admin generateLink format)
     const token = params.get('token');
     const type = params.get('type');
     if (token && type === 'magiclink') {
@@ -91,6 +91,28 @@ export default function OpsLanding() {
           console.log('[OpsLanding] verifyOtp result:', error?.message || 'ok', data?.session?.user?.email);
           if (error || !data.session) {
             console.error('[OpsLanding] verifyOtp failed:', error?.message);
+            settled = true;
+            setPhase('signin');
+          } else {
+            finish(data.session);
+          }
+        });
+      return;
+    }
+
+    // Handle hash-based tokens: #access_token=...&type=magiclink (standard Supabase OTP email)
+    const hash = window.location.hash;
+    const hashParams = new URLSearchParams(hash.replace('#', ''));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    if (accessToken) {
+      console.log('[OpsLanding] detected hash-based access_token — setting session');
+      window.history.replaceState({}, '', '/ops');
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
+        .then(({ data, error }) => {
+          console.log('[OpsLanding] setSession result:', error?.message || 'ok', data?.session?.user?.email);
+          if (error || !data.session) {
+            console.error('[OpsLanding] setSession failed:', error?.message);
             settled = true;
             setPhase('signin');
           } else {
