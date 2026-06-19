@@ -12,6 +12,15 @@ export default async function handler(req, res) {
 
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const resendKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+
+  console.log('[waitlist] ENV CHECK:', {
+    has_url: !!supabaseUrl,
+    url_prefix: supabaseUrl?.substring(0, 20),
+    has_key: !!supabaseKey,
+    has_resend: !!resendKey,
+    timestamp: new Date().toISOString()
+  });
 
   // Return env diagnostics if creds missing — helps debug deployment
   if (!supabaseUrl || !supabaseKey) {
@@ -40,6 +49,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid email required' });
     }
 
+    console.log('[waitlist] INSERTING:', { email, name, company, phone, branches });
+
     const { data, error } = await supabase
       .from('waitlist_entries')
       .insert({
@@ -54,27 +65,53 @@ export default async function handler(req, res) {
       .select()
       .single();
 
+    console.log('[waitlist] INSERT RESULT:', { 
+      success: !!data, 
+      error: error?.message, 
+      code: error?.code,
+      details: error?.details,
+      data_id: data?.id 
+    });
+
     if (error) {
       if (error.code === '23505') {
         // duplicate — still send confirmation but flag it
+        console.log('[waitlist] Duplicate entry');
         return res.status(200).json({ ok: true, duplicate: true });
       }
       console.error('[waitlist] insert error:', error);
       return res.status(500).json({ error: 'Could not save request', details: error.message, code: error.code });
     }
 
-    console.log('[waitlist] inserted:', data.id, email);
+    console.log('[waitlist] SUCCESS:', data.id, email);
 
     // Send notification emails via Resend
     const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+    console.log('[waitlist] RESEND CHECK:', { has_key: !!apiKey, key_preview: apiKey?.substring(0, 8) });
+    
     if (apiKey) {
-      const send = (payload) => fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).then(r => r.json()).catch(e => console.warn('[waitlist] email error:', e.message));
+      const send = (payload) => {
+        console.log('[waitlist] SENDING EMAIL:', payload.to, payload.subject);
+        return fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        .then(r => {
+          console.log('[waitlist] Resend response status:', r.status);
+          return r.json();
+        })
+        .then(data => {
+          console.log('[waitlist] Resend response:', data);
+          return data;
+        })
+        .catch(e => {
+          console.error('[waitlist] email fetch error:', e.message);
+          return null;
+        });
+      };
 
-      await Promise.all([
+      const [adminEmail, confirmEmail] = await Promise.all([
         send({
           from: 'AIR Waitlist <info@theprojectair.com>',
           to: ['info@theprojectair.com'],
@@ -98,6 +135,10 @@ export default async function handler(req, res) {
             <p style="color:#888;font-size:12px">Questions? Reply to this email.</p></div>`,
         }),
       ]);
+
+      console.log('[waitlist] EMAIL RESULTS:', { admin: adminEmail?.id, confirm: confirmEmail?.id });
+    } else {
+      console.warn('[waitlist] RESEND API KEY NOT SET - skipping emails');
     }
 
     return res.status(200).json({ ok: true, id: data.id });
