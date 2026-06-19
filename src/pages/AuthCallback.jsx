@@ -74,13 +74,16 @@ export default function AuthCallback() {
     // Case 4: Supabase server-side verify — no params, session arrives via onAuthStateChange
     // This happens when Supabase verifies the OTP server-side and redirects here
     let settled = false;
+    console.log('[AuthCallback] waiting for auth state change, next:', next);
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AuthCallback] auth event:', event, session?.user?.email);
+      console.log('[AuthCallback] auth event:', event, '| session:', session ? `user=${session.user?.email}, tenant_id=${session.user?.user_metadata?.tenant_id}` : 'null');
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !settled) {
+        console.log('[AuthCallback] valid session — redirecting to:', next);
         settled = true;
         subscription.unsubscribe();
         window.location.replace(next);
       } else if (event === 'INITIAL_SESSION' && !session && !settled) {
+        console.log('[AuthCallback] no session — showing error');
         settled = true;
         subscription.unsubscribe();
         setStatus('Sign-in failed. The link may have expired. Please request a new one.');

@@ -15,12 +15,13 @@ const ENTERPRISE_BYPASS = ['rental-world'];
 const PLATFORM_ADMINS = ['info@theprojectair.com'];
 
 async function resolveSession(s, setPhase, setSession) {
-  console.log('[OpsLanding] resolveSession — email:', s.user.email);
+  console.log('[OpsLanding] resolveSession — email:', s.user.email, '| user_id:', s.user.id);
   setSession(s);
   window.history.replaceState({}, '', '/ops');
 
   // Platform owner — go straight to the internal app
   if (PLATFORM_ADMINS.includes(s.user.email)) {
+    console.log('[OpsLanding] platform admin detected — redirecting to rental-world');
     setPhase('redirecting');
     setTimeout(() => window.location.replace('https://rental-world.theprojectair.com'), 1500);
     return;
@@ -31,12 +32,15 @@ async function resolveSession(s, setPhase, setSession) {
     .select('slug, status, admin_email')
     .eq('admin_email', s.user.email)
     .maybeSingle();
-  console.log('[OpsLanding] tenant lookup:', tenant, tenantErr);
+  console.log('[OpsLanding] tenant lookup result:', tenant, '| error:', tenantErr);
 
   const isBypassed = tenant && ENTERPRISE_BYPASS.includes(tenant.slug);
   const isActive = tenant?.status === 'active';
 
+  console.log('[OpsLanding] isBypassed:', isBypassed, '| isActive:', isActive, '| slug:', tenant?.slug);
+
   if (tenant && (isBypassed || isActive)) {
+    console.log('[OpsLanding] valid tenant found — redirecting to:', `https://${tenant.slug}.theprojectair.com`);
     setPhase('redirecting');
     setTimeout(() => window.location.replace(`https://${tenant.slug}.theprojectair.com`), 1500);
     return;
@@ -48,12 +52,15 @@ async function resolveSession(s, setPhase, setSession) {
     .eq('email', s.user.email)
     .maybeSingle();
 
+  console.log('[OpsLanding] trial lookup:', trial);
+
   if (trial?.status === 'active' && trial?.tenant_id) {
     const { data: trialTenant } = await supabase
       .from('tenants')
       .select('slug')
       .eq('id', trial.tenant_id)
       .maybeSingle();
+    console.log('[OpsLanding] trial tenant lookup:', trialTenant);
     if (trialTenant) {
       setPhase('redirecting');
       setTimeout(() => window.location.replace(`https://${trialTenant.slug}.theprojectair.com`), 1500);
@@ -61,6 +68,7 @@ async function resolveSession(s, setPhase, setSession) {
     }
   }
 
+  console.log('[OpsLanding] no valid tenant/trial found — going to demo mode');
   setPhase('demo');
 }
 
