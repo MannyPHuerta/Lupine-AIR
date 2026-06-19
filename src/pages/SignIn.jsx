@@ -11,7 +11,7 @@ export default function SignIn() {
   const [error, setError] = useState('');
   const [magicSent, setMagicSent] = useState(false);
 
-  const nextUrl = new URLSearchParams(window.location.search).get('next') || '/';
+  const nextUrl = new URLSearchParams(window.location.search).get('next') || '/ops';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,8 +72,16 @@ export default function SignIn() {
         </div>
 
         {magicSent ? (
-          <div className="text-center text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-4 text-sm">
-            ✅ Magic link sent to <strong>{email}</strong>. Check your inbox.
+          <div className="space-y-4">
+            <div className="text-center text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-4 text-sm">
+              ✅ Magic link sent to <strong>{email}</strong>. Check your inbox.
+            </div>
+            <button
+              onClick={() => { setMagicSent(false); setPassword(''); }}
+              className="w-full text-sm text-gray-600 hover:text-gray-900 underline transition"
+            >
+              ← Back to sign in
+            </button>
           </div>
         ) : (
           <>
