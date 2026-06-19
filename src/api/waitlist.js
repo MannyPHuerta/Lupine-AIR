@@ -75,8 +75,9 @@ export default async function handler(req, res) {
 
     if (error) {
       if (error.code === '23505') {
-        // duplicate — still send confirmation but flag it
-        console.log('[waitlist] Duplicate entry');
+        // duplicate — still send confirmation email
+        console.log('[waitlist] Duplicate entry, sending confirmation anyway');
+        await sendConfirmationEmail(email, name, company, phone, branches);
         return res.status(200).json({ ok: true, duplicate: true });
       }
       console.error('[waitlist] insert error:', error);
@@ -90,53 +91,7 @@ export default async function handler(req, res) {
     console.log('[waitlist] RESEND CHECK:', { has_key: !!apiKey, key_preview: apiKey?.substring(0, 8) });
     
     if (apiKey) {
-      const send = (payload) => {
-        console.log('[waitlist] SENDING EMAIL:', payload.to, payload.subject);
-        return fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        .then(r => {
-          console.log('[waitlist] Resend response status:', r.status);
-          return r.json();
-        })
-        .then(data => {
-          console.log('[waitlist] Resend response:', data);
-          return data;
-        })
-        .catch(e => {
-          console.error('[waitlist] email fetch error:', e.message);
-          return null;
-        });
-      };
-
-      const [adminEmail, confirmEmail] = await Promise.all([
-        send({
-          from: 'AIR Waitlist <info@theprojectair.com>',
-          to: ['info@theprojectair.com'],
-          reply_to: email,
-          subject: `🚀 New Early Access Request — ${company || email}`,
-          html: `<div style="font-family:sans-serif"><h2>New Early Access Request</h2>
-            <p><b>Name:</b> ${name || '—'}</p>
-            <p><b>Email:</b> ${email}</p>
-            <p><b>Phone:</b> ${phone || '—'}</p>
-            <p><b>Company:</b> ${company || '—'}</p>
-            <p><b>Branches:</b> ${branches || '—'}</p></div>`,
-        }),
-        send({
-          from: 'AIR Waitlist <info@theprojectair.com>',
-          to: [email],
-          subject: "🚀 You're on the list — AIR early access confirmed",
-          html: `<div style="font-family:sans-serif"><h2>Welcome to the AIR early access list! 🎉</h2>
-            <p>Hi ${name || 'there'},</p>
-            <p>You're in. We'll reach out within 2 business days to schedule your personalized demo.</p>
-            <p>Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed.</p>
-            <p style="color:#888;font-size:12px">Questions? Reply to this email.</p></div>`,
-        }),
-      ]);
-
-      console.log('[waitlist] EMAIL RESULTS:', { admin: adminEmail?.id, confirm: confirmEmail?.id });
+      await sendConfirmationEmail(email, name, company, phone, branches);
     } else {
       console.warn('[waitlist] RESEND API KEY NOT SET - skipping emails');
     }
@@ -146,4 +101,58 @@ export default async function handler(req, res) {
     console.error('[waitlist] unhandled error:', e);
     return res.status(500).json({ error: 'Server error', message: e.message });
   }
+}
+
+// Helper function to send emails
+async function sendConfirmationEmail(email, name, company, phone, branches) {
+  const apiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const send = (payload) => {
+    console.log('[waitlist] SENDING EMAIL:', payload.to, payload.subject);
+    return fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    .then(r => {
+      console.log('[waitlist] Resend response status:', r.status);
+      return r.json();
+    })
+    .then(data => {
+      console.log('[waitlist] Resend response:', data);
+      return data;
+    })
+    .catch(e => {
+      console.error('[waitlist] email fetch error:', e.message);
+      return null;
+    });
+  };
+
+  const [adminEmail, confirmEmail] = await Promise.all([
+    send({
+      from: 'AIR Waitlist <info@theprojectair.com>',
+      to: ['info@theprojectair.com'],
+      reply_to: email,
+      subject: `🚀 New Early Access Request — ${company || email}`,
+      html: `<div style="font-family:sans-serif"><h2>New Early Access Request</h2>
+        <p><b>Name:</b> ${name || '—'}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Phone:</b> ${phone || '—'}</p>
+        <p><b>Company:</b> ${company || '—'}</p>
+        <p><b>Branches:</b> ${branches || '—'}</p></div>`,
+    }),
+    send({
+      from: 'AIR Waitlist <info@theprojectair.com>',
+      to: [email],
+      subject: "🚀 You're on the list — AIR early access confirmed",
+      html: `<div style="font-family:sans-serif"><h2>Welcome to the AIR early access list! 🎉</h2>
+        <p>Hi ${name || 'there'},</p>
+        <p>You're in. We'll reach out within 2 business days to schedule your personalized demo.</p>
+        <p>Early subscribers lock in <strong>founding pricing for 24 months</strong>, guaranteed.</p>
+        <p style="color:#888;font-size:12px">Questions? Reply to this email.</p></div>`,
+    }),
+  ]);
+
+  console.log('[waitlist] EMAIL RESULTS:', { admin: adminEmail?.id, confirm: confirmEmail?.id });
 }

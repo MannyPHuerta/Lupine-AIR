@@ -332,7 +332,10 @@ function Waitlist() {
       console.log('[Waitlist] Response:', res.status, data);
       if (data.ok) {
         setStatus('success');
-        setMessage("You're on the list! We'll be in touch soon.");
+        setMessage(data.duplicate 
+          ? "You're already on the list! We'll be in touch soon."
+          : "You're on the list! We'll be in touch soon."
+        );
         setForm({ name: '', email: '', company: '', phone: '', branches: '' });
       } else {
         setStatus('error');
