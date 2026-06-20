@@ -18,8 +18,14 @@ async function askAssistant(question, history) {
     headers: { 'Content-Type': 'application/json', ...authHeader },
     body: JSON.stringify({ question, conversationHistory: history }),
   });
-  const data = await res.json();
-  return data?.answer || '';
+  const text = await res.text();
+  if (!text) return 'No response from server. The API may not be available in this preview environment.';
+  try {
+    const data = JSON.parse(text);
+    return data?.answer || data?.error || 'No response generated.';
+  } catch {
+    return 'Server returned an unexpected response. The API may not be available in this preview environment.';
+  }
 }
 
 async function polishAndSave(rawCorrection, originalQuestion) {
