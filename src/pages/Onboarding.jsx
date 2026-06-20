@@ -50,46 +50,27 @@ export default function Onboarding() {
           setCheckingTenant(false);
           return;
         }
-        
-        // Check profile for tenant_id and use backend function (bypasses RLS)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('tenant_id')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        
-        if (profile?.tenant_id) {
-          console.log('[Onboarding] Found tenant_id in profile:', profile.tenant_id);
-          
-          // Use backend function with service role to bypass RLS
-          console.log('[Onboarding] Calling debugUserRecords function...');
-          try {
-            const { data: funcData, error: funcError } = await supabase.functions.invoke('debugUserRecords', {
-              body: { email: session.user.email }
-            });
-            console.log('[Onboarding] Function result:', funcData, '| error:', funcError);
-            
-            // Try tenant_via_profile first
-            if (funcData?.data?.tenant_via_profile) {
-              const t = funcData.data.tenant_via_profile;
-              console.log('[Onboarding] Found tenant via function (profile):', t.slug, '| redirecting');
-              window.location.replace(`https://${t.slug}.theprojectair.com`);
-              return;
-            }
-            
-            // Try tenants_by_admin_email
-            if (funcData?.data?.tenants_by_admin_email?.length > 0) {
-              const t = funcData.data.tenants_by_admin_email[0];
-              console.log('[Onboarding] Found tenant via function (admin):', t.slug, '| redirecting');
-              window.location.replace(`https://${t.slug}.theprojectair.com`);
-              return;
-            }
-          } catch (fnErr) {
-            console.error('[Onboarding] Function lookup failed:', fnErr);
+
+        // Use Vercel API with service role to bypass RLS — no CORS issues
+        console.log('[Onboarding] Calling resolveMyTenant API...');
+        const res = await fetch('/api/resolveMyTenant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+        if (res.ok) {
+          const result = await res.json();
+          console.log('[Onboarding] resolveMyTenant result:', result);
+          if (result.tenant?.slug) {
+            console.log('[Onboarding] Redirecting to tenant:', result.tenant.slug);
+            window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
+            return;
           }
-          
-          console.warn('[Onboarding] Could not resolve tenant - showing onboarding form');
         }
+
+        console.log('[Onboarding] No tenant found - showing onboarding form');
         setCheckingTenant(false);
       } catch (err) {
         console.error('[Onboarding] Error checking tenant:', err);
@@ -133,21 +114,23 @@ export default function Onboarding() {
 
       // Early check: if tenant already exists, redirect immediately
       try {
-        const res = await fetch('/api/resolveTenant', {
+        const checkRes = await fetch('/api/resolveMyTenant', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: session.user.email }),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
         });
-        if (res.ok) {
-          const result = await res.json();
-          if (result.tenant) {
-            console.log('[Onboarding] early redirect — tenant exists:', result.tenant.slug, '| source:', result.source);
+        if (checkRes.ok) {
+          const result = await checkRes.json();
+          if (result.tenant?.slug) {
+            console.log('[Onboarding] early redirect — tenant exists:', result.tenant.slug);
             window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
             return;
           }
         }
       } catch (e) {
-        console.warn('[Onboarding] early resolveTenant check failed:', e);
+        console.warn('[Onboarding] early resolve check failed:', e);
       }
 
       const res = await fetch('/api/provisionTenant', {
@@ -248,19 +231,17 @@ export default function Onboarding() {
             onClick={async () => {
               const { data: { session } } = await supabase.auth.getSession();
               if (session) {
-                const { data: profile } = await supabase
-                  .from('profiles')
-                  .select('tenant_id')
-                  .eq('id', session.user.id)
-                  .single();
-                if (profile?.tenant_id) {
-                  const { data: tenant } = await supabase
-                    .from('tenants')
-                    .select('slug')
-                    .eq('id', profile.tenant_id)
-                    .single();
-                  if (tenant) {
-                    window.location.replace(`https://${tenant.slug}.theprojectair.com`);
+                const res = await fetch('/api/resolveMyTenant', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                  },
+                });
+                if (res.ok) {
+                  const result = await res.json();
+                  if (result.tenant?.slug) {
+                    window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
                     return;
                   }
                 }
