@@ -267,6 +267,10 @@ Magic link sign-in: Users receive a one-click email link. No password required. 
 ];
 
 async function seed() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('⚠️  SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — skipping knowledge seed.');
+    return;
+  }
   console.log('🌱 Seeding platform knowledge...');
 
   // Check which entries already exist to avoid duplicates
