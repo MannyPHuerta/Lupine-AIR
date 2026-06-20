@@ -86,10 +86,10 @@ export default function Onboarding() {
             .maybeSingle();
           
           if (tenant) {
-            console.log('[Onboarding] Found tenant:', tenant.slug, '| redirecting');
+            console.log('[Onboarding] Found tenant:', tenant.slug, '| redirecting in 100ms');
             setExistingTenant(tenant);
             setCheckingTenant(false);
-            window.location.replace(`https://${tenant.slug}.theprojectair.com`);
+            setTimeout(() => window.location.replace(`https://${tenant.slug}.theprojectair.com`), 100);
             return;
           }
         }
