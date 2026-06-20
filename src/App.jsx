@@ -130,9 +130,13 @@ const AuthenticatedApp = () => {
   }
 
   if (!isLoadingAuth && !isAuthenticated) {
-    const next = window.location.pathname + window.location.search;
-    window.location.replace(`/signin?next=${encodeURIComponent(next)}`);
-    return null;
+    // Skip redirect in Base44 preview environment
+    const isPreview = window.location.hostname.includes('base44') || window.location.hostname.includes('localhost');
+    if (!isPreview) {
+      const next = window.location.pathname + window.location.search;
+      window.location.replace(`/signin?next=${encodeURIComponent(next)}`);
+      return null;
+    }
   }
 
   // Render the main app
