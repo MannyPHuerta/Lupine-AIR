@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabaseData } from '@/lib/supabaseData';
 import { supabase } from '@/api/supabaseClient';
-import { Bot, Send, Pencil, Check, X, Loader2, BookOpen, ChevronDown, ChevronUp, Trash2, Database } from 'lucide-react';
+import { Bot, Send, Pencil, Check, X, Loader2, BookOpen, ChevronDown, ChevronUp, Trash2, Database, AlertTriangle } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+const isPreview = () =>
+  window.location.hostname.includes('base44') || window.location.hostname.includes('localhost');
 
 async function getAuthHeader() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -19,13 +22,10 @@ async function askAssistant(question, history) {
     body: JSON.stringify({ question, conversationHistory: history }),
   });
   const text = await res.text();
-  if (!text) return 'No response from server. The API may not be available in this preview environment.';
-  try {
-    const data = JSON.parse(text);
-    return data?.answer || data?.error || 'No response generated.';
-  } catch {
-    return 'Server returned an unexpected response. The API may not be available in this preview environment.';
-  }
+  if (!text) throw new Error('Empty response from server');
+  const data = JSON.parse(text);
+  if (data.error) throw new Error(data.error);
+  return data.answer || 'No response generated.';
 }
 
 async function polishAndSave(rawCorrection, originalQuestion) {
@@ -250,10 +250,18 @@ export default function AITraining() {
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
-    const answer = await askAssistant(q, history);
-    const assistantMsg = { role: 'assistant', content: answer, question: q };
-    setMessages(prev => [...prev, assistantMsg]);
-    setHistory(prev => [...prev, { role: 'user', content: q }, { role: 'assistant', content: answer }].slice(-12));
+    try {
+      const answer = await askAssistant(q, history);
+      const assistantMsg = { role: 'assistant', content: answer, question: q };
+      setMessages(prev => [...prev, assistantMsg]);
+      setHistory(prev => [...prev, { role: 'user', content: q }, { role: 'assistant', content: answer }].slice(-12));
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `⚠️ ${err.message}`,
+        question: q,
+      }]);
+    }
     setLoading(false);
   };
 
@@ -273,6 +281,16 @@ export default function AITraining() {
       />
 
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 flex flex-col gap-4">
+
+        {/* Preview environment warning */}
+        {isPreview() && (
+          <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-sm text-amber-300">
+            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>
+              <strong>Preview mode:</strong> The AI assistant and seed function require Vercel API routes. They are only functional on the deployed domain (e.g. <code className="text-amber-200">theprojectair.com</code>).
+            </span>
+          </div>
+        )}
 
         {/* Seed button */}
         <div className="flex justify-end">
