@@ -39,13 +39,17 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [existingTenant, setExistingTenant] = useState(null);
+  const [checkingTenant, setCheckingTenant] = useState(true);
 
   // Check if user already has a tenant on mount — redirect immediately before showing form
   useEffect(() => {
     const checkExistingTenant = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        if (!session) {
+          setCheckingTenant(false);
+          return;
+        }
         
         // Try resolveTenant API first
         try {
@@ -83,12 +87,16 @@ export default function Onboarding() {
           
           if (tenant) {
             console.log('[Onboarding] Found tenant:', tenant.slug, '| redirecting');
+            setExistingTenant(tenant);
+            setCheckingTenant(false);
             window.location.replace(`https://${tenant.slug}.theprojectair.com`);
             return;
           }
         }
+        setCheckingTenant(false);
       } catch (err) {
         console.error('[Onboarding] Error checking tenant:', err);
+        setCheckingTenant(false);
       }
     };
     checkExistingTenant();
@@ -266,6 +274,18 @@ export default function Onboarding() {
           >
             Go to Dashboard →
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while checking for existing tenant
+  if (checkingTenant) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-10 flex flex-col items-center gap-4 max-w-sm w-full text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <p className="text-slate-600 font-medium">Checking your account…</p>
         </div>
       </div>
     );
