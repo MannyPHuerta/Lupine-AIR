@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 
