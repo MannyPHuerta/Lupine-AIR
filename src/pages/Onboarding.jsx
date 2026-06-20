@@ -51,31 +51,7 @@ export default function Onboarding() {
           return;
         }
         
-        // Try resolveTenant API first
-        console.log('[Onboarding] Calling resolveTenant API for:', session.user.email);
-        try {
-          const res = await fetch('/api/resolveTenant', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: session.user.email }),
-          });
-          console.log('[Onboarding] resolveTenant API response status:', res.status);
-          if (res.ok) {
-            const result = await res.json();
-            console.log('[Onboarding] resolveTenant API result:', result);
-            if (result.tenant) {
-              console.log('[Onboarding] Found tenant via API:', result.tenant.slug, '| redirecting');
-              window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
-              return;
-            }
-          } else {
-            console.error('[Onboarding] resolveTenant API failed with status:', res.status);
-          }
-        } catch (apiErr) {
-          console.error('[Onboarding] resolveTenant API exception:', apiErr);
-        }
-        
-        // Fallback: check profile for tenant_id
+        // Check profile for tenant_id and use backend function (bypasses RLS)
         const { data: profile } = await supabase
           .from('profiles')
           .select('tenant_id')
@@ -84,36 +60,27 @@ export default function Onboarding() {
         
         if (profile?.tenant_id) {
           console.log('[Onboarding] Found tenant_id in profile:', profile.tenant_id);
-          // Try direct lookup first
-          const { data: tenant, error: tenantError } = await supabase
-            .from('tenants')
-            .select('slug, name, status')
-            .eq('id', profile.tenant_id)
-            .maybeSingle();
           
-          console.log('[Onboarding] Tenant query result:', tenant, '| error:', tenantError);
-          
-          if (tenant) {
-            console.log('[Onboarding] Found tenant:', tenant.slug, '| redirecting');
-            window.location.replace(`https://${tenant.slug}.theprojectair.com`);
-            return;
-          }
-          
-          // Fallback: use backend function with service role
-          console.log('[Onboarding] Direct lookup failed, trying backend function...');
+          // Use backend function with service role to bypass RLS
+          console.log('[Onboarding] Calling debugUserRecords function...');
           try {
             const { data: funcData, error: funcError } = await supabase.functions.invoke('debugUserRecords', {
               body: { email: session.user.email }
             });
             console.log('[Onboarding] Function result:', funcData, '| error:', funcError);
-            if (funcData?.data?.tenant) {
-              const t = funcData.data.tenant;
-              console.log('[Onboarding] Found tenant via function:', t.slug, '| redirecting');
+            
+            // Try tenant_via_profile first
+            if (funcData?.data?.tenant_via_profile) {
+              const t = funcData.data.tenant_via_profile;
+              console.log('[Onboarding] Found tenant via function (profile):', t.slug, '| redirecting');
               window.location.replace(`https://${t.slug}.theprojectair.com`);
               return;
-            } else if (funcData?.data?.tenantFromProfile) {
-              const t = funcData.data.tenantFromProfile;
-              console.log('[Onboarding] Found tenant via function (profile):', t.slug, '| redirecting');
+            }
+            
+            // Try tenants_by_admin_email
+            if (funcData?.data?.tenants_by_admin_email?.length > 0) {
+              const t = funcData.data.tenants_by_admin_email[0];
+              console.log('[Onboarding] Found tenant via function (admin):', t.slug, '| redirecting');
               window.location.replace(`https://${t.slug}.theprojectair.com`);
               return;
             }
