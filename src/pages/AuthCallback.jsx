@@ -50,10 +50,15 @@ export default function AuthCallback() {
             console.log('[AuthCallback] verifyOtp success, session:', data.session.user.email);
             // Check if user has a tenant before redirecting
             supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
-              .then(({ data: profile }) => {
-                const target = profile?.tenant_id ? '/ops' : '/onboarding';
-                console.log('[AuthCallback] redirecting to:', target);
-                setTimeout(() => window.location.replace(target), 500);
+              .then(async ({ data: profile }) => {
+                if (profile?.tenant_id) {
+                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
+                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
+                  console.log('[AuthCallback] redirecting to:', target);
+                  setTimeout(() => window.location.replace(target), 500);
+                } else {
+                  setTimeout(() => window.location.replace('/onboarding'), 500);
+                }
               })
               .catch(() => {
                 setTimeout(() => window.location.replace('/onboarding'), 500);
@@ -79,10 +84,15 @@ export default function AuthCallback() {
             console.log('[AuthCallback] exchangeCodeForSession success, session:', data.session.user.email);
             // Check if user has a tenant before redirecting
             supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
-              .then(({ data: profile }) => {
-                const target = profile?.tenant_id ? '/ops' : '/onboarding';
-                console.log('[AuthCallback] redirecting to:', target);
-                setTimeout(() => window.location.replace(target), 500);
+              .then(async ({ data: profile }) => {
+                if (profile?.tenant_id) {
+                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
+                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
+                  console.log('[AuthCallback] redirecting to:', target);
+                  setTimeout(() => window.location.replace(target), 500);
+                } else {
+                  setTimeout(() => window.location.replace('/onboarding'), 500);
+                }
               })
               .catch(() => {
                 setTimeout(() => window.location.replace('/onboarding'), 500);
@@ -108,10 +118,15 @@ export default function AuthCallback() {
             console.log('[AuthCallback] setSession success, session:', data.session.user.email);
             // Check if user has a tenant before redirecting
             supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
-              .then(({ data: profile }) => {
-                const target = profile?.tenant_id ? '/ops' : '/onboarding';
-                console.log('[AuthCallback] redirecting to:', target);
-                setTimeout(() => window.location.replace(target), 500);
+              .then(async ({ data: profile }) => {
+                if (profile?.tenant_id) {
+                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
+                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
+                  console.log('[AuthCallback] redirecting to:', target);
+                  setTimeout(() => window.location.replace(target), 500);
+                } else {
+                  setTimeout(() => window.location.replace('/onboarding'), 500);
+                }
               })
               .catch(() => {
                 setTimeout(() => window.location.replace('/onboarding'), 500);
@@ -133,11 +148,18 @@ export default function AuthCallback() {
         console.log('[AuthCallback] existing session found:', session.user?.email);
         // Check if user has a tenant before redirecting
         supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single()
-          .then(({ data: profile }) => {
-            const target = profile?.tenant_id ? '/ops' : '/onboarding';
-            console.log('[AuthCallback] redirecting to:', target);
-            settled = true;
-            window.location.replace(target);
+          .then(async ({ data: profile }) => {
+            if (profile?.tenant_id) {
+              const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
+              const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
+              console.log('[AuthCallback] redirecting to:', target);
+              settled = true;
+              window.location.replace(target);
+            } else {
+              console.log('[AuthCallback] redirecting to onboarding (no profile)');
+              settled = true;
+              window.location.replace('/onboarding');
+            }
           })
           .catch(() => {
             console.log('[AuthCallback] redirecting to onboarding (no profile)');
@@ -156,10 +178,16 @@ export default function AuthCallback() {
             subscription.unsubscribe();
             // Check if user has a tenant before redirecting
             supabase.from('profiles').select('tenant_id').eq('id', s.user.id).single()
-              .then(({ data: profile }) => {
-                const target = profile?.tenant_id ? '/ops' : '/onboarding';
-                console.log('[AuthCallback] redirecting to:', target);
-                window.location.replace(target);
+              .then(async ({ data: profile }) => {
+                if (profile?.tenant_id) {
+                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
+                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
+                  console.log('[AuthCallback] redirecting to:', target);
+                  window.location.replace(target);
+                } else {
+                  console.log('[AuthCallback] redirecting to onboarding (no profile)');
+                  window.location.replace('/onboarding');
+                }
               })
               .catch(() => {
                 console.log('[AuthCallback] redirecting to onboarding (no profile)');
