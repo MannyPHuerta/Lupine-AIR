@@ -1,41 +1,38 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabaseData } from '@/lib/supabaseData';
-import { Bot, Send, Pencil, Check, X, Loader2, BookOpen, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { supabase } from '@/api/supabaseClient';
+import { Bot, Send, Pencil, Check, X, Loader2, BookOpen, ChevronDown, ChevronUp, Trash2, Database } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+async function getAuthHeader() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {};
+}
+
 async function askAssistant(question, history) {
-  const res = await fetch('/functions/askAIAssistant', {
+  const authHeader = await getAuthHeader();
+  const res = await fetch('/api/askAIAssistant', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeader },
     body: JSON.stringify({ question, conversationHistory: history }),
   });
   const data = await res.json();
   return data?.answer || '';
 }
 
-async function polishAndSave(rawCorrection, originalQuestion, originalAnswer) {
-  // Use LLM to rewrite the correction into clean, AI-like prose, then save it
-  const polished = await fetch('/functions/askAIAssistant', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question: `Rewrite this correction as a clear, complete answer: "${rawCorrection}"`, conversationHistory: [] }),
-  });
-  const data = await polished.json();
-  const finalText = data?.answer || rawCorrection;
-
-  // Save as a PlatformFeature record
+async function polishAndSave(rawCorrection, originalQuestion) {
+  // Save directly as a knowledge entry (no LLM polish needed — user wrote the correct answer)
   await supabaseData.PlatformFeature.create({
     module: 'Training',
-    featureName: originalQuestion.slice(0, 80),
-    description: finalText,
+    feature_name: originalQuestion.slice(0, 80),
+    description: rawCorrection,
     workflow: [],
-    commonQuestions: [{ question: originalQuestion, answer: finalText }],
-    isActive: true,
+    common_questions: [{ question: originalQuestion, answer: rawCorrection }],
+    is_active: true,
   });
-
-  return finalText;
+  return rawCorrection;
 }
 
 // ── Message bubble ───────────────────────────────────────────────────────────
@@ -143,8 +140,8 @@ function KnowledgePanel({ refresh }) {
 
   const load = async () => {
     setLoading(true);
-    const all = await supabaseData.PlatformFeature.filter({ module: 'Training' });
-    setItems(all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+    const all = await supabaseData.PlatformFeature.list('-created_at', 500);
+    setItems(all);
     setLoading(false);
   };
 
@@ -178,7 +175,7 @@ function KnowledgePanel({ refresh }) {
             <div key={item.id} className="px-4 py-3 group">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-indigo-400 font-medium mb-1 truncate">Q: {item.featureName}</div>
+                  <div className="text-xs text-indigo-400 font-medium mb-1 truncate">[{item.module}] {item.feature_name || item.featureName}</div>
                   <div className="text-xs text-white/60 line-clamp-2">{item.description}</div>
                 </div>
                 <button
@@ -200,13 +197,40 @@ function KnowledgePanel({ refresh }) {
 
 export default function AITraining() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Hi! Ask me anything about the platform and I'll answer. If my answer is incomplete or wrong, hit \"Teach a better answer\" and type the correct information — I'll polish it and add it to my knowledge base." }
+    { role: 'assistant', content: "Hi! Ask me anything about the AIR platform and I'll answer based on my knowledge base. If my answer is incomplete or wrong, hit \"Teach a better answer\" — your correction gets saved immediately. You can also seed the full training document using the button above." }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [history, setHistory] = useState([]);
   const [refreshKB, setRefreshKB] = useState(0);
   const bottomRef = useRef(null);
+
+  const handleSeedDocument = async () => {
+    if (!confirm('This will add all entries from the AIR Training Document to the knowledge base. Continue?')) return;
+    setSeeding(true);
+    try {
+      const authHeader = await getAuthHeader();
+      const res = await fetch('/api/seedPlatformKnowledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ clearFirst: false }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `✅ Training document seeded! Added ${data.inserted} knowledge entries to the knowledge base:\n${data.entries.join('\n')}`,
+        }]);
+        setRefreshKB(r => r + 1);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: `❌ Seeding failed: ${data.error}` }]);
+      }
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${err.message}` }]);
+    }
+    setSeeding(false);
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -229,9 +253,8 @@ export default function AITraining() {
 
   const handleTeach = async (msgIndex, correction) => {
     const msg = messages[msgIndex];
-    // Find the preceding user question
     const question = msg.question || messages.slice(0, msgIndex).reverse().find(m => m.role === 'user')?.content || 'General question';
-    await polishAndSave(correction, question, msg.content);
+    await polishAndSave(correction, question);
     setRefreshKB(r => r + 1);
   };
 
@@ -244,6 +267,19 @@ export default function AITraining() {
       />
 
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 flex flex-col gap-4">
+
+        {/* Seed button */}
+        <div className="flex justify-end">
+          <button
+            onClick={handleSeedDocument}
+            disabled={seeding}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+          >
+            {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+            {seeding ? 'Seeding…' : 'Seed Training Document'}
+          </button>
+        </div>
+
         {/* Knowledge base panel */}
         <KnowledgePanel refresh={refreshKB} />
 
