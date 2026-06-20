@@ -240,7 +240,28 @@ export default function Onboarding() {
             Your 14-day free trial has started. Your first branch <strong>{branchName}</strong> is ready to go.
           </p>
           <button
-            onClick={() => window.location.replace('/ops')}
+            onClick={async () => {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session) {
+                const { data: profile } = await supabase
+                  .from('profiles')
+                  .select('tenant_id')
+                  .eq('id', session.user.id)
+                  .single();
+                if (profile?.tenant_id) {
+                  const { data: tenant } = await supabase
+                    .from('tenants')
+                    .select('slug')
+                    .eq('id', profile.tenant_id)
+                    .single();
+                  if (tenant) {
+                    window.location.replace(`https://${tenant.slug}.theprojectair.com`);
+                    return;
+                  }
+                }
+              }
+              window.location.replace('/ops');
+            }}
             className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition"
           >
             Go to Dashboard →
