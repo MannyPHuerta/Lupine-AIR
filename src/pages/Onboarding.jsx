@@ -52,22 +52,27 @@ export default function Onboarding() {
         }
         
         // Try resolveTenant API first
+        console.log('[Onboarding] Calling resolveTenant API for:', session.user.email);
         try {
           const res = await fetch('/api/resolveTenant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: session.user.email }),
           });
+          console.log('[Onboarding] resolveTenant API response status:', res.status);
           if (res.ok) {
             const result = await res.json();
+            console.log('[Onboarding] resolveTenant API result:', result);
             if (result.tenant) {
               console.log('[Onboarding] Found tenant via API:', result.tenant.slug, '| redirecting');
               window.location.replace(`https://${result.tenant.slug}.theprojectair.com`);
               return;
             }
+          } else {
+            console.error('[Onboarding] resolveTenant API failed with status:', res.status);
           }
         } catch (apiErr) {
-          console.warn('[Onboarding] resolveTenant API failed, using fallback:', apiErr);
+          console.error('[Onboarding] resolveTenant API exception:', apiErr);
         }
         
         // Fallback: check profile for tenant_id
@@ -97,13 +102,18 @@ export default function Onboarding() {
           // Fallback: use backend function with service role
           console.log('[Onboarding] Direct lookup failed, trying backend function...');
           try {
-            const { data: funcData } = await supabase.functions.invoke('debugUserRecords', {
+            const { data: funcData, error: funcError } = await supabase.functions.invoke('debugUserRecords', {
               body: { email: session.user.email }
             });
-            console.log('[Onboarding] Function result:', funcData);
+            console.log('[Onboarding] Function result:', funcData, '| error:', funcError);
             if (funcData?.data?.tenant) {
               const t = funcData.data.tenant;
               console.log('[Onboarding] Found tenant via function:', t.slug, '| redirecting');
+              window.location.replace(`https://${t.slug}.theprojectair.com`);
+              return;
+            } else if (funcData?.data?.tenantFromProfile) {
+              const t = funcData.data.tenantFromProfile;
+              console.log('[Onboarding] Found tenant via function (profile):', t.slug, '| redirecting');
               window.location.replace(`https://${t.slug}.theprojectair.com`);
               return;
             }
