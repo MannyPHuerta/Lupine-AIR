@@ -79,18 +79,39 @@ export default function Onboarding() {
         
         if (profile?.tenant_id) {
           console.log('[Onboarding] Found tenant_id in profile:', profile.tenant_id);
-          const { data: tenant } = await supabase
+          // Try direct lookup first
+          const { data: tenant, error: tenantError } = await supabase
             .from('tenants')
             .select('slug, name, status')
             .eq('id', profile.tenant_id)
             .maybeSingle();
           
+          console.log('[Onboarding] Tenant query result:', tenant, '| error:', tenantError);
+          
           if (tenant) {
-            console.log('[Onboarding] Found tenant:', tenant.slug, '| name:', tenant.name, '| redirecting immediately');
+            console.log('[Onboarding] Found tenant:', tenant.slug, '| redirecting');
             window.location.replace(`https://${tenant.slug}.theprojectair.com`);
             return;
           }
-          console.log('[Onboarding] Tenant lookup returned:', tenant);
+          
+          // Fallback: use backend function with service role
+          console.log('[Onboarding] Direct lookup failed, trying backend function...');
+          try {
+            const { data: funcData } = await supabase.functions.invoke('debugUserRecords', {
+              body: { email: session.user.email }
+            });
+            console.log('[Onboarding] Function result:', funcData);
+            if (funcData?.data?.tenant) {
+              const t = funcData.data.tenant;
+              console.log('[Onboarding] Found tenant via function:', t.slug, '| redirecting');
+              window.location.replace(`https://${t.slug}.theprojectair.com`);
+              return;
+            }
+          } catch (fnErr) {
+            console.error('[Onboarding] Function lookup failed:', fnErr);
+          }
+          
+          console.warn('[Onboarding] Could not resolve tenant - showing onboarding form');
         }
         setCheckingTenant(false);
       } catch (err) {
