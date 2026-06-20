@@ -145,9 +145,11 @@ export default async function handler(req, res) {
 </td></tr>
 <tr><td style="padding:32px;text-align:center">
 <p style="color:#94a3b8;margin:0 0 24px;font-size:16px">Click below to sign in. This link expires in 1 hour.</p>
-<table cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#0ea5e9">
-<a href="${actionLink}" style="display:inline-block;padding:16px 40px;color:#000;font-weight:900;font-size:16px;text-decoration:none">Sign In to AIR →</a>
-</td></tr></table>
+<table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:20px auto">
+<tr><td align="center" style="background:#0ea5e9;border-radius:10px;padding:16px 40px">
+<a href="${actionLink}" style="color:#000;font-weight:900;font-size:16px;text-decoration:none;display:block">Sign In to AIR →</a>
+</td></tr>
+</table>
 <p style="color:#475569;font-size:11px;margin-top:24px;word-break:break-all">${actionLink}</p>
 </td></tr>
 </table>
@@ -229,9 +231,11 @@ export default async function handler(req, res) {
 </td></tr>
 <tr><td style="padding:32px;text-align:center">
 <p style="color:#94a3b8;margin:0 0 24px;font-size:16px">Hi ${entry.name || 'there'}, your AIR early access has been approved.</p>
-<table cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#0ea5e9">
-<a href="${signInLink}" style="display:inline-block;padding:14px 32px;color:#000;font-weight:900;font-size:15px;text-decoration:none">Sign In to AIR →</a>
-</td></tr></table>
+<table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:20px auto">
+<tr><td align="center" style="background:#0ea5e9;border-radius:10px;padding:16px 40px">
+<a href="${signInLink}" style="color:#000;font-weight:900;font-size:16px;text-decoration:none;display:block">Sign In to AIR →</a>
+</td></tr>
+</table>
 <p style="color:#475569;font-size:10px;margin-top:24px;word-break:break-all">${signInLink}</p>
 </td></tr>
 </table>

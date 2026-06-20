@@ -47,9 +47,17 @@ export default function AuthCallback() {
             console.error('[AuthCallback] verifyOtp failed:', error);
             setStatus('Sign-in failed. The link may have expired.');
           } else {
-            console.log('[AuthCallback] verifyOtp success, session:', data.session.user.email, '| redirecting to:', next);
-            // Give Supabase time to propagate session before redirect
-            setTimeout(() => window.location.replace(next), 500);
+            console.log('[AuthCallback] verifyOtp success, session:', data.session.user.email);
+            // Check if user has a tenant before redirecting
+            supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
+              .then(({ data: profile }) => {
+                const target = profile?.tenant_id ? '/ops' : '/onboarding';
+                console.log('[AuthCallback] redirecting to:', target);
+                setTimeout(() => window.location.replace(target), 500);
+              })
+              .catch(() => {
+                setTimeout(() => window.location.replace('/onboarding'), 500);
+              });
           }
         })
         .catch(err => {
@@ -68,8 +76,17 @@ export default function AuthCallback() {
             console.error('[AuthCallback] exchangeCodeForSession failed:', error);
             setStatus('Sign-in failed. The link may have expired.');
           } else {
-            console.log('[AuthCallback] exchangeCodeForSession success, session:', data.session.user.email, '| redirecting to:', next);
-            setTimeout(() => window.location.replace(next), 500);
+            console.log('[AuthCallback] exchangeCodeForSession success, session:', data.session.user.email);
+            // Check if user has a tenant before redirecting
+            supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
+              .then(({ data: profile }) => {
+                const target = profile?.tenant_id ? '/ops' : '/onboarding';
+                console.log('[AuthCallback] redirecting to:', target);
+                setTimeout(() => window.location.replace(target), 500);
+              })
+              .catch(() => {
+                setTimeout(() => window.location.replace('/onboarding'), 500);
+              });
           }
         })
         .catch(err => {
@@ -88,8 +105,17 @@ export default function AuthCallback() {
             console.error('[AuthCallback] setSession failed:', error);
             setStatus('Sign-in failed. The link may have expired.');
           } else {
-            console.log('[AuthCallback] setSession success, session:', data.session.user.email, '| redirecting to:', next);
-            setTimeout(() => window.location.replace(next), 500);
+            console.log('[AuthCallback] setSession success, session:', data.session.user.email);
+            // Check if user has a tenant before redirecting
+            supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
+              .then(({ data: profile }) => {
+                const target = profile?.tenant_id ? '/ops' : '/onboarding';
+                console.log('[AuthCallback] redirecting to:', target);
+                setTimeout(() => window.location.replace(target), 500);
+              })
+              .catch(() => {
+                setTimeout(() => window.location.replace('/onboarding'), 500);
+              });
           }
         })
         .catch(err => {
@@ -105,8 +131,19 @@ export default function AuthCallback() {
       if (settled) return;
       if (session) {
         console.log('[AuthCallback] existing session found:', session.user?.email);
-        settled = true;
-        window.location.replace(next);
+        // Check if user has a tenant before redirecting
+        supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single()
+          .then(({ data: profile }) => {
+            const target = profile?.tenant_id ? '/ops' : '/onboarding';
+            console.log('[AuthCallback] redirecting to:', target);
+            settled = true;
+            window.location.replace(target);
+          })
+          .catch(() => {
+            console.log('[AuthCallback] redirecting to onboarding (no profile)');
+            settled = true;
+            window.location.replace('/onboarding');
+          });
       } else {
         console.log('[AuthCallback] no existing session, waiting for auth state change');
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
@@ -114,10 +151,20 @@ export default function AuthCallback() {
           if (settled) return;
           
           if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s) {
-            console.log('[AuthCallback] session established, redirecting to:', next);
+            console.log('[AuthCallback] session established, checking tenant');
             settled = true;
             subscription.unsubscribe();
-            window.location.replace(next);
+            // Check if user has a tenant before redirecting
+            supabase.from('profiles').select('tenant_id').eq('id', s.user.id).single()
+              .then(({ data: profile }) => {
+                const target = profile?.tenant_id ? '/ops' : '/onboarding';
+                console.log('[AuthCallback] redirecting to:', target);
+                window.location.replace(target);
+              })
+              .catch(() => {
+                console.log('[AuthCallback] redirecting to onboarding (no profile)');
+                window.location.replace('/onboarding');
+              });
           } else if (event === 'INITIAL_SESSION' && !s) {
             console.log('[AuthCallback] no session after timeout');
             settled = true;
