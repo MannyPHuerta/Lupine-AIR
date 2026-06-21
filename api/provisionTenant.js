@@ -6,12 +6,10 @@ import { createClient } from '@supabase/supabase-js';
 export const config = { runtime: 'nodejs' };
 
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  // Handle preflight
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -20,7 +18,7 @@ export default async function handler(req, res) {
 
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
+
   if (!supabaseUrl || !serviceKey) {
     console.error('Missing Supabase env vars:', { supabaseUrl: !!supabaseUrl, serviceKey: !!serviceKey });
     return res.status(500).json({ error: 'Server configuration error: Missing Supabase credentials' });
@@ -28,7 +26,6 @@ export default async function handler(req, res) {
 
   const supabaseAdmin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  // Verify the caller's Supabase JWT
   const token = authHeader.replace('Bearer ', '');
   const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
   if (userError || !user) {
@@ -48,7 +45,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'companyName and branchName are required' });
   }
 
-  // Check if already provisioned
+  // Already provisioned?
   const { data: existingProfile } = await supabaseAdmin
     .from('profiles')
     .select('tenant_id')
@@ -69,7 +66,7 @@ export default async function handler(req, res) {
     .replace(/^-|-$/g, '')
     .slice(0, 50) + '-' + Date.now().toString(36);
 
-  // 1. Create Tenant
+  // 1. Tenant
   const { data: tenant, error: tenantError } = await supabaseAdmin
     .from('tenants')
     .insert({
@@ -90,7 +87,7 @@ export default async function handler(req, res) {
 
   if (tenantError) return res.status(500).json({ error: tenantError.message });
 
-  // 2. Create Branch
+  // 2. Branch
   const prefix = (invoicePrefix || branchName.slice(0, 3)).toUpperCase();
   const { data: branch, error: branchError } = await supabaseAdmin
     .from('branches')
@@ -113,7 +110,7 @@ export default async function handler(req, res) {
 
   if (branchError) return res.status(500).json({ error: branchError.message });
 
-  // 3. Create CompanySettings
+  // 3. Company settings
   const { error: companyError } = await supabaseAdmin
     .from('company_settings')
     .insert({
@@ -130,7 +127,7 @@ export default async function handler(req, res) {
 
   if (companyError) return res.status(500).json({ error: companyError.message });
 
-  // 4. Create Profile
+  // 4. Profile (NO role column — roles live in user_roles only)
   const { error: profileError } = await supabaseAdmin
     .from('profiles')
     .upsert({
@@ -139,13 +136,26 @@ export default async function handler(req, res) {
       home_branch_id: branch.id,
       current_branch_id: branch.id,
       full_name: user.user_metadata?.full_name || user.email.split('@')[0],
-      role: 'owner',
       is_active: true,
     });
 
   if (profileError) return res.status(500).json({ error: profileError.message });
 
-  // 5. Mark onboarding complete
+  // 5. Owner role — sole source of truth for authorization
+  const { error: roleError } = await supabaseAdmin
+    .from('user_roles')
+    .insert({
+      user_id: user.id,
+      role: 'owner',
+      tenant_id: tenant.id,
+    });
+
+  if (roleError && roleError.code !== '23505') {
+    // 23505 = unique_violation (already has owner role); anything else is fatal
+    return res.status(500).json({ error: roleError.message });
+  }
+
+  // 6. Mark onboarding complete
   await supabaseAdmin
     .from('tenants')
     .update({ onboarding_completed: true, onboarding_step: 4 })
