@@ -79,7 +79,7 @@ function Nav() {
               {l.label}
             </button>
           ))}
-          <button onClick={() => document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' })} className="block w-full text-center px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold text-sm">
+          <button onClick={() => document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' })} className="block w-full text-center px-4 py-2 rounded-lg bg-cyan-500 text-black font-b[...]
             Request Early Access →
           </button>
         </div>
@@ -128,7 +128,7 @@ function Hero() {
           </p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="flex flex-col sm:flex-row gap-4 justify-center items-cente[...]
           <button onClick={() => document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth' })}
             className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl text-lg transition flex items-center gap-2">
             <Play className="w-5 h-5" />
@@ -164,12 +164,12 @@ function Hero() {
 }
 
 const products = [
-  { id: 'airental', name: 'AIRental', icon: Calendar, tagline: 'Intelligent Rental Operations', description: 'Automate counter operations, optimize equipment utilization, and deliver exceptional customer experiences with AI-powered workflows.', features: ['Smart availability engine', 'Automated customer verification', 'Dynamic pricing optimization', 'One-click rental agreements'], color: 'cyan' },
-  { id: 'airevents', name: 'AIREvents', icon: Star, tagline: 'Event Planning Reimagined', description: 'Visual event planning canvas with AI suggestions for tent layouts, table arrangements, and equipment bundles.', features: ['Interactive 2D canvas', 'AI-powered space optimization', 'Auto-generated checklists', 'Real-time availability checks'], color: 'blue' },
-  { id: 'airfq', name: 'AIRfq', icon: FileText, tagline: 'Instant RFQ Responses', description: 'Turn complex RFPs and RFQs into winning bids in minutes. AI analyzes requirements, checks compliance, and generates professional responses.', features: ['Automated compliance matrix', 'Line-item intelligence', 'Historical bid analysis', 'Professional proposal generation'], color: 'violet' },
-  { id: 'aireports', name: 'AIReports', icon: BarChart3, tagline: 'Business Intelligence on Autopilot', description: 'Beautiful, actionable reports delivered daily. Track KPIs, spot trends, and make data-driven decisions without manual analysis.', features: ['Daily digest reports', 'Custom KPI dashboards', 'Trend analysis & forecasting', 'Automated insights'], color: 'emerald' },
-  { id: 'airepair', name: 'AIRepair', icon: Wrench, tagline: 'Predictive Maintenance', description: 'Prevent equipment failures before they happen. AI analyzes usage patterns, predicts maintenance needs, and optimizes shop workflows.', features: ['Predictive failure alerts', 'Smart parts forecasting', 'Mechanic assignment optimization', 'Maintenance cost tracking'], color: 'orange' },
-  { id: 'airoads', name: 'AIRoads', icon: Route, tagline: 'Smart Logistics & Delivery', description: 'Optimize delivery routes, manage cross-branch transfers, and track equipment in transit with intelligent logistics.', features: ['Route optimization', 'Cross-branch transfers', 'Real-time GPS tracking', 'Automated manifests'], color: 'rose' },
+  { id: 'airental', name: 'AIRental', icon: Calendar, tagline: 'Intelligent Rental Operations', description: 'Automate counter operations, optimize equipment utilization, and deliver exceptional [...]'},
+  { id: 'airevents', name: 'AIREvents', icon: Star, tagline: 'Event Planning Reimagined', description: 'Visual event planning canvas with AI suggestions for tent layouts, table arrangements, and [...]'},
+  { id: 'airfq', name: 'AIRfq', icon: FileText, tagline: 'Instant RFQ Responses', description: 'Turn complex RFPs and RFQs into winning bids in minutes. AI analyzes requirements, checks compliance and generates professional proposals.'},
+  { id: 'aireports', name: 'AIReports', icon: BarChart3, tagline: 'Business Intelligence on Autopilot', description: 'Beautiful, actionable reports delivered daily. Track KPIs, spot trends, and make data-driven decisions.'},
+  { id: 'airepair', name: 'AIRepair', icon: Wrench, tagline: 'Predictive Maintenance', description: 'Prevent equipment failures before they happen. AI analyzes usage patterns, predicts maintenance needs, and schedules proactive repairs.'},
+  { id: 'airoads', name: 'AIRoads', icon: Route, tagline: 'Smart Logistics & Delivery', description: 'Optimize delivery routes, manage cross-branch transfers, and track equipment in transit with real-time visibility.'},
 ];
 
 const colorClasses = {
@@ -197,7 +197,7 @@ function ProductSection({ product }) {
             <h2 className="text-4xl md:text-5xl font-black text-white mb-6">{product.tagline}</h2>
             <p className="text-xl text-slate-400 mb-8">{product.description}</p>
             <ul className="space-y-3 mb-8">
-              {product.features.map((feature, i) => (
+              {product.features && product.features.map((feature, i) => (
                 <li key={i} className="flex items-center gap-3 text-slate-300">
                   <CheckCircle className={`w-5 h-5 ${colors.text}`} />
                   {feature}
@@ -272,8 +272,8 @@ function Pricing() {
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {[
             { name: 'Core', price: '299', desc: 'Perfect for single-location operations', features: ['Up to 500 equipment items', 'Basic reporting', 'Email support', '1 branch'] },
-            { name: 'Pro', price: '599', desc: 'Most popular for growing businesses', features: ['Unlimited equipment', 'Advanced AI features', 'Priority support', 'Up to 5 branches', 'Custom integrations'], popular: true },
-            { name: 'Enterprise', price: 'Custom', desc: 'For large-scale operations', features: ['Everything in Pro', 'Unlimited branches', 'Dedicated account manager', 'Custom AI training', 'SLA guarantee'] },
+            { name: 'Pro', price: '599', desc: 'Most popular for growing businesses', features: ['Unlimited equipment', 'Advanced AI features', 'Priority support', 'Up to 5 branches', 'Custom integrations'] , popular: true},
+            { name: 'Enterprise', price: 'Custom', desc: 'For large-scale operations', features: ['Everything in Pro', 'Unlimited branches', 'Dedicated account manager', 'Custom AI training', 'SLA'] },
           ].map((plan, i) => (
             <FadeUp key={i} delay={i * 0.1}>
               <div className={`relative bg-slate-800/50 border ${plan.popular ? 'border-cyan-500' : 'border-white/10'} rounded-2xl p-8 hover:border-cyan-500/30 transition`}>
@@ -315,24 +315,38 @@ function Pricing() {
 }
 
 function Waitlist() {
-  const data = await res.json();
-console.log('[Waitlist] Response:', res.status, data);
-if (data.ok) {
-  setStatus('success');
-  const adminOk = data.emails?.admin?.sent;
-  const userOk  = data.emails?.user?.sent;
-  let msg = data.duplicate
-    ? "You're already on the list! We'll be in touch soon."
-    : "You're on the list! We'll be in touch soon.";
-  if (!adminOk || !userOk) {
-    msg += ` (Note: ${!adminOk ? 'admin' : 'confirmation'} email failed to send — saved to DB.)`;
-  }
-  setMessage(msg);
-  setForm({ name: '', email: '', company: '', phone: '', branches: '' });
-} else {
-  setStatus('error');
-  setMessage(data.error || data.detail || data.message || 'Something went wrong');
-}
+  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', branches: '' });
+  const [status, setStatus] = useState('idle');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('loading');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      console.log('[Waitlist] Response:', res.status, data);
+      if (data.ok) {
+        setStatus('success');
+        setMessage(data.duplicate 
+          ? "You're already on the list! We'll be in touch soon."
+          : "You're on the list! We'll be in touch soon."
+        );
+        setForm({ name: '', email: '', company: '', phone: '', branches: '' });
+      } else {
+        setStatus('error');
+        setMessage(data.error || data.message || 'Something went wrong');
+      }
+    } catch (err) {
+      console.error('[Waitlist] Error:', err);
+      setStatus('error');
+      setMessage('Network error: ' + err.message);
+    }
+  };
 
   return (
     <section id="waitlist" className="py-24 bg-gradient-to-b from-slate-900 to-black">
@@ -357,26 +371,26 @@ if (data.ok) {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">Name *</label>
-                    <input type="text" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="John Doe" />
+                    <input type="text" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">Email *</label>
-                    <input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="john@company.com" />
+                    <input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl" />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">Company</label>
-                    <input type="text" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="Acme Rentals" />
+                    <input type="text" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">Phone</label>
-                    <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="(956) 555-1234" />
+                    <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Number of Branches</label>
-                  <input type="text" value={form.branches} onChange={e => setForm(f => ({ ...f, branches: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="e.g., 1, 2-5, 5+" />
+                  <input type="text" value={form.branches} onChange={e => setForm(f => ({ ...f, branches: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl" />
                 </div>
                 {status === 'error' && (
                   <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
@@ -389,8 +403,8 @@ if (data.ok) {
                     Submitting your request...
                   </div>
                 )}
-                <button type="submit" disabled={status === 'loading'} className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-700 text-black font-bold rounded-xl text-lg transition flex items-center justify-center gap-2">
-                  {status === 'loading' ? (<><Clock className="w-5 h-5 animate-spin" /> Submitting...</>) : (<><>Request Early Access <ArrowRight className="w-5 h-5" /></></>)}
+                <button type="submit" disabled={status === 'loading'} className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-700 text-black font-bold rounded-xl text-lg transition">
+                  {status === 'loading' ? (<><Clock className="w-5 h-5 animate-spin" /> Submitting...</>) : (<>Request Early Access <ArrowRight className="w-5 h-5" /></>)}
                 </button>
                 <p className="text-xs text-slate-500 text-center">By submitting, you agree to our Terms of Service and Privacy Policy.</p>
               </form>
