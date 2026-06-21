@@ -315,38 +315,24 @@ function Pricing() {
 }
 
 function Waitlist() {
-  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', branches: '' });
-  const [status, setStatus] = useState('idle');
-  const [message, setMessage] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setStatus('loading');
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      console.log('[Waitlist] Response:', res.status, data);
-      if (data.ok) {
-        setStatus('success');
-        setMessage(data.duplicate 
-          ? "You're already on the list! We'll be in touch soon."
-          : "You're on the list! We'll be in touch soon."
-        );
-        setForm({ name: '', email: '', company: '', phone: '', branches: '' });
-      } else {
-        setStatus('error');
-        setMessage(data.error || data.message || 'Something went wrong');
-      }
-    } catch (err) {
-      console.error('[Waitlist] Error:', err);
-      setStatus('error');
-      setMessage('Network error: ' + err.message);
-    }
-  };
+  const data = await res.json();
+console.log('[Waitlist] Response:', res.status, data);
+if (data.ok) {
+  setStatus('success');
+  const adminOk = data.emails?.admin?.sent;
+  const userOk  = data.emails?.user?.sent;
+  let msg = data.duplicate
+    ? "You're already on the list! We'll be in touch soon."
+    : "You're on the list! We'll be in touch soon.";
+  if (!adminOk || !userOk) {
+    msg += ` (Note: ${!adminOk ? 'admin' : 'confirmation'} email failed to send — saved to DB.)`;
+  }
+  setMessage(msg);
+  setForm({ name: '', email: '', company: '', phone: '', branches: '' });
+} else {
+  setStatus('error');
+  setMessage(data.error || data.detail || data.message || 'Something went wrong');
+}
 
   return (
     <section id="waitlist" className="py-24 bg-gradient-to-b from-slate-900 to-black">
