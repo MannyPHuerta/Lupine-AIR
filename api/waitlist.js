@@ -1,13 +1,13 @@
 // api/waitlist.js
-// Vercel Serverless Function (Node 18+). Handles Early Access submissions:
-//   1. Validates input
-//   2. Inserts into Supabase `waitlist_entries` (service role, bypasses RLS)
-//   3. Sends two emails via Resend: admin notification + requester confirmation
-//   4. Returns clear JSON so the browser and Vercel logs show exactly where it failed
+// Vercel Serverless Function (Node 18+).
+// 1) Validates input
+// 2) Inserts into Supabase `waitlist_entries` via REST (service role, bypasses RLS)
+// 3) Sends admin + confirmation emails via Resend
+// 4) Returns detailed JSON so Vercel logs + browser show exactly what happened
 
-const ADMIN_EMAIL = 'info@theprojectair.com';
+const ADMIN_EMAIL  = 'info@theprojectair.com';
 const FROM_ADDRESS = 'AIR Waitlist <info@theprojectair.com>';
-const TABLE = 'waitlist_entries';
+const TABLE        = 'waitlist_entries';
 
 function json(res, status, body) {
   res.setHeader('Content-Type', 'application/json');
@@ -23,7 +23,8 @@ function clean(v, max = 500) {
 }
 
 function escapeHtml(s) {
-  return String(s ?? '')
+  if (s === undefined || s === null || s === '') return '—';
+  return String(s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -32,16 +33,16 @@ function escapeHtml(s) {
 }
 
 function normalize(body) {
-  const email = clean(body.email, 254);
-  const full_name = clean(body.full_name ?? body.name, 200);
-  const company = clean(body.company ?? body.company_name, 200);
-  const phone = clean(body.phone, 50);
-  const role = clean(body.role ?? body.job_title, 100);
-  const message = clean(body.message ?? body.notes, 2000);
+  const email      = clean(body.email, 254);
+  const full_name  = clean(body.full_name ?? body.name, 200);
+  const company    = clean(body.company   ?? body.company_name, 200);
+  const phone      = clean(body.phone, 50);
+  const role       = clean(body.role      ?? body.job_title, 100);
+  const message    = clean(body.message   ?? body.notes, 2000);
 
   let branch_count = null;
   const raw = body.branch_count ?? body.branches;
-  if (raw !== undefined && raw !== null && raw !== '') {
+  if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
     const n = parseInt(String(raw), 10);
     if (!Number.isNaN(n) && n >= 0 && n < 100000) branch_count = n;
   }
@@ -78,7 +79,6 @@ async function sendResendEmail({ apiKey, to, subject, html, replyTo }) {
 }
 
 module.exports = async function handler(req, res) {
-  // CORS (safe defaults; same-origin doesn't need it but it doesn't hurt)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -86,10 +86,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'method_not_allowed' });
 
-  // ---- env ----
-  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const SUPABASE_URL              = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  const RESEND_API_KEY            = process.env.RESEND_API_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[waitlist] Missing Supabase env vars');
@@ -100,7 +99,6 @@ module.exports = async function handler(req, res) {
     return json(res, 500, { ok: false, error: 'server_misconfigured_resend' });
   }
 
-  // ---- parse body (Vercel parses JSON automatically when Content-Type is application/json) ----
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch { body = {}; }
@@ -112,14 +110,13 @@ module.exports = async function handler(req, res) {
     return json(res, 400, { ok: false, error: 'invalid_email' });
   }
 
-  // ---- Supabase REST (no SDK needed; keeps function cold-start tiny) ----
   const supaHeaders = {
     apikey: SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
     'Content-Type': 'application/json',
   };
 
-  // duplicate check
+  // ---- duplicate check ----
   try {
     const dupUrl = `${SUPABASE_URL}/rest/v1/${TABLE}?email=eq.${encodeURIComponent(entry.email)}&select=id&limit=1`;
     const dupRes = await fetch(dupUrl, { headers: supaHeaders });
@@ -136,7 +133,7 @@ module.exports = async function handler(req, res) {
     console.error('[waitlist] dup-check threw', e);
   }
 
-  // insert
+  // ---- insert ----
   let insertedId = null;
   try {
     const insRes = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
@@ -160,23 +157,30 @@ module.exports = async function handler(req, res) {
 
   // ---- emails ----
   const adminHtml = `
-    <h2>🚀 New Early Access Request — Project AIR</h2>
-    <table cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">
-      <tr><td><b>Email</b></td><td>${escapeHtml(entry.email)}</td></tr>
-      <tr><td><b>Name</b></td><td>${escapeHtml(entry.full_name)}</td></tr>
-      <tr><td><b>Company</b></td><td>${escapeHtml(entry.company)}</td></tr>
-      <tr><td><b>Phone</b></td><td>${escapeHtml(entry.phone)}</td></tr>
-      <tr><td><b>Role</b></td><td>${escapeHtml(entry.role)}</td></tr>
-      <tr><td><b>Branches</b></td><td>${escapeHtml(entry.branch_count)}</td></tr>
-      <tr><td valign="top"><b>Message</b></td><td>${escapeHtml(entry.message)}</td></tr>
-    </table>
-    <p style="color:#666;font-size:12px">Entry id: ${escapeHtml(insertedId)}</p>
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#0f172a;">
+      <h2 style="margin:0 0 16px 0;color:#0ea5e9;">🚀 New Early Access Request — Project AIR</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;width:140px;color:#64748b;">Email</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;"><a href="mailto:${escapeHtml(entry.email)}">${escapeHtml(entry.email)}</a></td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Name</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.full_name)}</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Company</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.company)}</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Phone</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.phone)}</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Role</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.role)}</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Branches</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.branch_count)}</td></tr>
+        <tr><td style="padding:8px;color:#64748b;vertical-align:top;">Message</td><td style="padding:8px;white-space:pre-wrap;">${escapeHtml(entry.message)}</td></tr>
+      </table>
+      <p style="margin-top:24px;font-size:12px;color:#94a3b8;">Entry id: ${escapeHtml(insertedId)}</p>
+    </div>
   `;
 
   const userHtml = `
-    <p>Hi ${escapeHtml(entry.full_name || 'there')},</p>
-    <p>Thanks for requesting early access to <b>Project AIR</b>. We received your request and will be in touch shortly.</p>
-    <p>— The Project AIR Team</p>
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#0f172a;">
+      <h2 style="margin:0 0 16px 0;color:#0ea5e9;">Thanks for your interest in Project AIR</h2>
+      <p>Hi ${escapeHtml(entry.full_name || 'there')},</p>
+      <p>We received your early access request and will be in touch shortly with next steps.</p>
+      <p>In the meantime, if you have questions just reply to this email.</p>
+      <p style="margin-top:24px;">— The Project AIR Team</p>
+      <p style="font-size:12px;color:#94a3b8;margin-top:32px;">TheProjectAIR.com</p>
+    </div>
   `;
 
   const adminResult = await sendResendEmail({
