@@ -1,6 +1,6 @@
 // api/waitlist.js
 // Vercel Serverless Function (Node 18+, ESM — package.json has "type": "module")
-// 1) Validates input
+// 1) Validates input (accepts both `name`/`full_name` and `phone`)
 // 2) Inserts into Supabase `waitlist_entries` via REST (service role, bypasses RLS)
 // 3) Sends admin + confirmation emails via Resend
 // 4) Returns detailed JSON so Vercel logs + browser show exactly what happened
@@ -100,15 +100,24 @@ export default async function handler(req, res) {
   }
   body = body || {};
 
-  const full_name    = String(body.full_name    || '').trim();
-  const email        = String(body.email        || '').trim().toLowerCase();
-  const company      = String(body.company      || '').trim();
-  const role         = String(body.role         || '').trim();
-  const branch_count = body.branch_count == null ? null : Number(body.branch_count);
-  const message      = String(body.message      || '').trim();
+  // Accept multiple key variants from the frontend
+  const full_name = String(body.full_name || body.name || body.fullName || '').trim();
+  const email     = String(body.email     || '').trim().toLowerCase();
+  const company   = String(body.company   || '').trim();
+  const role      = String(body.role      || '').trim();
+  const phone     = String(body.phone     || '').trim();
+  const message   = String(body.message   || '').trim();
+
+  const branchRaw = body.branch_count ?? body.branches ?? body.branchCount ?? null;
+  const branch_count = branchRaw == null || branchRaw === '' ? null : Number(branchRaw);
 
   if (!full_name || !email) {
-    return json(res, 400, { ok: false, error: 'full_name and email are required' });
+    console.error('[waitlist] Validation failed — received keys:', Object.keys(body));
+    return json(res, 400, {
+      ok: false,
+      error: 'full_name and email are required',
+      receivedKeys: Object.keys(body),
+    });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json(res, 400, { ok: false, error: 'Invalid email address' });
@@ -119,17 +128,31 @@ export default async function handler(req, res) {
     email,
     company: company || null,
     role: role || null,
+    phone: phone || null,
     branch_count: Number.isFinite(branch_count) ? branch_count : null,
     message: message || null,
     status: 'pending',
   };
 
-  // Insert into Supabase
-  const insert = await insertWaitlistEntry({
+  // Insert into Supabase. If the `phone` column doesn't exist, retry without it.
+  let insert = await insertWaitlistEntry({
     supabaseUrl: SUPABASE_URL,
     serviceKey: SUPABASE_SERVICE_ROLE_KEY,
     entry,
   });
+
+  if (!insert.ok) {
+    const errStr = JSON.stringify(insert.error || '');
+    if (/phone/i.test(errStr) && /column/i.test(errStr)) {
+      console.warn('[waitlist] Retrying insert without phone column');
+      const { phone: _drop, ...entryNoPhone } = entry;
+      insert = await insertWaitlistEntry({
+        supabaseUrl: SUPABASE_URL,
+        serviceKey: SUPABASE_SERVICE_ROLE_KEY,
+        entry: entryNoPhone,
+      });
+    }
+  }
 
   if (!insert.ok) {
     console.error('[waitlist] Supabase insert failed', insert);
@@ -148,6 +171,7 @@ export default async function handler(req, res) {
       <tr><td><strong>Name</strong></td><td>${escapeHtml(full_name)}</td></tr>
       <tr><td><strong>Email</strong></td><td>${escapeHtml(email)}</td></tr>
       <tr><td><strong>Company</strong></td><td>${escapeHtml(company || '—')}</td></tr>
+      <tr><td><strong>Phone</strong></td><td>${escapeHtml(phone || '—')}</td></tr>
       <tr><td><strong>Role</strong></td><td>${escapeHtml(role || '—')}</td></tr>
       <tr><td><strong>Branch count</strong></td><td>${entry.branch_count ?? '—'}</td></tr>
       <tr><td valign="top"><strong>Message</strong></td><td>${escapeHtml(message || '—').replace(/\n/g, '<br>')}</td></tr>
