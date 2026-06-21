@@ -315,6 +315,14 @@ function Pricing() {
   );
 }
 
+function formatPhone(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length < 4) return `(${digits}`;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 function Waitlist() {
   const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', branches: '' });
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
@@ -395,7 +403,7 @@ function Waitlist() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">Phone</label>
-                    <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="(956) 555-1234" />
+                    <input type="tel" inputMode="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: formatPhone(e.target.value) }))} className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition" placeholder="(956) 555-1234" />
                   </div>
                 </div>
                 <div>
