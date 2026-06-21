@@ -2,8 +2,9 @@
 // Vercel Serverless Function (Node 18+, ESM — package.json has "type": "module")
 // 1) Validates input (accepts both `name`/`full_name` and `phone`)
 // 2) Inserts into Supabase `waitlist_entries` via REST (service role, bypasses RLS)
-// 3) Sends admin + confirmation emails via Resend
-// 4) Returns detailed JSON so Vercel logs + browser show exactly what happened
+// 3) Handles duplicate-email gracefully (returns 200 with "already on list")
+// 4) Sends admin + confirmation emails via Resend
+// 5) Always returns string `message` so the frontend never tries to render an object
 
 const ADMIN_EMAIL  = 'info@theprojectair.com';
 const FROM_ADDRESS = 'AIR Waitlist <info@theprojectair.com>';
@@ -74,7 +75,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
-    return json(res, 405, { ok: false, error: 'Method not allowed' });
+    return json(res, 405, { ok: false, message: 'Method not allowed' });
   }
 
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -86,11 +87,11 @@ export default async function handler(req, res) {
       hasUrl: !!SUPABASE_URL,
       hasKey: !!SUPABASE_SERVICE_ROLE_KEY,
     });
-    return json(res, 500, { ok: false, error: 'Server is missing Supabase configuration' });
+    return json(res, 500, { ok: false, message: 'Server is missing Supabase configuration' });
   }
   if (!RESEND_API_KEY) {
     console.error('[waitlist] Missing RESEND_API_KEY');
-    return json(res, 500, { ok: false, error: 'Server is missing email configuration' });
+    return json(res, 500, { ok: false, message: 'Server is missing email configuration' });
   }
 
   // Parse body (Vercel usually parses JSON automatically, but be defensive)
@@ -115,12 +116,11 @@ export default async function handler(req, res) {
     console.error('[waitlist] Validation failed — received keys:', Object.keys(body));
     return json(res, 400, {
       ok: false,
-      error: 'full_name and email are required',
-      receivedKeys: Object.keys(body),
+      message: 'Full name and email are required.',
     });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return json(res, 400, { ok: false, error: 'Invalid email address' });
+    return json(res, 400, { ok: false, message: 'Please enter a valid email address.' });
   }
 
   const entry = {
@@ -155,12 +155,30 @@ export default async function handler(req, res) {
   }
 
   if (!insert.ok) {
+    // Duplicate email — treat as a soft success so the user sees a friendly message
+    const errObj = typeof insert.error === 'object' ? insert.error : {};
+    const isDuplicate =
+      errObj.code === '23505' ||
+      /duplicate key/i.test(JSON.stringify(insert.error || '')) ||
+      insert.status === 409;
+
+    if (isDuplicate) {
+      console.log('[waitlist] Duplicate email — already on list:', email);
+      return json(res, 200, {
+        ok: true,
+        duplicate: true,
+        message: "You're already on the AIR early access list. We'll be in touch soon!",
+      });
+    }
+
     console.error('[waitlist] Supabase insert failed', insert);
     return json(res, 500, {
       ok: false,
       stage: 'supabase_insert',
       status: insert.status,
-      error: insert.error,
+      message:
+        (errObj && (errObj.message || errObj.details)) ||
+        'We could not save your request. Please try again in a moment.',
     });
   }
 
@@ -208,10 +226,10 @@ export default async function handler(req, res) {
 
   return json(res, 200, {
     ok: true,
-    inserted: Array.isArray(insert.data) ? insert.data[0] : insert.data,
+    message: "You're on the list! Check your email for confirmation.",
     emails: {
-      admin: adminEmail.ok ? 'sent' : { error: adminEmail.error, status: adminEmail.status },
-      user:  userEmail.ok  ? 'sent' : { error: userEmail.error,  status: userEmail.status  },
+      admin: adminEmail.ok ? 'sent' : 'failed',
+      user:  userEmail.ok  ? 'sent' : 'failed',
     },
   });
 }
