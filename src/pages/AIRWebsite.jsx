@@ -1,3 +1,4 @@
+// pages/AIRWebsite.jsx
 import { useState, useRef, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import {
@@ -13,7 +14,7 @@ function AnimatedSection({ children, className = '' }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   return (
-    <motion.div ref__={ref} variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'} className={className}>
+    <motion.div ref={ref} variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'} className={className}>
       {children}
     </motion.div>
   );
@@ -109,19 +110,19 @@ function Hero() {
             <p className="text-blue-300 text-xl md:text-2xl font-light">It's time for a breath of fresh</p>
           </div>
           <motion.div
-               animate={{ y: [0, -8, 0] }}
-               transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-               className="flex justify-center pointer-events-none">
-               <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden">
-                 <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIR" className="w-full h-full rounded-3xl object-cover" />
-                 <motion.div
-                   className="absolute inset-0 rounded-3xl pointer-events-none"
-                   style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)' }}
-                   animate={{ x: ['-150%', '150%'] }}
-                   transition={{ duration: 2, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
-                 />
-               </div>
-             </motion.div>
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className="flex justify-center pointer-events-none">
+            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden">
+              <img src="https://media.base44.com/images/public/69deb9b2f06f1355a056f8e0/4da8b3637_AIRBlack-01.svg" alt="AIR" className="w-full h-full rounded-3xl object-cover" />
+              <motion.div
+                className="absolute inset-0 rounded-3xl pointer-events-none"
+                style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)' }}
+                animate={{ x: ['-150%', '150%'] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 2, ease: 'easeInOut' }}
+              />
+            </div>
+          </motion.div>
           <p className="text-lg md:text-xl text-blue-200/70 mt-6 max-w-2xl mx-auto">
             The first rental equipment cloud platform to harness the full power of AI —
             automating operations, predicting failures, and maximizing profitability.
@@ -173,18 +174,18 @@ const products = [
 ];
 
 const colorClasses = {
-  cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', text: 'text-cyan-400', button: 'bg-cyan-500 hover:bg-cyan-400' },
-  blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', button: 'bg-blue-500 hover:bg-blue-400' },
-  violet: { bg: 'bg-violet-500/10', border: 'border-violet-500/30', text: 'text-violet-400', button: 'bg-violet-500 hover:bg-violet-400' },
+  cyan:    { bg: 'bg-cyan-500/10',    border: 'border-cyan-500/30',    text: 'text-cyan-400',    button: 'bg-cyan-500 hover:bg-cyan-400' },
+  blue:    { bg: 'bg-blue-500/10',    border: 'border-blue-500/30',    text: 'text-blue-400',    button: 'bg-blue-500 hover:bg-blue-400' },
+  violet:  { bg: 'bg-violet-500/10',  border: 'border-violet-500/30',  text: 'text-violet-400',  button: 'bg-violet-500 hover:bg-violet-400' },
   emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', button: 'bg-emerald-500 hover:bg-emerald-400' },
-  orange: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', button: 'bg-orange-500 hover:bg-orange-400' },
-  rose: { bg: 'bg-rose-500/10', border: 'border-rose-500/30', text: 'text-rose-400', button: 'bg-rose-500 hover:bg-rose-400' },
+  orange:  { bg: 'bg-orange-500/10',  border: 'border-orange-500/30',  text: 'text-orange-400',  button: 'bg-orange-500 hover:bg-orange-400' },
+  rose:    { bg: 'bg-rose-500/10',    border: 'border-rose-500/30',    text: 'text-rose-400',    button: 'bg-rose-500 hover:bg-rose-400' },
 };
 
 function ProductSection({ product }) {
   const colors = colorClasses[product.color];
   const Icon = product.icon;
-  
+
   return (
     <section id={product.id} className="py-24 bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -315,24 +316,47 @@ function Pricing() {
 }
 
 function Waitlist() {
-  const data = await res.json();
-console.log('[Waitlist] Response:', res.status, data);
-if (data.ok) {
-  setStatus('success');
-  const adminOk = data.emails?.admin?.sent;
-  const userOk  = data.emails?.user?.sent;
-  let msg = data.duplicate
-    ? "You're already on the list! We'll be in touch soon."
-    : "You're on the list! We'll be in touch soon.";
-  if (!adminOk || !userOk) {
-    msg += ` (Note: ${!adminOk ? 'admin' : 'confirmation'} email failed to send — saved to DB.)`;
-  }
-  setMessage(msg);
-  setForm({ name: '', email: '', company: '', phone: '', branches: '' });
-} else {
-  setStatus('error');
-  setMessage(data.error || data.detail || data.message || 'Something went wrong');
-}
+  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', branches: '' });
+  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('loading');
+    setMessage('');
+
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      console.log('[Waitlist] Response:', res.status, data);
+
+      if (res.ok && data.ok) {
+        setStatus('success');
+        const adminOk = data.emails?.admin?.sent;
+        const userOk  = data.emails?.user?.sent;
+        let msg = data.duplicate
+          ? "You're already on the list! We'll be in touch soon."
+          : "You're on the list! We'll be in touch soon.";
+        if (data.emails && (!adminOk || !userOk)) {
+          msg += ` (Note: ${!adminOk ? 'admin' : 'confirmation'} email failed to send — your info is saved.)`;
+        }
+        setMessage(msg);
+        setForm({ name: '', email: '', company: '', phone: '', branches: '' });
+      } else {
+        setStatus('error');
+        setMessage(data.error || data.detail || data.message || `Request failed (${res.status})`);
+      }
+    } catch (err) {
+      console.error('[Waitlist] Network error:', err);
+      setStatus('error');
+      setMessage(err?.message || 'Network error. Please try again.');
+    }
+  };
 
   return (
     <section id="waitlist" className="py-24 bg-gradient-to-b from-slate-900 to-black">
@@ -390,7 +414,11 @@ if (data.ok) {
                   </div>
                 )}
                 <button type="submit" disabled={status === 'loading'} className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-700 text-black font-bold rounded-xl text-lg transition flex items-center justify-center gap-2">
-                  {status === 'loading' ? (<><Clock className="w-5 h-5 animate-spin" /> Submitting...</>) : (<><>Request Early Access <ArrowRight className="w-5 h-5" /></></>)}
+                  {status === 'loading' ? (
+                    <><Clock className="w-5 h-5 animate-spin" /> Submitting...</>
+                  ) : (
+                    <>Request Early Access <ArrowRight className="w-5 h-5" /></>
+                  )}
                 </button>
                 <p className="text-xs text-slate-500 text-center">By submitting, you agree to our Terms of Service and Privacy Policy.</p>
               </form>
@@ -428,25 +456,25 @@ function Footer() {
           <div>
             <h4 className="text-white font-bold mb-4">Company</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href__="/about" className="hover:text-cyan-400 transition">About</a></li>
+              <li><a href="/about" className="hover:text-cyan-400 transition">About</a></li>
               <li><button onClick={() => document.querySelector('#pricing')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-cyan-400 transition">Pricing</button></li>
-              <li><a href__="/privacy" className="hover:text-cyan-400 transition">Privacy</a></li>
-              <li><a href__="/terms" className="hover:text-cyan-400 transition">Terms</a></li>
+              <li><a href="/privacy" className="hover:text-cyan-400 transition">Privacy</a></li>
+              <li><a href="/terms" className="hover:text-cyan-400 transition">Terms</a></li>
             </ul>
           </div>
           <div>
             <h4 className="text-white font-bold mb-4">Contact</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li className="flex items-center gap-2"><Phone className="w-4 h-4" /><a href__="tel:+19565551234" className="hover:text-cyan-400 transition">(956) 555-1234</a></li>
-              <li className="flex items-center gap-2"><Mail className="w-4 h-4" /><a href__="mailto:info@theprojectair.com" className="hover:text-cyan-400 transition">info@theprojectair.com</a></li>
+              <li className="flex items-center gap-2"><Phone className="w-4 h-4" /><a href="tel:+19565551234" className="hover:text-cyan-400 transition">(956) 555-1234</a></li>
+              <li className="flex items-center gap-2"><Mail className="w-4 h-4" /><a href="mailto:info@theprojectair.com" className="hover:text-cyan-400 transition">info@theprojectair.com</a></li>
             </ul>
           </div>
         </div>
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 text-sm">© {new Date().getFullYear()} AIR by Lupine. All rights reserved.</p>
           <div className="flex items-center gap-6 text-sm text-slate-500">
-            <a href__="/privacy" className="hover:text-cyan-400 transition">Privacy Policy</a>
-            <a href__="/terms" className="hover:text-cyan-400 transition">Terms of Service</a>
+            <a href="/privacy" className="hover:text-cyan-400 transition">Privacy Policy</a>
+            <a href="/terms" className="hover:text-cyan-400 transition">Terms of Service</a>
           </div>
         </div>
       </div>
