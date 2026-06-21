@@ -1,5 +1,5 @@
 // api/waitlist.js
-// Vercel Serverless Function (Node 18+).
+// Vercel Serverless Function (Node 18+, ESM — package.json has "type": "module")
 // 1) Validates input
 // 2) Inserts into Supabase `waitlist_entries` via REST (service role, bypasses RLS)
 // 3) Sends admin + confirmation emails via Resend
@@ -15,16 +15,8 @@ function json(res, status, body) {
   res.status(status).send(JSON.stringify(body));
 }
 
-function clean(v, max = 500) {
-  if (v === undefined || v === null) return null;
-  const s = String(v).trim();
-  if (!s) return null;
-  return s.slice(0, max);
-}
-
-function escapeHtml(s) {
-  if (s === undefined || s === null || s === '') return '—';
-  return String(s)
+function escapeHtml(str = '') {
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -32,181 +24,170 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
-function normalize(body) {
-  const email      = clean(body.email, 254);
-  const full_name  = clean(body.full_name ?? body.name, 200);
-  const company    = clean(body.company   ?? body.company_name, 200);
-  const phone      = clean(body.phone, 50);
-  const role       = clean(body.role      ?? body.job_title, 100);
-  const message    = clean(body.message   ?? body.notes, 2000);
-
-  let branch_count = null;
-  const raw = body.branch_count ?? body.branches;
-  if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
-    const n = parseInt(String(raw), 10);
-    if (!Number.isNaN(n) && n >= 0 && n < 100000) branch_count = n;
-  }
-
-  return { email, full_name, company, phone, role, message, branch_count };
-}
-
-async function sendResendEmail({ apiKey, to, subject, html, replyTo }) {
-  const payload = {
-    from: FROM_ADDRESS,
-    to: Array.isArray(to) ? to : [to],
-    subject,
-    html,
-  };
-  if (replyTo) payload.reply_to = replyTo;
-
-  const r = await fetch('https://api.resend.com/emails', {
+async function insertWaitlistEntry({ supabaseUrl, serviceKey, entry }) {
+  const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/${TABLE}`;
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      Prefer: 'return=representation',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(entry),
   });
 
-  const text = await r.text();
-  let parsed = null;
-  try { parsed = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
 
-  if (!r.ok) {
-    return { ok: false, status: r.status, error: parsed?.message || text || `HTTP ${r.status}` };
+  if (!res.ok) {
+    return { ok: false, status: res.status, error: data || text || 'Supabase insert failed' };
   }
-  return { ok: true, id: parsed?.id || null };
+  return { ok: true, data };
 }
 
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+async function sendResendEmail({ apiKey, to, subject, html }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+  if (!res.ok) {
+    return { ok: false, status: res.status, error: data || text || 'Resend send failed' };
+  }
+  return { ok: true, data };
+}
 
-  if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'method_not_allowed' });
+export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(204).end();
+  }
 
-  const SUPABASE_URL              = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  if (req.method !== 'POST') {
+    return json(res, 405, { ok: false, error: 'Method not allowed' });
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const RESEND_API_KEY            = process.env.RESEND_API_KEY;
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[waitlist] Missing Supabase env vars');
-    return json(res, 500, { ok: false, error: 'server_misconfigured_supabase' });
+    console.error('[waitlist] Missing Supabase env vars', {
+      hasUrl: !!SUPABASE_URL,
+      hasKey: !!SUPABASE_SERVICE_ROLE_KEY,
+    });
+    return json(res, 500, { ok: false, error: 'Server is missing Supabase configuration' });
   }
   if (!RESEND_API_KEY) {
     console.error('[waitlist] Missing RESEND_API_KEY');
-    return json(res, 500, { ok: false, error: 'server_misconfigured_resend' });
+    return json(res, 500, { ok: false, error: 'Server is missing email configuration' });
   }
 
+  // Parse body (Vercel usually parses JSON automatically, but be defensive)
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch { body = {}; }
   }
-  if (!body || typeof body !== 'object') body = {};
+  body = body || {};
 
-  const entry = normalize(body);
-  if (!entry.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry.email)) {
-    return json(res, 400, { ok: false, error: 'invalid_email' });
+  const full_name    = String(body.full_name    || '').trim();
+  const email        = String(body.email        || '').trim().toLowerCase();
+  const company      = String(body.company      || '').trim();
+  const role         = String(body.role         || '').trim();
+  const branch_count = body.branch_count == null ? null : Number(body.branch_count);
+  const message      = String(body.message      || '').trim();
+
+  if (!full_name || !email) {
+    return json(res, 400, { ok: false, error: 'full_name and email are required' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return json(res, 400, { ok: false, error: 'Invalid email address' });
   }
 
-  const supaHeaders = {
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    'Content-Type': 'application/json',
+  const entry = {
+    full_name,
+    email,
+    company: company || null,
+    role: role || null,
+    branch_count: Number.isFinite(branch_count) ? branch_count : null,
+    message: message || null,
+    status: 'pending',
   };
 
-  // ---- duplicate check ----
-  try {
-    const dupUrl = `${SUPABASE_URL}/rest/v1/${TABLE}?email=eq.${encodeURIComponent(entry.email)}&select=id&limit=1`;
-    const dupRes = await fetch(dupUrl, { headers: supaHeaders });
-    if (dupRes.ok) {
-      const rows = await dupRes.json();
-      if (Array.isArray(rows) && rows.length > 0) {
-        return json(res, 200, { ok: true, duplicate: true });
-      }
-    } else {
-      const t = await dupRes.text();
-      console.error('[waitlist] dup-check failed', dupRes.status, t);
-    }
-  } catch (e) {
-    console.error('[waitlist] dup-check threw', e);
-  }
+  // Insert into Supabase
+  const insert = await insertWaitlistEntry({
+    supabaseUrl: SUPABASE_URL,
+    serviceKey: SUPABASE_SERVICE_ROLE_KEY,
+    entry,
+  });
 
-  // ---- insert ----
-  let insertedId = null;
-  try {
-    const insRes = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
-      method: 'POST',
-      headers: { ...supaHeaders, Prefer: 'return=representation' },
-      body: JSON.stringify([{ ...entry, status: 'pending' }]),
+  if (!insert.ok) {
+    console.error('[waitlist] Supabase insert failed', insert);
+    return json(res, 500, {
+      ok: false,
+      stage: 'supabase_insert',
+      status: insert.status,
+      error: insert.error,
     });
-    const insText = await insRes.text();
-    if (!insRes.ok) {
-      console.error('[waitlist] insert failed', insRes.status, insText);
-      return json(res, 500, { ok: false, error: 'db_insert_failed', detail: insText });
-    }
-    try {
-      const rows = JSON.parse(insText);
-      insertedId = Array.isArray(rows) && rows[0]?.id ? rows[0].id : null;
-    } catch { /* ignore */ }
-  } catch (e) {
-    console.error('[waitlist] insert threw', e);
-    return json(res, 500, { ok: false, error: 'db_insert_threw' });
   }
 
-  // ---- emails ----
+  // Build email bodies
   const adminHtml = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#0f172a;">
-      <h2 style="margin:0 0 16px 0;color:#0ea5e9;">🚀 New Early Access Request — Project AIR</h2>
-      <table style="width:100%;border-collapse:collapse;font-size:14px;">
-        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;width:140px;color:#64748b;">Email</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;"><a href="mailto:${escapeHtml(entry.email)}">${escapeHtml(entry.email)}</a></td></tr>
-        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Name</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.full_name)}</td></tr>
-        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Company</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.company)}</td></tr>
-        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Phone</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.phone)}</td></tr>
-        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Role</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.role)}</td></tr>
-        <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Branches</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${escapeHtml(entry.branch_count)}</td></tr>
-        <tr><td style="padding:8px;color:#64748b;vertical-align:top;">Message</td><td style="padding:8px;white-space:pre-wrap;">${escapeHtml(entry.message)}</td></tr>
-      </table>
-      <p style="margin-top:24px;font-size:12px;color:#94a3b8;">Entry id: ${escapeHtml(insertedId)}</p>
-    </div>
+    <h2>New AIR Early Access Request</h2>
+    <table cellpadding="6" cellspacing="0" border="0" style="font-family:Arial,sans-serif;font-size:14px;">
+      <tr><td><strong>Name</strong></td><td>${escapeHtml(full_name)}</td></tr>
+      <tr><td><strong>Email</strong></td><td>${escapeHtml(email)}</td></tr>
+      <tr><td><strong>Company</strong></td><td>${escapeHtml(company || '—')}</td></tr>
+      <tr><td><strong>Role</strong></td><td>${escapeHtml(role || '—')}</td></tr>
+      <tr><td><strong>Branch count</strong></td><td>${entry.branch_count ?? '—'}</td></tr>
+      <tr><td valign="top"><strong>Message</strong></td><td>${escapeHtml(message || '—').replace(/\n/g, '<br>')}</td></tr>
+    </table>
   `;
 
   const userHtml = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#0f172a;">
-      <h2 style="margin:0 0 16px 0;color:#0ea5e9;">Thanks for your interest in Project AIR</h2>
-      <p>Hi ${escapeHtml(entry.full_name || 'there')},</p>
-      <p>We received your early access request and will be in touch shortly with next steps.</p>
-      <p>In the meantime, if you have questions just reply to this email.</p>
-      <p style="margin-top:24px;">— The Project AIR Team</p>
-      <p style="font-size:12px;color:#94a3b8;margin-top:32px;">TheProjectAIR.com</p>
+    <div style="font-family:Arial,sans-serif;font-size:15px;color:#111;">
+      <p>Hi ${escapeHtml(full_name.split(' ')[0] || 'there')},</p>
+      <p>Thanks for requesting early access to <strong>AIR</strong>. We received your information and someone from The Project AIR team will be in touch shortly.</p>
+      <p>— The Project AIR Team<br>
+      <a href="https://theprojectair.com">theprojectair.com</a></p>
     </div>
   `;
 
-  const adminResult = await sendResendEmail({
-    apiKey: RESEND_API_KEY,
-    to: ADMIN_EMAIL,
-    subject: '🚀 New Early Access Request — Project AIR',
-    html: adminHtml,
-    replyTo: entry.email,
-  });
-  if (!adminResult.ok) console.error('[waitlist] admin email failed', adminResult);
+  // Send emails (don't fail the whole request if one email errors — log it)
+  const [adminEmail, userEmail] = await Promise.all([
+    sendResendEmail({
+      apiKey: RESEND_API_KEY,
+      to: ADMIN_EMAIL,
+      subject: `New AIR Early Access: ${full_name}${company ? ' — ' + company : ''}`,
+      html: adminHtml,
+    }),
+    sendResendEmail({
+      apiKey: RESEND_API_KEY,
+      to: email,
+      subject: 'We received your AIR early access request',
+      html: userHtml,
+    }),
+  ]);
 
-  const userResult = await sendResendEmail({
-    apiKey: RESEND_API_KEY,
-    to: entry.email,
-    subject: 'We received your Project AIR early access request',
-    html: userHtml,
-    replyTo: ADMIN_EMAIL,
-  });
-  if (!userResult.ok) console.error('[waitlist] user email failed', userResult);
+  if (!adminEmail.ok) console.error('[waitlist] Admin email failed', adminEmail);
+  if (!userEmail.ok)  console.error('[waitlist] User email failed',  userEmail);
 
   return json(res, 200, {
     ok: true,
-    id: insertedId,
+    inserted: Array.isArray(insert.data) ? insert.data[0] : insert.data,
     emails: {
-      admin: adminResult.ok ? { sent: true, id: adminResult.id } : { sent: false, error: adminResult.error },
-      user:  userResult.ok  ? { sent: true, id: userResult.id  } : { sent: false, error: userResult.error  },
+      admin: adminEmail.ok ? 'sent' : { error: adminEmail.error, status: adminEmail.status },
+      user:  userEmail.ok  ? 'sent' : { error: userEmail.error,  status: userEmail.status  },
     },
   });
-};
+}
