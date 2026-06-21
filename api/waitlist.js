@@ -1,235 +1,179 @@
 // api/waitlist.js
-// Vercel Serverless Function (Node 18+, ESM — package.json has "type": "module")
-// 1) Validates input (accepts both `name`/`full_name` and `phone`)
-// 2) Inserts into Supabase `waitlist_entries` via REST (service role, bypasses RLS)
-// 3) Handles duplicate-email gracefully (returns 200 with "already on list")
-// 4) Sends admin + confirmation emails via Resend
-// 5) Always returns string `message` so the frontend never tries to render an object
+// Vercel Serverless Function (ESM — package.json has "type":"module")
 
 const ADMIN_EMAIL  = 'info@theprojectair.com';
 const FROM_ADDRESS = 'AIR Waitlist <info@theprojectair.com>';
 const TABLE        = 'waitlist_entries';
 
-function json(res, status, body) {
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-store');
-  res.status(status).send(JSON.stringify(body));
-}
-
-function escapeHtml(str = '') {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-async function insertWaitlistEntry({ supabaseUrl, serviceKey, entry }) {
-  const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/${TABLE}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(entry),
-  });
-
-  const text = await res.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
-
-  if (!res.ok) {
-    return { ok: false, status: res.status, error: data || text || 'Supabase insert failed' };
+function pick(obj, keys) {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
   }
-  return { ok: true, data };
+  return '';
 }
 
-async function sendResendEmail({ apiKey, to, subject, html }) {
-  const res = await fetch('https://api.resend.com/emails', {
+function escapeHtml(s = '') {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+  }[c]));
+}
+
+async function sendResend({ to, subject, html, replyTo }) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return { ok: false, skipped: 'no_resend_key' };
+  const body = { from: FROM_ADDRESS, to: Array.isArray(to) ? to : [to], subject, html };
+  if (replyTo) body.reply_to = replyTo;
+  const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
-  const text = await res.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
-  if (!res.ok) {
-    return { ok: false, status: res.status, error: data || text || 'Resend send failed' };
-  }
-  return { ok: true, data };
+  const text = await r.text();
+  let json; try { json = JSON.parse(text); } catch { json = { raw: text }; }
+  return { ok: r.ok, status: r.status, body: json };
+}
+
+function buildAdminHtml(entry, { resubmission = false } = {}) {
+  const rows = Object.entries(entry)
+    .map(([k,v]) => `<tr><td style="padding:4px 10px;border:1px solid #ddd"><b>${escapeHtml(k)}</b></td><td style="padding:4px 10px;border:1px solid #ddd">${escapeHtml(v ?? '')}</td></tr>`)
+    .join('');
+  const banner = resubmission
+    ? `<p style="color:#b45309"><b>Resubmission</b> — this email is already on the waitlist.</p>`
+    : '';
+  return `<div style="font-family:Arial,sans-serif">
+    <h2>New AIR early access request</h2>
+    ${banner}
+    <table style="border-collapse:collapse">${rows}</table>
+  </div>`;
+}
+
+function buildUserHtml(name) {
+  const first = (name || '').split(' ')[0] || 'there';
+  return `<div style="font-family:Arial,sans-serif;line-height:1.5">
+    <p>Hi ${escapeHtml(first)},</p>
+    <p>Thanks for requesting early access to <b>The Project AIR</b>. You're on the list — we'll be in touch as we open spots.</p>
+    <p>— The AIR team</p>
+  </div>`;
 }
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    return res.status(204).end();
-  }
-
   if (req.method !== 'POST') {
-    return json(res, 405, { ok: false, message: 'Method not allowed' });
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   }
 
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[waitlist] Missing Supabase env vars', {
-      hasUrl: !!SUPABASE_URL,
-      hasKey: !!SUPABASE_SERVICE_ROLE_KEY,
-    });
-    return json(res, 500, { ok: false, message: 'Server is missing Supabase configuration' });
-  }
-  if (!RESEND_API_KEY) {
-    console.error('[waitlist] Missing RESEND_API_KEY');
-    return json(res, 500, { ok: false, message: 'Server is missing email configuration' });
-  }
-
-  // Parse body (Vercel usually parses JSON automatically, but be defensive)
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch { body = {}; }
-  }
-  body = body || {};
-
-  // Accept multiple key variants from the frontend
-  const full_name = String(body.full_name || body.name || body.fullName || '').trim();
-  const email     = String(body.email     || '').trim().toLowerCase();
-  const company   = String(body.company   || '').trim();
-  const role      = String(body.role      || '').trim();
-  const phone     = String(body.phone     || '').trim();
-  const message   = String(body.message   || '').trim();
-
-  const branchRaw = body.branch_count ?? body.branches ?? body.branchCount ?? null;
-  const branch_count = branchRaw == null || branchRaw === '' ? null : Number(branchRaw);
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const full_name    = pick(body, ['full_name','name','fullName']);
+  const email        = pick(body, ['email']).toLowerCase();
+  const phone        = pick(body, ['phone']);
+  const company      = pick(body, ['company']);
+  const role         = pick(body, ['role']);
+  const message      = pick(body, ['message']);
+  const branchRaw    = pick(body, ['branch_count','branches','branchCount']);
+  const branch_count = branchRaw ? Number(branchRaw) : null;
 
   if (!full_name || !email) {
-    console.error('[waitlist] Validation failed — received keys:', Object.keys(body));
-    return json(res, 400, {
+    return res.status(400).json({
       ok: false,
-      message: 'Full name and email are required.',
+      error: 'full_name and email are required',
+      receivedKeys: Object.keys(body),
     });
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return json(res, 400, { ok: false, message: 'Please enter a valid email address.' });
+
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    return res.status(500).json({ ok: false, stage: 'config', error: 'missing_supabase_env' });
   }
 
-  const entry = {
-    full_name,
-    email,
-    company: company || null,
-    role: role || null,
-    phone: phone || null,
-    branch_count: Number.isFinite(branch_count) ? branch_count : null,
-    message: message || null,
-    status: 'pending',
-  };
+  const row = { full_name, email, company, role, message, branch_count, phone };
+  Object.keys(row).forEach(k => (row[k] === '' || row[k] === null) && delete row[k]);
 
-  // Insert into Supabase. If the `phone` column doesn't exist, retry without it.
-  let insert = await insertWaitlistEntry({
-    supabaseUrl: SUPABASE_URL,
-    serviceKey: SUPABASE_SERVICE_ROLE_KEY,
-    entry,
+  // Insert
+  let insert = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+    method: 'POST',
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify(row),
   });
 
-  if (!insert.ok) {
-    const errStr = JSON.stringify(insert.error || '');
-    if (/phone/i.test(errStr) && /column/i.test(errStr)) {
-      console.warn('[waitlist] Retrying insert without phone column');
-      const { phone: _drop, ...entryNoPhone } = entry;
-      insert = await insertWaitlistEntry({
-        supabaseUrl: SUPABASE_URL,
-        serviceKey: SUPABASE_SERVICE_ROLE_KEY,
-        entry: entryNoPhone,
+  // Retry without phone if column missing
+  if (insert.status === 400) {
+    const txt = await insert.clone().text();
+    if (/phone/i.test(txt) && /column/i.test(txt)) {
+      const { phone: _drop, ...noPhone } = row;
+      insert = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+        method: 'POST',
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify(noPhone),
       });
     }
   }
 
+  const insertText = await insert.text();
+  let insertJson; try { insertJson = JSON.parse(insertText); } catch { insertJson = { raw: insertText }; }
+
+  // Duplicate path — still send emails so the user gets a confirmation
+  const isDuplicate =
+    insert.status === 409 ||
+    (insertJson && insertJson.code === '23505');
+
+  if (isDuplicate) {
+    const adminEmail = await sendResend({
+      to: ADMIN_EMAIL,
+      subject: `AIR waitlist resubmission: ${full_name}`,
+      html: buildAdminHtml({ full_name, email, phone, company, role, branch_count, message }, { resubmission: true }),
+      replyTo: email,
+    });
+    const userEmail = await sendResend({
+      to: email,
+      subject: `You're on the AIR early access list`,
+      html: buildUserHtml(full_name),
+    });
+    return res.status(200).json({
+      ok: true,
+      duplicate: true,
+      message: "You're already on the AIR early access list. We've re-sent your confirmation.",
+      emails: { admin: adminEmail, user: userEmail },
+    });
+  }
+
   if (!insert.ok) {
-    // Duplicate email — treat as a soft success so the user sees a friendly message
-    const errObj = typeof insert.error === 'object' ? insert.error : {};
-    const isDuplicate =
-      errObj.code === '23505' ||
-      /duplicate key/i.test(JSON.stringify(insert.error || '')) ||
-      insert.status === 409;
-
-    if (isDuplicate) {
-      console.log('[waitlist] Duplicate email — already on list:', email);
-      return json(res, 200, {
-        ok: true,
-        duplicate: true,
-        message: "You're already on the AIR early access list. We'll be in touch soon!",
-      });
-    }
-
-    console.error('[waitlist] Supabase insert failed', insert);
-    return json(res, 500, {
+    return res.status(500).json({
       ok: false,
       stage: 'supabase_insert',
       status: insert.status,
-      message:
-        (errObj && (errObj.message || errObj.details)) ||
-        'We could not save your request. Please try again in a moment.',
+      error: insertJson,
     });
   }
 
-  // Build email bodies
-  const adminHtml = `
-    <h2>New AIR Early Access Request</h2>
-    <table cellpadding="6" cellspacing="0" border="0" style="font-family:Arial,sans-serif;font-size:14px;">
-      <tr><td><strong>Name</strong></td><td>${escapeHtml(full_name)}</td></tr>
-      <tr><td><strong>Email</strong></td><td>${escapeHtml(email)}</td></tr>
-      <tr><td><strong>Company</strong></td><td>${escapeHtml(company || '—')}</td></tr>
-      <tr><td><strong>Phone</strong></td><td>${escapeHtml(phone || '—')}</td></tr>
-      <tr><td><strong>Role</strong></td><td>${escapeHtml(role || '—')}</td></tr>
-      <tr><td><strong>Branch count</strong></td><td>${entry.branch_count ?? '—'}</td></tr>
-      <tr><td valign="top"><strong>Message</strong></td><td>${escapeHtml(message || '—').replace(/\n/g, '<br>')}</td></tr>
-    </table>
-  `;
+  // Fresh insert — send both emails
+  const adminEmail = await sendResend({
+    to: ADMIN_EMAIL,
+    subject: `New AIR early access request: ${full_name}`,
+    html: buildAdminHtml({ full_name, email, phone, company, role, branch_count, message }),
+    replyTo: email,
+  });
+  const userEmail = await sendResend({
+    to: email,
+    subject: `You're on the AIR early access list`,
+    html: buildUserHtml(full_name),
+  });
 
-  const userHtml = `
-    <div style="font-family:Arial,sans-serif;font-size:15px;color:#111;">
-      <p>Hi ${escapeHtml(full_name.split(' ')[0] || 'there')},</p>
-      <p>Thanks for requesting early access to <strong>AIR</strong>. We received your information and someone from The Project AIR team will be in touch shortly.</p>
-      <p>— The Project AIR Team<br>
-      <a href="https://theprojectair.com">theprojectair.com</a></p>
-    </div>
-  `;
-
-  // Send emails (don't fail the whole request if one email errors — log it)
-  const [adminEmail, userEmail] = await Promise.all([
-    sendResendEmail({
-      apiKey: RESEND_API_KEY,
-      to: ADMIN_EMAIL,
-      subject: `New AIR Early Access: ${full_name}${company ? ' — ' + company : ''}`,
-      html: adminHtml,
-    }),
-    sendResendEmail({
-      apiKey: RESEND_API_KEY,
-      to: email,
-      subject: 'We received your AIR early access request',
-      html: userHtml,
-    }),
-  ]);
-
-  if (!adminEmail.ok) console.error('[waitlist] Admin email failed', adminEmail);
-  if (!userEmail.ok)  console.error('[waitlist] User email failed',  userEmail);
-
-  return json(res, 200, {
+  return res.status(200).json({
     ok: true,
-    message: "You're on the list! Check your email for confirmation.",
-    emails: {
-      admin: adminEmail.ok ? 'sent' : 'failed',
-      user:  userEmail.ok  ? 'sent' : 'failed',
-    },
+    duplicate: false,
+    message: "Thanks — you're on the AIR early access list.",
+    emails: { admin: adminEmail, user: userEmail },
   });
 }
