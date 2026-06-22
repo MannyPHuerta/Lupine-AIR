@@ -252,9 +252,17 @@ async function handleList(sb) {
   if (res.error) {
     return { status: 500, body: { error: res.error.message } };
   }
-  const rows = res.data || [];
-  // Return every shape the frontend might consume so the manager page
-  // renders regardless of which key it reads.
+  const raw = res.data || [];
+  // Base44 frontends typically read `name`, `company`, `created_date`,
+  // `updated_date`. Add aliases on every row so the page renders no matter
+  // which field names it expects.
+  const rows = raw.map((r) => ({
+    ...r,
+    name: r.full_name || r.name || null,
+    company: r.company_name || r.company || null,
+    created_date: r.created_at || null,
+    updated_date: r.updated_at || null,
+  }));
   return {
     status: 200,
     body: { ok: true, entries: rows, data: rows, rows, items: rows, count: rows.length },
