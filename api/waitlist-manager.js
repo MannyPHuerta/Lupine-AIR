@@ -1,19 +1,17 @@
 // @ts-check
 // Vercel serverless function — Waitlist admin operations
 //
-// Actions supported (unchanged signatures):
+// Actions:
 //   POST { action: 'list' }
 //   POST { action: 'approve', entryId }
 //   POST { action: 'deny',    entryId, reason? }
 //
-// Approve flow is fully idempotent:
-//   1. Find/create subscriber_trials row (no upsert — explicit select + update/insert).
-//   2. Find/create auth user (getUserByEmail first; treat "already registered" as success).
-//   3. Reuse existing tenant for this user if present, else clone the template
-//      tenant via RPC clone_tenant_for_trial and link the user via link_user_to_tenant.
-//   4. Generate a fresh magic link with ?next=/dashboard.
-//   5. Send the approval email via Resend, surfacing Resend errors.
-//   6. Mark waitlist_entries.status = 'approved' with error checking.
+// NOTE: This file is tuned to the ACTUAL waitlist_entries schema in prod:
+//   id, name, email, phone, company, branches, status, approved_by,
+//   approved_at, notes, created_at, full_name, company_name, updated_at,
+//   branch_count, role, message
+// There is NO denied_at / denial_reason column — denial reason is written
+// into `notes` and status is flipped to 'denied'.
 //
 /* global process */
 import { createClient } from '@supabase/supabase-js';
@@ -43,6 +41,10 @@ const SITE_URL =
 
 const FROM_ADDRESS = 'AIR by Lupine <info@theprojectair.com>';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+
+// Columns that actually exist on waitlist_entries.
+const LIST_COLUMNS =
+  'id, email, full_name, company_name, phone, role, branch_count, message, status, notes, approved_at, approved_by, created_at, updated_at';
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -106,8 +108,6 @@ function approvalEmailHtml({ fullName, magicLink }) {
     This sign-in link is single-use and expires shortly. If it expires, reply
     to this email and we'll send a fresh one.
   </p>
-  <p style="font-size:13px;color:#555;">When you're ready to convert this demo
-     into a paid account, you can do that from inside the app.</p>
 </body></html>`;
 }
 
@@ -123,7 +123,7 @@ function denialEmailHtml({ fullName, reason }) {
 }
 
 // ---------------------------------------------------------------------------
-// approve handler
+// approve helpers
 // ---------------------------------------------------------------------------
 async function ensureAuthUser(sb, email) {
   const lookup = await sb.auth.admin.getUserByEmail(email);
@@ -240,6 +240,21 @@ async function generateMagicLink(sb, email) {
   return link;
 }
 
+// ---------------------------------------------------------------------------
+// action handlers
+// ---------------------------------------------------------------------------
+async function handleList(sb) {
+  const res = await sb
+    .from('waitlist_entries')
+    .select(LIST_COLUMNS)
+    .order('created_at', { ascending: false })
+    .limit(500);
+  if (res.error) {
+    return { status: 500, body: { error: res.error.message } };
+  }
+  return { status: 200, body: { entries: res.data || [] } };
+}
+
 async function handleApprove(sb, entryId) {
   if (!entryId || typeof entryId !== 'string') {
     return { status: 400, body: { error: 'entryId is required' } };
@@ -301,16 +316,13 @@ async function handleApprove(sb, entryId) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// deny handler
-// ---------------------------------------------------------------------------
 async function handleDeny(sb, entryId, reason) {
   if (!entryId || typeof entryId !== 'string') {
     return { status: 400, body: { error: 'entryId is required' } };
   }
   const entryRes = await sb
     .from('waitlist_entries')
-    .select('id, email, full_name, status')
+    .select('id, email, full_name, status, notes')
     .eq('id', entryId)
     .maybeSingle();
   if (entryRes.error) {
@@ -332,33 +344,17 @@ async function handleDeny(sb, entryId, reason) {
     }
   }
 
+  const noteLine = `[denied ${new Date().toISOString()}]${reason ? ` ${reason}` : ''}`;
+  const newNotes = entry.notes ? `${entry.notes}\n${noteLine}` : noteLine;
+
   const upd = await sb
     .from('waitlist_entries')
-    .update({
-      status: 'denied',
-      denied_at: new Date().toISOString(),
-      denial_reason: reason || null,
-    })
+    .update({ status: 'denied', notes: newNotes })
     .eq('id', entry.id);
   if (upd.error) {
     return { status: 500, body: { error: `waitlist_entries update failed: ${upd.error.message}` } };
   }
   return { status: 200, body: { ok: true, entryId: entry.id } };
-}
-
-// ---------------------------------------------------------------------------
-// list handler
-// ---------------------------------------------------------------------------
-async function handleList(sb) {
-  const res = await sb
-    .from('waitlist_entries')
-    .select('id, email, full_name, company_name, phone, status, created_at, approved_at, denied_at, denial_reason')
-    .order('created_at', { ascending: false })
-    .limit(500);
-  if (res.error) {
-    return { status: 500, body: { error: res.error.message } };
-  }
-  return { status: 200, body: { entries: res.data || [] } };
 }
 
 // ---------------------------------------------------------------------------
