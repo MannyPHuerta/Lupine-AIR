@@ -265,7 +265,16 @@ async function handleList(sb) {
   }));
   return {
     status: 200,
-    body: { ok: true, entries: rows, data: rows, rows, items: rows, count: rows.length },
+    body: {
+      ok: true,
+      waitlist: rows,
+      trials: [],
+      entries: rows,
+      data: rows,
+      rows,
+      items: rows,
+      count: rows.length,
+    },
   };
 }
 
@@ -402,6 +411,7 @@ export default async function handler(req, res) {
       result = await handleApprove(sb, body.entryId);
       break;
     case 'deny':
+    case 'reject':
       result = await handleDeny(sb, body.entryId, body.reason);
       break;
     default:
