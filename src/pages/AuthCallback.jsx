@@ -1,244 +1,64 @@
+// pages/AuthCallback.jsx
+// Honors ?next= so magic links from the waitlist approval flow drop trial
+// users straight into the demo (/dashboard) instead of /onboarding.
 import { useEffect, useState } from 'react';
-import { supabase } from '@/api/supabaseClient';
-import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+const DEFAULT_NEXT = '/dashboard';
+
+function safeNext(raw) {
+  if (!raw) return DEFAULT_NEXT;
+  // Only allow same-origin paths, not absolute URLs or protocol-relative.
+  if (!raw.startsWith('/') || raw.startsWith('//')) return DEFAULT_NEXT;
+  return raw;
+}
 
 export default function AuthCallback() {
-  const [status, setStatus] = useState('Signing you in…');
-  const [debug, setDebug] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!supabase) {
-      console.error('[AuthCallback] Supabase client is null');
-      setStatus('Auth not available.');
-      return;
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const errParam = params.get('error_description') || params.get('error');
+        if (errParam) throw new Error(errParam);
 
-    const searchParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-    const next = searchParams.get('next') || '/';
+        const code = params.get('code');
+        if (code) {
+          const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (exErr) throw exErr;
+        }
 
-    console.log('[AuthCallback] URL:', window.location.href);
-    console.log('[AuthCallback] search:', window.location.search);
-    console.log('[AuthCallback] hash:', window.location.hash);
+        const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
+        if (sessErr) throw sessErr;
+        if (!sessionData || !sessionData.session) {
+          throw new Error('No session after auth callback');
+        }
 
-    // Error in hash (expired link etc.)
-    const hashError = hashParams.get('error');
-    const errorCode = hashParams.get('error_code');
-    if (hashError) {
-      console.error('[AuthCallback] hash error:', hashError, errorCode);
-      setStatus(`Sign-in failed: ${hashError}. The link may have expired.`);
-      return;
-    }
-
-    const code = searchParams.get('code');
-    const token = searchParams.get('token');
-    const type = searchParams.get('type');
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-
-    let settled = false;
-
-    // Case 1: admin generateLink — ?token=...&type=magiclink
-    if (token && type) {
-      console.log('[AuthCallback] Case 1: token+type flow');
-      supabase.auth.verifyOtp({ token_hash: token, type })
-        .then(({ error, data }) => {
-          if (error || !data?.session) {
-            console.error('[AuthCallback] verifyOtp failed:', error);
-            setStatus('Sign-in failed. The link may have expired.');
-          } else {
-            console.log('[AuthCallback] verifyOtp success, session:', data.session.user.email);
-            // Check if user has a tenant before redirecting
-            supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
-              .then(async ({ data: profile }) => {
-                if (profile?.tenant_id) {
-                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
-                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
-                  console.log('[AuthCallback] redirecting to:', target);
-                  setTimeout(() => window.location.replace(target), 500);
-                } else {
-                  setTimeout(() => window.location.replace('/onboarding'), 500);
-                }
-              })
-              .catch(() => {
-                setTimeout(() => window.location.replace('/onboarding'), 500);
-              });
-          }
-        })
-        .catch(err => {
-          console.error('[AuthCallback] verifyOtp exception:', err);
-          setStatus('Sign-in failed. Please request a new link.');
-        });
-      return;
-    }
-
-    // Case 2: PKCE code flow — ?code=...
-    if (code) {
-      console.log('[AuthCallback] Case 2: PKCE code flow');
-      supabase.auth.exchangeCodeForSession(code)
-        .then(({ error, data }) => {
-          if (error || !data?.session) {
-            console.error('[AuthCallback] exchangeCodeForSession failed:', error);
-            setStatus('Sign-in failed. The link may have expired.');
-          } else {
-            console.log('[AuthCallback] exchangeCodeForSession success, session:', data.session.user.email);
-            // Check if user has a tenant before redirecting
-            supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
-              .then(async ({ data: profile }) => {
-                if (profile?.tenant_id) {
-                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
-                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
-                  console.log('[AuthCallback] redirecting to:', target);
-                  setTimeout(() => window.location.replace(target), 500);
-                } else {
-                  setTimeout(() => window.location.replace('/onboarding'), 500);
-                }
-              })
-              .catch(() => {
-                setTimeout(() => window.location.replace('/onboarding'), 500);
-              });
-          }
-        })
-        .catch(err => {
-          console.error('[AuthCallback] exchangeCodeForSession exception:', err);
-          setStatus('Sign-in failed. Please request a new link.');
-        });
-      return;
-    }
-
-    // Case 3: Hash-based implicit flow — #access_token=...
-    if (accessToken) {
-      console.log('[AuthCallback] Case 3: hash-based flow');
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
-        .then(({ error, data }) => {
-          if (error || !data?.session) {
-            console.error('[AuthCallback] setSession failed:', error);
-            setStatus('Sign-in failed. The link may have expired.');
-          } else {
-            console.log('[AuthCallback] setSession success, session:', data.session.user.email);
-            // Check if user has a tenant before redirecting
-            supabase.from('profiles').select('tenant_id').eq('id', data.session.user.id).single()
-              .then(async ({ data: profile }) => {
-                if (profile?.tenant_id) {
-                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
-                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
-                  console.log('[AuthCallback] redirecting to:', target);
-                  setTimeout(() => window.location.replace(target), 500);
-                } else {
-                  setTimeout(() => window.location.replace('/onboarding'), 500);
-                }
-              })
-              .catch(() => {
-                setTimeout(() => window.location.replace('/onboarding'), 500);
-              });
-          }
-        })
-        .catch(err => {
-          console.error('[AuthCallback] setSession exception:', err);
-          setStatus('Sign-in failed. Please request a new link.');
-        });
-      return;
-    }
-
-    // Case 4: No params — check for existing session or wait for auth state change
-    console.log('[AuthCallback] Case 4: checking existing session');
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (settled) return;
-      if (session) {
-        console.log('[AuthCallback] existing session found:', session.user?.email);
-        // Check if user has a tenant before redirecting
-        supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single()
-          .then(async ({ data: profile }) => {
-            if (profile?.tenant_id) {
-              const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
-              const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
-              console.log('[AuthCallback] redirecting to:', target);
-              settled = true;
-              window.location.replace(target);
-            } else {
-              console.log('[AuthCallback] redirecting to onboarding (no profile)');
-              settled = true;
-              window.location.replace('/onboarding');
-            }
-          })
-          .catch(() => {
-            console.log('[AuthCallback] redirecting to onboarding (no profile)');
-            settled = true;
-            window.location.replace('/onboarding');
-          });
-      } else {
-        console.log('[AuthCallback] no existing session, waiting for auth state change');
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-          console.log('[AuthCallback] auth event:', event, '| has session:', !!s);
-          if (settled) return;
-          
-          if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s) {
-            console.log('[AuthCallback] session established, checking tenant');
-            settled = true;
-            subscription.unsubscribe();
-            // Check if user has a tenant before redirecting
-            supabase.from('profiles').select('tenant_id').eq('id', s.user.id).single()
-              .then(async ({ data: profile }) => {
-                if (profile?.tenant_id) {
-                  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', profile.tenant_id).single();
-                  const target = tenant ? `https://${tenant.slug}.theprojectair.com` : '/onboarding';
-                  console.log('[AuthCallback] redirecting to:', target);
-                  window.location.replace(target);
-                } else {
-                  console.log('[AuthCallback] redirecting to onboarding (no profile)');
-                  window.location.replace('/onboarding');
-                }
-              })
-              .catch(() => {
-                console.log('[AuthCallback] redirecting to onboarding (no profile)');
-                window.location.replace('/onboarding');
-              });
-          } else if (event === 'INITIAL_SESSION' && !s) {
-            console.log('[AuthCallback] no session after timeout');
-            settled = true;
-            subscription.unsubscribe();
-            setStatus('Sign-in failed. Please request a new link.');
-          }
-        });
-
-        // Timeout fallback
-        setTimeout(() => {
-          if (!settled) {
-            console.warn('[AuthCallback] timeout waiting for session');
-            settled = true;
-            subscription.unsubscribe();
-            setStatus('Sign-in timed out. Please request a new link.');
-          }
-        }, 10000);
+        if (cancelled) return;
+        const next = safeNext(params.get('next'));
+        window.location.replace(next);
+      } catch (e) {
+        if (!cancelled) setError(e.message || String(e));
       }
-    }).catch(err => {
-      console.error('[AuthCallback] getSession exception:', err);
-      setStatus('Sign-in failed. Please request a new link.');
-    });
-
-    return () => {
-      // Cleanup handled in subscription
-    };
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 flex flex-col items-center gap-4 max-w-sm w-full text-center">
-        <div className="w-14 h-14 bg-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
-          <span className="text-white font-black text-xl">AIR</span>
-        </div>
-        {status === 'Signing you in…' ? (
-          <>
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-slate-600 font-medium">{status}</p>
-          </>
-        ) : (
-          <p className="text-red-600 font-medium">{status}</p>
-        )}
-        {debug && (
-          <p className="text-xs text-slate-400 break-all mt-2">{debug}</p>
-        )}
+  if (error) {
+    return (
+      <div style={{ maxWidth: 480, margin: '64px auto', fontFamily: 'system-ui', padding: 24 }}>
+        <h2>Sign-in failed</h2>
+        <p style={{ color: '#b00' }}>{error}</p>
+        <p><a href="/signin">Return to sign in</a></p>
       </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 480, margin: '64px auto', textAlign: 'center', fontFamily: 'system-ui' }}>
+      <p>Signing you in…</p>
     </div>
   );
 }
