@@ -1,57 +1,75 @@
-// pages/AuthCallback.jsx
-// Honors ?next= so magic links from the waitlist approval flow drop trial
-// users straight into the demo (/dashboard) instead of /onboarding.
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-const DEFAULT_NEXT = '/dashboard';
-
-function safeNext(raw) {
-  if (!raw) return DEFAULT_NEXT;
-  // Only allow same-origin paths, not absolute URLs or protocol-relative.
-  if (!raw.startsWith('/') || raw.startsWith('//')) return DEFAULT_NEXT;
-  return raw;
-}
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/api/supabaseClient';
 
 export default function AuthCallback() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
+    const finishAuth = async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const errParam = params.get('error_description') || params.get('error');
-        if (errParam) throw new Error(errParam);
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        const errParam = url.searchParams.get('error_description') || url.searchParams.get('error');
+        const next = url.searchParams.get('next') || '/dashboard';
 
-        const code = params.get('code');
+        if (errParam) {
+          throw new Error(errParam);
+        }
+
         if (code) {
-          const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-          if (exErr) throw exErr;
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        } else {
+          // Magic link may arrive as a hash fragment (#access_token=...).
+          // supabase-js parses it automatically when detectSessionInUrl is true;
+          // if it's false we fall through and rely on an existing session.
+          const hash = window.location.hash;
+          if (hash && hash.includes('access_token')) {
+            const params = new URLSearchParams(hash.replace(/^#/, ''));
+            const access_token = params.get('access_token');
+            const refresh_token = params.get('refresh_token');
+            if (access_token && refresh_token) {
+              const { error: setErr } = await supabase.auth.setSession({ access_token, refresh_token });
+              if (setErr) throw setErr;
+            }
+          }
         }
 
-        const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
-        if (sessErr) throw sessErr;
-        if (!sessionData || !sessionData.session) {
-          throw new Error('No session after auth callback');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('No session established. The magic link may have expired — please request a new one.');
         }
 
-        if (cancelled) return;
-        const next = safeNext(params.get('next'));
+        // Clean the URL so tokens/codes don't linger in history, then redirect.
+        window.history.replaceState({}, document.title, window.location.pathname);
         window.location.replace(next);
       } catch (e) {
-        if (!cancelled) setError(e.message || String(e));
+        console.error('[AuthCallback]', e);
+        setError(e.message || 'Authentication failed.');
       }
-    })();
-    return () => { cancelled = true; };
+    };
+
+    finishAuth();
   }, []);
 
   if (error) {
     return (
-      <div style={{ maxWidth: 480, margin: '64px auto', fontFamily: 'system-ui', padding: 24 }}>
-        <h2>Sign-in failed</h2>
-        <p style={{ color: '#b00' }}>{error}</p>
-        <p><a href="/signin">Return to sign in</a></p>
+      <div style={{ maxWidth: 480, margin: '64px auto', padding: 24, fontFamily: 'system-ui', textAlign: 'center' }}>
+        <h1 style={{ fontSize: 20, marginBottom: 12 }}>Sign-in failed</h1>
+        <p style={{ color: '#b91c1c', marginBottom: 24 }}>{error}</p>
+        <a
+          href="/"
+          style={{
+            display: 'inline-block',
+            padding: '10px 18px',
+            background: '#111',
+            color: '#fff',
+            borderRadius: 6,
+            textDecoration: 'none',
+          }}
+        >
+          Return to sign in
+        </a>
       </div>
     );
   }
