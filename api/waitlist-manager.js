@@ -1,291 +1,401 @@
 // @ts-check
 // Vercel serverless function — Waitlist admin operations
+//
+// Actions supported (unchanged signatures):
+//   POST { action: 'list' }
+//   POST { action: 'approve', entryId }
+//   POST { action: 'deny',    entryId, reason? }
+//
+// Approve flow is fully idempotent:
+//   1. Find/create subscriber_trials row (no upsert — explicit select + update/insert).
+//   2. Find/create auth user (getUserByEmail first; treat "already registered" as success).
+//   3. Reuse existing tenant for this user if present, else clone the template
+//      tenant via RPC clone_tenant_for_trial and link the user via link_user_to_tenant.
+//   4. Generate a fresh magic link with ?next=/dashboard.
+//   5. Send the approval email via Resend, surfacing Resend errors.
+//   6. Mark waitlist_entries.status = 'approved' with error checking.
+//
 /* global process */
 import { createClient } from '@supabase/supabase-js';
 
-const SITE = 'https://theprojectair.com';
-const DEMO_PATH = '/demo';
-const CALLBACK_URL = `${SITE}/auth/callback?next=${encodeURIComponent(DEMO_PATH)}`;
-const FROM = 'AIR by Lupine <info@theprojectair.com>';
-
+// ---------------------------------------------------------------------------
+// env / clients
+// ---------------------------------------------------------------------------
 const getSupabase = () => {
-  const rawUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  if (!rawUrl || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  const url = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
-  return createClient(url, key, { auth: { persistSession: false } });
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    '';
+  if (!url || !key) {
+    throw new Error('Supabase env missing (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');
+  }
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 };
 
-/**
- * Send an email via Resend. Returns { ok, id?, error? }.
- */
-async function sendEmail(apiKey, payload) {
+const SITE_URL =
+  process.env.SITE_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.VITE_SITE_URL ||
+  'https://theprojectair.com';
+
+const FROM_ADDRESS = 'AIR by Lupine <info@theprojectair.com>';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+
+// ---------------------------------------------------------------------------
+// helpers
+// ---------------------------------------------------------------------------
+function isAlreadyRegistered(err) {
+  if (!err) return false;
+  const msg = String(err.message || err.error_description || '').toLowerCase();
+  return (
+    msg.includes('already registered') ||
+    msg.includes('already been registered') ||
+    msg.includes('user already exists') ||
+    msg.includes('duplicate')
+  );
+}
+
+async function sendEmail({ to, subject, html }) {
+  if (!RESEND_API_KEY) {
+    return { ok: false, error: 'RESEND_API_KEY not configured', status: 0 };
+  }
+  let res;
   try {
-    const r = await fetch('https://api.resend.com/emails', {
+    res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({ from: FROM_ADDRESS, to: [to], subject, html }),
     });
-    const body = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      console.warn('[waitlist-manager] resend non-2xx:', r.status, body);
-      return { ok: false, error: body?.message || body?.error || `HTTP ${r.status}`, status: r.status };
-    }
-    return { ok: true, id: body?.id, raw: body };
   } catch (e) {
-    console.warn('[waitlist-manager] resend fetch error:', e.message);
-    return { ok: false, error: e.message };
+    return { ok: false, error: `Resend network error: ${e.message}`, status: 0 };
   }
+  let body = null;
+  try { body = await res.json(); } catch { /* non-JSON */ }
+  if (!res.ok) {
+    const detail = body && (body.error || body.message)
+      ? JSON.stringify(body.error || body.message)
+      : `HTTP ${res.status}`;
+    return { ok: false, error: `Resend: ${detail}`, status: res.status };
+  }
+  if (body && body.error) {
+    return { ok: false, error: `Resend: ${JSON.stringify(body.error)}`, status: res.status };
+  }
+  return { ok: true, id: body && body.id, status: res.status };
 }
 
-/**
- * Ensure an auth user exists for this email. Treats "already registered" as success.
- */
+function approvalEmailHtml({ fullName, magicLink }) {
+  const name = fullName ? fullName.split(' ')[0] : 'there';
+  return `<!doctype html>
+<html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5;color:#111;max-width:560px;margin:0 auto;padding:24px;">
+  <h2 style="margin:0 0 16px;">You're in, ${name}.</h2>
+  <p>Your AIR by Lupine demo workspace is ready. It comes pre-loaded with sample
+     branches, equipment, customers, and rentals so you can test-drive every
+     screen without setup.</p>
+  <p style="margin:24px 0;">
+    <a href="${magicLink}" style="display:inline-block;background:#0b5fff;color:#fff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:600;">
+      Open your demo
+    </a>
+  </p>
+  <p style="font-size:13px;color:#555;">
+    This sign-in link is single-use and expires shortly. If it expires, reply
+    to this email and we'll send a fresh one.
+  </p>
+  <p style="font-size:13px;color:#555;">When you're ready to convert this demo
+     into a paid account, you can do that from inside the app.</p>
+</body></html>`;
+}
+
+function denialEmailHtml({ fullName, reason }) {
+  const name = fullName ? fullName.split(' ')[0] : 'there';
+  return `<!doctype html>
+<html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5;color:#111;max-width:560px;margin:0 auto;padding:24px;">
+  <p>Hi ${name},</p>
+  <p>Thanks for your interest in AIR by Lupine. We're unable to provision a
+     trial workspace for you at this time${reason ? `: ${reason}` : ''}.</p>
+  <p>If you think this was in error, just reply to this email.</p>
+</body></html>`;
+}
+
+// ---------------------------------------------------------------------------
+// approve handler
+// ---------------------------------------------------------------------------
 async function ensureAuthUser(sb, email) {
-  const { error } = await sb.auth.admin.createUser({ email, email_confirm: true });
-  if (!error) return { ok: true, created: true };
-  const msg = (error.message || '').toLowerCase();
-  if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
-    return { ok: true, created: false };
+  const lookup = await sb.auth.admin.getUserByEmail(email);
+  if (lookup && lookup.data && lookup.data.user) {
+    return { user: lookup.data.user, created: false };
   }
-  return { ok: false, error: error.message };
+  const created = await sb.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
+  if (created.error) {
+    if (isAlreadyRegistered(created.error)) {
+      const refetch = await sb.auth.admin.getUserByEmail(email);
+      if (refetch && refetch.data && refetch.data.user) {
+        return { user: refetch.data.user, created: false };
+      }
+    }
+    throw new Error(`createUser failed: ${created.error.message}`);
+  }
+  return { user: created.data.user, created: true };
 }
 
-/**
- * Generate a magic link that lands the user on the demo route after callback.
- */
-async function generateDemoMagicLink(sb, email) {
-  const { data, error } = await sb.auth.admin.generateLink({
+async function ensureSubscriberTrial(sb, entry) {
+  const existing = await sb
+    .from('subscriber_trials')
+    .select('id')
+    .eq('email', entry.email)
+    .maybeSingle();
+  if (existing.error) {
+    throw new Error(`subscriber_trials lookup failed: ${existing.error.message}`);
+  }
+  if (existing.data) {
+    const upd = await sb
+      .from('subscriber_trials')
+      .update({
+        full_name: entry.full_name || null,
+        company_name: entry.company_name || null,
+        phone: entry.phone || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existing.data.id);
+    if (upd.error) {
+      throw new Error(`subscriber_trials update failed: ${upd.error.message}`);
+    }
+    return existing.data.id;
+  }
+  const ins = await sb
+    .from('subscriber_trials')
+    .insert({
+      email: entry.email,
+      full_name: entry.full_name || null,
+      company_name: entry.company_name || null,
+      phone: entry.phone || null,
+    })
+    .select('id')
+    .single();
+  if (ins.error) {
+    throw new Error(`subscriber_trials insert failed: ${ins.error.message}`);
+  }
+  return ins.data.id;
+}
+
+async function ensureTenantForUser(sb, userId, email, fullName) {
+  const prof = await sb
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', userId)
+    .maybeSingle();
+  if (prof.error) {
+    throw new Error(`profiles lookup failed: ${prof.error.message}`);
+  }
+  if (prof.data && prof.data.tenant_id) {
+    return prof.data.tenant_id;
+  }
+  const clone = await sb.rpc('clone_tenant_for_trial', {
+    p_email: email,
+    p_full_name: fullName || null,
+  });
+  if (clone.error) {
+    throw new Error(`clone_tenant_for_trial failed: ${clone.error.message}`);
+  }
+  const newTenantId = clone.data;
+  if (!newTenantId) {
+    throw new Error('clone_tenant_for_trial returned null');
+  }
+  const link = await sb.rpc('link_user_to_tenant', {
+    p_user_id: userId,
+    p_tenant_id: newTenantId,
+    p_role: 'admin',
+  });
+  if (link.error) {
+    throw new Error(`link_user_to_tenant failed: ${link.error.message}`);
+  }
+  return newTenantId;
+}
+
+async function generateMagicLink(sb, email) {
+  const redirectTo = `${SITE_URL.replace(/\/$/, '')}/auth/callback?next=/dashboard`;
+  const gen = await sb.auth.admin.generateLink({
     type: 'magiclink',
     email,
-    options: { redirectTo: CALLBACK_URL },
+    options: { redirectTo },
   });
-  const link = data?.properties?.action_link;
-  if (error || !link) return { ok: false, error: error?.message || 'no action_link' };
-  return { ok: true, link };
+  if (gen.error) {
+    throw new Error(`generateLink failed: ${gen.error.message}`);
+  }
+  const link =
+    (gen.data && gen.data.properties && gen.data.properties.action_link) ||
+    (gen.data && gen.data.action_link) ||
+    null;
+  if (!link) {
+    throw new Error('generateLink returned no action_link');
+  }
+  return link;
 }
 
-/**
- * TODO: replace this stub with a real demo-tenant provisioner (RPC or function).
- * Should clone a demo tenant for the email and return the route to land on.
- * For now we just return the canonical demo path.
- */
-async function provisionDemoTenant(_sb, _email, _trialId) {
-  return { ok: true, route: DEMO_PATH };
-}
-
-function approvalEmailHtml({ name, signInLink }) {
-  const safeName = (name || 'there').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
-  return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;background:#ffffff">
-    <h1 style="margin:0 0 16px;font-size:24px;line-height:1.3">You're in!</h1>
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.5">Hi ${safeName}, your AIR early access has been approved.</p>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.5">Click below to open your preloaded demo workspace — customers, equipment, and rentals already populated so you can test-drive AIR right away. No signup required to explore.</p>
-    <p style="margin:0 0 24px">
-      <a href="${signInLink}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;font-weight:600">Open my AIR demo →</a>
-    </p>
-    <p style="margin:0 0 8px;font-size:13px;color:#555">Link expires in 1 hour. If the button doesn't work, paste this URL:</p>
-    <p style="margin:0;font-size:12px;color:#555;word-break:break-all">${signInLink}</p>
-  </div>
-</body></html>`;
-}
-
-function magicLinkEmailHtml({ signInLink }) {
-  return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;background:#ffffff">
-    <h1 style="margin:0 0 16px;font-size:24px;line-height:1.3">Sign in to AIR</h1>
-    <p style="margin:0 0 24px;font-size:16px;line-height:1.5">Click below to sign in. This link expires in 1 hour.</p>
-    <p style="margin:0 0 24px">
-      <a href="${signInLink}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;font-weight:600">Sign In to AIR →</a>
-    </p>
-    <p style="margin:0;font-size:12px;color:#555;word-break:break-all">${signInLink}</p>
-  </div>
-</body></html>`;
-}
-
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+async function handleApprove(sb, entryId) {
+  if (!entryId || typeof entryId !== 'string') {
+    return { status: 400, body: { error: 'entryId is required' } };
+  }
+  const entryRes = await sb
+    .from('waitlist_entries')
+    .select('id, email, full_name, company_name, phone, status')
+    .eq('id', entryId)
+    .maybeSingle();
+  if (entryRes.error) {
+    return { status: 500, body: { error: `waitlist_entries lookup failed: ${entryRes.error.message}` } };
+  }
+  if (!entryRes.data) {
+    return { status: 404, body: { error: 'waitlist entry not found' } };
+  }
+  const entry = entryRes.data;
+  if (!entry.email) {
+    return { status: 400, body: { error: 'waitlist entry has no email' } };
+  }
 
   try {
-    const sb = getSupabase();
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const { action, entryId, notes, lead, email } = body;
+    await ensureSubscriberTrial(sb, entry);
+    const { user } = await ensureAuthUser(sb, entry.email);
+    const tenantId = await ensureTenantForUser(sb, user.id, entry.email, entry.full_name);
+    const magicLink = await generateMagicLink(sb, entry.email);
 
-    // ---------- LIST ----------
-    if (action === 'list') {
-      const [{ data: waitlist, error: wErr }, { data: trials, error: tErr }] = await Promise.all([
-        sb.from('waitlist_entries').select('*').order('created_at', { ascending: false }),
-        sb.from('subscriber_trials').select('*').order('created_at', { ascending: false }),
-      ]);
-      if (wErr) return res.status(500).json({ error: wErr.message });
-      if (tErr) return res.status(500).json({ error: tErr.message });
-      return res.status(200).json({ waitlist: waitlist || [], trials: trials || [] });
+    const mail = await sendEmail({
+      to: entry.email,
+      subject: 'Your AIR by Lupine demo is ready',
+      html: approvalEmailHtml({ fullName: entry.full_name, magicLink }),
+    });
+    if (!mail.ok) {
+      return { status: 502, body: { error: `email send failed: ${mail.error}` } };
     }
 
-    // ---------- REJECT ----------
-    if (action === 'reject') {
-      if (!entryId) return res.status(400).json({ error: 'entryId required' });
-      const { error } = await sb.from('waitlist_entries').update({ status: 'rejected' }).eq('id', entryId);
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ success: true });
+    if (entry.status !== 'approved') {
+      const upd = await sb
+        .from('waitlist_entries')
+        .update({ status: 'approved', approved_at: new Date().toISOString() })
+        .eq('id', entry.id);
+      if (upd.error) {
+        return { status: 500, body: { error: `waitlist_entries update failed: ${upd.error.message}` } };
+      }
     }
 
-    // ---------- DELETE ENTRY ----------
-    if (action === 'deleteEntry') {
-      if (!entryId) return res.status(400).json({ error: 'entryId required' });
-      const { error } = await sb.from('waitlist_entries').delete().eq('id', entryId);
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ success: true });
-    }
-
-    // ---------- DELETE TRIAL ----------
-    if (action === 'deleteTrial') {
-      if (!entryId) return res.status(400).json({ error: 'entryId required' });
-      const { error } = await sb.from('subscriber_trials').delete().eq('id', entryId);
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ success: true });
-    }
-
-    // ---------- RESEND MAGIC LINK ----------
-    if (action === 'resendMagicLink') {
-      if (!email) return res.status(400).json({ error: 'email required' });
-
-      const userRes = await ensureAuthUser(sb, email);
-      if (!userRes.ok) return res.status(500).json({ error: 'createUser failed', details: userRes.error });
-
-      const linkRes = await generateDemoMagicLink(sb, email);
-      if (!linkRes.ok) return res.status(500).json({ error: 'Failed to generate magic link', details: linkRes.error });
-
-      const apiKey = process.env.RESEND_API_KEY;
-      if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY not set' });
-
-      const emailResult = await sendEmail(apiKey, {
-        from: FROM,
-        to: [email],
-        subject: 'Your AIR Sign-In Link',
-        html: magicLinkEmailHtml({ signInLink: linkRes.link }),
-      });
-
-      if (!emailResult.ok) {
-        return res.status(502).json({ error: 'Email send failed', details: emailResult.error });
-      }
-      return res.status(200).json({ success: true, emailSent: true, emailId: emailResult.id });
-    }
-
-    // ---------- APPROVE ----------
-    if (action === 'approve') {
-      if (!entryId) return res.status(400).json({ error: 'entryId required' });
-
-      const { data: entry, error: fetchErr } = await sb
-        .from('waitlist_entries').select('*').eq('id', entryId).single();
-      if (fetchErr || !entry) {
-        return res.status(404).json({ error: 'Entry not found', details: fetchErr?.message });
-      }
-      if (!entry.email) return res.status(400).json({ error: 'Entry has no email' });
-
-      const now = new Date();
-      const toDate = (d) => d.toISOString().split('T')[0];
-      const trialEndsAt = new Date(now); trialEndsAt.setDate(trialEndsAt.getDate() + 14);
-      const lockoutDate = new Date(now); lockoutDate.setDate(lockoutDate.getDate() + 30);
-
-      // Idempotent upsert on email — re-approve is safe.
-      const { data: trialRow, error: trialErr } = await sb
-        .from('subscriber_trials')
-        .upsert(
-          {
-            email: entry.email,
-            company_name: entry.company,
-            contact_name: entry.name,
-            phone: entry.phone,
-            branches: entry.branches,
-            status: 'invited',
-            plan_tier: 'pro',
-            trial_start_date: toDate(now),
-            trial_ends_at: toDate(trialEndsAt),
-            lockout_date: toDate(lockoutDate),
-            notes: notes || null,
-          },
-          { onConflict: 'email' }
-        )
-        .select()
-        .single();
-      if (trialErr) {
-        return res.status(500).json({
-          error: 'subscriber_trials upsert failed: ' + trialErr.message,
-          code: trialErr.code,
-          details: trialErr.details,
-        });
-      }
-
-      // Mark waitlist entry approved — check error.
-      const { error: updErr } = await sb.from('waitlist_entries').update({
-        status: 'approved',
-        approved_at: now.toISOString(),
-        notes: notes || null,
-      }).eq('id', entryId);
-      if (updErr) {
-        return res.status(500).json({ error: 'waitlist_entries update failed: ' + updErr.message });
-      }
-
-      // Ensure auth user.
-      const userRes = await ensureAuthUser(sb, entry.email);
-      if (!userRes.ok) {
-        return res.status(500).json({ error: 'createUser failed', details: userRes.error });
-      }
-
-      // Provision demo tenant (stub for now — returns /demo).
-      const provRes = await provisionDemoTenant(sb, entry.email, trialRow?.id);
-      if (!provRes.ok) {
-        return res.status(500).json({ error: 'demo provisioning failed', details: provRes.error });
-      }
-
-      // Generate magic link that lands on the demo route.
-      const linkRes = await generateDemoMagicLink(sb, entry.email);
-      const signInLink = linkRes.ok ? linkRes.link : `${SITE}/signin`;
-      if (!linkRes.ok) console.warn('[waitlist-manager] magic link failed:', linkRes.error);
-
-      // Send approval email.
-      const apiKey = process.env.RESEND_API_KEY;
-      let emailResult = { ok: false, error: 'RESEND_API_KEY not set' };
-      if (apiKey) {
-        emailResult = await sendEmail(apiKey, {
-          from: FROM,
-          to: [entry.email],
-          subject: 'Your AIR demo is ready',
-          html: approvalEmailHtml({ name: entry.name, signInLink }),
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        emailSent: emailResult.ok,
-        emailId: emailResult.id || null,
-        emailError: emailResult.ok ? null : emailResult.error,
-        signInLink,
-        hasApiKey: !!apiKey,
-        trialId: trialRow?.id || null,
-      });
-    }
-
-    // ---------- ADD LEAD ----------
-    if (action === 'addLead') {
-      if (!lead || !lead.email) return res.status(400).json({ error: 'lead.email required' });
-      const { error } = await sb.from('waitlist_entries').insert({ ...lead, status: 'pending' });
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ success: true });
-    }
-
-    return res.status(400).json({ error: 'Unknown action: ' + action });
-
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        entryId: entry.id,
+        userId: user.id,
+        tenantId,
+        emailId: mail.id || null,
+        resent: entry.status === 'approved',
+      },
+    };
   } catch (e) {
-    console.error('[waitlist-manager] unhandled:', e);
-    return res.status(500).json({ error: e.message || 'Unhandled server error' });
+    return { status: 500, body: { error: e.message || String(e) } };
   }
+}
+
+// ---------------------------------------------------------------------------
+// deny handler
+// ---------------------------------------------------------------------------
+async function handleDeny(sb, entryId, reason) {
+  if (!entryId || typeof entryId !== 'string') {
+    return { status: 400, body: { error: 'entryId is required' } };
+  }
+  const entryRes = await sb
+    .from('waitlist_entries')
+    .select('id, email, full_name, status')
+    .eq('id', entryId)
+    .maybeSingle();
+  if (entryRes.error) {
+    return { status: 500, body: { error: `waitlist_entries lookup failed: ${entryRes.error.message}` } };
+  }
+  if (!entryRes.data) {
+    return { status: 404, body: { error: 'waitlist entry not found' } };
+  }
+  const entry = entryRes.data;
+
+  if (entry.email) {
+    const mail = await sendEmail({
+      to: entry.email,
+      subject: 'About your AIR by Lupine request',
+      html: denialEmailHtml({ fullName: entry.full_name, reason }),
+    });
+    if (!mail.ok) {
+      return { status: 502, body: { error: `email send failed: ${mail.error}` } };
+    }
+  }
+
+  const upd = await sb
+    .from('waitlist_entries')
+    .update({
+      status: 'denied',
+      denied_at: new Date().toISOString(),
+      denial_reason: reason || null,
+    })
+    .eq('id', entry.id);
+  if (upd.error) {
+    return { status: 500, body: { error: `waitlist_entries update failed: ${upd.error.message}` } };
+  }
+  return { status: 200, body: { ok: true, entryId: entry.id } };
+}
+
+// ---------------------------------------------------------------------------
+// list handler
+// ---------------------------------------------------------------------------
+async function handleList(sb) {
+  const res = await sb
+    .from('waitlist_entries')
+    .select('id, email, full_name, company_name, phone, status, created_at, approved_at, denied_at, denial_reason')
+    .order('created_at', { ascending: false })
+    .limit(500);
+  if (res.error) {
+    return { status: 500, body: { error: res.error.message } };
+  }
+  return { status: 200, body: { entries: res.data || [] } };
+}
+
+// ---------------------------------------------------------------------------
+// entry point
+// ---------------------------------------------------------------------------
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  body = body || {};
+
+  let sb;
+  try {
+    sb = getSupabase();
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+
+  let result;
+  switch (body.action) {
+    case 'list':
+      result = await handleList(sb);
+      break;
+    case 'approve':
+      result = await handleApprove(sb, body.entryId);
+      break;
+    case 'deny':
+      result = await handleDeny(sb, body.entryId, body.reason);
+      break;
+    default:
+      return res.status(400).json({ error: `unknown action: ${body.action}` });
+  }
+  return res.status(result.status).json(result.body);
 }
