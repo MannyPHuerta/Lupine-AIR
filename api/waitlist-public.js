@@ -5,6 +5,9 @@
 //   POST { action: 'list' }
 //   POST { action: 'approve', entryId }
 //   POST { action: 'deny',    entryId, reason? }
+//   POST { action: 'reject',  entryId, reason? }            // alias of deny
+//   POST { action: 'resendMagicLink', entryId }             // also: resend_magic_link, resend
+//   POST { action: 'resendMagicLink', email }
 //
 // NOTE: This file is tuned to the ACTUAL waitlist_entries schema in prod:
 //   id, name, email, phone, company, branches, status, approved_by,
@@ -12,6 +15,10 @@
 //   branch_count, role, message
 // There is NO denied_at / denial_reason column — denial reason is written
 // into `notes` and status is flipped to 'denied'.
+//
+// subscriber_trials schema varies across environments. ensureSubscriberTrial
+// is schema-tolerant: it tries the richest payload first, then drops any
+// column PostgREST reports missing (PGRST204) and retries.
 //
 /* global process */
 import { createClient } from '@supabase/supabase-js';
@@ -146,6 +153,10 @@ async function ensureAuthUser(sb, email) {
   return { user: created.data.user, created: true };
 }
 
+// Best-effort write to subscriber_trials. The live schema is unknown and
+// historically inconsistent across environments, so we attempt the richest
+// payload first and gracefully drop unknown columns when PostgREST complains
+// (PGRST204 = "Could not find the 'X' column ... in the schema cache").
 async function ensureSubscriberTrial(sb, entry) {
   const existing = await sb
     .from('subscriber_trials')
@@ -155,35 +166,101 @@ async function ensureSubscriberTrial(sb, entry) {
   if (existing.error) {
     throw new Error(`subscriber_trials lookup failed: ${existing.error.message}`);
   }
+
+  const candidate = {
+    email: entry.email,
+    full_name: entry.full_name || null,
+    company_name: entry.company_name || null,
+    phone: entry.phone || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const stripMissingColumn = (payload, errMsg) => {
+    const m = String(errMsg || '').match(/'([^']+)' column/i);
+    if (!m) return null;
+    const col = m[1];
+    if (!(col in payload)) return null;
+    const next = { ...payload };
+    delete next[col];
+    return next;
+  };
+
   if (existing.data) {
-    const upd = await sb
-      .from('subscriber_trials')
-      .update({
-        full_name: entry.full_name || null,
-        company_name: entry.company_name || null,
-        phone: entry.phone || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existing.data.id);
-    if (upd.error) {
-      throw new Error(`subscriber_trials update failed: ${upd.error.message}`);
+    let payload = { ...candidate };
+    delete payload.email; // do not change PK-ish field on update
+    for (let i = 0; i < 8; i++) {
+      const upd = await sb
+        .from('subscriber_trials')
+        .update(payload)
+        .eq('id', existing.data.id);
+      if (!upd.error) return existing.data.id;
+      const reduced = stripMissingColumn(payload, upd.error.message);
+      if (!reduced) {
+        // If even the minimal update fails (e.g. only updated_at missing), give up silently.
+        if (Object.keys(payload).length <= 1) return existing.data.id;
+        throw new Error(`subscriber_trials update failed: ${upd.error.message}`);
+      }
+      payload = reduced;
+      if (Object.keys(payload).length === 0) return existing.data.id;
     }
     return existing.data.id;
   }
-  const ins = await sb
-    .from('subscriber_trials')
-    .insert({
-      email: entry.email,
-      full_name: entry.full_name || null,
-      company_name: entry.company_name || null,
-      phone: entry.phone || null,
-    })
-    .select('id')
-    .single();
-  if (ins.error) {
-    throw new Error(`subscriber_trials insert failed: ${ins.error.message}`);
+
+  let payload = { ...candidate };
+  for (let i = 0; i < 8; i++) {
+    const ins = await sb
+      .from('subscriber_trials')
+      .insert(payload)
+      .select('id')
+      .single();
+    if (!ins.error) return ins.data.id;
+    const reduced = stripMissingColumn(payload, ins.error.message);
+    if (!reduced) {
+      throw new Error(`subscriber_trials insert failed: ${ins.error.message}`);
+    }
+    payload = reduced;
+    if (!payload.email) {
+      throw new Error(`subscriber_trials insert failed: email column missing`);
+    }
   }
-  return ins.data.id;
+  throw new Error('subscriber_trials insert failed: too many missing columns');
+}
+
+async function handleResendMagicLink(sb, entryId, emailOverride) {
+  let email = emailOverride;
+  let fullName = null;
+  if (entryId) {
+    const entryRes = await sb
+      .from('waitlist_entries')
+      .select('id, email, full_name')
+      .eq('id', entryId)
+      .maybeSingle();
+    if (entryRes.error) {
+      return { status: 500, body: { error: `waitlist_entries lookup failed: ${entryRes.error.message}` } };
+    }
+    if (!entryRes.data) {
+      return { status: 404, body: { error: 'waitlist entry not found' } };
+    }
+    email = entryRes.data.email;
+    fullName = entryRes.data.full_name;
+  }
+  if (!email) {
+    return { status: 400, body: { error: 'entryId or email is required' } };
+  }
+  try {
+    const magicLink = await generateMagicLink(sb, email);
+    const mail = await sendEmail({
+      to: email,
+      subject: 'Your AIR by Lupine sign-in link',
+      html: approvalEmailHtml({ fullName, magicLink }),
+    });
+    if (!mail.ok) {
+      return { status: 502, body: { error: `email send failed: ${mail.error}` } };
+    }
+    return { status: 200, body: { ok: true, email, emailId: mail.id || null } };
+  } catch (e) {
+    return { status: 500, body: { error: e.message || String(e) } };
+  }
 }
 
 async function ensureTenantForUser(sb, userId, email, fullName) {
@@ -413,6 +490,11 @@ export default async function handler(req, res) {
     case 'deny':
     case 'reject':
       result = await handleDeny(sb, body.entryId, body.reason);
+      break;
+    case 'resendMagicLink':
+    case 'resend_magic_link':
+    case 'resend':
+      result = await handleResendMagicLink(sb, body.entryId, body.email);
       break;
     default:
       return res.status(400).json({ error: `unknown action: ${body.action}` });
