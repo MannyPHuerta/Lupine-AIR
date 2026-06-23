@@ -108,6 +108,7 @@ import FraudDigestPage from "./pages/FraudDigestPage";
 import SupabaseTest from "./pages/SupabaseTest";
 import Onboarding from "./pages/Onboarding";
 import WaitlistManager from "./pages/WaitlistManager";
+import WaitlistPublic from "./pages/WaitlistPublic";
 import AuthCallback from "./pages/AuthCallback";
 import ApproveEntryTest from "./pages/ApproveEntryTest";
 import OpsLanding from "./pages/OpsLanding";
@@ -268,7 +269,7 @@ function App() {
             {/* Onboarding — requires auth but no tenant */}
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/waitlist-public" element={<WaitlistManager />} />
+            <Route path="/waitlist-public" element={<WaitlistPublic />} />
             {/* Magic-link landing — must be public, Supabase reads the hash here */}
             <Route path="/ops" element={<OpsLanding />} />
             {/* Catch-all for /ops with hash/query params (magic link callbacks) */}
