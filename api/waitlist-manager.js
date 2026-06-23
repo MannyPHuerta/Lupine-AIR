@@ -201,10 +201,6 @@ async function ensureAuthUser(sb, email) {
   return { user: created.data.user, created: true };
 }
 
-// Best-effort write to subscriber_trials. The live schema is unknown and
-// historically inconsistent across environments, so we attempt the richest
-// payload first and gracefully drop unknown columns when PostgREST complains
-// (PGRST204 = "Could not find the 'X' column ... in the schema cache").
 async function ensureSubscriberTrial(sb, entry) {
   const existing = await sb
     .from('subscriber_trials')
@@ -235,7 +231,7 @@ async function ensureSubscriberTrial(sb, entry) {
 
   if (existing.data) {
     let payload = { ...candidate };
-    delete payload.email; // do not change PK-ish field on update
+    delete payload.email;
     for (let i = 0; i < 8; i++) {
       const upd = await sb
         .from('subscriber_trials')
@@ -244,7 +240,6 @@ async function ensureSubscriberTrial(sb, entry) {
       if (!upd.error) return existing.data.id;
       const reduced = stripMissingColumn(payload, upd.error.message);
       if (!reduced) {
-        // If even the minimal update fails (e.g. only updated_at missing), give up silently.
         if (Object.keys(payload).length <= 1) return existing.data.id;
         throw new Error(`subscriber_trials update failed: ${upd.error.message}`);
       }
@@ -459,6 +454,20 @@ async function generateMagicLink(sb, email) {
   if (gen.error) {
     throw new Error(`generateLink failed: ${gen.error.message}`);
   }
+
+  const tokenHash =
+    (gen.data && gen.data.properties && gen.data.properties.hashed_token) ||
+    (gen.data && gen.data.properties && gen.data.properties.token_hash) ||
+    (gen.data && gen.data.hashed_token) ||
+    null;
+  if (tokenHash) {
+    const url = new URL('/auth/callback', SITE_URL.replace(/\/$/, ''));
+    url.searchParams.set('token_hash', tokenHash);
+    url.searchParams.set('type', 'magiclink');
+    url.searchParams.set('next', '/ops');
+    return url.toString();
+  }
+
   const link =
     (gen.data && gen.data.properties && gen.data.properties.action_link) ||
     (gen.data && gen.data.action_link) ||
@@ -482,9 +491,6 @@ async function handleList(sb) {
     return { status: 500, body: { error: res.error.message } };
   }
   const raw = res.data || [];
-  // Base44 frontends typically read `name`, `company`, `created_date`,
-  // `updated_date`. Add aliases on every row so the page renders no matter
-  // which field names it expects.
   const rows = raw.map((r) => ({
     ...r,
     name: r.full_name || r.name || null,
