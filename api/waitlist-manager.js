@@ -5,9 +5,7 @@
 //   POST { action: 'list' }
 //   POST { action: 'approve', entryId }
 //   POST { action: 'deny',    entryId, reason? }
-//   POST { action: 'reject',  entryId, reason? }            // alias of deny
-//   POST { action: 'resendMagicLink', entryId }             // also: resend_magic_link, resend
-//   POST { action: 'resendMagicLink', email }
+//   POST { action: 'resendMagicLink', entryId? , email? }
 //
 // NOTE: This file is tuned to the ACTUAL waitlist_entries schema in prod:
 //   id, name, email, phone, company, branches, status, approved_by,
@@ -15,10 +13,6 @@
 //   branch_count, role, message
 // There is NO denied_at / denial_reason column — denial reason is written
 // into `notes` and status is flipped to 'denied'.
-//
-// subscriber_trials schema varies across environments. ensureSubscriberTrial
-// is schema-tolerant: it tries the richest payload first, then drops any
-// column PostgREST reports missing (PGRST204) and retries.
 //
 /* global process */
 import { createClient } from '@supabase/supabase-js';
@@ -298,7 +292,7 @@ async function ensureTenantForUser(sb, userId, email, fullName) {
 }
 
 async function generateMagicLink(sb, email) {
-  const redirectTo = `${SITE_URL.replace(/\/$/, '')}/auth/callback?next=/dashboard`;
+  const redirectTo = `${SITE_URL.replace(/\/$/, '')}/auth/callback?next=/ops`;
   const gen = await sb.auth.admin.generateLink({
     type: 'magiclink',
     email,
