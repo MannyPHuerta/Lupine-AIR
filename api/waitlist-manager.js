@@ -168,21 +168,33 @@ function denialEmailHtml({ fullName, reason }) {
 // ---------------------------------------------------------------------------
 // approve helpers
 // ---------------------------------------------------------------------------
-async function ensureAuthUser(sb, email) {
-  const lookup = await sb.auth.admin.getUserByEmail(email);
-  if (lookup && lookup.data && lookup.data.user) {
-    return { user: lookup.data.user, created: false };
+async function findUserByEmail(sb, email) {
+  const target = String(email || '').toLowerCase();
+  if (!target) return null;
+  // supabase-js v2 has no getUserByEmail; page through listUsers.
+  const perPage = 200;
+  for (let page = 1; page <= 50; page += 1) {
+    const { data, error } = await sb.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(`listUsers failed: ${error.message}`);
+    const users = (data && data.users) || [];
+    const hit = users.find((u) => String(u.email || '').toLowerCase() === target);
+    if (hit) return hit;
+    if (users.length < perPage) return null;
   }
+  return null;
+}
+
+async function ensureAuthUser(sb, email) {
+  const existing = await findUserByEmail(sb, email);
+  if (existing) return { user: existing, created: false };
   const created = await sb.auth.admin.createUser({
     email,
     email_confirm: true,
   });
   if (created.error) {
     if (isAlreadyRegistered(created.error)) {
-      const refetch = await sb.auth.admin.getUserByEmail(email);
-      if (refetch && refetch.data && refetch.data.user) {
-        return { user: refetch.data.user, created: false };
-      }
+      const refetch = await findUserByEmail(sb, email);
+      if (refetch) return { user: refetch, created: false };
     }
     throw new Error(`createUser failed: ${created.error.message}`);
   }
@@ -223,7 +235,7 @@ async function ensureSubscriberTrial(sb, entry) {
 
   if (existing.data) {
     let payload = { ...candidate };
-    delete payload.email;
+    delete payload.email; // do not change PK-ish field on update
     for (let i = 0; i < 8; i++) {
       const upd = await sb
         .from('subscriber_trials')
@@ -232,6 +244,7 @@ async function ensureSubscriberTrial(sb, entry) {
       if (!upd.error) return existing.data.id;
       const reduced = stripMissingColumn(payload, upd.error.message);
       if (!reduced) {
+        // If even the minimal update fails (e.g. only updated_at missing), give up silently.
         if (Object.keys(payload).length <= 1) return existing.data.id;
         throw new Error(`subscriber_trials update failed: ${upd.error.message}`);
       }
@@ -469,6 +482,9 @@ async function handleList(sb) {
     return { status: 500, body: { error: res.error.message } };
   }
   const raw = res.data || [];
+  // Base44 frontends typically read `name`, `company`, `created_date`,
+  // `updated_date`. Add aliases on every row so the page renders no matter
+  // which field names it expects.
   const rows = raw.map((r) => ({
     ...r,
     name: r.full_name || r.name || null,
