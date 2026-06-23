@@ -1,11 +1,11 @@
 // src/pages/WaitlistPublic.jsx
-// No-auth admin dashboard: list pending waitlist entries, approve / reject,
-// resend magic link. Calls the same /api/waitlist-manager backend the
-// authenticated /waitlist-manager page uses.
+// No-auth admin dashboard: list pending waitlist entries, approve / deny,
+// resend magic link. Calls the same /api/waitlist-manager backend
+// (POST-only, action in body) that /waitlist-manager uses.
 
 import { useEffect, useState, useCallback } from 'react';
 
-const STATUS_FILTERS = ['pending', 'approved', 'rejected', 'all'];
+const STATUS_FILTERS = ['pending', 'approved', 'denied', 'all'];
 
 export default function WaitlistPublic() {
   const [entries, setEntries] = useState([]);
@@ -20,17 +20,24 @@ export default function WaitlistPublic() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const postAction = async (body) => {
+    const res = await fetch('/api/waitlist-manager', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+    return json;
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `/api/waitlist-manager?action=list&status=${encodeURIComponent(status)}`,
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-      setEntries(Array.isArray(json.entries) ? json.entries : []);
+      const json = await postAction({ action: 'list' });
+      const all = Array.isArray(json.entries) ? json.entries : [];
+      setEntries(status === 'all' ? all : all.filter((e) => e.status === status));
     } catch (e) {
       setError(e.message || 'Failed to load entries');
     } finally {
@@ -40,16 +47,10 @@ export default function WaitlistPublic() {
 
   useEffect(() => { load(); }, [load]);
 
-  const act = async (id, action) => {
+  const act = async (id, action, extra = {}) => {
     setBusyId(id);
     try {
-      const res = await fetch('/api/waitlist-manager', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, entryId: id }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      const json = await postAction({ action, entryId: id, ...extra });
       showToast(json.message || `${action} ok`, 'success');
       await load();
     } catch (e) {
@@ -59,11 +60,16 @@ export default function WaitlistPublic() {
     }
   };
 
+  const deny = (id) => {
+    const reason = window.prompt('Reason for denial (optional):') || '';
+    act(id, 'deny', { reason });
+  };
+
   return (
     <div style={{ maxWidth: 1100, margin: '32px auto', padding: '0 16px', fontFamily: 'system-ui, sans-serif' }}>
       <h1 style={{ marginBottom: 4 }}>Waitlist (Public Admin)</h1>
       <p style={{ marginTop: 0, color: '#666', fontSize: 14 }}>
-        No-auth approve / reject dashboard. Use only on a trusted device.
+        No-auth approve / deny dashboard. Use only on a trusted device.
       </p>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '16px 0' }}>
@@ -127,16 +133,16 @@ export default function WaitlistPublic() {
                 <td style={{ padding: 8, whiteSpace: 'nowrap' }}>
                   {e.created_at ? new Date(e.created_at).toLocaleString() : '—'}
                 </td>
-                <td style={{ padding: 8 }}>{e.full_name || '—'}</td>
+                <td style={{ padding: 8 }}>{e.full_name || e.name || '—'}</td>
                 <td style={{ padding: 8 }}>{e.email}</td>
-                <td style={{ padding: 8 }}>{e.company_name || '—'}</td>
+                <td style={{ padding: 8 }}>{e.company_name || e.company || '—'}</td>
                 <td style={{ padding: 8 }}>{e.phone || '—'}</td>
                 <td style={{ padding: 8 }}>
                   <span style={{
                     padding: '2px 8px', borderRadius: 10, fontSize: 12,
                     background:
                       e.status === 'approved' ? '#dfd' :
-                      e.status === 'rejected' ? '#fdd' : '#ffd',
+                      e.status === 'denied'   ? '#fdd' : '#ffd',
                   }}>{e.status}</span>
                 </td>
                 <td style={{ padding: 8, textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -151,17 +157,18 @@ export default function WaitlistPublic() {
                       </button>
                       <button
                         disabled={busyId === e.id}
-                        onClick={() => act(e.id, 'reject')}
+                        onClick={() => deny(e.id)}
                         style={{ marginRight: 6, padding: '4px 10px', background: '#900', color: '#fff', border: 0, borderRadius: 4, cursor: 'pointer' }}
                       >
-                        Reject
+                        Deny
                       </button>
                     </>
                   )}
                   {e.status === 'approved' && (
                     <button
                       disabled={busyId === e.id}
-                      onClick={() => act(e.id, 'resend')}
+                      onClick={() => act(e.id, 'approve')}
+                      title="Re-runs approve, which regenerates and re-sends the magic link"
                       style={{ padding: '4px 10px', background: '#06c', color: '#fff', border: 0, borderRadius: 4, cursor: 'pointer' }}
                     >
                       Resend Magic Link
