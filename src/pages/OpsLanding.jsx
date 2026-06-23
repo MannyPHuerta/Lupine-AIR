@@ -11,99 +11,94 @@ const PLANS = {
   enterprise: { name: 'AIR Enterprise', price: '$1,499/mo', description: 'Unlimited branches, dedicated support, government bidding.' },
 };
 
-const ENTERPRISE_BYPASS = ['rental-world'];
 const PLATFORM_ADMINS = ['info@theprojectair.com'];
+
+// Path-based tenant URL. Same origin, no subdomain, no DNS work.
+const tenantUrl = (slug) => `/${slug}`;
 
 async function resolveSession(s, setPhase, setSession) {
   console.log('[OpsLanding] resolveSession — email:', s.user.email, '| user_id:', s.user.id);
   setSession(s);
   window.history.replaceState({}, '', '/ops');
 
-  // Platform owner — go straight to the internal app
+  // Platform owner — go straight to rental-world workspace (path-based)
   if (PLATFORM_ADMINS.includes(s.user.email)) {
-    console.log('[OpsLanding] platform admin detected — redirecting to rental-world');
+    console.log('[OpsLanding] platform admin detected — redirecting to /rental-world');
     setPhase('redirecting');
-    setTimeout(() => window.location.replace('https://rental-world.theprojectair.com'), 1500);
+    setTimeout(() => window.location.replace(tenantUrl('rental-world')), 1500);
     return;
   }
 
-  // Try multiple lookup strategies - use /api/resolveTenant to bypass RLS
   console.log('[OpsLanding] looking up tenant for email:', s.user.email);
-  
+
   try {
-    console.log('[OpsLanding] Calling resolveTenant API for:', s.user.email);
     const response = await fetch('/api/resolveTenant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: s.user.email })
+      body: JSON.stringify({ email: s.user.email }),
     });
     console.log('[OpsLanding] resolveTenant response status:', response.status);
-    
-    if (!response.ok) {
-      console.error('[OpsLanding] resolveTenant failed with status:', response.status);
-      throw new Error('resolveTenant API failed: ' + response.status);
-    }
-    
+
+    if (!response.ok) throw new Error('resolveTenant API failed: ' + response.status);
+
     const result = await response.json();
     console.log('[OpsLanding] resolveTenant API result:', result);
-    
+
     if (result.tenant) {
-      console.log('[OpsLanding] tenant found via API:', result.tenant.slug, '| status:', result.tenant.status, '| source:', result.source);
-      const isBypassed = result.tenant.slug === 'rental-world';
-      const hasValidStatus = ['active', 'trial'].includes(result.tenant.status);
-      
+      const { slug, status } = result.tenant;
+      const isBypassed = slug === 'rental-world';
+      const hasValidStatus = ['active', 'trial'].includes(status);
+
       if (isBypassed || hasValidStatus) {
-        console.log('[OpsLanding] valid tenant — redirecting to:', `https://${result.tenant.slug}.theprojectair.com`);
+        console.log('[OpsLanding] valid tenant — redirecting to:', tenantUrl(slug));
         setPhase('redirecting');
-        setTimeout(() => window.location.replace(`https://${result.tenant.slug}.theprojectair.com`), 1500);
+        setTimeout(() => window.location.replace(tenantUrl(slug)), 1500);
         return;
       }
     }
-    
+
     console.log('[OpsLanding] no valid tenant found from API');
   } catch (err) {
     console.error('[OpsLanding] resolveTenant API error:', err);
-    console.log('[OpsLanding] Falling back to direct Supabase lookup');
   }
-  
-  // Fallback 1: Check user's profile for existing tenant_id
+
+  // Fallback 1: profile.tenant_id
   console.log('[OpsLanding] Checking user profile for tenant_id');
   const { data: profile } = await supabase
     .from('profiles')
     .select('tenant_id, home_branch_id')
     .eq('id', s.user.id)
     .maybeSingle();
-  
+
   if (profile?.tenant_id) {
-    console.log('[OpsLanding] User has tenant_id in profile:', profile.tenant_id);
     const { data: tenantFromProfile } = await supabase
       .from('tenants')
       .select('slug, status')
       .eq('id', profile.tenant_id)
       .maybeSingle();
-    
+
     if (tenantFromProfile) {
-      console.log('[OpsLanding] Found tenant from profile:', tenantFromProfile.slug, '| status:', tenantFromProfile.status);
-      if (tenantFromProfile.slug === 'rental-world' || ['active', 'trial'].includes(tenantFromProfile.status)) {
+      const { slug, status } = tenantFromProfile;
+      if (slug === 'rental-world' || ['active', 'trial'].includes(status)) {
+        console.log('[OpsLanding] tenant from profile — redirecting to:', tenantUrl(slug));
         setPhase('redirecting');
-        setTimeout(() => window.location.replace(`https://${tenantFromProfile.slug}.theprojectair.com`), 1500);
+        setTimeout(() => window.location.replace(tenantUrl(slug)), 1500);
         return;
       }
     }
   }
-  
-  // Fallback 2: client-side lookup by admin_email (may be blocked by RLS)
-  console.log('[OpsLanding] Checking tenants table by admin_email');
+
+  // Fallback 2: tenants.admin_email (may be blocked by RLS)
   const { data: tenantByAdmin } = await supabase
     .from('tenants')
     .select('slug, status')
     .eq('admin_email', s.user.email)
     .maybeSingle();
-  
+
   if (tenantByAdmin && tenantByAdmin.status === 'active') {
-    console.log('[OpsLanding] fallback tenant found:', tenantByAdmin.slug);
+    console.log('[OpsLanding] tenant by admin_email — redirecting to:', tenantUrl(tenantByAdmin.slug));
     setPhase('redirecting');
-    setTimeout(() => window.location.replace(`https://${tenantByAdmin.slug}.theprojectair.com`), 1500);
+    setTimeout(() => window.location.replace(tenantUrl(tenantByAdmin.slug)), 1500);
     return;
   }
 
@@ -136,7 +131,7 @@ export default function OpsLanding() {
       await resolveSession(s, setPhase, setSession);
     };
 
-    // Handle hash-based tokens: #access_token=... (standard Supabase implicit flow)
+    // Hash-based tokens (implicit flow)
     const hash = window.location.hash;
     const hashParams = new URLSearchParams(hash.replace('#', ''));
     const accessToken = hashParams.get('access_token');
@@ -144,11 +139,11 @@ export default function OpsLanding() {
     if (accessToken) {
       console.log('[OpsLanding] detected hash-based access_token — setting session');
       window.history.replaceState({}, '', '/ops');
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
+      supabase.auth
+        .setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
         .then(({ data, error }) => {
           console.log('[OpsLanding] setSession result:', error?.message || 'ok', data?.session?.user?.email);
           if (error || !data.session) {
-            console.error('[OpsLanding] setSession failed:', error?.message);
             settled = true;
             setPhase('signin');
           } else {
@@ -158,9 +153,6 @@ export default function OpsLanding() {
       return;
     }
 
-    // For admin-generated magic links, Supabase verifies server-side and fires SIGNED_IN via onAuthStateChange.
-    // We rely on that event here — no client-side verifyOtp needed.
-    // Check existing session first before waiting for onAuthStateChange
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       console.log('[OpsLanding] getSession check:', existingSession ? `user=${existingSession.user?.email}` : 'null');
       if (existingSession && !settled) {
@@ -169,7 +161,9 @@ export default function OpsLanding() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, s) => {
       console.log('[OpsLanding] auth event:', event, '| session:', s ? `user=${s.user?.email}` : 'null');
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s && !settled) {
         settled = true;
@@ -178,11 +172,7 @@ export default function OpsLanding() {
       } else if (event === 'INITIAL_SESSION' && !s && !settled) {
         settled = true;
         subscription.unsubscribe();
-        if (params.get('checkout') === 'success') {
-          setPhase('demo');
-        } else {
-          setPhase('signin');
-        }
+        setPhase(params.get('checkout') === 'success' ? 'demo' : 'signin');
       }
     });
 
@@ -242,10 +232,10 @@ export default function OpsLanding() {
 
   if (phase === 'loading') {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-10 h-10 text-blue-400 animate-spin mx-auto" />
-          <p className="text-slate-400 text-sm">Verifying your access…</p>
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-400" />
+          <p className="text-slate-400">Verifying your access…</p>
         </div>
       </div>
     );
@@ -253,11 +243,11 @@ export default function OpsLanding() {
 
   if (phase === 'redirecting') {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
-          <p className="text-white font-semibold text-lg">You're all set!</p>
-          <p className="text-slate-400 text-sm">Redirecting you to your AIR workspace…</p>
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-center">
+          <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">You're all set!</h2>
+          <p className="text-slate-400">Redirecting you to your AIR workspace…</p>
         </div>
       </div>
     );
@@ -265,45 +255,43 @@ export default function OpsLanding() {
 
   if (phase === 'signin') {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="w-full max-w-sm space-y-6">
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mx-auto">
-              <Zap className="w-6 h-6 text-white" />
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 mb-2">
+              <Mail className="w-6 h-6 text-blue-400" />
             </div>
-            <h1 className="text-white font-bold text-2xl">Sign in to AIR</h1>
+            <h1 className="text-2xl font-bold">Sign in to AIR</h1>
             <p className="text-slate-400 text-sm">We'll send a magic link to your email.</p>
           </div>
 
           {signinSent ? (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 text-center space-y-2">
-              <Mail className="w-8 h-8 text-green-400 mx-auto" />
-              <p className="text-green-300 font-semibold">Check your inbox</p>
-              <p className="text-slate-400 text-sm">A sign-in link was sent to <span className="text-white">{signinEmail}</span></p>
+            <div className="text-center space-y-2 border border-slate-700 rounded-xl p-6">
+              <CheckCircle className="w-8 h-8 text-green-400 mx-auto" />
+              <h2 className="font-semibold">Check your inbox</h2>
+              <p className="text-slate-400 text-sm">A sign-in link was sent to {signinEmail}</p>
             </div>
           ) : (
             <form onSubmit={handleSignin} className="space-y-3">
               <Input
                 type="email"
                 required
-                placeholder="your@email.com"
+                placeholder="you@email.com"
                 value={signinEmail}
-                onChange={e => setSigninEmail(e.target.value)}
+                onChange={(e) => setSigninEmail(e.target.value)}
                 className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
               />
-              <Button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={signinLoading}
-              >
+              <Button type="submit" disabled={signinLoading} className="w-full bg-blue-600 hover:bg-blue-700">
                 {signinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Magic Link'}
               </Button>
             </form>
           )}
 
-          <p className="text-center text-slate-600 text-xs">
-            <a href__="/" className="hover:text-slate-400 transition">← Back to home</a>
-          </p>
+          <div className="text-center">
+            <a href="/" className="text-xs text-slate-500 hover:text-slate-300 underline">
+              ← Back to home
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -311,17 +299,11 @@ export default function OpsLanding() {
 
   if (phase === 'error') {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-        <div className="text-center space-y-4 max-w-md">
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div className="text-center space-y-3">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
-          <p className="text-white font-semibold text-lg">Something went wrong</p>
-          <Button
-            variant="outline"
-            className="border-slate-600 text-slate-300 hover:bg-slate-800"
-            onClick={() => setPhase('signin')}
-          >
-            Try signing in
-          </Button>
+          <h2 className="text-xl font-semibold">Something went wrong</h2>
+          <Button onClick={() => setPhase('signin')}>Try signing in</Button>
         </div>
       </div>
     );
@@ -329,42 +311,42 @@ export default function OpsLanding() {
 
   // phase === 'demo'
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+            <Zap className="w-4 h-4 text-blue-400" />
           </div>
-          <span className="font-bold text-lg">AIR</span>
-          <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30 ml-2">
+          <span className="font-bold">AIR</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
             Demo Mode
           </span>
         </div>
         {session && (
-          <div className="flex items-center gap-3">
-            <span className="text-slate-400 text-sm">{session.user.email}</span>
+          <div className="text-right text-sm">
+            <div className="text-slate-300">{session.user.email}</div>
             <button
-              onClick={async () => { await supabase.auth.signOut(); setSession(null); setPhase('signin'); }}
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setSession(null);
+                setPhase('signin');
+              }}
               className="text-xs text-slate-500 hover:text-slate-300 underline transition"
             >
               Sign out
             </button>
           </div>
         )}
-      </div>
+      </header>
 
-      <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 text-center">
-        <p className="text-amber-300 text-sm">
+      <div className="bg-blue-500/10 border-b border-blue-500/20 px-6 py-3">
+        <p className="text-sm text-blue-200">
           You're exploring AIR with demo data. Subscribe to launch your own workspace with live data.
         </p>
       </div>
 
-      <div className="flex" style={{ height: 'calc(100vh - 120px)' }}>
-        <iframe
-          src="https://theprojectair.com/"
-          className="flex-1 border-0"
-          title="AIR Demo"
-        />
+      <div className="flex-1 flex">
+        <div className="flex-1 p-6" />
         <div className="w-80 border-l border-slate-800 bg-slate-900 p-6 flex flex-col gap-6 overflow-y-auto">
           <div>
             <h2 className="font-bold text-lg mb-1">Unlock Your Workspace</h2>
@@ -394,7 +376,9 @@ export default function OpsLanding() {
                 onClick={() => handleSubscribe(tier)}
               >
                 {checkoutLoading === tier ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing…</>
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing…
+                  </>
                 ) : (
                   `Subscribe — ${plan.price}`
                 )}
@@ -403,8 +387,7 @@ export default function OpsLanding() {
           ))}
 
           <p className="text-slate-500 text-xs text-center">
-            No credit card required for your current 14-day trial.
-            Subscribe before your trial ends to keep full Pro access.
+            No credit card required for your current 14-day trial. Subscribe before your trial ends to keep full Pro access.
           </p>
         </div>
       </div>
