@@ -1,82 +1,96 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/api/supabaseClient';
+// src/pages/AuthCallback.jsx
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient"; // adjust path if your client lives elsewhere
 
 export default function AuthCallback() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const finishAuth = async () => {
+    const run = async () => {
       try {
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
-        const errParam = url.searchParams.get('error_description') || url.searchParams.get('error');
-        const next = url.searchParams.get('next') || '/dashboard';
+        // Supabase can send params in either the query string OR the hash fragment.
+        const search = new URLSearchParams(location.search);
+        const hash = new URLSearchParams(
+          location.hash.startsWith("#") ? location.hash.slice(1) : location.hash
+        );
+
+        const get = (k) => search.get(k) || hash.get(k);
+
+        const tokenHash = get("token_hash");
+        const type = get("type"); // "magiclink" | "recovery" | "signup" | "invite" | "email_change"
+        const code = get("code");
+        const errParam = get("error_description") || get("error");
 
         if (errParam) {
-          throw new Error(errParam);
+          throw new Error(decodeURIComponent(errParam));
         }
 
+        // Compute a safe "next" path (default /ops). Reject protocol-relative and absolute URLs.
+        const rawNext = get("next") || "/ops";
+        const safeNext =
+          rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/ops";
+
+        // 1) PKCE-style links: ?code=...
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
-        } else {
-          // Magic link may arrive as a hash fragment (#access_token=...).
-          // supabase-js parses it automatically when detectSessionInUrl is true;
-          // if it's false we fall through and rely on an existing session.
-          const hash = window.location.hash;
-          if (hash && hash.includes('access_token')) {
-            const params = new URLSearchParams(hash.replace(/^#/, ''));
-            const access_token = params.get('access_token');
-            const refresh_token = params.get('refresh_token');
-            if (access_token && refresh_token) {
-              const { error: setErr } = await supabase.auth.setSession({ access_token, refresh_token });
-              if (setErr) throw setErr;
-            }
+          const { error: exErr } = await supabase.auth.exchangeCodeForSession(
+            window.location.href
+          );
+          if (exErr) throw exErr;
+        }
+        // 2) Hashed-token links: ?token_hash=...&type=...
+        else if (tokenHash && type) {
+          const { error: vErr } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type,
+          });
+          if (vErr) throw vErr;
+        }
+        // 3) Implicit flow: #access_token=...&refresh_token=...
+        else {
+          const access_token = hash.get("access_token");
+          const refresh_token = hash.get("refresh_token");
+          if (access_token && refresh_token) {
+            const { error: sErr } = await supabase.auth.setSession({
+              access_token,
+              refresh_token,
+            });
+            if (sErr) throw sErr;
           }
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          throw new Error('No session established. The magic link may have expired — please request a new one.');
+        // Confirm a session actually exists before redirecting.
+        const { data, error: gErr } = await supabase.auth.getSession();
+        if (gErr) throw gErr;
+        if (!data?.session) {
+          throw new Error("No session was established. Please request a new link.");
         }
 
-        // Clean the URL so tokens/codes don't linger in history, then redirect.
-        window.history.replaceState({}, document.title, window.location.pathname);
-        window.location.replace(next);
+        navigate(safeNext, { replace: true });
       } catch (e) {
-        console.error('[AuthCallback]', e);
-        setError(e.message || 'Authentication failed.');
+        console.error("Auth callback error:", e);
+        setError(e?.message || "Sign-in failed. Please try again.");
       }
     };
 
-    finishAuth();
-  }, []);
+    run();
+  }, [location.search, location.hash, navigate]);
 
   if (error) {
     return (
-      <div style={{ maxWidth: 480, margin: '64px auto', padding: 24, fontFamily: 'system-ui', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 20, marginBottom: 12 }}>Sign-in failed</h1>
-        <p style={{ color: '#b91c1c', marginBottom: 24 }}>{error}</p>
-        <a
-          href="/"
-          style={{
-            display: 'inline-block',
-            padding: '10px 18px',
-            background: '#111',
-            color: '#fff',
-            borderRadius: 6,
-            textDecoration: 'none',
-          }}
-        >
-          Return to sign in
-        </a>
+      <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+        <h1 style={{ fontSize: 20, marginBottom: 8 }}>Sign-in problem</h1>
+        <p style={{ color: "#b91c1c", marginBottom: 16 }}>{error}</p>
+        <a href="/" style={{ color: "#2563eb" }}>Return home</a>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '64px auto', textAlign: 'center', fontFamily: 'system-ui' }}>
-      <p>Signing you in…</p>
+    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+      Signing you in…
     </div>
   );
 }
