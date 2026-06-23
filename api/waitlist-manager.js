@@ -5,7 +5,6 @@
 //   POST { action: 'list' }
 //   POST { action: 'approve', entryId }
 //   POST { action: 'deny',    entryId, reason? }
-//   POST { action: 'resendMagicLink', entryId? , email? }
 //
 // NOTE: This file is tuned to the ACTUAL waitlist_entries schema in prod:
 //   id, name, email, phone, company, branches, status, approved_by,
@@ -34,11 +33,13 @@ const getSupabase = () => {
   });
 };
 
-const SITE_URL =
+const RAW_SITE_URL =
   process.env.SITE_URL ||
   process.env.NEXT_PUBLIC_SITE_URL ||
   process.env.VITE_SITE_URL ||
   'https://theprojectair.com';
+
+const SITE_URL = normalizeSiteUrl(RAW_SITE_URL);
 
 const FROM_ADDRESS = 'AIR by Lupine <info@theprojectair.com>';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
@@ -59,6 +60,47 @@ function isAlreadyRegistered(err) {
     msg.includes('user already exists') ||
     msg.includes('duplicate')
   );
+}
+
+function normalizeSiteUrl(value) {
+  const fallback = 'https://theprojectair.com';
+  const raw = String(value || fallback).trim() || fallback;
+
+  try {
+    const url = new URL(raw.startsWith('http://') || raw.startsWith('https://') ? raw : `https://${raw}`);
+    const host = url.hostname.toLowerCase();
+
+    if (host === 'theprojectair.com' || host === 'www.theprojectair.com') {
+      return fallback;
+    }
+
+    if (host.endsWith('.theprojectair.com')) {
+      return fallback;
+    }
+
+    url.pathname = '';
+    url.search = '';
+    url.hash = '';
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+}
+
+function isDuplicateRecord(err) {
+  if (!err) return false;
+  const msg = String(err.message || err.details || '').toLowerCase();
+  return err.code === '23505' || msg.includes('duplicate key') || msg.includes('already exists');
+}
+
+function stripMissingColumnFromPayload(payload, errMsg, protectedColumns = []) {
+  const m = String(errMsg || '').match(/'([^']+)' column/i);
+  if (!m) return null;
+  const col = m[1];
+  if (!(col in payload) || protectedColumns.includes(col)) return null;
+  const next = { ...payload };
+  delete next[col];
+  return next;
 }
 
 async function sendEmail({ to, subject, html }) {
@@ -181,7 +223,7 @@ async function ensureSubscriberTrial(sb, entry) {
 
   if (existing.data) {
     let payload = { ...candidate };
-    delete payload.email; // do not change PK-ish field on update
+    delete payload.email;
     for (let i = 0; i < 8; i++) {
       const upd = await sb
         .from('subscriber_trials')
@@ -190,7 +232,6 @@ async function ensureSubscriberTrial(sb, entry) {
       if (!upd.error) return existing.data.id;
       const reduced = stripMissingColumn(payload, upd.error.message);
       if (!reduced) {
-        // If even the minimal update fails (e.g. only updated_at missing), give up silently.
         if (Object.keys(payload).length <= 1) return existing.data.id;
         throw new Error(`subscriber_trials update failed: ${upd.error.message}`);
       }
@@ -242,6 +283,8 @@ async function handleResendMagicLink(sb, entryId, emailOverride) {
     return { status: 400, body: { error: 'entryId or email is required' } };
   }
   try {
+    const { user } = await ensureAuthUser(sb, email);
+    const tenantId = await ensureTenantForUser(sb, user.id, email, fullName);
     const magicLink = await generateMagicLink(sb, email);
     const mail = await sendEmail({
       to: email,
@@ -251,9 +294,101 @@ async function handleResendMagicLink(sb, entryId, emailOverride) {
     if (!mail.ok) {
       return { status: 502, body: { error: `email send failed: ${mail.error}` } };
     }
-    return { status: 200, body: { ok: true, email, emailId: mail.id || null } };
+    return { status: 200, body: { ok: true, email, userId: user.id, tenantId, emailId: mail.id || null } };
   } catch (e) {
     return { status: 500, body: { error: e.message || String(e) } };
+  }
+}
+
+async function upsertProfileTenant(sb, userId, tenantId, fullName) {
+  let payload = {
+    id: userId,
+    tenant_id: tenantId,
+    full_name: fullName || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  for (let i = 0; i < 6; i++) {
+    const res = await sb
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
+      .select('id, tenant_id')
+      .maybeSingle();
+    if (!res.error) return res.data;
+
+    const reduced = stripMissingColumnFromPayload(payload, res.error.message, ['id', 'tenant_id']);
+    if (!reduced) {
+      throw new Error(`profiles upsert failed: ${res.error.message}`);
+    }
+    payload = reduced;
+  }
+
+  throw new Error('profiles upsert failed: too many missing columns');
+}
+
+async function ensureUserRole(sb, userId, tenantId, role = 'admin') {
+  const existing = await sb
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('tenant_id', tenantId)
+    .eq('role', role)
+    .limit(1)
+    .maybeSingle();
+  if (existing.error) {
+    throw new Error(`user_roles lookup failed: ${existing.error.message}`);
+  }
+  if (existing.data) return existing.data.id;
+
+  const inserted = await sb
+    .from('user_roles')
+    .insert({ user_id: userId, tenant_id: tenantId, role })
+    .select('id')
+    .single();
+  if (!inserted.error) return inserted.data.id;
+
+  if (isDuplicateRecord(inserted.error)) {
+    const refetch = await sb
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('tenant_id', tenantId)
+      .eq('role', role)
+      .limit(1)
+      .maybeSingle();
+    if (!refetch.error && refetch.data) return refetch.data.id;
+  }
+
+  throw new Error(`user_roles insert failed: ${inserted.error.message}`);
+}
+
+async function ensureDirectTenantLink(sb, userId, tenantId, fullName) {
+  await upsertProfileTenant(sb, userId, tenantId, fullName);
+  await ensureUserRole(sb, userId, tenantId, 'admin');
+
+  const [profileCheck, roleCheck] = await Promise.all([
+    sb.from('profiles').select('tenant_id').eq('id', userId).maybeSingle(),
+    sb
+      .from('user_roles')
+      .select('tenant_id')
+      .eq('user_id', userId)
+      .eq('tenant_id', tenantId)
+      .eq('role', 'admin')
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (profileCheck.error) {
+    throw new Error(`profiles verification failed: ${profileCheck.error.message}`);
+  }
+  if (!profileCheck.data || profileCheck.data.tenant_id !== tenantId) {
+    throw new Error('profiles verification failed: tenant_id was not saved');
+  }
+  if (roleCheck.error) {
+    throw new Error(`user_roles verification failed: ${roleCheck.error.message}`);
+  }
+  if (!roleCheck.data || roleCheck.data.tenant_id !== tenantId) {
+    throw new Error('user_roles verification failed: admin role was not saved');
   }
 }
 
@@ -267,8 +402,24 @@ async function ensureTenantForUser(sb, userId, email, fullName) {
     throw new Error(`profiles lookup failed: ${prof.error.message}`);
   }
   if (prof.data && prof.data.tenant_id) {
+    await ensureDirectTenantLink(sb, userId, prof.data.tenant_id, fullName);
     return prof.data.tenant_id;
   }
+
+  const existingRole = await sb
+    .from('user_roles')
+    .select('tenant_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .maybeSingle();
+  if (existingRole.error) {
+    throw new Error(`user_roles tenant lookup failed: ${existingRole.error.message}`);
+  }
+  if (existingRole.data && existingRole.data.tenant_id) {
+    await ensureDirectTenantLink(sb, userId, existingRole.data.tenant_id, fullName);
+    return existingRole.data.tenant_id;
+  }
+
   const clone = await sb.rpc('clone_tenant_for_trial', {
     p_email: email,
     p_full_name: fullName || null,
@@ -280,14 +431,8 @@ async function ensureTenantForUser(sb, userId, email, fullName) {
   if (!newTenantId) {
     throw new Error('clone_tenant_for_trial returned null');
   }
-  const link = await sb.rpc('link_user_to_tenant', {
-    p_user_id: userId,
-    p_tenant_id: newTenantId,
-    p_role: 'admin',
-  });
-  if (link.error) {
-    throw new Error(`link_user_to_tenant failed: ${link.error.message}`);
-  }
+
+  await ensureDirectTenantLink(sb, userId, newTenantId, fullName);
   return newTenantId;
 }
 
@@ -324,9 +469,6 @@ async function handleList(sb) {
     return { status: 500, body: { error: res.error.message } };
   }
   const raw = res.data || [];
-  // Base44 frontends typically read `name`, `company`, `created_date`,
-  // `updated_date`. Add aliases on every row so the page renders no matter
-  // which field names it expects.
   const rows = raw.map((r) => ({
     ...r,
     name: r.full_name || r.name || null,
