@@ -1,112 +1,178 @@
-import React, { useState } from "react";
+// src/pages/WaitlistPublic.jsx
+// No-auth admin dashboard: list pending waitlist entries, approve / reject,
+// resend magic link. Calls the same /api/waitlist-manager backend the
+// authenticated /waitlist-manager page uses.
+
+import { useEffect, useState, useCallback } from 'react';
+
+const STATUS_FILTERS = ['pending', 'approved', 'rejected', 'all'];
 
 export default function WaitlistPublic() {
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    company_name: "",
-    phone: "",
-  });
-  const [status, setStatus] = useState("idle"); // idle | submitting | success | error
-  const [errorMsg, setErrorMsg] = useState("");
+  const [entries, setEntries] = useState([]);
+  const [status, setStatus] = useState('pending');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [toast, setToast] = useState(null);
 
-  const onChange = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const showToast = (msg, kind = 'info') => {
+    setToast({ msg, kind });
+    setTimeout(() => setToast(null), 4000);
+  };
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    setStatus("submitting");
-    setErrorMsg("");
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/waitlist-public", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+      const res = await fetch(
+        `/api/waitlist-manager?action=list&status=${encodeURIComponent(status)}`,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setEntries(Array.isArray(json.entries) ? json.entries : []);
+    } catch (e) {
+      setError(e.message || 'Failed to load entries');
+    } finally {
+      setLoading(false);
+    }
+  }, [status]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const act = async (id, action) => {
+    setBusyId(id);
+    try {
+      const res = await fetch('/api/waitlist-manager', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, entryId: id }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Request failed (${res.status})`);
-      }
-      setStatus("success");
-    } catch (err) {
-      setStatus("error");
-      setErrorMsg(err.message || "Something went wrong.");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      showToast(json.message || `${action} ok`, 'success');
+      await load();
+    } catch (e) {
+      showToast(e.message || `${action} failed`, 'error');
+    } finally {
+      setBusyId(null);
     }
   };
 
-  if (status === "success") {
-    return (
-      <div style={{ maxWidth: 480, margin: "80px auto", padding: 24, fontFamily: "system-ui" }}>
-        <h1 style={{ fontSize: 24, marginBottom: 12 }}>You're on the list</h1>
-        <p>
-          Thanks, {form.full_name || "friend"} — we'll email {form.email} once your access is approved.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ maxWidth: 480, margin: "80px auto", padding: 24, fontFamily: "system-ui" }}>
-      <h1 style={{ fontSize: 24, marginBottom: 8 }}>Request early access</h1>
-      <p style={{ color: "#555", marginBottom: 24 }}>
-        Tell us a bit about you and we'll send a sign-in link once approved.
+    <div style={{ maxWidth: 1100, margin: '32px auto', padding: '0 16px', fontFamily: 'system-ui, sans-serif' }}>
+      <h1 style={{ marginBottom: 4 }}>Waitlist (Public Admin)</h1>
+      <p style={{ marginTop: 0, color: '#666', fontSize: 14 }}>
+        No-auth approve / reject dashboard. Use only on a trusted device.
       </p>
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span>Full name</span>
-          <input
-            name="full_name"
-            value={form.full_name}
-            onChange={onChange}
-            required
-            style={{ padding: 10, border: "1px solid #ccc", borderRadius: 6 }}
-          />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span>Email</span>
-          <input
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={onChange}
-            required
-            style={{ padding: 10, border: "1px solid #ccc", borderRadius: 6 }}
-          />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span>Company</span>
-          <input
-            name="company_name"
-            value={form.company_name}
-            onChange={onChange}
-            style={{ padding: 10, border: "1px solid #ccc", borderRadius: 6 }}
-          />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span>Phone</span>
-          <input
-            name="phone"
-            value={form.phone}
-            onChange={onChange}
-            style={{ padding: 10, border: "1px solid #ccc", borderRadius: 6 }}
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={status === "submitting"}
-          style={{
-            padding: "10px 16px",
-            background: "#111",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
-          {status === "submitting" ? "Submitting…" : "Request access"}
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '16px 0' }}>
+        {STATUS_FILTERS.map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatus(s)}
+            style={{
+              padding: '6px 12px',
+              border: '1px solid #ccc',
+              background: status === s ? '#111' : '#fff',
+              color: status === s ? '#fff' : '#111',
+              borderRadius: 6,
+              cursor: 'pointer',
+              textTransform: 'capitalize',
+            }}
+          >
+            {s}
+          </button>
+        ))}
+        <button onClick={load} style={{ marginLeft: 'auto', padding: '6px 12px' }}>
+          Refresh
         </button>
-        {status === "error" && <p style={{ color: "#b00020" }}>{errorMsg}</p>}
-      </form>
+      </div>
+
+      {toast && (
+        <div style={{
+          padding: 10, marginBottom: 12, borderRadius: 6,
+          background: toast.kind === 'error' ? '#fee' : '#efe',
+          color: toast.kind === 'error' ? '#900' : '#060',
+          border: `1px solid ${toast.kind === 'error' ? '#fbb' : '#bdb'}`,
+        }}>{toast.msg}</div>
+      )}
+
+      {error && (
+        <div style={{ padding: 10, marginBottom: 12, background: '#fee', color: '#900', borderRadius: 6 }}>
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <p>Loading…</p>
+      ) : entries.length === 0 ? (
+        <p style={{ color: '#666' }}>No entries.</p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #ddd', textAlign: 'left' }}>
+              <th style={{ padding: 8 }}>Submitted</th>
+              <th style={{ padding: 8 }}>Name</th>
+              <th style={{ padding: 8 }}>Email</th>
+              <th style={{ padding: 8 }}>Company</th>
+              <th style={{ padding: 8 }}>Phone</th>
+              <th style={{ padding: 8 }}>Status</th>
+              <th style={{ padding: 8, textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e) => (
+              <tr key={e.id} style={{ borderBottom: '1px solid #eee' }}>
+                <td style={{ padding: 8, whiteSpace: 'nowrap' }}>
+                  {e.created_at ? new Date(e.created_at).toLocaleString() : '—'}
+                </td>
+                <td style={{ padding: 8 }}>{e.full_name || '—'}</td>
+                <td style={{ padding: 8 }}>{e.email}</td>
+                <td style={{ padding: 8 }}>{e.company_name || '—'}</td>
+                <td style={{ padding: 8 }}>{e.phone || '—'}</td>
+                <td style={{ padding: 8 }}>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 10, fontSize: 12,
+                    background:
+                      e.status === 'approved' ? '#dfd' :
+                      e.status === 'rejected' ? '#fdd' : '#ffd',
+                  }}>{e.status}</span>
+                </td>
+                <td style={{ padding: 8, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  {e.status === 'pending' && (
+                    <>
+                      <button
+                        disabled={busyId === e.id}
+                        onClick={() => act(e.id, 'approve')}
+                        style={{ marginRight: 6, padding: '4px 10px', background: '#060', color: '#fff', border: 0, borderRadius: 4, cursor: 'pointer' }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        disabled={busyId === e.id}
+                        onClick={() => act(e.id, 'reject')}
+                        style={{ marginRight: 6, padding: '4px 10px', background: '#900', color: '#fff', border: 0, borderRadius: 4, cursor: 'pointer' }}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {e.status === 'approved' && (
+                    <button
+                      disabled={busyId === e.id}
+                      onClick={() => act(e.id, 'resend')}
+                      style={{ padding: '4px 10px', background: '#06c', color: '#fff', border: 0, borderRadius: 4, cursor: 'pointer' }}
+                    >
+                      Resend Magic Link
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
