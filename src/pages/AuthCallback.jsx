@@ -1,7 +1,13 @@
 // src/pages/AuthCallback.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient"; // adjust path if your client lives elsewhere
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+);
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -11,12 +17,10 @@ export default function AuthCallback() {
   useEffect(() => {
     const run = async () => {
       try {
-        // Supabase can send params in either the query string OR the hash fragment.
         const search = new URLSearchParams(location.search);
         const hash = new URLSearchParams(
           location.hash.startsWith("#") ? location.hash.slice(1) : location.hash
         );
-
         const get = (k) => search.get(k) || hash.get(k);
 
         const tokenHash = get("token_hash");
@@ -24,32 +28,24 @@ export default function AuthCallback() {
         const code = get("code");
         const errParam = get("error_description") || get("error");
 
-        if (errParam) {
-          throw new Error(decodeURIComponent(errParam));
-        }
+        if (errParam) throw new Error(decodeURIComponent(errParam));
 
-        // Compute a safe "next" path (default /ops). Reject protocol-relative and absolute URLs.
         const rawNext = get("next") || "/ops";
         const safeNext =
           rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/ops";
 
-        // 1) PKCE-style links: ?code=...
         if (code) {
           const { error: exErr } = await supabase.auth.exchangeCodeForSession(
             window.location.href
           );
           if (exErr) throw exErr;
-        }
-        // 2) Hashed-token links: ?token_hash=...&type=...
-        else if (tokenHash && type) {
+        } else if (tokenHash && type) {
           const { error: vErr } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type,
           });
           if (vErr) throw vErr;
-        }
-        // 3) Implicit flow: #access_token=...&refresh_token=...
-        else {
+        } else {
           const access_token = hash.get("access_token");
           const refresh_token = hash.get("refresh_token");
           if (access_token && refresh_token) {
@@ -61,7 +57,6 @@ export default function AuthCallback() {
           }
         }
 
-        // Confirm a session actually exists before redirecting.
         const { data, error: gErr } = await supabase.auth.getSession();
         if (gErr) throw gErr;
         if (!data?.session) {
@@ -74,7 +69,6 @@ export default function AuthCallback() {
         setError(e?.message || "Sign-in failed. Please try again.");
       }
     };
-
     run();
   }, [location.search, location.hash, navigate]);
 
