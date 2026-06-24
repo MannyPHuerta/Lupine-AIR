@@ -1,7 +1,12 @@
-// src/pages/AuthCallback.jsx
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/api/supabaseClient";
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '@/api/supabaseClient';
+
+function safeNext(rawNext) {
+  if (!rawNext) return '/ops';
+  if (!rawNext.startsWith('/') || rawNext.startsWith('//')) return '/ops';
+  return rawNext;
+}
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -9,75 +14,85 @@ export default function AuthCallback() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const run = async () => {
       try {
         const search = new URLSearchParams(location.search);
         const hash = new URLSearchParams(
-          location.hash.startsWith("#") ? location.hash.slice(1) : location.hash
+          location.hash.startsWith('#') ? location.hash.slice(1) : location.hash
         );
-        const get = (k) => search.get(k) || hash.get(k);
 
-        const tokenHash = get("token_hash");
-        const type = get("type"); // "magiclink" | "recovery" | "signup" | "invite" | "email_change"
-        const code = get("code");
-        const errParam = get("error_description") || get("error");
+        const get = (key) => search.get(key) || hash.get(key);
 
+        const errParam = get('error_description') || get('error');
         if (errParam) throw new Error(decodeURIComponent(errParam));
 
-        const rawNext = get("next") || "/ops";
-        const safeNext =
-          rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/ops";
+        const next = safeNext(get('next'));
+        const code = get('code');
+        const tokenHash = get('token_hash');
+        const type = get('type');
+        const accessToken = get('access_token');
+        const refreshToken = get('refresh_token');
 
         if (code) {
-          const { error: exErr } = await supabase.auth.exchangeCodeForSession(
-            window.location.href
-          );
-          if (exErr) throw exErr;
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
         } else if (tokenHash && type) {
-          const { error: vErr } = await supabase.auth.verifyOtp({
+          const { error: verifyError } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type,
           });
-          if (vErr) throw vErr;
-        } else {
-          const access_token = hash.get("access_token");
-          const refresh_token = hash.get("refresh_token");
-          if (access_token && refresh_token) {
-            const { error: sErr } = await supabase.auth.setSession({
-              access_token,
-              refresh_token,
-            });
-            if (sErr) throw sErr;
-          }
+          if (verifyError) throw verifyError;
+        } else if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (sessionError) throw sessionError;
         }
 
-        const { data, error: gErr } = await supabase.auth.getSession();
-        if (gErr) throw gErr;
-        if (!data?.session) {
-          throw new Error("No session was established. Please request a new link.");
+        const {
+          data: { session },
+          error: getSessionError,
+        } = await supabase.auth.getSession();
+
+        if (getSessionError) throw getSessionError;
+
+        if (!session) {
+          throw new Error('No session was established. Please request a new sign-in link.');
         }
 
-        navigate(safeNext, { replace: true });
-      } catch (e) {
-        console.error("Auth callback error:", e);
-        setError(e?.message || "Sign-in failed. Please try again.");
+        if (!cancelled) navigate(next, { replace: true });
+      } catch (err) {
+        console.error('[AuthCallback] sign-in failed:', err);
+        if (!cancelled) {
+          setError(err?.message || 'Sign-in failed. Please request a new link.');
+        }
       }
     };
+
     run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [location.search, location.hash, navigate]);
 
   if (error) {
     return (
-      <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
         <h1 style={{ fontSize: 20, marginBottom: 8 }}>Sign-in problem</h1>
-        <p style={{ color: "#b91c1c", marginBottom: 16 }}>{error}</p>
-        <a href="/" style={{ color: "#2563eb" }}>Return home</a>
+        <p style={{ color: '#b91c1c', marginBottom: 16 }}>{error}</p>
+        <a href="/signin" style={{ color: '#2563eb' }}>
+          Return to sign in
+        </a>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
       Signing you in…
     </div>
   );
