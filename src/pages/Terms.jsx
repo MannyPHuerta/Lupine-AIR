@@ -40,7 +40,12 @@ export default function Terms() {
       </section>
 
       <section className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">8. Changes to These Terms</h2>
+        <h2 className="text-xl font-semibold mb-2">8. Platform Administrator Access</h2>
+        <p>To provide support, troubleshooting, and platform security, designated Lupine Technologies platform administrators may access your account data, including financial and operational records. This access is strictly governed by internal security protocols, is limited to legitimate operational purposes, and is logged for audit compliance. Platform administrators do not use customer data for personal gain or share it with third parties.</p>
+      </section>
+
+      <section className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">9. Changes to These Terms</h2>
         <p>Lupine Technologies reserves the right to modify these terms at any time. Continued use of the AIR platform constitutes acceptance of any updated terms.</p>
       </section>
 
