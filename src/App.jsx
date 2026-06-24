@@ -115,7 +115,7 @@ import OpsLanding from "./pages/OpsLanding";
 import TestProvisionTenant from "./pages/TestProvisionTenant";
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin, checkAppState } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -146,6 +146,8 @@ const AuthenticatedApp = () => {
       {/* All internal routes wrapped in sidebar layout */}
       <Route element={<AppLayout />}>
         <Route path="/" element={<DailyOps />} />
+        <Route path="/ops" element={<DailyOps />} />
+        <Route path="/ops/*" element={<DailyOps />} />
         <Route path="/about" element={<About />} />
         <Route path="/accounting" element={<AccountingDashboard />} />
         <Route path="/agreement-signing" element={<AgreementSigningFlow />} />
@@ -270,10 +272,9 @@ function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/waitlist-public" element={<WaitlistPublic />} />
-            {/* Magic-link landing — must be public, Supabase reads the hash here */}
-            <Route path="/ops" element={<OpsLanding />} />
-            {/* Catch-all for /ops with hash/query params (magic link callbacks) */}
-            <Route path="/ops/*" element={<OpsLanding />} />
+            {/* Magic-link landing and canonical workspace entry */}
+            <Route path="/ops" element={<OpsLanding><AuthenticatedApp /></OpsLanding>} />
+            <Route path="/ops/*" element={<OpsLanding><AuthenticatedApp /></OpsLanding>} />
             {/* All other routes require authentication */}
             <Route path="/*" element={<AuthenticatedApp />} />
           </Routes>
