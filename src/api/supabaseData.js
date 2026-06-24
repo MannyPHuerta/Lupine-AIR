@@ -67,11 +67,29 @@ const KNOWN_MISSING_TABLE_CODES = new Set(['42P01', 'PGRST205']);
 const KNOWN_MISSING_COLUMN_CODES = new Set(['42703', 'PGRST204']);
 const DEFAULT_BUCKET = 'uploads';
 
+const FIELD_ALIASES = {
+  created_date: 'created_at',
+  createdDate: 'created_at',
+  updated_date: 'updated_at',
+  updatedDate: 'updated_at',
+};
+
+const DB_TO_LEGACY_FIELD_ALIASES = {
+  created_at: 'created_date',
+  updated_at: 'updated_date',
+};
+
 const camelToSnake = (value) =>
   String(value)
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
     .replace(/[-\s]+/g, '_')
     .toLowerCase();
+
+const normalizeFieldName = (value) => {
+  const raw = String(value);
+  const snake = camelToSnake(raw);
+  return FIELD_ALIASES[raw] || FIELD_ALIASES[snake] || snake;
+};
 
 const snakeToCamel = (value) =>
   String(value).replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -83,7 +101,7 @@ function normalizeSortField(sortField) {
   const descending = sortField.startsWith('-');
   const rawField = descending ? sortField.slice(1) : sortField;
   if (!rawField) return null;
-  return { field: camelToSnake(rawField), ascending: !descending };
+  return { field: normalizeFieldName(rawField), ascending: !descending };
 }
 
 function toDbValue(value) {
@@ -98,7 +116,7 @@ function toDbRow(row = {}) {
   return Object.fromEntries(
     Object.entries(row)
       .filter(([, value]) => value !== undefined)
-      .map(([key, value]) => [camelToSnake(key), toDbValue(value)])
+      .map(([key, value]) => [normalizeFieldName(key), toDbValue(value)])
   );
 }
 
@@ -113,8 +131,12 @@ function fromDbRow(row) {
 
   const converted = {};
   for (const [key, value] of Object.entries(row)) {
-    converted[key] = fromDbValue(value);
-    converted[snakeToCamel(key)] = fromDbValue(value);
+    const convertedValue = fromDbValue(value);
+    converted[key] = convertedValue;
+    converted[snakeToCamel(key)] = convertedValue;
+
+    const legacyKey = DB_TO_LEGACY_FIELD_ALIASES[key];
+    if (legacyKey) converted[legacyKey] = convertedValue;
   }
   return converted;
 }
@@ -203,7 +225,7 @@ function createEntityAccessor(entityName) {
         let query = table.select('*');
         for (const [key, value] of Object.entries(filters || {})) {
           if (value === undefined || value === null) continue;
-          const dbKey = camelToSnake(key);
+          const dbKey = normalizeFieldName(key);
           if (Array.isArray(value)) query = query.in(dbKey, value);
           else query = query.eq(dbKey, value);
         }
