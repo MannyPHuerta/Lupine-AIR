@@ -44,7 +44,7 @@ export function useHeaderStyle() {
     let cancelled = false;
     const doFetch = async () => {
       try {
-        const { data, error } = await supabase.from('CompanySettings').select('*').limit(1);
+        const { data, error } = await supabase.from('company_settings').select('*').limit(1);
         if (cancelled) return;
         if (error) throw error;
         const resolved = resolveStyle(data?.[0] || {});
