@@ -1,92 +1,113 @@
-// src/pages/OpsLanding.jsx
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/api/supabaseClient';
 import { Loader2 } from 'lucide-react';
 
-/**
- * OpsLanding
- * --------------------------------------------------------------------------
- * Single post-auth landing route. The tenant is resolved server-side from the
- * signed-in user's session inside AuthenticatedApp / AuthContext — this page
- * does NOT need to know the tenant slug. It only:
- *
- *   1. Confirms there is a Supabase session (magic-link hash already consumed
- *      by AuthCallback before we get here).
- *   2. Confirms the user has a profile row (i.e. they've been provisioned
- *      into a tenant). If not, sends them to /onboarding.
- *   3. Sends everyone else to /ops, the canonical workspace entry point.
- *
- * No /${slug} redirects. No hostname sniffing. No subdomain logic.
- * --------------------------------------------------------------------------
- */
-export default function OpsLanding() {
+function signinUrl() {
+  return `/signin?next=${encodeURIComponent('/ops')}`;
+}
+
+export default function OpsLanding({ children }) {
   const navigate = useNavigate();
-  const [message, setMessage] = useState('Signing you in…');
+  const location = useLocation();
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState('Verifying your access…');
 
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
+    const run = async () => {
       try {
-        // 1. Session check. AuthCallback should have set this already.
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
+        const search = new URLSearchParams(location.search);
+        const hash = new URLSearchParams(
+          location.hash.startsWith('#') ? location.hash.slice(1) : location.hash
+        );
 
-        if (!session?.user) {
-          if (!cancelled) navigate('/signin', { replace: true });
+        const get = (key) => search.get(key) || hash.get(key);
+
+        const errParam = get('error_description') || get('error');
+        if (errParam) throw new Error(decodeURIComponent(errParam));
+
+        const code = get('code');
+        const tokenHash = get('token_hash');
+        const type = get('type');
+        const accessToken = get('access_token');
+        const refreshToken = get('refresh_token');
+
+        if (code) {
+          setMessage('Completing sign-in…');
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+        } else if (tokenHash && type) {
+          setMessage('Completing sign-in…');
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type,
+          });
+          if (verifyError) throw verifyError;
+        } else if (accessToken && refreshToken) {
+          setMessage('Restoring session…');
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (sessionError) throw sessionError;
+        }
+
+        const {
+          data: { session },
+          error: getSessionError,
+        } = await supabase.auth.getSession();
+
+        if (getSessionError) throw getSessionError;
+
+        if (!session) {
+          if (!cancelled) navigate(signinUrl(), { replace: true });
           return;
         }
 
-        const userId = session.user.id;
-        const email  = session.user.email;
-
-        // 2. Platform admin shortcut — skip tenant gating.
-        const { data: platformAdmin } = await supabase
-          .from('platform_admins')
-          .select('user_id')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (platformAdmin) {
-          if (!cancelled) navigate('/ops', { replace: true });
-          return;
-        }
-
-        // 3. Profile / tenant membership check.
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, tenant_id, onboarding_complete')
-          .eq('id', userId)
-          .maybeSingle();
-
-        if (profileError && profileError.code !== 'PGRST116') {
-          throw profileError;
-        }
-
-        // No profile row at all → user has never been provisioned.
-        // Fall back to onboarding so they can claim/join a tenant.
-        if (!profile || !profile.tenant_id) {
-          if (!cancelled) {
-            setMessage('Finishing setup…');
-            navigate('/onboarding', { replace: true });
-          }
-          return;
-        }
-
-        // Profile exists, tenant assigned. Drop them into the workspace.
-        if (!cancelled) navigate('/ops', { replace: true });
-      } catch (err) {
-        console.error('[OpsLanding] redirect failed:', err);
         if (!cancelled) {
-          setMessage('Something went wrong. Returning you to sign-in…');
-          setTimeout(() => navigate('/signin', { replace: true }), 1200);
+          if (window.location.pathname !== '/ops' || window.location.search || window.location.hash) {
+            window.history.replaceState({}, '', '/ops');
+          }
+          setReady(true);
+        }
+      } catch (err) {
+        console.error('[OpsLanding] auth handoff failed:', err);
+        if (!cancelled) {
+          setError(err?.message || 'Unable to complete sign-in.');
         }
       }
-    })();
+    };
 
-    return () => { cancelled = true; };
-  }, [navigate]);
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.search, location.hash, navigate]);
+
+  if (ready) {
+    return <>{children}</>;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4">
+        <div className="max-w-md w-full rounded-2xl border border-red-500/30 bg-slate-900 p-6 text-center space-y-4">
+          <h1 className="text-xl font-bold">Sign-in problem</h1>
+          <p className="text-sm text-slate-300">{error}</p>
+          <button
+            onClick={() => navigate(signinUrl(), { replace: true })}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Request a new sign-in link
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
