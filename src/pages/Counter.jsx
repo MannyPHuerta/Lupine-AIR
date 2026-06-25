@@ -62,7 +62,7 @@ export default function Counter() {
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const { workingBranch, updateWorkingBranch } = useWorkingBranch();
-  const branch = workingBranch || '01 McAllen';
+  const branch = workingBranch || allBranchSettings[0]?.branch || null;
   const branchSettings = allBranchSettings.find(b => b.branch === branch) || allBranchSettings[0] || null;
   const listRef = useRef(null);
 
@@ -230,10 +230,10 @@ export default function Counter() {
                 </span>
               ))}
             </div>
-            <select value={branch} onChange={e => updateWorkingBranch(e.target.value)}
-              className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs backdrop-blur-sm">
-              {['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'].map(b => (
-                <option key={b} value={b} className="text-black">{b}</option>
+            <select value={branch || ''} onChange={e => updateWorkingBranch(e.target.value)} disabled={!allBranchSettings.length}
+              className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs backdrop-blur-sm disabled:opacity-50">
+              {allBranchSettings.map(b => (
+                <option key={b.branch} value={b.branch} className="text-black">{b.branch}</option>
               ))}
             </select>
           </div>
