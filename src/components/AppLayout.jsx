@@ -415,13 +415,23 @@ export default function AppLayout() {
           >
             <Globe className="w-3.5 h-3.5" /> Public Site
           </Link>
-          <button
-            onClick={() => base44 && base44.auth.logout('/')}
-            className="flex items-center gap-1.5 text-xs text-white hover:text-red-300 transition font-semibold"
-            title="Log out"
-          >
-            <LogOut className="w-3.5 h-3.5" /> Log out
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/terms"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition"
+              title="Terms & Conditions"
+            >
+              <FileText className="w-3.5 h-3.5" /> Terms
+            </Link>
+            <button
+              onClick={() => base44 && base44.auth.logout('/')}
+              className="flex items-center gap-1.5 text-xs text-white hover:text-red-300 transition font-semibold"
+              title="Log out"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Log out
+            </button>
+          </div>
         </div>
       </div>
     </div>
