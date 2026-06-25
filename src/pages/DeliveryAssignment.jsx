@@ -4,8 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Loader2, CheckCircle, Truck, Clock, User, ArrowRightLeft } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { format, parseISO } from 'date-fns';
-
-const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'];
+import { useBranches } from '@/hooks/useBranches';
 
 export default function DeliveryAssignment() {
   const navigate = useNavigate();
@@ -16,6 +15,7 @@ export default function DeliveryAssignment() {
   const [creating, setCreating] = useState(false);
   const [branchFilter, setBranchFilter] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const { branches: BRANCHES } = useBranches();
 
   useEffect(() => {
     // Defensive check for preview mode

@@ -197,7 +197,7 @@ function RoleCard({ role, onEdit, onDelete }) {
 
 const USER_ROLES = ['admin', 'user', 'manager', 'accountant', 'counter', 'driver'];
 
-const BRANCHES = ['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
+
 
 function EmployeeSection() {
   const [users, setUsers] = useState([]);

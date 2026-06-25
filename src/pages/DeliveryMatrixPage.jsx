@@ -5,15 +5,9 @@ import { Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useBranches } from '@/hooks/useBranches';
 
-const BRANCHES = [
-  '01 McAllen',
-  '02 Weslaco',
-  '03 Harlingen',
-  '05 Brownsville',
-  '06 Corpus',
-  '99 Warehouse',
-];
+
 
 export default function DeliveryMatrixPage() {
   const navigate = useNavigate();
@@ -21,6 +15,7 @@ export default function DeliveryMatrixPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState('');
   const [savedBranch, setSavedBranch] = useState('');
+  const { branches: BRANCHES } = useBranches();
 
   useEffect(() => {
     supabaseData.DeliveryMatrix.list().then(records => {

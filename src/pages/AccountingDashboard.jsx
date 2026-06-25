@@ -12,8 +12,9 @@ import ProfitLossStatement from '@/components/accounting/ProfitLossStatement';
 import ExpenseLog from '@/components/accounting/ExpenseLog';
 import JobProfitLoss from '@/components/accounting/JobProfitLoss';
 import SpendAnalyst from '@/components/accounting/SpendAnalyst';
+import { useBranches } from '@/hooks/useBranches';
 
-const BRANCHES = ['All Branches', '01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse'];
+
 const CAPITALIZATION_THRESHOLD = 2500;
 
 const QB_ACCOUNTS = {
@@ -276,6 +277,8 @@ export default function AccountingDashboard() {
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [branch, setBranch] = useState('All Branches');
+  const { branches: dbBranches } = useBranches();
+  const BRANCHES = ['All Branches', ...dbBranches];
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3);
     return d.toISOString().split('T')[0];

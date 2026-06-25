@@ -6,6 +6,7 @@ import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { useBranches } from '@/hooks/useBranches';
 
 const PROVIDER_META = {
   samsara:         { label: 'Samsara',                    logo: '🚛', authFields: ['apiKey'], docsUrl: 'https://developers.samsara.com' },
@@ -27,12 +28,12 @@ const FIELD_LABELS = {
   baseUrl:   'Base URL (custom endpoint)',
 };
 
-const BRANCHES = [
-  '', '01 McAllen', '02 Weslaco', '03 Harlingen',
-  '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse',
-];
+
 
 function ProviderForm({ initial, onSave, onCancel }) {
+  const { branches: BRANCHES } = useBranches();
+  // Prepend blank option for "All Branches"
+  const branchOptions = ['', ...BRANCHES];
   const [form, setForm] = useState(initial || {
     name: '',
     providerType: 'samsara',
@@ -97,7 +98,7 @@ function ProviderForm({ initial, onSave, onCancel }) {
             value={form.branch}
             onChange={e => set('branch', e.target.value)}
           >
-            {BRANCHES.map(b => (
+            {branchOptions.map(b => (
               <option key={b} value={b}>{b || 'All Branches'}</option>
             ))}
           </select>

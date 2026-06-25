@@ -208,16 +208,7 @@ export default function AvailabilityConfigPage() {
             })}
         </div>
 
-        <div className="flex justify-end pb-8">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="gap-2 text-white hover:opacity-90" style={{ backgroundColor: '#F5A623' }}
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saved ? 'Saved!' : 'Save All Changes'}
-          </Button>
-        </div>
+
       </div>
     </div>
   );

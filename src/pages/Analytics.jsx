@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Printer, FileDown } from "lucide-react";
 import AppPageHeader from "@/components/AppPageHeader";
+import BranchFilterSelect from "@/components/BranchFilterSelect";
 import { jsPDF } from "jspdf";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid } from "recharts";
 
@@ -45,6 +46,7 @@ export default function Analytics() {
     return () => document.head.removeChild(style);
   }, []);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [branchFilter, setBranchFilter] = useState("all");
 
   useEffect(() => {
     base44.auth.me().then(user => {
@@ -64,6 +66,7 @@ export default function Analytics() {
       const allReports = await base44.entities.Report.list("-created_date", 500);
       return allReports.filter(r => !r.isDeleted);
     },
+    // branchFilter applied client-side below
     enabled: authorized === true,
     staleTime: 0,
     cacheTime: 0,
@@ -147,17 +150,19 @@ export default function Analytics() {
     doc.save(`analytics_${fileDate}.pdf`);
   };
 
+  const branchFiltered = branchFilter === "all" ? reports : reports.filter(r => r.branch === branchFilter);
+
   // --- Data computations ---
 
   // By Action
-  const actionCounts = reports.reduce((acc, r) => {
+  const actionCounts = branchFiltered.reduce((acc, r) => {
     acc[r.action] = (acc[r.action] || 0) + 1;
     return acc;
   }, {});
   const actionData = Object.entries(actionCounts).map(([name, value]) => ({ name, value }));
 
   // By Branch
-  const branchCounts = reports.reduce((acc, r) => {
+  const branchCounts = branchFiltered.reduce((acc, r) => {
     if (r.branch) acc[r.branch] = (acc[r.branch] || 0) + 1;
     return acc;
   }, {});
@@ -166,8 +171,8 @@ export default function Analytics() {
     .sort((a, b) => b.value - a.value);
 
   // Sent vs Pending
-  const sentCount = reports.filter(r => r.isSent).length;
-  const pendingCount = reports.length - sentCount;
+  const sentCount = branchFiltered.filter(r => r.isSent).length;
+  const pendingCount = branchFiltered.length - sentCount;
   const sentData = [
     { name: "Sent", value: sentCount },
     { name: "Pending", value: pendingCount },
@@ -175,7 +180,7 @@ export default function Analytics() {
 
   // By Month (last 12 months)
   const monthMap = {};
-  reports.forEach(r => {
+  branchFiltered.forEach(r => {
     if (!r.created_date) return;
     const d = new Date(r.created_date);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -187,7 +192,7 @@ export default function Analytics() {
     .map(([month, count]) => ({ month, count }));
 
   // Top Submitters
-  const submitterCounts = reports.reduce((acc, r) => {
+  const submitterCounts = branchFiltered.reduce((acc, r) => {
     if (r.sentBy) acc[r.sentBy] = (acc[r.sentBy] || 0) + 1;
     return acc;
   }, {});
@@ -197,7 +202,7 @@ export default function Analytics() {
     .slice(0, 8);
 
   // By Item Type
-  const typeCounts = reports.reduce((acc, r) => {
+  const typeCounts = branchFiltered.reduce((acc, r) => {
     if (r.itemType) acc[r.itemType] = (acc[r.itemType] || 0) + 1;
     return acc;
   }, {});
@@ -221,6 +226,7 @@ export default function Analytics() {
             <button onClick={() => window.print()} className="flex items-center gap-1 p-2 rounded-lg hover:bg-white/10 text-white transition" title="Print">
               <Printer className="w-5 h-5" /><span className="text-sm hidden sm:inline">Print</span>
             </button>
+            <BranchFilterSelect value={branchFilter} onChange={setBranchFilter} dark />
           </div>
         }
       />
@@ -233,7 +239,7 @@ export default function Analytics() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryCard label="Total Reports" value={reports.length} color="blue" />
+          <SummaryCard label="Total Reports" value={branchFiltered.length} color="blue" />
           <SummaryCard label="Sent" value={sentCount} color="green" />
           <SummaryCard label="Pending" value={pendingCount} color="yellow" />
           <SummaryCard label="For Sale" value={actionCounts["Sell"] || 0} color="orange" />

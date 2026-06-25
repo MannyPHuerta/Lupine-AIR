@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import AppPageHeader from '@/components/AppPageHeader';
 import { ShoppingBag, CheckCircle, AlertTriangle, Clock, DollarSign, Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useBranches } from '@/hooks/useBranches';
 
 const STATUS_COLORS = {
   pending: 'bg-blue-100 text-blue-800',
@@ -34,6 +35,8 @@ export default function RtoDashboard() {
   const [markingPaid, setMarkingPaid] = useState(null);
   const [user, setUser] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [branchFilter, setBranchFilter] = useState('all');
+  const { branches } = useBranches();
 
   const load = async () => {
     setLoading(true);
@@ -89,7 +92,10 @@ export default function RtoDashboard() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const filtered = payments.filter(p => {
+  const branchFilteredPayments = branchFilter === 'all' ? payments : payments.filter(p => p.branch === branchFilter);
+  const branchRentals = branchFilter === 'all' ? rentals : rentals.filter(r => r.branch === branchFilter);
+
+  const filtered = branchFilteredPayments.filter(p => {
     if (filter === 'pending') return p.status === 'pending';
     if (filter === 'late') return p.status === 'late';
     if (filter === 'paid') return p.status === 'paid';
@@ -97,11 +103,11 @@ export default function RtoDashboard() {
     return p.status !== 'cancelled';
   });
 
-  const lateCount = payments.filter(p => p.status === 'late').length;
-  const pendingCount = payments.filter(p => p.status === 'pending').length;
-  const paidCount = payments.filter(p => p.status === 'paid').length;
-  const totalCollected = payments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amountPaid || 0), 0);
-  const activeContracts = rentals.filter(r => r.status !== 'cancelled' && r.status !== 'completed').length;
+  const lateCount = branchFilteredPayments.filter(p => p.status === 'late').length;
+  const pendingCount = branchFilteredPayments.filter(p => p.status === 'pending').length;
+  const paidCount = branchFilteredPayments.filter(p => p.status === 'paid').length;
+  const totalCollected = branchFilteredPayments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amountPaid || 0), 0);
+  const activeContracts = branchRentals.filter(r => r.status !== 'cancelled' && r.status !== 'completed').length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -110,9 +116,15 @@ export default function RtoDashboard() {
         subtitle={`${activeContracts} active contracts`}
         icon={ShoppingBag}
         action={
-          <Button size="sm" variant="outline" onClick={load} className="text-white border-white/30 hover:bg-white/10">
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="h-8 text-xs px-2 rounded border border-white/30 bg-white/10 text-white">
+              <option value="all">All Branches</option>
+              {branches.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <Button size="sm" variant="outline" onClick={load} className="text-white border-white/30 hover:bg-white/10">
+              Refresh
+            </Button>
+          </div>
         }
       />
 
@@ -132,7 +144,7 @@ export default function RtoDashboard() {
             <div className="px-5 py-3 border-b bg-purple-50 font-semibold text-purple-900 text-sm flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" /> Active RTO Contracts
             </div>
-            {rentals.map(r => {
+            {branchRentals.map(r => {
               const contractPayments = payments.filter(p => p.rentalId === r.id);
               const paidPayments = contractPayments.filter(p => p.status === 'paid').length;
               const progress = contractPayments.length > 0 ? Math.round((paidPayments / contractPayments.length) * 100) : 0;

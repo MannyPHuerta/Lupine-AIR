@@ -6,15 +6,12 @@ import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatPhoneUS } from '@/lib/phoneUtils';
+import { useBranches } from '@/hooks/useBranches';
 
-const BRANCHES = [
-  '01 McAllen',
-  '02 Weslaco',
-  '03 Harlingen',
-  '05 Brownsville',
-  '06 Corpus',
-  '98 Shop',
-  '99 Warehouse',
+// Fallback branches used only when the DB has no BranchSettings records yet
+const FALLBACK_BRANCHES = [
+  '01 McAllen', '02 Weslaco', '03 Harlingen',
+  '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse',
 ];
 
 const DEFAULT_PREFIXES = {
@@ -33,6 +30,7 @@ export default function BranchSettingsPage() {
   const [saving, setSaving] = useState({});
   const [saved, setSaved] = useState({});
   const [loading, setLoading] = useState(true);
+  const { branches: dbBranches } = useBranches();
 
   useEffect(() => {
     supabaseData.BranchSettings.list().then(records => {
@@ -52,8 +50,9 @@ export default function BranchSettingsPage() {
           certifications: r.certifications || [],
         };
       });
-      // Fill in any branches not yet configured
-      BRANCHES.forEach(b => {
+      // Merge DB branches with fallback defaults — any new branch in the DB shows up automatically
+      const allBranchNames = [...new Set([...dbBranches, ...FALLBACK_BRANCHES])].sort();
+      allBranchNames.forEach(b => {
         if (!map[b]) map[b] = { id: null, prefix: DEFAULT_PREFIXES[b] || '', nextNumber: 1000, address: '', phone: '', email: '', partsBuyerEmail: '', purchasingEmail: '', accountingEmail: '', defaultAreaCode: '', certifications: [] };
       });
       setSettings(map);
@@ -108,7 +107,7 @@ export default function BranchSettingsPage() {
               The counter auto-increments with each confirmed invoice.
             </p>
 
-            {BRANCHES.map(branch => {
+            {Object.keys(settings).sort().map(branch => {
               const s = settings[branch] || { prefix: '', nextNumber: 1000, address: '', phone: '', email: '' };
               const preview = `${s.prefix || '???'}-${String(s.nextNumber || 1000).padStart(4, '0')}`;
               return (

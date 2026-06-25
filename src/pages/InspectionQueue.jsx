@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, Package, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppPageHeader from '@/components/AppPageHeader';
+import { useBranches } from '@/hooks/useBranches';
 
 export default function InspectionQueue() {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ export default function InspectionQueue() {
   const [conditionBefore, setConditionBefore] = useState('');
   const [needsRepair, setNeedsRepair] = useState(false);
   const [inspectionNotes, setInspectionNotes] = useState('');
+  const [branchFilter, setBranchFilter] = useState('all');
+  const { branches } = useBranches();
 
   const load = async () => {
     setLoading(true);
@@ -28,8 +31,8 @@ export default function InspectionQueue() {
   useEffect(() => { load(); }, []);
 
   const flaggedForInspection = useMemo(() =>
-    equipment.filter(e => e.unitStatus === 'under_inspection'),
-    [equipment]
+    equipment.filter(e => e.unitStatus === 'under_inspection' && (branchFilter === 'all' || e.location === branchFilter)),
+    [equipment, branchFilter]
   );
 
   const handleCompleteInspection = async () => {
@@ -92,7 +95,15 @@ export default function InspectionQueue() {
         subtitle={`${flaggedForInspection.length} item${flaggedForInspection.length !== 1 ? 's' : ''} waiting`}
         icon={CheckCircle2}
         backTo="/shop-floor"
-        action={<button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white">↻</button>}
+        action={
+          <div className="flex items-center gap-2">
+            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="h-8 text-xs px-2 rounded border border-white/20 bg-white/10 text-white">
+              <option value="all">All Branches</option>
+              {branches.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white">↻</button>
+          </div>
+        }
       />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">

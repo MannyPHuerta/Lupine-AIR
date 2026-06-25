@@ -6,6 +6,7 @@ import { Search, CheckCircle, RefreshCw, ExternalLink, Download, Copy, X, Loader
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import UnitStatusBadge, { STATUS_CONFIG } from '@/components/equipment/UnitStatusBadge';
+import BranchFilterSelect from '@/components/BranchFilterSelect';
 
 const STATUSES = Object.entries(STATUS_CONFIG).map(([value, cfg]) => ({ value, ...cfg }));
 
@@ -205,6 +206,7 @@ export default function EquipmentStatusManager() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [branchFilter, setBranchFilter] = useState('all');
 
   const load = () => {
     setLoading(true);
@@ -226,8 +228,9 @@ export default function EquipmentStatusManager() {
       eq.category?.toLowerCase().includes(search.toLowerCase()) ||
       eq.asset_number?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === 'all' || (eq.unit_status || 'available') === filterStatus;
-    return matchSearch && matchStatus;
-  }), [equipment, search, filterStatus]);
+    const matchBranch = branchFilter === 'all' || eq.location === branchFilter;
+    return matchSearch && matchStatus && matchBranch;
+  }), [equipment, search, filterStatus, branchFilter]);
 
   // Status counts for filter bar
   const counts = useMemo(() => {
@@ -279,6 +282,7 @@ export default function EquipmentStatusManager() {
               className="pl-9"
             />
           </div>
+          <BranchFilterSelect value={branchFilter} onChange={setBranchFilter} />
         </div>
 
         {/* Status filter tabs */}

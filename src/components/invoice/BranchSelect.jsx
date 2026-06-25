@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
+import { useBranches } from '@/hooks/useBranches';
 
-const DEFAULT_BRANCHES = [
-  '01 McAllen',
-  '02 Weslaco',
-  '03 Harlingen',
-  '05 Brownsville',
-  '06 Corpus',
-  '98 Shop',
-  '99 Warehouse',
+// Fallback only if the DB has no BranchSettings records
+const FALLBACK_BRANCHES = [
+  '01 McAllen', '02 Weslaco', '03 Harlingen',
+  '05 Brownsville', '06 Corpus', '98 Shop', '99 Warehouse',
 ];
 
 export default function BranchSelect({ value, onChange, branches }) {
-  const BRANCHES = (branches && branches.length > 0) ? branches : DEFAULT_BRANCHES;
+  const { branches: dbBranches } = useBranches();
+  const BRANCHES = (branches && branches.length > 0)
+    ? branches
+    : (dbBranches.length > 0 ? dbBranches : FALLBACK_BRANCHES);
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(BRANCHES.indexOf(value) || 0);
   const listRef = useRef(null);

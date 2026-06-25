@@ -6,6 +6,7 @@ import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import EditRentalPanel from '@/components/rentals/EditRentalPanel';
+import BranchFilterSelect from '@/components/BranchFilterSelect';
 import SignaturePad from '@/components/invoice/SignaturePad';
 
 import ExtraShiftBillingModal from '@/components/rentals/ExtraShiftBillingModal';
@@ -494,6 +495,7 @@ export default function RentalHistory() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [editingOrder, setEditingOrder] = useState(null);
+  const [branchFilter, setBranchFilter] = useState('all');
 
   const reload = () => {
     base44.entities.Rental.list('-created_date', 2000).then(setRentals);
@@ -543,7 +545,8 @@ export default function RentalHistory() {
     const matchStatus = statusFilter === 'all' || o.status === statusFilter;
     const orderDate = o.createdAt ? o.createdAt.split('T')[0] : '';
     const matchDateRange = (!dateFrom || orderDate >= dateFrom) && (!dateTo || orderDate <= dateTo);
-    return matchSearch && matchInvoice && matchStatus && matchDateRange;
+    const matchBranch = branchFilter === 'all' || o.customer.branch === branchFilter;
+    return matchSearch && matchInvoice && matchStatus && matchDateRange && matchBranch;
   });
 
   return (
@@ -591,6 +594,7 @@ export default function RentalHistory() {
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
+            <BranchFilterSelect value={branchFilter} onChange={setBranchFilter} />
           </div>
           <div className="flex gap-3 flex-wrap items-end">
             <div>

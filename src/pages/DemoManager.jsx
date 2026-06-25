@@ -1,14 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Trash2, Upload, Download, Loader2, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Trash2, Upload, Download, Loader2, CheckCircle, Lock } from 'lucide-react';
+
+const ALLOWED_EMAIL = 'info@theprojectair.com';
 
 export default function DemoManager() {
   const [branch, setBranch] = useState('');
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
   const [wipingBranch, setWipingBranch] = useState(false);
+
+  useEffect(() => {
+    supabaseData.auth.me().then(user => {
+      setAuthorized(!!user && user.email.toLowerCase().trim() === ALLOWED_EMAIL);
+      setAuthChecked(true);
+    }).catch(() => { setAuthChecked(true); setAuthorized(false); });
+  }, []);
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (!authorized) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
+        <Lock className="w-12 h-12 text-gray-300" />
+        <div className="text-lg font-semibold text-gray-700">Access Restricted</div>
+        <div className="text-sm text-gray-500">This area is restricted to platform administration.</div>
+      </div>
+    );
+  }
 
   const handleWipeBranch = async () => {
     if (!branch.trim()) {
