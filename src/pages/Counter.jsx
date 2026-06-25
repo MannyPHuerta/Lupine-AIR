@@ -253,7 +253,7 @@ export default function Counter() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  ref={equipSearchRef}
+                  ref__={equipSearchRef}
                   placeholder="Search equipment by name…"
                   value={equipmentSearchTerm}
                   onChange={e => { setEquipmentSearchTerm(e.target.value); setHighlightIndex(-1); }}
@@ -263,7 +263,7 @@ export default function Counter() {
                 />
               </div>
             </div>
-            <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div ref__={listRef} className="flex-1 overflow-y-auto p-2 space-y-1">
               {filteredEquipment.length === 0 && !aiSearching && aiSuggestions.length === 0 && (
                 <div className="text-center text-gray-400 text-sm py-8">
                   {equipmentSearchTerm ? 'No equipment found' : 'Start typing to search equipment'}
@@ -336,7 +336,7 @@ export default function Counter() {
             {/* Action button — always visible at top */}
             <div className="p-3 border-b bg-white">
               <Button
-                ref={checkoutBtnRef}
+                ref__={checkoutBtnRef}
                 onClick={() => setStep('checkout')}
                 disabled={cart.length === 0}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 text-base font-bold"
