@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Printer, ChevronDown, ChevronUp, Mail, X, ArrowRight, Pencil, Download, ClipboardList, AlertCircle, Clock, ShoppingBag } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -117,7 +117,7 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
   useEffect(() => {
     if (expanded && !agreement && !loadingAgreement) {
       setLoadingAgreement(true);
-      base44.entities.RentalAgreement.filter({ branch: order.customer.branch }, '-updated_date', 1)
+      supabaseData.RentalAgreement.filter({ branch: order.customer.branch }, '-updated_date', 1)
         .then(results => {
           setAgreement(results[0] || null);
           setLoadingAgreement(false);
@@ -142,7 +142,7 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
     // --- Availability check ---
     setPrinting(true);
     try {
-      const allRentals = await base44.entities.Rental.list('-created_date', 2000);
+      const allRentals = await supabaseData.Rental.list('-created_date', 2000);
       const conflicts = [];
       for (const line of enriched) {
         if (!line.equipmentId || line.equipmentId === 'quote-item') continue;
@@ -181,14 +181,14 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
 
     // Update rental status + mark equipment as reserved
     await Promise.all(order.rentalIds.map(id =>
-      base44.entities.Rental.update(id, { status: 'contract' })
+      supabaseData.Rental.update(id, { status: 'contract' })
     ));
 
     // Mark each equipment unit as reserved
     for (const line of enriched) {
       if (!line.equipmentId || line.equipmentId === 'quote-item') continue;
       try {
-        await base44.entities.Equipment.update(line.equipmentId, { unitStatus: 'reserved' });
+        await supabaseData.Equipment.update(line.equipmentId, { unitStatus: 'reserved' });
       } catch (e) {
         console.warn('Could not update equipment status:', e.message);
       }
@@ -206,7 +206,7 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
     if (!confirm(`Move this order to "${nextStatus}"?`)) return;
     setAdvancingStatus(true);
     await Promise.all(order.rentalIds.map(id =>
-      base44.entities.Rental.update(id, { status: nextStatus })
+      supabaseData.Rental.update(id, { status: nextStatus })
     ));
     setAdvancingStatus(false);
     onConfirmed();
@@ -222,16 +222,20 @@ function OrderCard({ order, equipment, rentals, companyInfo, branchSettings, onC
     setSendingEmail(true);
     try {
       console.log('Sending email with:', { rentalIds: order.rentalIds, emailAddress });
-      const res = await base44.functions.invoke('sendRentalConfirmation', {
-        rentalIds: order.rentalIds,
-        customerEmail: emailAddress,
-        customerPhone: order.customer.phone || '',
-        invoiceNumber: order.invoiceNumber || order.id,
-        autoSendCommunications: true,
-      });
-      console.log('Email response:', res.data);
-      if (res.data?.error && !res.data?.emailSent) {
-        alert(`Email failed: ${res.data.error}`);
+      const res = await fetch('/api/functions/sendRentalConfirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rentalIds: order.rentalIds,
+          customerEmail: emailAddress,
+          customerPhone: order.customer.phone || '',
+          invoiceNumber: order.invoiceNumber || order.id,
+          autoSendCommunications: true,
+        }),
+      }).then(r => r.json());
+      console.log('Email response:', res);
+      if (res?.error && !res?.emailSent) {
+        alert(`Email failed: ${res.error}`);
       } else {
         alert('Invoice emailed successfully!');
         setEmailMode(false);
@@ -498,7 +502,7 @@ export default function RentalHistory() {
   const [branchFilter, setBranchFilter] = useState('all');
 
   const reload = () => {
-    base44.entities.Rental.list('-created_date', 2000).then(setRentals);
+    supabaseData.Rental.list('-created_date', 2000).then(setRentals);
   };
 
   // Clear URL params after applying them (so Back navigation shows full history)
@@ -509,18 +513,11 @@ export default function RentalHistory() {
   }, []);
 
   useEffect(() => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      console.warn('[RentalHistory] Base44 SDK not available');
-      setLoading(false);
-      return;
-    }
-    
     Promise.all([
-      base44.entities.Rental.list('-created_date', 2000),
-      base44.entities.Equipment.list('-created_date', 500),
-      base44.entities.CompanySettings.list(),
-      base44.entities.BranchSettings.list(),
+      supabaseData.Rental.list('-created_date', 2000),
+      supabaseData.Equipment.list('-created_date', 500),
+      supabaseData.CompanySettings.list(),
+      supabaseData.BranchSettings.list(),
     ]).then(([rent, eq, company, branches]) => {
       setRentals(rent);
       setEquipment(eq);
@@ -528,6 +525,9 @@ export default function RentalHistory() {
       const branchMap = {};
       branches.forEach(b => { branchMap[b.branch] = b; });
       setBranchSettings(branchMap);
+      setLoading(false);
+    }).catch(err => {
+      console.error('[RentalHistory] Failed to load:', err);
       setLoading(false);
     });
   }, []);

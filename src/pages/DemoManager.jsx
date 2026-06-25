@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { supabaseData } from '@/lib/supabaseData';
+import { useAuth } from '@/lib/AuthContext';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Trash2, Upload, Download, Loader2, CheckCircle, Lock } from 'lucide-react';
@@ -8,6 +7,7 @@ import { AlertTriangle, Trash2, Upload, Download, Loader2, CheckCircle, Lock } f
 const ALLOWED_EMAIL = 'info@theprojectair.com';
 
 export default function DemoManager() {
+  const { user } = useAuth();
   const [branch, setBranch] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -16,11 +16,9 @@ export default function DemoManager() {
   const [wipingBranch, setWipingBranch] = useState(false);
 
   useEffect(() => {
-    supabaseData.auth.me().then(user => {
-      setAuthorized(!!user && user.email.toLowerCase().trim() === ALLOWED_EMAIL);
-      setAuthChecked(true);
-    }).catch(() => { setAuthChecked(true); setAuthorized(false); });
-  }, []);
+    setAuthorized(!!user && user.email.toLowerCase().trim() === ALLOWED_EMAIL);
+    setAuthChecked(true);
+  }, [user]);
 
   if (!authChecked) {
     return (
@@ -48,8 +46,12 @@ export default function DemoManager() {
     setWipingBranch(true);
     setMessage('');
     try {
-      const res = await base44.functions.invoke('wipeBranch', { branch });
-      setMessage(`✓ ${res.data.message} (${res.data.recordsDeleted} records deleted)`);
+      const res = await fetch('/api/functions/wipeBranch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ branch }),
+      }).then(r => r.json());
+      setMessage(`✓ ${res.message} (${res.recordsDeleted} records deleted)`);
       setBranch('');
     } catch (err) {
       setMessage(`✗ ${err.message}`);
@@ -62,8 +64,12 @@ export default function DemoManager() {
     setStatus('loading');
     setMessage('');
     try {
-      const res = await base44.functions.invoke('exportAllData', {});
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      const res = await fetch('/api/functions/exportAllData', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).then(r => r.json());
+      const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -86,8 +92,12 @@ export default function DemoManager() {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      const res = await base44.functions.invoke('importDataSnapshot', { entities: data.entities });
-      setMessage(`✓ Import complete — ${JSON.stringify(res.data.results)}`);
+      const res = await fetch('/api/functions/importDataSnapshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entities: data.entities }),
+      }).then(r => r.json());
+      setMessage(`✓ Import complete — ${JSON.stringify(res.results)}`);
       setStatus('done');
     } catch (err) {
       setMessage(`✗ ${err.message}`);

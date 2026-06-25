@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabaseData } from "@/lib/supabaseData";
+import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Printer, FileDown } from "lucide-react";
@@ -37,6 +38,7 @@ const printStyle = `
 
 export default function Analytics() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [authorized, setAuthorized] = useState(null);
 
   useEffect(() => {
@@ -49,21 +51,19 @@ export default function Analytics() {
   const [branchFilter, setBranchFilter] = useState("all");
 
   useEffect(() => {
-    base44.auth.me().then(user => {
-      if (user) {
-        const emailLower = user.email.toLowerCase().trim();
-        setCurrentUserEmail(user.email);
-        setAuthorized(ALLOWED_USERS.some(e => e.toLowerCase().trim() === emailLower) || user.role === "admin");
-      } else {
-        setAuthorized(false);
-      }
-    });
-  }, []);
+    if (user) {
+      const emailLower = user.email.toLowerCase().trim();
+      setCurrentUserEmail(user.email);
+      setAuthorized(ALLOWED_USERS.some(e => e.toLowerCase().trim() === emailLower) || user.role === "admin");
+    } else {
+      setAuthorized(false);
+    }
+  }, [user]);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["analytics-reports"],
     queryFn: async () => {
-      const allReports = await base44.entities.Report.list("-created_date", 500);
+      const allReports = await supabaseData.Report.list("-created_date", 500);
       return allReports.filter(r => !r.isDeleted);
     },
     // branchFilter applied client-side below
