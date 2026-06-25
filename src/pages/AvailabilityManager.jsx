@@ -530,7 +530,7 @@ export default function AvailabilityManager() {
             customerId: customerId || null,
             customerName: customer.name,
             customerPhone: customer.phone,
-            customerAddress: `→ ${customer.branch}`,
+            customerAddress: `→ ${branch}`,
             customerCity: customer.city || '',
             customerState: customer.state || '',
             customerZip: customer.zip || '',
@@ -937,7 +937,7 @@ export default function AvailabilityManager() {
 
         {/* Add Equipment */}
         <button
-          ref={addButtonRef}
+          ref__={addButtonRef}
           onClick={addLine}
           className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2"
         >
