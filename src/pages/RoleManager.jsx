@@ -118,7 +118,7 @@ function RoleForm({ role, onSave, onCancel }) {
                   <input
                     type="checkbox"
                     checked={allCatSelected}
-                    ref={el => { if (el) el.indeterminate = someCatSelected && !allCatSelected; }}
+                    ref__={el => { if (el) el.indeterminate = someCatSelected && !allCatSelected; }}
                     onChange={() => toggleCategory(perms)}
                     className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer"
                   />
