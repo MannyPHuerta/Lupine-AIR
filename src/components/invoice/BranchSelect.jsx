@@ -81,7 +81,7 @@ export default function BranchSelect({ value, onChange, branches }) {
   return (
     <div className="relative">
       <button
-        ref={btnRef}
+        ref__={btnRef}
         type="button"
         onKeyDown={handleKeyDown}
         onClick={() => setOpen(o => !o)}
@@ -94,7 +94,7 @@ export default function BranchSelect({ value, onChange, branches }) {
 
       {open && (
         <div className="absolute z-40 left-0 right-0 mt-1 bg-white border rounded-lg shadow-xl">
-          <ul ref={listRef} className="max-h-52 overflow-y-auto py-1">
+          <ul ref__={listRef} className="max-h-52 overflow-y-auto py-1">
             {BRANCHES.map((b, idx) => (
               <li
                 key={b}
