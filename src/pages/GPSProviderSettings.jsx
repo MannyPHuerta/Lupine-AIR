@@ -122,7 +122,7 @@ function ProviderForm({ initial, onSave, onCancel }) {
         <div className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-2">
           🔐 Credentials
           {meta.docsUrl && (
-            <a href={meta.docsUrl} target="_blank" rel="noopener noreferrer"
+            <a href__={meta.docsUrl} target="_blank" rel="noopener noreferrer"
               className="text-indigo-500 hover:underline font-normal normal-case">API Docs ↗</a>
           )}
         </div>
