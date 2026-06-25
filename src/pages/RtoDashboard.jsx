@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseData } from '@/lib/supabaseData';
+import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AppPageHeader from '@/components/AppPageHeader';
 import { ShoppingBag, CheckCircle, AlertTriangle, Clock, DollarSign, Loader2, ExternalLink } from 'lucide-react';
@@ -29,48 +30,37 @@ function KpiCard({ label, value, color, Icon }) {
 
 export default function RtoDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [payments, setPayments] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [markingPaid, setMarkingPaid] = useState(null);
-  const [user, setUser] = useState(null);
   const [filter, setFilter] = useState('all');
   const [branchFilter, setBranchFilter] = useState('all');
   const { branches } = useBranches();
 
   const load = async () => {
     setLoading(true);
-    // Defensive check for preview mode
-    if (!base44 || !base44.auth || !base44.entities) {
-      console.warn('[RtoDashboard] Base44 SDK not available');
-      setLoading(false);
-      return;
+    try {
+      const [pays, rents] = await Promise.all([
+        supabaseData.RtoPayment.list('dueDate', 500),
+        supabaseData.Rental.filter({ isRentToOwn: true }, '-created_date', 200),
+      ]);
+      setPayments(pays);
+      setRentals(rents);
+    } catch (err) {
+      console.error('[RtoDashboard] Failed to load:', err);
     }
-    
-    const [me, pays, rents] = await Promise.all([
-      base44.auth.me(),
-      base44.entities.RtoPayment.list('dueDate', 500),
-      base44.entities.Rental.filter({ isRentToOwn: true }, '-created_date', 200),
-    ]);
-    setUser(me);
-    setPayments(pays);
-    setRentals(rents);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
   const handleMarkPaid = async (payment) => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      alert('Payment operations not available in preview mode');
-      return;
-    }
-    
     if (!confirm(`Mark $${payment.amountDue.toFixed(2)} from ${payment.customerName} as paid?`)) return;
     setMarkingPaid(payment.id);
     const now = new Date().toISOString();
-    await base44.entities.RtoPayment.update(payment.id, {
+    await supabaseData.RtoPayment.update(payment.id, {
       status: 'paid',
       amountPaid: payment.amountDue,
       paidAt: now,
@@ -81,7 +71,7 @@ export default function RtoDashboard() {
     if (rental) {
       const credited = (rental.amountCredited || 0) + payment.amountDue;
       const balance = (rental.purchasePrice || 0) - credited;
-      await base44.entities.Rental.update(rental.id, {
+      await supabaseData.Rental.update(rental.id, {
         amountCredited: credited,
         balanceRemaining: Math.max(0, balance),
       });
