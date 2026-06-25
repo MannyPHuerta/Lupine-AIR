@@ -1,40 +1,33 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
-import { Loader2, CheckCircle, Truck, Clock, User, ArrowRightLeft } from 'lucide-react';
+import { supabaseData } from '@/lib/supabaseData';
+import { useAuth } from '@/lib/AuthContext';
+import { Loader2, CheckCircle, Truck, Clock, ArrowRightLeft } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { format, parseISO } from 'date-fns';
 import { useBranches } from '@/hooks/useBranches';
 
 export default function DeliveryAssignment() {
-  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [rentals, setRentals] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [branchFilter, setBranchFilter] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
   const { branches: BRANCHES } = useBranches();
 
   useEffect(() => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      console.warn('[DeliveryAssignment] Base44 SDK not available');
-      setLoading(false);
-      return;
-    }
-    
     Promise.all([
-      base44.entities.Rental.list('-created_date', 500),
-      base44.entities.Delivery.list('-created_date', 500),
-      base44.entities.User.list(),
-      base44.auth.me(),
-    ]).then(([rents, dels, usrs, me]) => {
+      supabaseData.Rental.list('-created_date', 500),
+      supabaseData.Delivery.list('-created_date', 500),
+      supabaseData.User.list(),
+    ]).then(([rents, dels, usrs]) => {
       setRentals(rents);
       setDeliveries(dels);
       setUsers(usrs);
-      setCurrentUser(me);
+      setLoading(false);
+    }).catch(err => {
+      console.error('[DeliveryAssignment] Failed to load:', err);
       setLoading(false);
     });
   }, []);
@@ -60,23 +53,16 @@ export default function DeliveryAssignment() {
   }, [deliveries, branchFilter]);
 
   const handleCreateDelivery = async (rental, teamDriverIds) => {
-    // Defensive check for preview mode
-    if (!base44 || !base44.entities) {
-      alert('Delivery assignment not available in preview mode');
-      return;
-    }
-
     setCreating(true);
     try {
       const now = new Date().toISOString();
-      const me = await base44.auth.me();
       const teamDrivers = teamDriverIds.map(id => {
         const u = users.find(u => u.id === id);
         return { driverId: u.email, driverName: u.full_name };
       });
       const primary = teamDrivers[0];
 
-      await base44.entities.Delivery.create({
+      await supabaseData.Delivery.create({
         rentalId: rental.id,
         customerId: rental.customerId,
         customerName: rental.customerName,
@@ -89,7 +75,7 @@ export default function DeliveryAssignment() {
         driverName: primary.driverName,
         teamDrivers,
         assignedAt: now,
-        assignedBy: me?.email || 'manager',
+        assignedBy: currentUser?.email || 'manager',
         branch: rental.branch || '01 McAllen',
         status: 'scheduled',
         items: [{ equipmentId: rental.equipmentId, equipmentName: rental.equipmentName, quantity: 1, checked: false }],
@@ -97,7 +83,7 @@ export default function DeliveryAssignment() {
         notes: rental.notes || '',
       });
 
-      const dels = await base44.entities.Delivery.list('-created_date', 500);
+      const dels = await supabaseData.Delivery.list('-created_date', 500);
       setDeliveries(dels);
     } catch (err) {
       alert(`Error: ${err.message}`);
@@ -146,29 +132,21 @@ export default function DeliveryAssignment() {
                   drivers={users.filter(u => ['driver', 'field_crew', 'user'].includes(u.role))}
                   isCreating={creating}
                   onAssign={async (deliveryId, teamDriverIds) => {
-                    // Defensive check for preview mode
-                    if (!base44 || !base44.entities) {
-                      alert('Delivery assignment not available in preview mode');
-                      setCreating(false);
-                      return;
-                    }
-
                     setCreating(true);
                     try {
-                      const me = await base44.auth.me();
                       const teamDrivers = teamDriverIds.map(id => {
                         const u = users.find(u => u.id === id);
                         return { driverId: u.email, driverName: u.full_name };
                       });
                       const primary = teamDrivers[0];
-                      await base44.entities.Delivery.update(deliveryId, {
+                      await supabaseData.Delivery.update(deliveryId, {
                         driverId: primary.driverId,
                         driverName: primary.driverName,
                         teamDrivers,
                         assignedAt: new Date().toISOString(),
-                        assignedBy: me?.email || 'manager',
+                        assignedBy: currentUser?.email || 'manager',
                       });
-                      const dels = await base44.entities.Delivery.list('-created_date', 500);
+                      const dels = await supabaseData.Delivery.list('-created_date', 500);
                       setDeliveries(dels);
                     } catch (err) { alert(`Error: ${err.message}`); }
                     finally { setCreating(false); }
