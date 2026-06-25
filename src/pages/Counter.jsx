@@ -86,6 +86,10 @@ export default function Counter() {
       setPromoCodes(promos);
       setVolumeRules(volRules);
       setLoading(false);
+      // Initialize working branch to first available if not yet set
+      if (bs.length > 0 && !workingBranch) {
+        updateWorkingBranch(bs[0].branch);
+      }
     });
     setTimeout(() => equipSearchRef.current?.focus(), 100);
   }, []);

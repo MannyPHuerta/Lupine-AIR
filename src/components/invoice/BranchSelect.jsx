@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 
-const BRANCHES = [
+const DEFAULT_BRANCHES = [
   '01 McAllen',
   '02 Weslaco',
   '03 Harlingen',
@@ -10,7 +10,8 @@ const BRANCHES = [
   '99 Warehouse',
 ];
 
-export default function BranchSelect({ value, onChange }) {
+export default function BranchSelect({ value, onChange, branches }) {
+  const BRANCHES = (branches && branches.length > 0) ? branches : DEFAULT_BRANCHES;
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(BRANCHES.indexOf(value) || 0);
   const listRef = useRef(null);
@@ -22,7 +23,7 @@ export default function BranchSelect({ value, onChange }) {
   useEffect(() => {
     const idx = BRANCHES.indexOf(value);
     if (idx >= 0) setHighlight(idx);
-  }, [value]);
+  }, [value, BRANCHES]);
 
   const select = (branch) => {
     onChange(branch);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
+import { useWorkingBranch } from '@/lib/WorkingBranchContext';
 import { ArrowLeft, Plus, Loader2, Settings, Link2, History, Printer, Building2, Cog, Activity, RotateCcw, X, Users, Truck, Tag, Wrench, FlaskConical, ShoppingBag } from 'lucide-react';
 import RtoSetupModal from '@/components/rentals/RtoSetupModal';
 import AppPageHeader from '@/components/AppPageHeader';
@@ -90,6 +91,17 @@ export default function AvailabilityManager() {
   const [branchSettings, setBranchSettings] = useState({});
   const [deliveryMatrices, setDeliveryMatrices] = useState({});
   const [rentalAgreements, setRentalAgreements] = useState({});
+
+  const { workingBranch, updateWorkingBranch } = useWorkingBranch();
+  const branchList = Object.keys(branchSettings);
+  const branch = workingBranch || branchList[0] || '01 McAllen';
+
+  // Initialize working branch to the first available branch once settings load
+  useEffect(() => {
+    if (branchList.length > 0 && !workingBranch) {
+      updateWorkingBranch(branchList[0]);
+    }
+  }, [branchList, workingBranch, updateWorkingBranch]);
 
   // NOTE: Auto-restore on mount removed — use the Restore button (↺) in the header to intentionally recover a saved form.
 
@@ -254,7 +266,7 @@ export default function AvailabilityManager() {
       name: customer.name,
       phone: customer.phone,
       email: customer.email,
-      branch: customer.branch,
+      branch: branch,
       address: customer.address,
       city: customer.city,
       state: customer.state,
@@ -339,7 +351,7 @@ export default function AvailabilityManager() {
 
     // Always auto-assign invoice number from branch sequence on first save
     let invoiceNumber = '';
-    const branchSettingsList = await supabaseData.BranchSettings.filter({ branch: customer.branch });
+    const branchSettingsList = await supabaseData.BranchSettings.filter({ branch: branch });
     const bs = branchSettingsList[0];
     if (bs) {
       const num = bs.nextInvoiceNumber || 1000;
@@ -365,7 +377,7 @@ export default function AvailabilityManager() {
               city: customer.city,
               state: customer.state,
               zip: customer.zip,
-              branch: customer.branch,
+              branch: branch,
             }),
           });
           const data = await res.json();
@@ -387,7 +399,7 @@ export default function AvailabilityManager() {
       const hourMeterCharges = line.hourMeterCharges ?? 0;
 
       // Calculate delivery/return fees — only charge once per order, not per line
-      const matrixFee = calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip);
+      const matrixFee = calcDeliveryFee(deliveryMatrices[branch], customer.zip);
       const dFee = createdIds.length === 0 && deliveryMethod === 'company_delivery' ? (aiDeliveryFee ?? matrixFee) : 0;
       const rFee = createdIds.length === 0 && returnMethod === 'company_pickup' ? matrixFee : 0;
 
@@ -396,7 +408,7 @@ export default function AvailabilityManager() {
         try {
           await supabaseData.Equipment.update(line.equipmentId, {
             unitStatus: 'reserved',
-            statusNote: `Cross-branch borrow → ${customer.branch} for ${customer.name} (${line.startDate})`,
+            statusNote: `Cross-branch borrow → ${branch} for ${customer.name} (${line.startDate})`,
             statusUpdatedAt: new Date().toISOString(),
             statusUpdatedBy: currentUser?.email || 'system',
           });
@@ -417,7 +429,7 @@ export default function AvailabilityManager() {
         customerState: customer.state,
         customerZip: customer.zip,
         customerId: customerId || null,
-        branch: customer.branch,
+        branch: branch,
         totalDays,
         baseAmount: line.baseAmount,
         hourMeterStart,
@@ -468,7 +480,7 @@ export default function AvailabilityManager() {
         entityLabel: `${line.equipmentName} - ${customer.name}`,
         performedBy: currentUser?.email || 'system',
         performedAt: new Date().toISOString(),
-        branch: customer.branch,
+        branch: branch,
         changes: {
           status: { before: null, after: status === 'confirmed' ? 'contract' : 'quote' },
           baseAmount: { before: null, after: line.baseAmount },
@@ -500,7 +512,7 @@ export default function AvailabilityManager() {
             amountDue: monthlyAmount,
             amountPaid: 0,
             status: 'pending',
-            branch: customer.branch,
+            branch: branch,
             purchasePrice: rtoData.purchasePrice,
             creditPercent: rtoData.creditPercent,
           });
@@ -526,9 +538,9 @@ export default function AvailabilityManager() {
             status: 'scheduled',
             items: [{ equipmentId: line.equipmentId, equipmentName: line.equipmentName, quantity: line.quantity || 1, checked: false }],
             scheduledDate: line.startDate,
-            notes: `⇄ Cross-branch transfer to ${customer.branch} for ${customer.name} · Invoice ${invoiceNumber}`,
+            notes: `⇄ Cross-branch transfer to ${branch} for ${customer.name} · Invoice ${invoiceNumber}`,
             isCrossTransfer: true,
-            destinationBranch: customer.branch,
+            destinationBranch: branch,
           });
         } catch (e) { console.warn('Could not create transfer delivery:', e.message); }
       }
@@ -575,7 +587,7 @@ export default function AvailabilityManager() {
 
     // Fetch invoice number preview (not incremented yet — that happens in handleSave)
     let invNumber = '';
-    const _branchSettingsPreview = await supabaseData.BranchSettings.filter({ branch: customer.branch });
+    const _branchSettingsPreview = await supabaseData.BranchSettings.filter({ branch: branch });
     const _bsPreview = _branchSettingsPreview[0];
     if (_bsPreview) {
       invNumber = `${_bsPreview.invoicePrefix || ''}-${String(_bsPreview.nextInvoiceNumber || 1000).padStart(4, '0')}`;
@@ -588,7 +600,7 @@ export default function AvailabilityManager() {
     const taxAmount = Math.round(Math.max(0, taxableBase) * taxRateDecimal * 100) / 100;
     const depositTotal = validLines.reduce((s, l) => s + ((l.deposit || 0) * (l.quantity || 1)), 0);
     const discountAmount = parseFloat(discount) || 0;
-    const matrix = deliveryMatrices[customer.branch];
+    const matrix = deliveryMatrices[branch];
     const matrixDeliveryFee = calcDeliveryFee(matrix, customer.zip);
     const dFee = deliveryMethod === 'company_delivery' ? (aiDeliveryFee ?? matrixDeliveryFee) : 0;
     const rFee = returnMethod === 'company_pickup' ? matrixDeliveryFee : 0;
@@ -613,7 +625,7 @@ export default function AvailabilityManager() {
           logoUrl: companyInfo.logoUrl || '',
           invoiceFooter: companyInfo.invoiceFooter || '',
         } : {},
-        rentalAgreement: rentalAgreements[customer.branch] || null,
+        rentalAgreement: rentalAgreements[branch] || null,
         paymentMethod,
         deliveryFee: dFee,
         returnFee: rFee,
@@ -705,7 +717,7 @@ export default function AvailabilityManager() {
     // Open invoice window and print
     const paid = parseFloat(amountPaid) || pendingInvoice.totalDue;
     const win = openInvoiceWindow();
-    writeInvoiceToWindow(win, { ...pendingInvoice.invoiceOrder, rentalAgreement: rentalAgreements[customer.branch] || null }, paid, signatureDataUrl, practiceMode);
+    writeInvoiceToWindow(win, { ...pendingInvoice.invoiceOrder, rentalAgreement: rentalAgreements[branch] || null }, paid, signatureDataUrl, practiceMode);
 
       // Send email/SMS if enabled
       if (autoSendCommunications && emailToSend && rentalIds.length > 0) {
@@ -812,8 +824,9 @@ export default function AvailabilityManager() {
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Working Branch</span>
           <div style={{ width: '200px' }}>
             <BranchSelect
-              value={customer.branch}
-              onChange={(v) => setCustomer({ ...customer, branch: v })}
+              value={branch}
+              onChange={(v) => updateWorkingBranch(v)}
+              branches={branchList}
             />
           </div>
         </div>
@@ -1096,8 +1109,8 @@ export default function AvailabilityManager() {
               onAutoSendChange={setAutoSendCommunications}
               deliveryMethod={deliveryMethod}
               returnMethod={returnMethod}
-              deliveryFee={aiDeliveryFee ?? calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
-              returnFee={calcDeliveryFee(deliveryMatrices[customer.branch], customer.zip)}
+              deliveryFee={aiDeliveryFee ?? calcDeliveryFee(deliveryMatrices[branch], customer.zip)}
+              returnFee={calcDeliveryFee(deliveryMatrices[branch], customer.zip)}
               appliedPromo={appliedPromo}
               onPromoApply={(promo) => {
                 setAppliedPromo(promo);
