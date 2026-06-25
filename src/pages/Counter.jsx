@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabaseData } from '@/lib/supabaseData';
 import { useNavigate } from 'react-router-dom';
+import { useWorkingBranch } from '@/lib/WorkingBranchContext';
 import { Search, Loader2, X, ShoppingCart, ChevronRight, Trash2, DollarSign, FlaskConical, Sparkles, User, Star, Repeat } from 'lucide-react';
 import AppPageHeader from '@/components/AppPageHeader';
 import { Input } from '@/components/ui/input';
@@ -38,7 +39,7 @@ export default function Counter() {
 
   const [equipment, setEquipment] = useState([]);
   const [rentals, setRentals] = useState([]);
-  const [branchSettings, setBranchSettings] = useState(null);
+  const [allBranchSettings, setAllBranchSettings] = useState([]);
   const [companySettings, setCompanySettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +61,9 @@ export default function Counter() {
   const [pendingAlertItem, setPendingAlertItem] = useState(null);
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [branch, setBranch] = useState('01 McAllen');
+  const { workingBranch, updateWorkingBranch } = useWorkingBranch();
+  const branch = workingBranch || '01 McAllen';
+  const branchSettings = allBranchSettings.find(b => b.branch === branch) || allBranchSettings[0] || null;
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export default function Counter() {
     ]).then(([eq, rent, bs, cs, custs, user, promos, volRules]) => {
       setEquipment(eq);
       setRentals(rent);
-      setBranchSettings(bs[0]);
+      setAllBranchSettings(bs);
       setCompanySettings(cs[0]);
       setCustomers(custs);
       setCurrentUser(user);
@@ -227,7 +230,7 @@ export default function Counter() {
                 </span>
               ))}
             </div>
-            <select value={branch} onChange={e => setBranch(e.target.value)}
+            <select value={branch} onChange={e => updateWorkingBranch(e.target.value)}
               className="h-8 border-0 rounded px-2 bg-white/10 text-white text-xs backdrop-blur-sm">
               {['01 McAllen', '02 Weslaco', '03 Harlingen', '05 Brownsville', '06 Corpus'].map(b => (
                 <option key={b} value={b} className="text-black">{b}</option>
