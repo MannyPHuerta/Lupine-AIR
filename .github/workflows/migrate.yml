@@ -1,0 +1,75 @@
+name: Run DB Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target database"
+        required: true
+        type: choice
+        options:
+          - dev1
+          - dev2
+          - prod
+      mode:
+        description: "Mode: migrate (apply pending) or mark (record without executing)"
+        required: true
+        default: migrate
+        type: choice
+        options:
+          - migrate
+          - mark
+      prod_confirm:
+        description: 'Type "APPLY TO PROD" to confirm (prod only)'
+        required: false
+        type: string
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Guard prod
+        if: ${{ inputs.environment == 'prod' }}
+        run: |
+          if [ "${{ inputs.prod_confirm }}" != "APPLY TO PROD" ]; then
+            echo "::error::prod requires prod_confirm='APPLY TO PROD'"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Resolve DB URL
+        id: dburl
+        env:
+          DEV1_DB_URL: ${{ secrets.DEV1_DB_URL }}
+          DEV2_DB_URL: ${{ secrets.DEV2_DB_URL }}
+          PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
+        run: |
+          case "${{ inputs.environment }}" in
+            dev1) URL="$DEV1_DB_URL" ;;
+            dev2) URL="$DEV2_DB_URL" ;;
+            prod) URL="$PROD_DB_URL" ;;
+          esac
+          if [ -z "$URL" ]; then
+            echo "::error::No DB URL secret configured for ${{ inputs.environment }}"
+            exit 1
+          fi
+          echo "::add-mask::$URL"
+          echo "DB_URL=$URL" >> "$GITHUB_ENV"
+
+      - name: Run migration script
+        env:
+          FORCE: ${{ inputs.environment == 'prod' && '1' || '' }}
+          MARK_ONLY: ${{ inputs.mode == 'mark' && '1' || '' }}
+        run: |
+          bash scripts/migrate-environment.sh "$DB_URL" "${{ inputs.environment }}"
