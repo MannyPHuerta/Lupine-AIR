@@ -72,4 +72,5 @@ jobs:
           FORCE: ${{ inputs.environment == 'prod' && '1' || '' }}
           MARK_ONLY: ${{ inputs.mode == 'mark' && '1' || '' }}
         run: |
-          bash scripts/migrate-environment.sh "$DB_URL" "${{ inputs.environment }}"
+          bash .github/scripts/migrate-environment.sh "$DB_URL" "${{ inputs.environment }}"
+
