@@ -161,5 +161,7 @@ export default async function handler(req, res) {
     .update({ onboarding_completed: true, onboarding_step: 4 })
     .eq('id', tenant.id);
 
+
   return res.status(200).json({ success: true, tenantId: tenant.id, branchId: branch.id });
 }
+
