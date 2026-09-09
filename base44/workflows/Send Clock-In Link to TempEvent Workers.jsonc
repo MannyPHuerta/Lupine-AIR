@@ -1,0 +1,37 @@
+{
+  "name": "Send Clock-In Link to Temp/Event Workers",
+  "description": "When a new timesheet entry is created for a temp or event worker who has a phone number on file, automatically SMS them the clock-in link.",
+  "trigger": {
+    "condition": "${ ((.trigger.data.staffType == \"temp\" or .trigger.data.staffType == \"event\") and (.trigger.data.staffEmail != null)) }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Timesheet"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "send_clock_in_link_to_temp_event_workers",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendClockInLink",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "sendClockInLink"
+  }
+}
